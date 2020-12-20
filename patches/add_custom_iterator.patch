@@ -1,0 +1,79 @@
+diff --git a/SConstruct b/SConstruct
+index 2281b8a77f..576f6c1ccc 100644
+--- a/SConstruct
++++ b/SConstruct
+@@ -543,6 +543,15 @@ if selected_platform in platform_list:
+                 env.module_icons_paths.append(path + "/" + "icons")
+             modules_enabled[name] = path
+ 
++            if getattr(config, "has_custom_iterator", False) and config.has_custom_iterator():
++                env.AppendUnique(CPPDEFINES=["CUSTOM_ITERATOR"])
++
++            if getattr(config, "has_custom_physics_iterator", False) and config.has_custom_physics_iterator():
++                env.AppendUnique(CPPDEFINES=["CUSTOM_PHYSICS_ITERATOR"])
++
++            if getattr(config, "has_custom_audio_iterator", False) and config.has_custom_audio_iterator():
++                env.AppendUnique(CPPDEFINES=["CUSTOM_AUDIO_ITERATOR"])
++
+         sys.path.remove(path)
+         sys.modules.pop("config")
+ 
+diff --git a/main/main.cpp b/main/main.cpp
+index c492cfaad7..8ff3c984e3 100644
+--- a/main/main.cpp
++++ b/main/main.cpp
+@@ -1284,8 +1284,8 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
+ 	}
+ 
+ 	/* todo restore
+-    OS::get_singleton()->_allow_layered = GLOBAL_DEF("display/window/per_pixel_transparency/allowed", false);
+-    video_mode.layered = GLOBAL_DEF("display/window/per_pixel_transparency/enabled", false);
++	OS::get_singleton()->_allow_layered = GLOBAL_DEF("display/window/per_pixel_transparency/allowed", false);
++	video_mode.layered = GLOBAL_DEF("display/window/per_pixel_transparency/enabled", false);
+ */
+ 	GLOBAL_DEF("rendering/quality/intended_usage/framebuffer_allocation", 2);
+ 	GLOBAL_DEF("rendering/quality/intended_usage/framebuffer_allocation.mobile", 3);
+@@ -2464,6 +2464,11 @@ bool Main::iteration() {
+ 
+ 	bool exit = false;
+ 
++#ifdef CUSTOM_ITERATOR
++	exit = custom_iteration(&advance);
++#endif
++
++#ifndef CUSTOM_PHYSICS_ITERATOR
+ 	Engine::get_singleton()->_in_physics = true;
+ 
+ 	for (int iters = 0; iters < advance.physics_steps; ++iters) {
+@@ -2497,6 +2502,7 @@ bool Main::iteration() {
+ 	}
+ 
+ 	Engine::get_singleton()->_in_physics = false;
++#endif
+ 
+ 	uint64_t idle_begin = OS::get_singleton()->get_ticks_usec();
+ 
+@@ -2529,7 +2535,9 @@ bool Main::iteration() {
+ 		ScriptServer::get_language(i)->frame();
+ 	}
+ 
++#ifndef CUSTOM_AUDIO_ITERATOR
+ 	AudioServer::get_singleton()->update();
++#endif
+ 
+ 	if (EngineDebugger::is_active()) {
+ 		EngineDebugger::get_singleton()->iteration(frame_time, idle_process_ticks, physics_process_ticks, frame_slice);
+diff --git a/main/main.h b/main/main.h
+index 168b2e5e86..cac415ad8e 100644
+--- a/main/main.h
++++ b/main/main.h
+@@ -54,6 +54,9 @@ public:
+ #endif
+ 	static bool start();
+ 
++#ifdef CUSTOM_ITERATOR
++	static bool custom_iteration(class MainFrameTime *p_frame_time);
++#endif
+ 	static bool iteration();
+ 	static void force_redraw();
+ 
