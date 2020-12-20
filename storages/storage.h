@@ -5,7 +5,7 @@
 #ifndef STORAGE_H
 #define STORAGE_H
 
-#include "modules/ecs/ecs_types.h"
+#include "../ecs_types.h"
 
 namespace godex {
 class Component;

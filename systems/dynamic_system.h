@@ -3,7 +3,7 @@
 #pragma once
 
 #include "core/templates/local_vector.h"
-#include "modules/ecs/iterators/dynamic_query.h"
+#include "../iterators/dynamic_query.h"
 #include "system.h"
 
 class World;

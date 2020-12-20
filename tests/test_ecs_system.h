@@ -3,12 +3,12 @@
 
 #include "tests/test_macros.h"
 
-#include "modules/ecs/components/dynamic_component.h"
-#include "modules/ecs/components/transform_component.h"
-#include "modules/ecs/ecs.h"
-#include "modules/ecs/pipeline/pipeline.h"
-#include "modules/ecs/systems/dynamic_system.h"
-#include "modules/ecs/world/world.h"
+#include "../components/dynamic_component.h"
+#include "../components/transform_component.h"
+#include "../ecs.h"
+#include "../pipeline/pipeline.h"
+#include "../systems/dynamic_system.h"
+#include "../world/world.h"
 #include "test_utilities.h"
 
 class TagTestComponent : public godex::Component {

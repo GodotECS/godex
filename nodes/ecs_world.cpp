@@ -3,10 +3,10 @@
 
 #include "ecs_world.h"
 
-#include "modules/ecs/ecs.h"
-#include "modules/ecs/nodes/ecs_utilities.h"
-#include "modules/ecs/pipeline/pipeline.h"
-#include "modules/ecs/world/world.h"
+#include "../ecs.h"
+#include "../nodes/ecs_utilities.h"
+#include "../pipeline/pipeline.h"
+#include "../world/world.h"
 
 void PipelineECS::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_pipeline_name", "name"), &PipelineECS::set_pipeline_name);

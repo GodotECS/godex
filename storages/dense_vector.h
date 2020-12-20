@@ -4,7 +4,7 @@
 #define DENSE_VECTOR_H
 
 #include "core/templates/local_vector.h"
-#include "modules/ecs/ecs.h"
+#include "../ecs.h"
 #include "storage.h"
 
 /// Dense vector storage.

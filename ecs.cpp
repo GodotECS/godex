@@ -112,7 +112,7 @@ godex::system_id ECS::register_dynamic_system(StringName p_name, const godex::Dy
 	SystemInfo info = p_info->get_system_info();
 	info.name = p_name;
 	// Used to assign a static function to this dynamic system, check the
-	// DynamicSystem doc to know more (modules/ecs/systems/dynamic_system.h).
+	// DynamicSystem doc to know more (../systems/dynamic_system.h).
 	info.system_func = godex::register_dynamic_system(*p_info);
 
 	systems.push_back(p_name);

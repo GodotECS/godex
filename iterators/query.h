@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "modules/ecs/storages/storage.h"
-#include "modules/ecs/world/world.h"
+#include "../storages/storage.h"
+#include "../world/world.h"
 #include <tuple>
 
 template <class... Cs>

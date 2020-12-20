@@ -6,10 +6,10 @@
 #include "core/object/object.h"
 #include "core/templates/local_vector.h"
 #include "core/templates/oa_hash_map.h"
-#include "modules/ecs/world/world_commands.h"
+#include "world/world_commands.h"
 
-#include "modules/ecs/systems/system.h"
-#include "modules/ecs/systems/system_builder.h"
+#include "systems/system.h"
+#include "systems/system_builder.h"
 
 class World;
 class Pipeline;

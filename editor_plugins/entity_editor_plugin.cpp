@@ -4,8 +4,8 @@
 #include "core/io/marshalls.h"
 #include "editor/editor_properties.h"
 #include "editor/editor_properties_array_dict.h"
-#include "modules/ecs/nodes/ecs_utilities.h"
-#include "modules/ecs/nodes/entity.h"
+#include "../nodes/ecs_utilities.h"
+#include "../nodes/entity.h"
 
 void EntityEditor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("update_editors"), &EntityEditor::update_editors);

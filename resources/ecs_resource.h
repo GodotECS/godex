@@ -4,7 +4,7 @@
 
 #include "core/object/object.h"
 #include "core/templates/oa_hash_map.h"
-#include "modules/ecs/ecs_types.h"
+#include "../ecs_types.h"
 
 #define RESOURCE(m_class)                                                                      \
 	ECSCLASS(m_class)                                                                          \

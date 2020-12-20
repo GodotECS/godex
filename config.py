@@ -7,4 +7,4 @@ def configure(env):
 
 
 def has_custom_iterator():
-	return True
+    return True

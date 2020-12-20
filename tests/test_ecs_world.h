@@ -3,9 +3,9 @@
 
 #include "tests/test_macros.h"
 
-#include "modules/ecs/components/transform_component.h"
-#include "modules/ecs/ecs.h"
-#include "modules/ecs/world/world.h"
+#include "../components/transform_component.h"
+#include "../ecs.h"
+#include "../world/world.h"
 
 namespace godex_tests {
 

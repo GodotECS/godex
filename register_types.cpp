@@ -25,7 +25,7 @@ public:
 	}
 } rep;
 
-void register_ecs_types() {
+void register_godex_types() {
 	godex::DynamicSystemInfo::for_each_name = StringName("_for_each");
 
 	ClassDB::register_class<ECS>();
@@ -50,7 +50,7 @@ void register_ecs_types() {
 	}
 }
 
-void unregister_ecs_types() {
+void unregister_godex_types() {
 	ECS *ecs = ECS::get_singleton();
 	ECS::__set_singleton(nullptr);
 	memdelete(ecs);

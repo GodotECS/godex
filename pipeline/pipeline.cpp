@@ -1,6 +1,6 @@
 #include "pipeline.h"
 
-#include "modules/ecs/world/world.h"
+#include "../world/world.h"
 
 Pipeline::Pipeline() {
 }

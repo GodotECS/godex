@@ -4,7 +4,7 @@
 	@author AndreaCatania
 */
 
-#include "modules/ecs/ecs_types.h"
+#include "../ecs_types.h"
 #include "world.h"
 
 /// Via this class is possible to spawn or destroy entities, add or remove

@@ -1,7 +1,7 @@
 
 #include "world.h"
 
-#include "modules/ecs/ecs.h"
+#include "../ecs.h"
 
 EntityBuilder::EntityBuilder(World *p_world) :
 		world(p_world) {

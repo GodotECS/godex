@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "modules/ecs/iterators/query.h"
-#include "modules/ecs/resources/ecs_resource.h"
+#include "../iterators/query.h"
+#include "../resources/ecs_resource.h"
 #include <type_traits>
 
 // TODO put all this into a CPP or a namespace?

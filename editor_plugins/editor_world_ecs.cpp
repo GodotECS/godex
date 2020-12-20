@@ -2,12 +2,12 @@
 
 #include "editor_world_ecs.h"
 
+#include "../ecs.h"
+#include "../nodes/ecs_utilities.h"
+#include "../nodes/ecs_world.h"
 #include "core/io/resource_loader.h"
 #include "editor/editor_node.h"
 #include "editor/editor_scale.h"
-#include "modules/ecs/ecs.h"
-#include "modules/ecs/nodes/ecs_utilities.h"
-#include "modules/ecs/nodes/ecs_world.h"
 #include "scene/gui/color_rect.h"
 
 SystemInfoBox::SystemInfoBox(EditorNode *p_editor) :
@@ -172,7 +172,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 			pipeline_confirm_remove->set_min_size(Size2i(200, 80));
 			pipeline_confirm_remove->set_title(TTR("Confirm removal"));
 			pipeline_confirm_remove->get_label()->set_text(TTR("Do you want to drop the selected pipeline?"));
-			pipeline_confirm_remove->get_ok()->set_text(TTR("Confirm"));
+			pipeline_confirm_remove->get_ok_button()->set_text(TTR("Confirm"));
 			pipeline_confirm_remove->connect("confirmed", callable_mp(this, &EditorWorldECS::pipeline_remove));
 			add_child(pipeline_confirm_remove);
 		}
@@ -265,7 +265,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		add_sys_window = memnew(ConfirmationDialog);
 		add_sys_window->set_min_size(Size2i(500, 500));
 		add_sys_window->set_title(TTR("Add System"));
-		add_sys_window->get_ok()->set_text(TTR("Add"));
+		add_sys_window->get_ok_button()->set_text(TTR("Add"));
 		add_sys_window->connect("confirmed", callable_mp(this, &EditorWorldECS::add_sys_add));
 		add_child(add_sys_window);
 
@@ -307,7 +307,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		add_script_window->set_min_size(Size2i(500, 180));
 		add_script_window->set_title(TTR("Add script System / Component / Resource"));
 		add_script_window->set_hide_on_ok(false);
-		add_script_window->get_ok()->set_text(TTR("Create"));
+		add_script_window->get_ok_button()->set_text(TTR("Create"));
 		add_script_window->connect("confirmed", callable_mp(this, &EditorWorldECS::add_script_do));
 		add_child(add_script_window);
 

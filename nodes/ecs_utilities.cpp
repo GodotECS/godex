@@ -4,8 +4,8 @@
 #include "core/config/project_settings.h"
 #include "core/io/resource_loader.h"
 #include "core/object/script_language.h"
-#include "modules/ecs/ecs.h"
-#include "modules/ecs/systems/dynamic_system.h"
+#include "../ecs.h"
+#include "../systems/dynamic_system.h"
 
 void System::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("with_resource", "resource_name", "mutability"), &System::with_resource);

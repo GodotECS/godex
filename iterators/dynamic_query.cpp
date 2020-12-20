@@ -1,6 +1,6 @@
 #include "dynamic_query.h"
 
-#include "modules/ecs/ecs.h"
+#include "../ecs.h"
 
 using godex::AccessComponent;
 using godex::DynamicQuery;

@@ -2,7 +2,7 @@
 
 #include "core/string/string_name.h"
 #include "core/templates/local_vector.h"
-#include "modules/ecs/components/component.h"
+#include "../components/component.h"
 
 class World;
 

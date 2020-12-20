@@ -5,7 +5,7 @@
 */
 
 #include "core/templates/local_vector.h"
-#include "modules/ecs/systems/system.h"
+#include "../systems/system.h"
 
 class World;
 

@@ -6,8 +6,8 @@
 
 #include "core/string/string_name.h"
 #include "core/templates/local_vector.h"
-#include "modules/ecs/ecs_types.h"
-#include "modules/ecs/storages/storage.h"
+#include "../ecs_types.h"
+#include "../storages/storage.h"
 
 class Storage;
 class World;
