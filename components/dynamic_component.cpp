@@ -9,7 +9,7 @@ Storage *DynamicComponentInfo::create_storage() {
 			// Creates DynamicDenseVector storage.
 			switch (properties.size()) {
 				case 0:
-					return memnew(DynamicDenseVector<VariantComponent<0>>(this));
+					return memnew(DynamicDenseVector<ZeroVariantComponent>(this));
 				case 1:
 					return memnew(DynamicDenseVector<VariantComponent<1>>(this));
 				case 2:
@@ -56,4 +56,22 @@ Storage *DynamicComponentInfo::create_storage() {
 			CRASH_NOW_MSG("This storage type is not supported. This is not expected!");
 			return nullptr;
 	}
+}
+
+void ZeroVariantComponent::__initialize(DynamicComponentInfo *p_info) {
+	info = p_info;
+	CRASH_COND_MSG(p_info == nullptr, "The component info can't be nullptr.");
+	CRASH_COND_MSG(info->get_properties()->size() != 0, "The ZeroVariantComponent(size: " + itos(0) + ") got created with a ScriptComponentInfo that has " + itos(info->get_properties()->size()) + " parameters, this is not supposed to happen.");
+}
+
+const LocalVector<PropertyInfo> *ZeroVariantComponent::get_properties() const {
+	return info->get_properties();
+}
+
+bool ZeroVariantComponent::set(const StringName &p_name, const Variant &p_data) {
+	return false;
+}
+
+bool ZeroVariantComponent::get(const StringName &p_name, Variant &p_data) const {
+	return false;
 }

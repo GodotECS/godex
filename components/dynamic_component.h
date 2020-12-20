@@ -43,6 +43,20 @@ public:
 	}
 };
 
+/// The `ZeroVariantComponent` is a special type component designed for godot
+/// scripts. This component have no variables.
+class ZeroVariantComponent : public godex::Component {
+	DynamicComponentInfo *info = nullptr;
+
+public:
+	ZeroVariantComponent() {}
+	void __initialize(DynamicComponentInfo *p_info);
+
+	virtual const LocalVector<PropertyInfo> *get_properties() const override;
+	virtual bool set(const StringName &p_name, const Variant &p_data) override;
+	virtual bool get(const StringName &p_name, Variant &p_data) const override;
+};
+
 /// The `VariantComponent` is a special type component designed for godot
 /// scripts. The components are stored consecutively.
 template <int SIZE>
