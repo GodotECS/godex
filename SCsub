@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import methods_ecs
+
 Import("env")
 Import("env_modules")
 
@@ -18,3 +20,5 @@ ecs.add_source_files(env.modules_sources, "*.cpp")
 
 ecs.add_source_files(env.modules_sources, "editor_plugins/*.cpp")
 
+
+methods_ecs.generate_dynamic_system_funcs()

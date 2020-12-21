@@ -1,26 +1,8 @@
 #include "dynamic_system.h"
 
-// gen
-// TODO generate in a separate files, 200 elements of this.
-#define DYNAMIC_SYSTEMS_MAX 1
-uint32_t registered_dynamic_system_count = 0;
-godex::DynamicSystemInfo dynamic_info[DYNAMIC_SYSTEMS_MAX];
-
-void dynamic_system_internal_0(World *p_world) {
-	godex::DynamicSystemInfo::executor(p_world, dynamic_info[0]);
-}
-
-system_execute dynamic_systems_ptr[DYNAMIC_SYSTEMS_MAX] = {
-	dynamic_system_internal_0,
-};
-
-system_execute godex::register_dynamic_system(const DynamicSystemInfo &p_info) {
-	const uint32_t id = registered_dynamic_system_count++;
-	CRASH_COND_MSG(id >= DYNAMIC_SYSTEMS_MAX, "You can't register more than " + itos(DYNAMIC_SYSTEMS_MAX) + " dynamic systems. Please open an issue so we can increase this limit.");
-	dynamic_info[id] = p_info;
-	return dynamic_systems_ptr[id];
-}
-// ~gen
+// This include contains the function needed to convert a script system to a
+// compile time system.
+#include "dynamic_system.gen.h"
 
 godex::DynamicSystemInfo::DynamicSystemInfo() {}
 
