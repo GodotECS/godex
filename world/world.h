@@ -4,10 +4,10 @@
 	@author AndreaCatania
 */
 
-#include "core/string/string_name.h"
-#include "core/templates/local_vector.h"
 #include "../ecs_types.h"
 #include "../storages/storage.h"
+#include "core/string/string_name.h"
+#include "core/templates/local_vector.h"
 
 class Storage;
 class World;
@@ -88,10 +88,18 @@ public:
 	template <class C>
 	void add_component(EntityID p_entity, const C &p_data);
 
+	template <class C>
+	void remove_component(EntityID p_entity);
+
+	template <class C>
+	bool has_component(EntityID p_entity) const;
+
 	/// Adds a new component using the component id and  a `Dictionary` that
 	/// contains the initialization parameters.
 	/// Usually this function is used to initialize the script components.
 	void add_component(EntityID p_entity, uint32_t p_component_id, const Dictionary &p_data);
+	void remove_component(EntityID p_entity, uint32_t p_component_id);
+	bool has_component(EntityID p_entity, uint32_t p_component_id) const;
 
 	/// Returns the const storage pointed by the give ID.
 	const Storage *get_storage(uint32_t p_storage_id) const;
@@ -144,6 +152,16 @@ void World::add_component(EntityID p_entity, const C &p_data) {
 	TypedStorage<C> *storage = get_storage<C>();
 	ERR_FAIL_COND(storage == nullptr);
 	storage->insert(p_entity, p_data);
+}
+
+template <class C>
+void World::remove_component(EntityID p_entity) {
+	remove_component(p_entity, C::get_component_id());
+}
+
+template <class C>
+bool World::has_component(EntityID p_entity) const {
+	return has_component(p_entity, C::get_component_id());
 }
 
 template <class C>

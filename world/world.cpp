@@ -47,10 +47,24 @@ void World::add_component(EntityID p_entity, uint32_t p_component_id, const Dict
 	storage->insert_dynamic(p_entity, p_data);
 }
 
+void World::remove_component(EntityID p_entity, uint32_t p_component_id) {
+	Storage *storage = get_storage(p_component_id);
+	ERR_FAIL_COND(storage == nullptr);
+	storage->remove(p_entity);
+}
+
+bool World::has_component(EntityID p_entity, uint32_t p_component_id) const {
+	const Storage *storage = get_storage(p_component_id);
+	if (unlikely(storage == nullptr)) {
+		return false;
+	}
+	return storage->has(p_entity);
+}
+
 const Storage *World::get_storage(uint32_t p_storage_id) const {
 	ERR_FAIL_COND_V_MSG(p_storage_id == UINT32_MAX, nullptr, "The component is not registered.");
 
-	if (p_storage_id >= storages.size() || storages[p_storage_id] == nullptr) {
+	if (unlikely(p_storage_id >= storages.size())) {
 		return nullptr;
 	}
 
@@ -58,7 +72,7 @@ const Storage *World::get_storage(uint32_t p_storage_id) const {
 }
 
 Storage *World::get_storage(uint32_t p_storage_id) {
-	if (p_storage_id >= storages.size() || storages[p_storage_id] == nullptr) {
+	if (unlikely(p_storage_id >= storages.size())) {
 		return nullptr;
 	}
 

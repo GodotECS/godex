@@ -1,11 +1,11 @@
 /* Author: AndreaCatania */
 
 #include "entity_editor_plugin.h"
+#include "../nodes/ecs_utilities.h"
+#include "../nodes/entity.h"
 #include "core/io/marshalls.h"
 #include "editor/editor_properties.h"
 #include "editor/editor_properties_array_dict.h"
-#include "../nodes/ecs_utilities.h"
-#include "../nodes/entity.h"
 
 void EntityEditor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("update_editors"), &EntityEditor::update_editors);
@@ -589,16 +589,16 @@ void EntityEditor::_add_component_pressed(uint32_t p_index) {
 	}
 
 	editor->get_undo_redo()->create_action(TTR("Add component"));
-	editor->get_undo_redo()->add_do_method(entity, "add_component_data", component_name);
+	editor->get_undo_redo()->add_do_method(entity, "add_component", component_name);
 	editor->get_undo_redo()->add_do_method(this, "update_editors");
-	editor->get_undo_redo()->add_undo_method(entity, "remove_component_data", component_name);
+	editor->get_undo_redo()->add_undo_method(entity, "remove_component", component_name);
 	editor->get_undo_redo()->add_undo_method(this, "update_editors");
 	editor->get_undo_redo()->commit_action();
 }
 
 void EntityEditor::_remove_component_pressed(StringName p_component_name) {
 	editor->get_undo_redo()->create_action(TTR("Drop component"));
-	editor->get_undo_redo()->add_do_method(entity, "remove_component_data", p_component_name);
+	editor->get_undo_redo()->add_do_method(entity, "remove_component", p_component_name);
 	editor->get_undo_redo()->add_do_method(this, "update_editors");
 	// Undo by setting the old component data, so to not lost the parametes.
 	editor->get_undo_redo()->add_undo_method(entity, "__set_components_data", entity->get_components_data().duplicate(true));
