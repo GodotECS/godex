@@ -769,7 +769,7 @@ void EditorWorldECS::add_script_do() {
 
 	ProjectSettings::get_singleton()->set_setting(script_setting_path, scripts);
 	// Make this component available to the system.
-	ScriptECS::reload_component(script_setting_path);
+	ScriptECS::reload_component(script_path);
 
 	add_script_path->set_text("");
 	add_script_window->set_visible(false);
