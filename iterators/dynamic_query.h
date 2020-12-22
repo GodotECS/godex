@@ -1,8 +1,8 @@
 #pragma once
 
+#include "../components/component.h"
 #include "core/string/string_name.h"
 #include "core/templates/local_vector.h"
-#include "../components/component.h"
 
 class World;
 

@@ -3,8 +3,8 @@
 #ifndef DENSE_VECTOR_H
 #define DENSE_VECTOR_H
 
-#include "core/templates/local_vector.h"
 #include "../ecs.h"
+#include "core/templates/local_vector.h"
 #include "storage.h"
 
 /// Dense vector storage.
@@ -140,7 +140,7 @@ void DynamicDenseVector<T>::insert_dynamic(EntityID p_entity, const Dictionary &
 
 	// Set the custom data if any
 	for (const Variant *key = p_data.next(); key; key = p_data.next(key)) {
-		this->data[index].set(*key, *p_data.getptr(*key));
+		this->data[index].set(StringName(*key), *p_data.getptr(*key));
 	}
 }
 

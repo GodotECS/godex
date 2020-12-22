@@ -75,3 +75,11 @@ bool ZeroVariantComponent::set(const StringName &p_name, const Variant &p_data) 
 bool ZeroVariantComponent::get(const StringName &p_name, Variant &p_data) const {
 	return false;
 }
+
+bool ZeroVariantComponent::set(const uint32_t p_index, const Variant &p_data) {
+	return false;
+}
+
+bool ZeroVariantComponent::get(const uint32_t p_index, Variant &p_data) const {
+	return false;
+}
