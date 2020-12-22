@@ -22,20 +22,28 @@ void Entity::_bind_methods() {
 
 bool Entity::_set(const StringName &p_name, const Variant &p_value) {
 	const Vector<String> names = String(p_name).split("/");
-	ERR_FAIL_COND_V(names.size() < 2, false);
-	const String component_name = names[0];
-	const String property_name = names[1];
+	if (names.size() == 1) {
+		return set_component(p_name, p_value);
+	} else {
+		ERR_FAIL_COND_V(names.size() < 2, false);
+		const String component_name = names[0];
+		const String property_name = names[1];
 
-	return set_component_value(component_name, property_name, p_value);
+		return set_component_value(component_name, property_name, p_value);
+	}
 }
 
 bool Entity::_get(const StringName &p_name, Variant &r_ret) const {
 	const Vector<String> names = String(p_name).split("/");
-	ERR_FAIL_COND_V(names.size() < 2, false);
-	const String component_name = names[0];
-	const String property_name = names[1];
+	if (names.size() == 1) {
+		return _get_component(p_name, r_ret);
+	} else {
+		ERR_FAIL_COND_V(names.size() < 2, false);
+		const String component_name = names[0];
+		const String property_name = names[1];
 
-	return _get_component_value(component_name, property_name, r_ret);
+		return _get_component_value(component_name, property_name, r_ret);
+	}
 }
 
 Entity::Entity() :
@@ -186,6 +194,115 @@ bool Entity::_get_component_value(StringName p_component_name, StringName p_prop
 		const godex::Component *component = storage->get_ptr(entity_id);
 		ERR_FAIL_COND_V_MSG(component == nullptr, false, "The entity " + itos(entity_id) + " doesn't have a component " + p_component_name);
 		return component->get(p_property_name, r_ret);
+	}
+}
+
+bool Entity::set_component(StringName p_component_name, const Variant &d_data) {
+	Dictionary data = d_data;
+
+	if (entity_id.is_null()) {
+		const Variant *component_properties = components_data.getptr(p_component_name);
+		if (component_properties == nullptr) {
+			components_data[p_component_name] = Dictionary();
+			component_properties = components_data.getptr(p_component_name);
+		}
+		for (const Variant *key = data.next(nullptr); key != nullptr; key = data.next(key)) {
+			(component_properties->operator Dictionary())[*key] = *data.getptr(*key);
+		}
+		return true;
+	} else {
+		// This entity exist on a world, just fetch the component.
+
+		ERR_FAIL_COND_V_MSG(ECS::get_singleton()->has_active_world() == false, false, "The world is supposed to be active at this point.");
+		const godex::component_id id = ECS::get_component_id(p_component_name);
+		ERR_FAIL_COND_V_MSG(id == UINT32_MAX, false, "The component " + p_component_name + " doesn't exists.");
+		Storage *storage = ECS::get_singleton()->get_active_world()->get_storage(id);
+		ERR_FAIL_COND_V_MSG(storage == nullptr, false, "The component " + p_component_name + " doesn't have a storage on the active world.");
+		godex::Component *component = storage->get_ptr(entity_id);
+		ERR_FAIL_COND_V_MSG(component == nullptr, false, "The entity " + itos(entity_id) + " doesn't have a component " + p_component_name);
+
+		for (const Variant *key = data.next(nullptr); key != nullptr; key = data.next(key)) {
+			component->set(StringName(*key), *data.getptr(*key));
+		}
+		return true;
+	}
+}
+
+bool Entity::_get_component(StringName p_component_name, Variant &r_ret) const {
+	if (entity_id.is_null()) {
+		// Entity is null, so take default or set what we have in `component_data`.
+		Dictionary dic;
+
+		const Variant *component_properties = components_data.getptr(p_component_name);
+		ERR_FAIL_COND_V_MSG(component_properties == nullptr, Variant(), "The component " + p_component_name + " doesn't exist on this entity: " + get_path());
+
+		if (String(p_component_name).ends_with(".gd")) {
+			// TODO this is simply not optimal.
+
+			// This is a Script Component.
+			const uint32_t id = ScriptECS::get_component_id(p_component_name);
+			ERR_FAIL_COND_V_MSG(id == UINT32_MAX, false, "The script component " + p_component_name + " was not found.");
+			Ref<Component> c = ScriptECS::get_component(id);
+			List<PropertyInfo> properties;
+			c->get_component_property_list(&properties);
+
+			for (List<PropertyInfo>::Element *e = properties.front(); e; e = e->next()) {
+				const Variant *value = (component_properties->operator Dictionary()).getptr(e->get().name);
+				if (value) {
+					// Just set the value in the data.
+					dic[e->get().name] = *value;
+				} else {
+					// TODO Instead this is extremely bad.
+					// Just take the default value.
+					dic[e->get().name] = c->get_property_default_value(e->get().name);
+				}
+			}
+
+		} else {
+			// This is a native Component.
+
+			const godex::component_id id = ECS::get_component_id(p_component_name);
+			ERR_FAIL_COND_V_MSG(id == UINT32_MAX, false, "The component " + p_component_name + " doesn't exists.");
+			const LocalVector<PropertyInfo> *properties = ECS::get_component_properties(id);
+			for (uint32_t i = 0; i < properties->size(); i += 1) {
+				const Variant *value = (component_properties->operator Dictionary()).getptr((*properties)[i].name);
+				if (value) {
+					// Just set the value in the data.
+					dic[(*properties)[i].name] = *value;
+				} else {
+					// TODO Instead this is extremely bad.
+					// Just take the default value.
+					dic[(*properties)[i].name] = ECS::get_component_property_default(id, (*properties)[i].name);
+				}
+			}
+		}
+
+		r_ret = dic;
+		return true;
+
+	} else {
+		// This entity exist on a world, just fetch the component.
+
+		ERR_FAIL_COND_V_MSG(ECS::get_singleton()->has_active_world() == false, false, "The world is supposed to be active at this point.");
+		const godex::component_id id = ECS::get_component_id(p_component_name);
+		ERR_FAIL_COND_V_MSG(id == UINT32_MAX, false, "The component " + p_component_name + " doesn't exists.");
+		const Storage *storage = ECS::get_singleton()->get_active_world()->get_storage(id);
+		ERR_FAIL_COND_V_MSG(storage == nullptr, false, "The component " + p_component_name + " doesn't have a storage on the active world.");
+		const godex::Component *component = storage->get_ptr(entity_id);
+		ERR_FAIL_COND_V_MSG(component == nullptr, false, "The entity " + itos(entity_id) + " doesn't have a component " + p_component_name);
+
+		Dictionary dic;
+		Variant supp;
+		for (uint32_t i = 0; i < component->get_properties()->size(); i += 1) {
+			if (likely(component->get(i, supp))) {
+				dic[(*component->get_properties())[i].name] = supp;
+			} else {
+				dic[(*component->get_properties())[i].name] = Variant();
+			}
+		}
+
+		r_ret = dic;
+		return true;
 	}
 }
 

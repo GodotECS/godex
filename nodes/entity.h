@@ -37,6 +37,9 @@ public:
 	Variant get_component_value(StringName p_component_name, StringName p_property_name) const;
 	bool _get_component_value(StringName p_component_name, StringName p_property_name, Variant &r_ret) const;
 
+	bool set_component(StringName p_component_name, const Variant &d_ret);
+	bool _get_component(StringName p_component_name, Variant &r_ret) const;
+
 private:
 	void create_entity();
 	void destroy_entity();
