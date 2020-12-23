@@ -123,11 +123,16 @@ public:
 	template <class C>
 	TypedStorage<C> *get_storage();
 
-	/// Adds a new resource or updates it if already exists.
+	/// Adds a new resource or does nothing.
 	template <class R>
 	R &add_resource();
 
 	void add_resource(godex::resource_id p_id);
+
+	template <class R>
+	void remove_resource();
+
+	void remove_resource(godex::resource_id p_id);
 
 	/// Retuns a resource pointer.
 	template <class R>
@@ -200,15 +205,18 @@ TypedStorage<C> *World::get_storage() {
 template <class R>
 R &World::add_resource() {
 	const godex::resource_id id = R::get_resource_id();
-	CRASH_COND_MSG(id == UINT32_MAX, "The resource is not registered.");
 
 	add_resource(id);
-#ifdef DEBUG_ENABLED
-	// At this point, the above function, always creates the resource.
-	CRASH_COND(resources[id] == nullptr);
-#endif
+	// This function is never supposed to fail.
+	CRASH_COND_MSG(resources[id] == nullptr, "The function `add_resource` is not supposed to fail, is this resource registered?");
 
 	return *static_cast<R *>(resources[id]);
+}
+
+template <class R>
+void World::remove_resource() {
+	const godex::resource_id id = R::get_resource_id();
+	remove_resource(id);
 }
 
 template <class C>

@@ -15,6 +15,13 @@ class TagTestComponent : public godex::Component {
 	COMPONENT(TagTestComponent, DenseVector)
 };
 
+struct TestSystem1Resource : public godex::Resource {
+	RESOURCE(TestSystem1Resource)
+
+public:
+	int a = 10;
+};
+
 namespace godex_tests {
 
 void test_system_tag(Query<TransformComponent, const TagTestComponent> &p_query) {
@@ -23,6 +30,14 @@ void test_system_tag(Query<TransformComponent, const TagTestComponent> &p_query)
 		transform.transform.origin.x += 100.0;
 		p_query.next_entity();
 	}
+}
+
+void test_system_with_resource(TestSystem1Resource *test_res, Query<TransformComponent, const TagTestComponent> &p_query) {
+	test_res->a += 10;
+}
+
+void test_system_with_null_resource(TestSystem1Resource *test_res) {
+	CRASH_COND(test_res != nullptr);
 }
 
 TEST_CASE("[Modules][ECS] Test system and query") {
@@ -161,7 +176,50 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 }
 
 TEST_CASE("[Modules][ECS] Test system and resource") {
-	// TODO
+	ECS::register_resource<TestSystem1Resource>();
+
+	World world;
+
+	world.add_resource<TestSystem1Resource>();
+
+	// Test with resource
+	{
+		// Confirm the resource is initialized.
+		CHECK(world.get_resource<TestSystem1Resource>()->a == 10);
+
+		// Create the pipeline.
+		Pipeline pipeline;
+		// Add the system to the pipeline.
+		pipeline.add_system(test_system_with_resource);
+
+		// Dispatch
+		for (uint32_t i = 0; i < 3; i += 1) {
+			pipeline.dispatch(&world);
+		}
+
+		CHECK(world.get_resource<TestSystem1Resource>()->a == 40);
+	}
+
+	// Test without resource
+	{
+		world.remove_resource<TestSystem1Resource>();
+
+		// Confirm the resource doesn't exists.
+		CHECK(world.get_resource<TestSystem1Resource>() == nullptr);
+
+		// Create the pipeline.
+		Pipeline pipeline;
+		// Add the system to the pipeline.
+		pipeline.add_system(test_system_with_null_resource);
+
+		// Dispatch
+		for (uint32_t i = 0; i < 3; i += 1) {
+			pipeline.dispatch(&world);
+		}
+
+		// Make sure the resource is still nullptr.
+		CHECK(world.get_resource<TestSystem1Resource>() == nullptr);
+	}
 }
 
 TEST_CASE("[Modules][ECS] Test system and resource") {

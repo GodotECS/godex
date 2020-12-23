@@ -11,6 +11,16 @@
 	friend class World;                                                                        \
 																							   \
 private:                                                                                       \
+	/* Creation */                                                                             \
+	static _FORCE_INLINE_ m_class *create_resource() {                                         \
+		return memnew(m_class);                                                                \
+	}                                                                                          \
+	static _FORCE_INLINE_ godex::Resource *create_resource_no_type() {                         \
+		/* Creates a storage but returns a generic component. */                               \
+		return create_resource();                                                              \
+	}                                                                                          \
+																							   \
+	/* Resource */                                                                             \
 	static inline uint32_t resource_id = UINT32_MAX;                                           \
 																							   \
 public:                                                                                        \
