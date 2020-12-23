@@ -58,3 +58,9 @@ struct ScriptProperty {
 	PropertyInfo property;
 	Variant default_value;
 };
+
+namespace godex {
+typedef uint32_t component_id;
+typedef uint32_t resource_id;
+typedef uint32_t system_id;
+} // namespace godex

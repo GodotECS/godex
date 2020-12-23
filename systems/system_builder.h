@@ -45,7 +45,7 @@ template <class C, class... Cs>
 struct InfoConstructor<C, Cs...> : InfoConstructor<Cs...> {
 	InfoConstructor(SystemInfo &r_info) :
 			InfoConstructor<Cs...>(r_info) {
-		extract_info<std::remove_reference_t<C>>(is_specialization<std::remove_reference_t<C>, Query>(), r_info);
+		extract_info<std::remove_reference_t<std::remove_pointer_t<C>>>(is_specialization<std::remove_reference_t<std::remove_pointer_t<C>>, Query>(), r_info);
 	}
 };
 
@@ -82,11 +82,11 @@ Container<C> obtain_query_or_resource(bool_type<true>, World *p_world) {
 }
 
 template <class C>
-Container<C &> obtain_query_or_resource(bool_type<false>, World *p_world) {
-	return Container<C &>(p_world->get_resource<C>());
+Container<C *> obtain_query_or_resource(bool_type<false>, World *p_world) {
+	return Container<C *>(p_world->get_resource<C>());
 }
 
-#define OBTAIN(name, T, world) auto name = obtain_query_or_resource<std::remove_reference_t<T>>(is_specialization<std::remove_reference_t<T>, Query>(), world);
+#define OBTAIN(name, T, world) auto name = obtain_query_or_resource<std::remove_reference_t<std::remove_pointer_t<T>>>(is_specialization<std::remove_reference_t<std::remove_pointer_t<T>>, Query>(), world);
 
 // ~~~~ system_exec_func definition ~~~~ //
 

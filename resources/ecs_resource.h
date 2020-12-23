@@ -2,9 +2,9 @@
 
 /* Author: AndreaCatania */
 
+#include "../ecs_types.h"
 #include "core/object/object.h"
 #include "core/templates/oa_hash_map.h"
-#include "../ecs_types.h"
 
 #define RESOURCE(m_class)                                                                      \
 	ECSCLASS(m_class)                                                                          \
@@ -34,13 +34,17 @@ private:                                                                        
 																							   \
 private:
 
-class ECSResource : public ECSClass {
-	ECSCLASS(ECSResource)
+namespace godex {
+
+class Resource : public ECSClass {
+	ECSCLASS(Resource)
 
 public:
-	ECSResource();
+	Resource();
 
 public:
 	static void _bind_properties();
 	virtual OAHashMap<StringName, PropertyInfo> *get_properties() const;
 };
+
+} // namespace godex

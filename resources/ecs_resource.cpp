@@ -2,12 +2,11 @@
 
 /** @author AndreaCatania */
 
-ECSResource::ECSResource() {
-}
+godex::Resource::Resource() {}
 
-void ECSResource::_bind_properties() {}
+void godex::Resource::_bind_properties() {}
 
-OAHashMap<StringName, PropertyInfo> *ECSResource::get_properties() const {
+OAHashMap<StringName, PropertyInfo> *godex::Resource::get_properties() const {
 	CRASH_NOW_MSG("The resource class must always be tagged using the macro `RESOURCE()`.");
 	return nullptr;
 }

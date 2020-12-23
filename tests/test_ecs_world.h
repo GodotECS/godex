@@ -148,6 +148,8 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 		CHECK(test_component->get("variable_2") == Variant(false));
 		CHECK(ABS(test_component->get("variable_3").operator Transform().origin.x - (-10.)) <= CMP_EPSILON);
 	}
+
+	// ~~ Test resource initialization ~~
 }
 
 } // namespace godex_tests

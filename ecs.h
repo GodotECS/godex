@@ -14,13 +14,9 @@
 class World;
 class Pipeline;
 class DynamicComponentInfo;
+
 namespace godex {
-
 class DynamicSystemInfo;
-
-typedef uint32_t component_id;
-typedef uint32_t resource_id;
-typedef uint32_t system_id;
 } // namespace godex
 
 // These functions are implemented by the `COMPONENT` macro and assigned during
