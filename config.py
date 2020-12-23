@@ -11,8 +11,7 @@ def has_custom_iterator():
 
 
 def has_custom_physics_iterator():
-    # TODO enable custom iterator once the physics process system is integrated
-    return False
+    return True
 
 
 def has_custom_audio_iterator():

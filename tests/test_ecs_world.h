@@ -7,6 +7,13 @@
 #include "../ecs.h"
 #include "../world/world.h"
 
+struct Test1Resource : public godex::Resource {
+	RESOURCE(Test1Resource)
+
+public:
+	int a = 10;
+};
+
 namespace godex_tests {
 
 TEST_CASE("[Modules][ECS] Test world") {
@@ -147,6 +154,30 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 		// Make sure the default is set, and not the `Vector3()`.
 		CHECK(test_component->get("variable_2") == Variant(false));
 		CHECK(ABS(test_component->get("variable_3").operator Transform().origin.x - (-10.)) <= CMP_EPSILON);
+	}
+
+	// ~~ Test resource initialization ~~
+	{
+		ECS::register_resource<Test1Resource>();
+
+		// Make sure the resource is null.
+		CHECK(world.get_resource<Test1Resource>() == nullptr);
+		CHECK(world.get_resource(Test1Resource::get_resource_id()) == nullptr);
+
+		// Add the resource
+		world.add_resource<Test1Resource>();
+
+		// Make sure we can retrieve the resource.
+		CHECK(world.get_resource<Test1Resource>() != nullptr);
+		CHECK(world.get_resource(Test1Resource::get_resource_id()) != nullptr);
+		CHECK(world.get_resource<Test1Resource>() == world.get_resource(Test1Resource::get_resource_id()));
+
+		// Now remove it.
+		world.remove_resource<Test1Resource>();
+
+		// Make sure the resource is now nullptr.
+		CHECK(world.get_resource<Test1Resource>() == nullptr);
+		CHECK(world.get_resource(Test1Resource::get_resource_id()) == nullptr);
 	}
 }
 

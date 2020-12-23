@@ -12,6 +12,7 @@ ECS *ECS::singleton = nullptr;
 LocalVector<StringName> ECS::components;
 LocalVector<ComponentInfo> ECS::components_info;
 LocalVector<StringName> ECS::resources;
+LocalVector<ResourceInfo> ECS::resources_info;
 LocalVector<StringName> ECS::systems;
 LocalVector<SystemInfo> ECS::systems_info;
 
@@ -65,6 +66,18 @@ Variant ECS::get_component_property_default(uint32_t p_component_id, StringName 
 		// Native
 		return components_info[p_component_id].get_property_default(p_property_name);
 	}
+}
+
+bool ECS::verify_resource_id(godex::resource_id p_id) {
+	return p_id < resources.size();
+}
+
+godex::Resource *ECS::create_resource(godex::resource_id p_id) {
+#ifdef DEBUG_ENABLED
+	// Crash cond because this function is not supposed to fail in any way.
+	CRASH_COND_MSG(ECS::verify_resource_id(p_id) == false, "This resource id " + itos(p_id) + " is not valid.");
+#endif
+	return resources_info[p_id].create_resource();
 }
 
 const LocalVector<StringName> &ECS::get_registered_resources() {

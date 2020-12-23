@@ -2,15 +2,25 @@
 
 /* Author: AndreaCatania */
 
+#include "../ecs_types.h"
 #include "core/object/object.h"
 #include "core/templates/oa_hash_map.h"
-#include "../ecs_types.h"
 
 #define RESOURCE(m_class)                                                                      \
 	ECSCLASS(m_class)                                                                          \
 	friend class World;                                                                        \
 																							   \
 private:                                                                                       \
+	/* Creation */                                                                             \
+	static _FORCE_INLINE_ m_class *create_resource() {                                         \
+		return memnew(m_class);                                                                \
+	}                                                                                          \
+	static _FORCE_INLINE_ godex::Resource *create_resource_no_type() {                         \
+		/* Creates a storage but returns a generic component. */                               \
+		return create_resource();                                                              \
+	}                                                                                          \
+																							   \
+	/* Resource */                                                                             \
 	static inline uint32_t resource_id = UINT32_MAX;                                           \
 																							   \
 public:                                                                                        \
@@ -34,13 +44,17 @@ private:                                                                        
 																							   \
 private:
 
-class ECSResource : public ECSClass {
-	ECSCLASS(ECSResource)
+namespace godex {
+
+class Resource : public ECSClass {
+	ECSCLASS(Resource)
 
 public:
-	ECSResource();
+	Resource();
 
 public:
 	static void _bind_properties();
 	virtual OAHashMap<StringName, PropertyInfo> *get_properties() const;
 };
+
+} // namespace godex

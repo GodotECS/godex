@@ -5,13 +5,17 @@
 */
 
 #include "../ecs_types.h"
+//#include "../resources/ecs_resource.h"
 #include "../storages/storage.h"
 #include "core/string/string_name.h"
 #include "core/templates/local_vector.h"
 
 class Storage;
 class World;
-class ECSResource;
+
+namespace godex {
+class Resource;
+}
 
 /// Utility that can be used to create an entity with components.
 /// You can use it in this way:
@@ -47,7 +51,7 @@ public:
 
 class World {
 	LocalVector<Storage *> storages;
-	LocalVector<ECSResource *> resources;
+	LocalVector<godex::Resource *> resources;
 	uint32_t entity_count = 0;
 	EntityBuilder entity_builder = EntityBuilder(this);
 
@@ -119,12 +123,30 @@ public:
 	template <class C>
 	TypedStorage<C> *get_storage();
 
-	/// Adds a new resource or updates it if already exists.
+	/// Adds a new resource or does nothing.
 	template <class R>
-	void add_resource(const R &p_resource);
+	R &add_resource();
+
+	void add_resource(godex::resource_id p_id);
 
 	template <class R>
-	R &get_resource();
+	void remove_resource();
+
+	void remove_resource(godex::resource_id p_id);
+
+	/// Retuns a resource pointer.
+	template <class R>
+	R *get_resource();
+
+	/// Retuns a resource pointer.
+	template <class R>
+	const R *get_resource() const;
+
+	/// Retuns a resource pointer.
+	godex::Resource *get_resource(godex::resource_id p_id);
+
+	/// Retuns a resource pointer.
+	const godex::Resource *get_resource(godex::resource_id p_id) const;
 
 private:
 	/// Creates a new component storage into the world, if the storage
@@ -181,35 +203,20 @@ TypedStorage<C> *World::get_storage() {
 }
 
 template <class R>
-void World::add_resource(const R &p_resource) {
-	const uint32_t id = R::get_resource_id();
-	ERR_FAIL_COND_MSG(id == UINT32_MAX, "The resource is not registered.");
+R &World::add_resource() {
+	const godex::resource_id id = R::get_resource_id();
 
-	if (id >= resources.size()) {
-		const uint32_t start = resources.size();
-		resources.resize(id + 1);
-		for (uint32_t i = start; i < resources.size(); i += 1) {
-			resources[i] = nullptr;
-		}
-	}
+	add_resource(id);
+	// This function is never supposed to fail.
+	CRASH_COND_MSG(resources[id] == nullptr, "The function `add_resource` is not supposed to fail, is this resource registered?");
 
-	if (resources[id] == nullptr) {
-		resources[id] = memnew(R());
-	}
-
-	(*resources[id]) = p_resource;
+	return *static_cast<R *>(resources[id]);
 }
 
 template <class R>
-R &World::get_resource() {
-	const uint32_t id = R::get_resource_id();
-	CRASH_COND_MSG(id == UINT32_MAX, "The resource is not registered.");
-
-	if (unlikely(id >= resources.size() || resources[id] == nullptr)) {
-		add_resource(R());
-	}
-
-	return *static_cast<R *>(resources[id]);
+void World::remove_resource() {
+	const godex::resource_id id = R::get_resource_id();
+	remove_resource(id);
 }
 
 template <class C>
@@ -220,4 +227,28 @@ void World::create_storage() {
 template <class C>
 void World::destroy_storage() {
 	destroy_storage(C::get_component_id());
+}
+
+template <class R>
+R *World::get_resource() {
+	const godex::resource_id id = R::get_resource_id();
+	godex::Resource *r = get_resource(id);
+
+	if (unlikely(r == nullptr)) {
+		return nullptr;
+	}
+
+	return static_cast<R *>(r);
+}
+
+template <class R>
+const R *World::get_resource() const {
+	const godex::resource_id id = R::get_resource_id();
+	const godex::Resource *r = get_resource(id);
+
+	if (unlikely(r == nullptr)) {
+		return nullptr;
+	}
+
+	return static_cast<const R *>(r);
 }

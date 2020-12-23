@@ -14,6 +14,8 @@
 #include "editor_plugins/editor_world_ecs.h"
 #include "editor_plugins/entity_editor_plugin.h"
 
+#include "systems/physics_process_system.h"
+
 // TODO improve this workflow once the new pipeline is integrated.
 class REP : public Object {
 public:
@@ -40,14 +42,21 @@ void register_godex_types() {
 	ECS::__set_singleton(ecs);
 	Engine::get_singleton()->add_singleton(Engine::Singleton("ECS", ecs));
 
-	// Register components
-	ECS::register_component<MeshComponent>();
-	ECS::register_component<TransformComponent>();
-
 	// Register editor plugins
 	if (Engine::get_singleton()->is_editor_hint()) {
 		MessageQueue::get_singleton()->push_callable(callable_mp(&rep, &REP::register_editor_plugins));
 	}
+
+	// ~ Register engine components ~
+	ECS::register_component<MeshComponent>();
+	ECS::register_component<TransformComponent>();
+
+	// ~ Register engine resources ~
+	ECS::register_resource<Physics3DServerResource>();
+
+	// ~ Register engine systems ~
+	//ECS::register_system(physics_2d_process_system, "Physics2dProcessSystem", "Steps the physics 2D [not yet implemented].");
+	ECS::register_system(physics_3d_process_system, "Physics3dProcessSystem", "Steps the physics.");
 }
 
 void unregister_godex_types() {

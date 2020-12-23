@@ -14,22 +14,25 @@
 class World;
 class Pipeline;
 class DynamicComponentInfo;
+
 namespace godex {
-
+class Resource;
 class DynamicSystemInfo;
-
-typedef uint32_t component_id;
-typedef uint32_t resource_id;
-typedef uint32_t system_id;
 } // namespace godex
 
-// These functions are implemented by the `COMPONENT` macro and assigned during
-// component registration.
+/// These functions are implemented by the `COMPONENT` macro and assigned during
+/// component registration.
 struct ComponentInfo {
 	LocalVector<PropertyInfo> *(*get_properties)();
 	Variant (*get_property_default)(StringName p_property_name);
 	Storage *(*create_storage)();
 	DynamicComponentInfo *dynamic_component_info = nullptr;
+};
+
+/// These functions are implemented by the `RESOURCE` macro and assigned during
+/// component registration.
+struct ResourceInfo {
+	godex::Resource *(*create_resource)();
 };
 
 class ECS : public Object {
@@ -42,6 +45,7 @@ class ECS : public Object {
 	static LocalVector<ComponentInfo> components_info;
 
 	static LocalVector<StringName> resources;
+	static LocalVector<ResourceInfo> resources_info;
 
 	static LocalVector<StringName> systems;
 	static LocalVector<SystemInfo> systems_info;
@@ -71,6 +75,9 @@ public:
 	template <class C>
 	static void register_resource();
 
+	static bool verify_resource_id(godex::resource_id p_id);
+
+	static godex::Resource *create_resource(godex::resource_id p_id);
 	static const LocalVector<StringName> &get_registered_resources();
 	static godex::resource_id get_resource_id(const StringName &p_name);
 	static StringName get_resource_name(godex::resource_id p_resource_id);
@@ -162,4 +169,6 @@ void ECS::register_resource() {
 	R::resource_id = resources.size();
 	R::_bind_properties();
 	resources.push_back(resource_name);
+	resources_info.push_back(ResourceInfo{
+			R::create_resource_no_type });
 }

@@ -111,3 +111,51 @@ void World::destroy_storage(uint32_t p_component_id) {
 	memdelete(storages[p_component_id]);
 	storages[p_component_id] = nullptr;
 }
+
+void World::add_resource(godex::resource_id p_id) {
+	ERR_FAIL_COND_MSG(ECS::verify_resource_id(p_id) == false, "The resource is not registered.");
+
+	if (p_id >= resources.size()) {
+		const uint32_t start = resources.size();
+		resources.resize(p_id + 1);
+		for (uint32_t i = start; i < resources.size(); i += 1) {
+			resources[i] = nullptr;
+		}
+	}
+
+	if (resources[p_id] == nullptr) {
+		resources[p_id] = ECS::create_resource(p_id);
+	}
+}
+
+void World::remove_resource(godex::resource_id p_id) {
+	ERR_FAIL_COND_MSG(ECS::verify_resource_id(p_id) == false, "The resource is not registered.");
+
+	if (unlikely(p_id >= resources.size() || resources[p_id] == nullptr)) {
+		// Nothing to do.
+		return;
+	}
+
+	memdelete(resources[p_id]);
+	resources[p_id] = nullptr;
+}
+
+godex::Resource *World::get_resource(godex::resource_id p_id) {
+	CRASH_COND_MSG(p_id == UINT32_MAX, "The resource is not registered.");
+
+	if (unlikely(p_id >= resources.size())) {
+		return nullptr;
+	}
+
+	return resources[p_id];
+}
+
+const godex::Resource *World::get_resource(godex::resource_id p_id) const {
+	CRASH_COND_MSG(p_id == UINT32_MAX, "The resource is not registered.");
+
+	if (unlikely(p_id >= resources.size())) {
+		return nullptr;
+	}
+
+	return resources[p_id];
+}
