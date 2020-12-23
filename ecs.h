@@ -78,7 +78,7 @@ public:
 	static bool verify_resource_id(godex::resource_id p_id);
 
 	static godex::Resource *create_resource(godex::resource_id p_id);
-	static const LocalVector<StringName> &get_registered_resources();
+	static uint32_t get_resource_count();
 	static godex::resource_id get_resource_id(const StringName &p_name);
 	static StringName get_resource_name(godex::resource_id p_resource_id);
 

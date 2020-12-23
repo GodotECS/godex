@@ -59,7 +59,7 @@ void SystemInfoBox::set_system_name(const String &p_name) {
 	system_name->set_text(p_name);
 }
 
-void SystemInfoBox::add_component(const String &p_name, bool is_write) {
+void SystemInfoBox::add_system_element(const String &p_name, bool is_write) {
 	Ref<Texture2D> icon;
 	if (is_write) {
 		icon = editor->get_theme_base()->get_theme_icon("Edit", "EditorIcons");
@@ -179,12 +179,33 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 
 		// ~~ Resources box ~~
 		{
+			HSeparator *separator = memnew(HSeparator);
+			main_container->add_child(separator);
+
+			HBoxContainer *hori_box = memnew(HBoxContainer);
+			hori_box->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			hori_box->set_v_size_flags(0);
+			main_container->add_child(hori_box);
+
 			Label *title = memnew(Label);
 			title->set_text(TTR("Resources"));
-			title->set_valign(Label::VALIGN_CENTER);
-			title->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-			title->set_v_size_flags(0);
-			main_container->add_child(title);
+			hori_box->add_child(title);
+
+			Button *add_resource_btn = memnew(Button);
+			add_resource_btn->set_h_size_flags(0);
+			add_resource_btn->set_icon(editor->get_theme_base()->get_theme_icon("New", "EditorIcons"));
+			add_resource_btn->set_text(TTR("Add resource"));
+			add_resource_btn->connect("pressed", callable_mp(this, &EditorWorldECS::resource_add_show_menu));
+			hori_box->add_child(add_resource_btn);
+
+			resource_list = memnew(ItemList);
+			resource_list->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			resource_list->set_v_size_flags(SizeFlags::SIZE_EXPAND);
+			resource_list->set_auto_height(true);
+			resource_list->set_max_columns(0);
+			resource_list->set_fixed_icon_size(Size2(13.0, 13.0));
+			resource_list->add_theme_constant_override("hseparation", 7.0);
+			main_container->add_child(resource_list);
 		}
 	}
 
@@ -301,6 +322,32 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		vert_container->add_child(add_sys_desc);
 	}
 
+	// ~~ Add resource window ~~
+	{
+		add_res_window = memnew(ConfirmationDialog);
+		add_res_window->set_min_size(Size2i(500, 500));
+		add_res_window->set_title(TTR("Add Resource"));
+		add_res_window->get_ok_button()->set_text(TTR("Add resource"));
+		add_res_window->connect("confirmed", callable_mp(this, &EditorWorldECS::resource_add_do));
+		add_child(add_res_window);
+
+		VBoxContainer *vert_container = memnew(VBoxContainer);
+		vert_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		vert_container->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		add_res_window->add_child(vert_container);
+
+		add_res_search = memnew(LineEdit);
+		add_res_search->set_placeholder(TTR("Search"));
+		add_res_search->connect("text_changed", callable_mp(this, &EditorWorldECS::resource_add_tree_update));
+		vert_container->add_child(add_res_search);
+
+		add_res_tree = memnew(Tree);
+		add_res_tree->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		add_res_tree->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		add_res_tree->set_hide_root(true);
+		vert_container->add_child(add_res_tree);
+	}
+
 	// ~~ Create script system window ~~
 	{
 		add_script_window = memnew(ConfirmationDialog);
@@ -357,6 +404,7 @@ void EditorWorldECS::show_editor() {
 	pipeline_confirm_remove->set_visible(false);
 
 	pipeline_list_update();
+	resource_list_update();
 }
 
 void EditorWorldECS::hide_editor() {
@@ -382,6 +430,7 @@ void EditorWorldECS::set_world_ecs(WorldECS *p_world) {
 	}
 
 	pipeline_list_update();
+	resource_list_update();
 }
 
 void EditorWorldECS::set_pipeline(Ref<PipelineECS> p_pipeline) {
@@ -546,28 +595,28 @@ void EditorWorldECS::pipeline_panel_update() {
 
 				// Draw immutable components.
 				for (uint32_t u = 0; u < system_info.immutable_components.size(); u += 1) {
-					info_box->add_component(
+					info_box->add_system_element(
 							ECS::get_component_name(system_info.immutable_components[u]),
 							false);
 				}
 
 				// Draw mutable components.
 				for (uint32_t u = 0; u < system_info.mutable_components.size(); u += 1) {
-					info_box->add_component(
+					info_box->add_system_element(
 							ECS::get_component_name(system_info.mutable_components[u]),
 							true);
 				}
 
 				// Draw immutable resources.
 				for (uint32_t u = 0; u < system_info.immutable_resources.size(); u += 1) {
-					info_box->add_component(
+					info_box->add_system_element(
 							String(ECS::get_resource_name(system_info.immutable_resources[u])) + " [res]",
 							false);
 				}
 
 				// Draw immutable resources.
 				for (uint32_t u = 0; u < system_info.mutable_resources.size(); u += 1) {
-					info_box->add_component(
+					info_box->add_system_element(
 							String(ECS::get_resource_name(system_info.mutable_resources[u])) + " [res]",
 							true);
 				}
@@ -593,6 +642,7 @@ void EditorWorldECS::add_sys_update(const String &p_search) {
 	if (search.empty()) {
 		search = add_sys_search->get_text();
 	}
+	search = search.to_lower();
 
 	add_sys_tree->clear();
 
@@ -606,8 +656,8 @@ void EditorWorldECS::add_sys_update(const String &p_search) {
 	for (uint32_t i = 0; i < ECS::get_systems_count(); i += 1) {
 		const SystemInfo &info = ECS::get_system_info(i);
 
-		const String name(info.name);
-		if (p_search.empty() == false && name.find(p_search) != 0) {
+		const String name(String(info.name).to_lower());
+		if (search.empty() == false && name.find(search) != 0) {
 			// System filtered.
 			continue;
 		}
@@ -621,7 +671,7 @@ void EditorWorldECS::add_sys_update(const String &p_search) {
 		}
 
 		TreeItem *item = add_sys_tree->create_item(native_root);
-		item->set_text(0, name);
+		item->set_text(0, info.name);
 		item->set_meta("system_name", info.name);
 		item->set_meta("desc", info.description);
 	}
@@ -635,7 +685,7 @@ void EditorWorldECS::add_sys_update(const String &p_search) {
 			const String sys_script_path = sys_scripts[i];
 			const String system_name = sys_script_path.get_file();
 
-			if (p_search.empty() == false && system_name.find(p_search) != 0) {
+			if (search.empty() == false && system_name.to_lower().find(search) != 0) {
 				// System filtered.
 				continue;
 			}
@@ -773,6 +823,119 @@ void EditorWorldECS::add_script_do() {
 
 	add_script_path->set_text("");
 	add_script_window->set_visible(false);
+}
+
+void EditorWorldECS::resource_list_update() {
+	resource_list->clear();
+
+	if (world_ecs == nullptr) {
+		return;
+	}
+
+	const Vector<StringName> resources = world_ecs->get_resources();
+	const StringName *res_ptr = resources.ptr();
+	for (int i = 0; i < resources.size(); i += 1) {
+		resource_list->add_item(res_ptr[i], Ref<Texture2D>(), false);
+	}
+}
+
+void EditorWorldECS::resource_add_show_menu() {
+	// Display the modal window centered.
+	const Vector2i modal_pos = (Vector2i(get_viewport_rect().size) - add_res_window->get_size()) / 2.0;
+	add_res_window->set_position(modal_pos);
+	add_res_window->set_visible(true);
+	resource_add_tree_update();
+}
+
+void EditorWorldECS::resource_add_hide_menu() {
+	add_res_window->set_visible(false);
+}
+
+void EditorWorldECS::resource_add_tree_update(const String &p_search) {
+	String search = p_search;
+	if (search.empty()) {
+		search = add_res_search->get_text();
+	}
+	search = search.to_lower();
+
+	add_res_tree->clear();
+
+	TreeItem *root = add_res_tree->create_item();
+	root->set_text(0, "Resources");
+	root->set_selectable(0, false);
+
+	// Native resources
+	TreeItem *native_root = nullptr;
+
+	for (uint32_t i = 0; i < ECS::get_resource_count(); i += 1) {
+		StringName key_name = ECS::get_resource_name(i);
+
+		const String name(String(key_name).to_lower());
+		if (search.empty() == false && name.find(search) != 0) {
+			// System filtered.
+			continue;
+		}
+
+		if (native_root == nullptr) {
+			// Add only if needed.
+			native_root = add_res_tree->create_item(root);
+			native_root->set_text(0, "Native Resource");
+			native_root->set_selectable(0, false);
+			native_root->set_custom_color(0, Color(0.0, 0.9, 0.3));
+		}
+
+		TreeItem *item = add_res_tree->create_item(native_root);
+		item->set_text(0, key_name);
+		item->set_meta("res_name", key_name);
+	}
+
+	// Scripts resources.
+	TreeItem *script_root = nullptr;
+
+	if (ProjectSettings::get_singleton()->has_setting("ECS/Resource/scripts")) {
+		Array res_scripts = ProjectSettings::get_singleton()->get_setting("ECS/Resource/scripts");
+		for (int i = 0; i < res_scripts.size(); i += 1) {
+			const String res_script_path = res_scripts[i];
+			const String res_name = res_script_path.get_file();
+
+			if (search.empty() == false && res_name.to_lower().find(search) != 0) {
+				// System filtered.
+				continue;
+			}
+
+			if (script_root == nullptr) {
+				// Add only if needed.
+				script_root = add_res_tree->create_item(root);
+				script_root->set_text(0, "Script Resource");
+				script_root->set_selectable(0, false);
+				script_root->set_custom_color(0, Color(0.0, 0.3, 0.9));
+			}
+
+			TreeItem *item = add_res_tree->create_item(script_root);
+			item->set_text(0, res_name);
+			item->set_meta("res_name", res_name);
+		}
+	}
+}
+
+void EditorWorldECS::resource_add_do() {
+	if (world_ecs == nullptr) {
+		// Nothing to do.
+		return;
+	}
+
+	TreeItem *selected = add_res_tree->get_selected();
+	if (selected == nullptr) {
+		// Nothing selected, so nothing to do.
+		return;
+	}
+
+	editor->get_undo_redo()->create_action(TTR("Add resource"));
+	editor->get_undo_redo()->add_do_method(world_ecs, "add_resource", selected->get_meta("res_name"));
+	editor->get_undo_redo()->add_undo_method(world_ecs, "remove_resource", selected->get_meta("res_name"));
+	editor->get_undo_redo()->commit_action();
+
+	resource_list_update();
 }
 
 void EditorWorldECS::_changed_callback(Object *p_changed, const char *p_prop) {
