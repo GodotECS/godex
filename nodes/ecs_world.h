@@ -76,6 +76,7 @@ class WorldECS : public Node {
 
 	Vector<Ref<PipelineECS>> pipelines;
 	StringName active_pipeline;
+	Vector<StringName> resources;
 
 protected:
 	static void _bind_methods();
@@ -109,6 +110,11 @@ public:
 
 	void set_active_pipeline(StringName p_name);
 	StringName get_active_pipeline() const;
+
+	void set_resources(Vector<StringName> p_resources);
+	Vector<StringName> get_resources() const;
+	void add_resource(const StringName &p_resource_name);
+	void remove_resource(const StringName &p_resource_name);
 
 private:
 	void active_world();

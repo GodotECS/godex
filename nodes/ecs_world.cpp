@@ -93,7 +93,13 @@ void WorldECS::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_active_pipeline", "name"), &WorldECS::set_active_pipeline);
 	ClassDB::bind_method(D_METHOD("get_active_pipeline"), &WorldECS::get_active_pipeline);
 
+	ClassDB::bind_method(D_METHOD("set_resources", "resources"), &WorldECS::set_resources);
+	ClassDB::bind_method(D_METHOD("get_resources"), &WorldECS::get_resources);
+	ClassDB::bind_method(D_METHOD("add_resource", "resource_name"), &WorldECS::add_resource);
+	ClassDB::bind_method(D_METHOD("remove_resource", "resource_name"), &WorldECS::remove_resource);
+
 	ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "active_pipeline"), "set_active_pipeline", "get_active_pipeline");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "resources", PROPERTY_HINT_ARRAY_TYPE, "StringName"), "set_resources", "get_resources");
 }
 
 bool WorldECS::_set(const StringName &p_name, const Variant &p_value) {
@@ -254,15 +260,52 @@ StringName WorldECS::get_active_pipeline() const {
 	return active_pipeline;
 }
 
+void WorldECS::set_resources(Vector<StringName> p_resources) {
+	resources = p_resources;
+}
+
+Vector<StringName> WorldECS::get_resources() const {
+	return resources;
+}
+
+void WorldECS::add_resource(const StringName &p_resource_name) {
+	if (resources.find(p_resource_name) >= 0) {
+		// Nothing to do.
+		return;
+	}
+	resources.push_back(p_resource_name);
+}
+
+void WorldECS::remove_resource(const StringName &p_resource_name) {
+	resources.erase(p_resource_name);
+}
+
 void WorldECS::active_world() {
 	if (ECS::get_singleton()->has_active_world() == false) {
+		// ~~ World activation ~~
+
+		// Set as active world.
 		ECS::get_singleton()->set_active_world(world);
+
+		// Make sure the resources are all loaded.
+		{
+			const StringName *res_ptr = resources.ptr();
+			for (int i = 0; i < resources.size(); i += 1) {
+				const godex::resource_id id = ECS::get_resource_id(res_ptr[i]);
+				world->add_resource(id);
+			}
+		}
+
+		// Set the pipeline.
 		Ref<PipelineECS> pip = find_pipeline(active_pipeline);
 		if (pip.is_valid()) {
 			ECS::get_singleton()->set_active_world_pipeline(pip->get_pipeline());
 		}
+
+		// Mark as active
 		is_active = true;
 
+		// Disconnects any previously connected functions.
 		if (ECS::get_singleton()->is_connected(
 					"world_unloaded",
 					callable_mp(this, &WorldECS::active_world))) {

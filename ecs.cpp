@@ -80,8 +80,8 @@ godex::Resource *ECS::create_resource(godex::resource_id p_id) {
 	return resources_info[p_id].create_resource();
 }
 
-const LocalVector<StringName> &ECS::get_registered_resources() {
-	return resources;
+uint32_t ECS::get_resource_count() {
+	return resources.size();
 }
 
 uint32_t ECS::get_resource_id(const StringName &p_name) {
@@ -89,7 +89,7 @@ uint32_t ECS::get_resource_id(const StringName &p_name) {
 	return id >= 0 ? godex::resource_id(id) : UINT32_MAX;
 }
 
-StringName ECS::get_resource_name(uint32_t p_resource_id) {
+StringName ECS::get_resource_name(godex::resource_id p_resource_id) {
 	ERR_FAIL_INDEX_V_MSG(p_resource_id, resources.size(), "", "The `resource_id` is invalid: " + itos(p_resource_id));
 	return resources[p_resource_id];
 }

@@ -22,7 +22,7 @@ public:
 	SystemInfoBox(EditorNode *p_ditor, const String &p_system_name);
 
 	void set_system_name(const String &p_name);
-	void add_component(const String &p_name, bool is_write);
+	void add_system_element(const String &p_name, bool is_write);
 
 	Point2 name_global_transform() const;
 };
@@ -67,6 +67,14 @@ class EditorWorldECS : public PanelContainer {
 	LineEdit *add_script_path = nullptr;
 	Label *add_script_error_lbl = nullptr;
 
+	// Resource page.
+	ItemList *resource_list = nullptr;
+
+	// Add Resource menu
+	ConfirmationDialog *add_res_window = nullptr;
+	LineEdit *add_res_search = nullptr;
+	class Tree *add_res_tree = nullptr;
+
 	LocalVector<SystemInfoBox *> pipeline_systems;
 
 	bool is_pipeline_panel_dirty = false;
@@ -101,6 +109,13 @@ public:
 	void create_sys_show();
 	void create_sys_hide();
 	void add_script_do();
+
+	void resource_list_update();
+
+	void resource_add_show_menu();
+	void resource_add_hide_menu();
+	void resource_add_tree_update(const String &p_search = String());
+	void resource_add_do();
 
 protected:
 	void _changed_callback(Object *p_changed, const char *p_prop) override;
