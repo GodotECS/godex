@@ -18,8 +18,23 @@ index 2281b8a77f..576f6c1ccc 100644
          sys.path.remove(path)
          sys.modules.pop("config")
  
+diff --git a/core/config/engine.h b/core/config/engine.h
+index 0d9aa02f28..bd1f1aef58 100644
+--- a/core/config/engine.h
++++ b/core/config/engine.h
+@@ -88,8 +88,10 @@ public:
+ 
+ 	uint64_t get_frames_drawn();
+ 
++	void set_physics_frames(uint32_t p_physics_frames) { _physics_frames = p_physics_frames; }
+ 	uint64_t get_physics_frames() const { return _physics_frames; }
+ 	uint64_t get_idle_frames() const { return _idle_frames; }
++	void set_in_physics_frame(bool p_in_physics) { _in_physics = p_in_physics; }
+ 	bool is_in_physics_frame() const { return _in_physics; }
+ 	uint64_t get_idle_frame_ticks() const { return _frame_ticks; }
+ 	float get_idle_frame_step() const { return _frame_step; }
 diff --git a/main/main.cpp b/main/main.cpp
-index c492cfaad7..8ff3c984e3 100644
+index c492cfaad7..d034613a2c 100644
 --- a/main/main.cpp
 +++ b/main/main.cpp
 @@ -1284,8 +1284,8 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
@@ -38,7 +53,7 @@ index c492cfaad7..8ff3c984e3 100644
  	bool exit = false;
  
 +#ifdef CUSTOM_ITERATOR
-+	exit = custom_iteration(&advance);
++	exit = custom_iteration(&advance, frame_slice, time_scale);
 +#endif
 +
 +#ifndef CUSTOM_PHYSICS_ITERATOR
@@ -64,7 +79,7 @@ index c492cfaad7..8ff3c984e3 100644
  	if (EngineDebugger::is_active()) {
  		EngineDebugger::get_singleton()->iteration(frame_time, idle_process_ticks, physics_process_ticks, frame_slice);
 diff --git a/main/main.h b/main/main.h
-index 168b2e5e86..cac415ad8e 100644
+index 168b2e5e86..10f84aab30 100644
 --- a/main/main.h
 +++ b/main/main.h
 @@ -54,6 +54,9 @@ public:
@@ -72,7 +87,7 @@ index 168b2e5e86..cac415ad8e 100644
  	static bool start();
  
 +#ifdef CUSTOM_ITERATOR
-+	static bool custom_iteration(class MainFrameTime *p_frame_time);
++	static bool custom_iteration(class MainFrameTime *p_frame_time, float frame_slice, float time_scale);
 +#endif
  	static bool iteration();
  	static void force_redraw();

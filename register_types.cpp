@@ -14,6 +14,8 @@
 #include "editor_plugins/editor_world_ecs.h"
 #include "editor_plugins/entity_editor_plugin.h"
 
+#include "resources/godot_engine_resources.h"
+
 #include "systems/physics_process_system.h"
 
 // TODO improve this workflow once the new pipeline is integrated.
@@ -52,7 +54,11 @@ void register_godex_types() {
 	ECS::register_component<TransformComponent>();
 
 	// ~ Register engine resources ~
+	ECS::register_resource<GodotIteratorInfoResource>();
+	ECS::register_resource<OsResource>();
+	ECS::register_resource<EngineResource>();
 	ECS::register_resource<Physics3DServerResource>();
+	ECS::register_resource<MessageQueueResource>();
 
 	// ~ Register engine systems ~
 	//ECS::register_system(physics_2d_process_system, "Physics2dProcessSystem", "Steps the physics 2D [not yet implemented].");

@@ -141,7 +141,7 @@ public:
 	bool has_active_world_pipeline() const;
 
 private:
-	bool dispatch_active_world();
+	void dispatch_active_world();
 	void ecs_init();
 };
 
