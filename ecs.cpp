@@ -224,14 +224,10 @@ bool ECS::has_active_world_pipeline() const {
 	return active_world_pipeline != nullptr;
 }
 
-bool ECS::dispatch_active_world() {
+void ECS::dispatch_active_world() {
 	if (likely(active_world && active_world_pipeline)) {
 		active_world_pipeline->dispatch(active_world);
 	}
-
-	// TODO add a way to terminate, from a system, the engine execution
-	// returning true. (Hint: use a resource).
-	return false;
 }
 
 void ECS::ecs_init() {

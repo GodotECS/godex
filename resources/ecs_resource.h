@@ -29,7 +29,7 @@ public:                                                                         
 private:                                                                                       \
 	static inline OAHashMap<StringName, PropertyInfo> property_map;                            \
 	static void add_property(const PropertyInfo &p_info, StringName p_set, StringName p_get) { \
-		print_line("TODO integrate set and get.");                                             \
+		/*print_line("TODO integrate set and get.");*/                                         \
 		property_map.insert(p_info.name, p_info);                                              \
 	}                                                                                          \
 	static OAHashMap<StringName, PropertyInfo> *get_properties_static() {                      \
