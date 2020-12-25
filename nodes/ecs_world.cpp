@@ -67,6 +67,11 @@ void PipelineECS::insert_system(const StringName &p_system_name, uint32_t p_pos)
 	_change_notify("systems_name");
 }
 
+void PipelineECS::remove_system(const StringName &p_system_name) {
+	systems_name.erase(p_system_name);
+	_change_notify("systems_name");
+}
+
 Pipeline *PipelineECS::get_pipeline() {
 	// Build the pipeline.
 
