@@ -647,35 +647,36 @@ void EditorWorldECS::pipeline_panel_update() {
 			if (system_id == UINT32_MAX) {
 				info_box->set_system_name(system_name, false);
 			} else {
-				const SystemInfo &system_info = ECS::get_system_info(system_id);
+				const SystemExeInfo system_exec_info = ECS::get_system_info(system_id);
+				const StringName key_name = ECS::get_system_name(system_id);
 
-				info_box->set_system_name(system_info.name);
+				info_box->set_system_name(key_name);
 
 				// Draw immutable components.
-				for (uint32_t u = 0; u < system_info.immutable_components.size(); u += 1) {
+				for (uint32_t u = 0; u < system_exec_info.immutable_components.size(); u += 1) {
 					info_box->add_system_element(
-							ECS::get_component_name(system_info.immutable_components[u]),
+							ECS::get_component_name(system_exec_info.immutable_components[u]),
 							false);
 				}
 
 				// Draw mutable components.
-				for (uint32_t u = 0; u < system_info.mutable_components.size(); u += 1) {
+				for (uint32_t u = 0; u < system_exec_info.mutable_components.size(); u += 1) {
 					info_box->add_system_element(
-							ECS::get_component_name(system_info.mutable_components[u]),
+							ECS::get_component_name(system_exec_info.mutable_components[u]),
 							true);
 				}
 
 				// Draw immutable resources.
-				for (uint32_t u = 0; u < system_info.immutable_resources.size(); u += 1) {
+				for (uint32_t u = 0; u < system_exec_info.immutable_resources.size(); u += 1) {
 					info_box->add_system_element(
-							String(ECS::get_resource_name(system_info.immutable_resources[u])) + " [res]",
+							String(ECS::get_resource_name(system_exec_info.immutable_resources[u])) + " [res]",
 							false);
 				}
 
 				// Draw immutable resources.
-				for (uint32_t u = 0; u < system_info.mutable_resources.size(); u += 1) {
+				for (uint32_t u = 0; u < system_exec_info.mutable_resources.size(); u += 1) {
 					info_box->add_system_element(
-							String(ECS::get_resource_name(system_info.mutable_resources[u])) + " [res]",
+							String(ECS::get_resource_name(system_exec_info.mutable_resources[u])) + " [res]",
 							true);
 				}
 			}
@@ -738,9 +739,10 @@ void EditorWorldECS::add_sys_update(const String &p_search) {
 	TreeItem *native_root = nullptr;
 
 	for (uint32_t i = 0; i < ECS::get_systems_count(); i += 1) {
-		const SystemInfo &info = ECS::get_system_info(i);
+		const StringName key_name = ECS::get_system_name(i);
+		const String desc = ECS::get_system_desc(i);
 
-		const String name(String(info.name).to_lower());
+		const String name(String(key_name).to_lower());
 		if (search.empty() == false && name.find(search) != 0) {
 			// System filtered.
 			continue;
@@ -755,9 +757,9 @@ void EditorWorldECS::add_sys_update(const String &p_search) {
 		}
 
 		TreeItem *item = add_sys_tree->create_item(native_root);
-		item->set_text(0, info.name);
-		item->set_meta("system_name", info.name);
-		item->set_meta("desc", info.description);
+		item->set_text(0, name);
+		item->set_meta("system_name", key_name);
+		item->set_meta("desc", desc);
 	}
 
 	// Scripts systems

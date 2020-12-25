@@ -152,7 +152,7 @@ void DynamicQuery::end() {
 	storages.clear();
 }
 
-void DynamicQuery::get_system_info(SystemInfo &p_info) const {
+void DynamicQuery::get_system_info(SystemExeInfo &p_info) const {
 	ERR_FAIL_COND(is_valid() == false);
 	for (uint32_t i = 0; i < component_ids.size(); i += 1) {
 		if (mutability[i]) {

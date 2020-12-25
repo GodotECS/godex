@@ -96,19 +96,16 @@ StringName ECS::get_resource_name(godex::resource_id p_resource_id) {
 
 // Undefine the macro defined into `ecs.h` so we can define the method properly.
 #undef register_system
-void ECS::register_system(get_system_info_func p_get_info_func, StringName p_name, String p_description) {
+void ECS::register_system(get_system_exec_info_func p_get_info_func, StringName p_name, String p_description) {
 	{
 		const uint32_t id = find_system_id(p_name);
 		ERR_FAIL_COND_MSG(id != UINT32_MAX, "The system is already registered.");
 	}
 
-	SystemInfo info = p_get_info_func();
-	info.name = p_name;
-	info.description = p_description;
-
 	const godex::system_id id = systems.size();
 	systems.push_back(p_name);
-	systems_info.push_back(info);
+	systems_info.push_back({ p_description,
+			p_get_info_func });
 
 	print_line("System: " + p_name + " registered with ID: " + itos(id));
 }
@@ -122,14 +119,13 @@ godex::system_id ECS::register_dynamic_system(StringName p_name, const godex::Dy
 
 	const godex::system_id id = systems.size();
 
-	SystemInfo info = p_info->get_system_info();
-	info.name = p_name;
 	// Used to assign a static function to this dynamic system, check the
 	// DynamicSystem doc to know more (../systems/dynamic_system.h).
-	info.system_func = godex::register_dynamic_system(*p_info);
+	const uint32_t dynamic_system_id = godex::register_dynamic_system(*p_info);
 
 	systems.push_back(p_name);
-	systems_info.push_back(info);
+	systems_info.push_back({ "Script system",
+			godex::get_dynamic_system_get_info(dynamic_system_id) });
 
 	print_line("Dynamic system: " + p_name + " registered with ID: " + itos(id));
 
@@ -145,10 +141,19 @@ uint32_t ECS::get_systems_count() {
 	return systems.size();
 }
 
-static const SystemInfo invalid_system_info;
-const SystemInfo &ECS::get_system_info(godex::system_id p_id) {
-	ERR_FAIL_INDEX_V_MSG(p_id, systems_info.size(), invalid_system_info, "The SystemID: " + itos(p_id) + " doesn't exists.");
-	return systems_info[p_id];
+SystemExeInfo ECS::get_system_info(godex::system_id p_id) {
+	ERR_FAIL_INDEX_V_MSG(p_id, systems_info.size(), SystemExeInfo(), "The SystemID: " + itos(p_id) + " doesn't exists.");
+	return systems_info[p_id].exec_info();
+}
+
+StringName ECS::get_system_name(godex::system_id p_id) {
+	ERR_FAIL_INDEX_V_MSG(p_id, systems_info.size(), "", "The SystemID: " + itos(p_id) + " doesn't exists.");
+	return systems[p_id];
+}
+
+String ECS::get_system_desc(godex::system_id p_id) {
+	ERR_FAIL_INDEX_V_MSG(p_id, systems_info.size(), "", "The SystemID: " + itos(p_id) + " doesn't exists.");
+	return systems_info[p_id].description;
 }
 
 void ECS::set_dynamic_system_target(godex::system_id p_id, Object *p_target) {

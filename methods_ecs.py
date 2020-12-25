@@ -24,26 +24,43 @@ def generate_dynamic_system_funcs():
 
     # Write functions.
     for i in range(max_dynamic_systems):
-        f.write("void dynamic_system_internal_" + str(i) + "(World *p_world) {\n")
+        f.write("void dynamic_system_exec_internal_" + str(i) + "(World *p_world) {\n")
         f.write("	godex::DynamicSystemInfo::executor(p_world, dynamic_info[" + str(i) + "]);\n")
+        f.write("}\n")
+        f.write("\n")
+        f.write("SystemExeInfo dynamic_system_get_info_internal_" + str(i) + "() {\n")
+        f.write("	return godex::DynamicSystemInfo::get_info(dynamic_info[" + str(i) + "], dynamic_system_exec_internal_"+str(i)+");\n")
         f.write("}\n")
 
     # Write the array that olds the function pointers.
+    f.write("\n")
+    f.write("get_system_exec_info_func dynamic_systems_get_info_ptr[DYNAMIC_SYSTEMS_MAX] = {\n")
+    for i in range(max_dynamic_systems):
+        if i > 0:
+            f.write(", ")
+        f.write("	dynamic_system_get_info_internal_" + str(i) + "\n")
+    f.write("};\n")
+
     f.write("\n")
     f.write("system_execute dynamic_systems_ptr[DYNAMIC_SYSTEMS_MAX] = {\n")
     for i in range(max_dynamic_systems):
         if i > 0:
             f.write(", ")
-        f.write("	dynamic_system_internal_" + str(i) + "\n")
+        f.write("	dynamic_system_exec_internal_" + str(i) + "\n")
     f.write("};\n")
 
     f.write("\n")
-    f.write("system_execute godex::register_dynamic_system(const DynamicSystemInfo &p_info) {\n")
+    f.write("uint32_t godex::register_dynamic_system(const DynamicSystemInfo &p_info) {\n")
     f.write("	const uint32_t id = registered_dynamic_system_count++;\n")
     f.write("	CRASH_COND_MSG(id >= DYNAMIC_SYSTEMS_MAX, \"You can't register more than \" + itos(DYNAMIC_SYSTEMS_MAX) + \" dynamic systems. Please open an issue so we can increase this limit.\");\n")
     f.write("	dynamic_info[id] = p_info;\n")
-    f.write("	return dynamic_systems_ptr[id];\n")
+    f.write("	return id;\n")
     f.write("}\n")
+
     f.write("\n")
+    f.write("get_system_exec_info_func godex::get_dynamic_system_get_info(uint32_t p_id){\n")
+    f.write("	CRASH_COND_MSG(p_id >= DYNAMIC_SYSTEMS_MAX, \"The ID \" + itos(p_id) + \" is out of bounds \" + itos(DYNAMIC_SYSTEMS_MAX) + \". Please open an issue so we can increase this limit.\");\n")
+    f.write("	return dynamic_systems_get_info_ptr[p_id];\n")
+    f.write("}\n")
 
     f.close()

@@ -7,7 +7,7 @@
 godex::DynamicSystemInfo::DynamicSystemInfo() {}
 
 void godex::DynamicSystemInfo::set_target(Object *p_target) {
-	target = p_target;
+	target_script = p_target;
 }
 
 void godex::DynamicSystemInfo::with_resource(uint32_t p_resource_id, bool p_mutable) {
@@ -26,26 +26,30 @@ void godex::DynamicSystemInfo::without_component(uint32_t p_component_id) {
 	CRASH_NOW_MSG("TODO implement this please.");
 }
 
-SystemInfo godex::DynamicSystemInfo::get_system_info() const {
-	SystemInfo info;
-	ERR_FAIL_COND_V(query.is_valid() == false, info);
+StringName godex::DynamicSystemInfo::for_each_name;
 
-	for (uint32_t i = 0; i < resources.size(); i += 1) {
-		if (resources[i].is_mutable) {
-			info.mutable_resources.push_back(resources[i].resource_id);
+SystemExeInfo godex::DynamicSystemInfo::get_info(DynamicSystemInfo &p_info, system_execute p_exec) {
+	SystemExeInfo info;
+	ERR_FAIL_COND_V(p_info.query.is_valid() == false, info);
+
+	for (uint32_t i = 0; i < p_info.resources.size(); i += 1) {
+		if (p_info.resources[i].is_mutable) {
+			info.mutable_resources.push_back(p_info.resources[i].resource_id);
 		} else {
-			info.immutable_resources.push_back(resources[i].resource_id);
+			info.immutable_resources.push_back(p_info.resources[i].resource_id);
 		}
 	}
 
-	query.get_system_info(info);
+	p_info.query.get_system_info(info);
+
+	info.system_func = p_exec;
+
 	return info;
 }
 
-StringName godex::DynamicSystemInfo::for_each_name;
-
 void godex::DynamicSystemInfo::executor(World *p_world, DynamicSystemInfo &p_info) {
-	ERR_FAIL_COND_MSG(p_info.target == nullptr, "[FATAL] This system doesn't have target assigned.");
+	// Script function.
+	ERR_FAIL_COND_MSG(p_info.target_script == nullptr, "[FATAL] This system doesn't have target assigned.");
 
 	// Create the array where the storages are hold.
 	LocalVector<Variant> access;
@@ -71,7 +75,7 @@ void godex::DynamicSystemInfo::executor(World *p_world, DynamicSystemInfo &p_inf
 	p_info.query.begin(p_world);
 	for (; p_info.query.is_done() == false; p_info.query.next_entity()) {
 		Callable::CallError err;
-		p_info.target->call(for_each_name, const_cast<const Variant **>(access_ptr.ptr()), access_ptr.size(), err);
+		p_info.target_script->call(for_each_name, const_cast<const Variant **>(access_ptr.ptr()), access_ptr.size(), err);
 		if (err.error != Callable::CallError::CALL_OK) {
 			p_info.query.end();
 			ERR_FAIL_COND(err.error != Callable::CallError::CALL_OK);
