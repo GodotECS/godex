@@ -37,6 +37,7 @@ struct ResourceInfo {
 
 struct SystemInfo {
 	String description;
+	uint32_t dynamic_system_id = UINT32_MAX;
 	get_system_exec_info_func exec_info;
 };
 

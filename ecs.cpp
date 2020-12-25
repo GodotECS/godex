@@ -105,6 +105,7 @@ void ECS::register_system(get_system_exec_info_func p_get_info_func, StringName 
 	const godex::system_id id = systems.size();
 	systems.push_back(p_name);
 	systems_info.push_back({ p_description,
+			UINT32_MAX,
 			p_get_info_func });
 
 	print_line("System: " + p_name + " registered with ID: " + itos(id));
@@ -125,7 +126,8 @@ godex::system_id ECS::register_dynamic_system(StringName p_name, const godex::Dy
 
 	systems.push_back(p_name);
 	systems_info.push_back({ "Script system",
-			godex::get_dynamic_system_get_info(dynamic_system_id) });
+			dynamic_system_id,
+			godex::get_dynamic_system_get_exec_info(dynamic_system_id) });
 
 	print_line("Dynamic system: " + p_name + " registered with ID: " + itos(id));
 
@@ -158,8 +160,9 @@ String ECS::get_system_desc(godex::system_id p_id) {
 
 void ECS::set_dynamic_system_target(godex::system_id p_id, Object *p_target) {
 	ERR_FAIL_COND_MSG(verify_system_id(p_id) == false, "This system " + itos(p_id) + " doesn't exists.");
-	//ERR_FAIL_COND_MSG(systems_info[p_id]);
-	ERR_FAIL_MSG("TODO finish this function.");
+	ERR_FAIL_COND_MSG(systems_info[p_id].dynamic_system_id == UINT32_MAX, "The system " + itos(p_id) + " is not a dynamic system.");
+	godex::DynamicSystemInfo *info = godex::get_dynamic_system_info(systems_info[p_id].dynamic_system_id);
+	info->set_target(p_target);
 }
 
 bool ECS::verify_system_id(godex::system_id p_id) {
