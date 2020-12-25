@@ -112,7 +112,8 @@ public:
 	/// Returns the system id or UINT32_MAX if not found.
 	static godex::system_id find_system_id(StringName p_name);
 	static uint32_t get_systems_count();
-	static SystemExeInfo get_system_info(godex::system_id p_id);
+	static get_system_exec_info_func get_func_system_exe_info(godex::system_id p_id);
+	static SystemExeInfo get_system_exe_info(godex::system_id p_id);
 	static StringName get_system_name(godex::system_id p_id);
 	static String get_system_desc(godex::system_id p_id);
 	static void set_dynamic_system_target(godex::system_id p_id, Object *p_target);

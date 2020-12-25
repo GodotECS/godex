@@ -143,7 +143,12 @@ uint32_t ECS::get_systems_count() {
 	return systems.size();
 }
 
-SystemExeInfo ECS::get_system_info(godex::system_id p_id) {
+get_system_exec_info_func ECS::get_func_system_exe_info(godex::system_id p_id) {
+	ERR_FAIL_INDEX_V_MSG(p_id, systems_info.size(), nullptr, "The SystemID: " + itos(p_id) + " doesn't exists.");
+	return systems_info[p_id].exec_info;
+}
+
+SystemExeInfo ECS::get_system_exe_info(godex::system_id p_id) {
 	ERR_FAIL_INDEX_V_MSG(p_id, systems_info.size(), SystemExeInfo(), "The SystemID: " + itos(p_id) + " doesn't exists.");
 	return systems_info[p_id].exec_info();
 }

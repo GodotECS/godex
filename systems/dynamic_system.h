@@ -8,6 +8,8 @@
 
 class World;
 
+class Pipeline;
+
 namespace godex {
 
 class DynamicSystemInfo;
@@ -29,6 +31,7 @@ class DynamicSystemInfo {
 	};
 
 	Object *target_script = nullptr;
+	Pipeline *target_sub_pipeline = nullptr;
 
 	/// Map used to map the list of Resources to the script.
 	LocalVector<uint32_t> resource_element_map;
@@ -41,14 +44,16 @@ public:
 	DynamicSystemInfo();
 
 	void set_target(Object *p_target);
-	void set_target(system_execute p_target);
+	void set_target(Pipeline *p_pipeline);
+
 	void with_resource(uint32_t p_resource_id, bool p_mutable);
 	void with_component(uint32_t p_component_id, bool p_mutable);
 	void without_component(uint32_t p_component_id);
 
 public:
 	static StringName for_each_name;
-	/// This function is called
+	// TODO instead to return the info consider pass it as reference, to avoid
+	// any copy.
 	static SystemExeInfo get_info(DynamicSystemInfo &p_info, system_execute p_exec);
 	static void executor(World *p_world, DynamicSystemInfo &p_info);
 };

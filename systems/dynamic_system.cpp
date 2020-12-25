@@ -1,5 +1,7 @@
 #include "dynamic_system.h"
 
+#include "../pipeline/pipeline.h"
+
 // This include contains the function needed to convert a script system to a
 // compile time system.
 #include "dynamic_system.gen.h"
@@ -8,6 +10,12 @@ godex::DynamicSystemInfo::DynamicSystemInfo() {}
 
 void godex::DynamicSystemInfo::set_target(Object *p_target) {
 	target_script = p_target;
+	target_sub_pipeline = nullptr;
+}
+
+void godex::DynamicSystemInfo::set_target(Pipeline *p_target) {
+	target_script = nullptr;
+	target_sub_pipeline = p_target;
 }
 
 void godex::DynamicSystemInfo::with_resource(uint32_t p_resource_id, bool p_mutable) {
@@ -30,19 +38,31 @@ StringName godex::DynamicSystemInfo::for_each_name;
 
 SystemExeInfo godex::DynamicSystemInfo::get_info(DynamicSystemInfo &p_info, system_execute p_exec) {
 	SystemExeInfo info;
-	ERR_FAIL_COND_V(p_info.query.is_valid() == false, info);
-
-	for (uint32_t i = 0; i < p_info.resources.size(); i += 1) {
-		if (p_info.resources[i].is_mutable) {
-			info.mutable_resources.push_back(p_info.resources[i].resource_id);
-		} else {
-			info.immutable_resources.push_back(p_info.resources[i].resource_id);
-		}
-	}
-
-	p_info.query.get_system_info(info);
-
 	info.system_func = p_exec;
+
+	if (p_info.target_sub_pipeline) {
+		// Sub pipeline execution.
+		// The pipeline must be fully build at this point
+		CRASH_COND_MSG(p_info.target_sub_pipeline->is_ready() == false, "The sub pipeline is not yet builded. Make sure to fully build it before using it as sub pipeline.");
+		// Extract all the pipeline dependencies.
+		p_info.target_sub_pipeline->get_systems_dependencies(info);
+	} else {
+		// Script function.
+		ERR_FAIL_COND_V_MSG(p_info.target_script == nullptr, SystemExeInfo(), "[FATAL] This system doesn't have target assigned.");
+
+		// Script execution.
+		ERR_FAIL_COND_V(p_info.query.is_valid() == false, SystemExeInfo());
+
+		for (uint32_t i = 0; i < p_info.resources.size(); i += 1) {
+			if (p_info.resources[i].is_mutable) {
+				info.mutable_resources.push_back(p_info.resources[i].resource_id);
+			} else {
+				info.immutable_resources.push_back(p_info.resources[i].resource_id);
+			}
+		}
+
+		p_info.query.get_system_info(info);
+	}
 
 	return info;
 }
