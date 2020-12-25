@@ -21,13 +21,13 @@ template <template <typename...> class Ref, typename... Args>
 struct is_specialization<Ref<Args...>, Ref> : bool_type<true> {};
 
 template <class Q>
-void extract_info(bool_type<true>, SystemInfo &r_info) {
+void extract_info(bool_type<true>, SystemExeInfo &r_info) {
 	// This is a query.
 	Q::get_components(r_info.mutable_components, r_info.immutable_components);
 }
 
 template <class R>
-void extract_info(bool_type<false>, SystemInfo &r_info) {
+void extract_info(bool_type<false>, SystemExeInfo &r_info) {
 	// This is a resource.
 	if (std::is_const<R>()) {
 		r_info.immutable_resources.push_back(R::get_resource_id());
@@ -38,21 +38,21 @@ void extract_info(bool_type<false>, SystemInfo &r_info) {
 
 template <class... Cs>
 struct InfoConstructor {
-	InfoConstructor(SystemInfo &r_info) {}
+	InfoConstructor(SystemExeInfo &r_info) {}
 };
 
 template <class C, class... Cs>
 struct InfoConstructor<C, Cs...> : InfoConstructor<Cs...> {
-	InfoConstructor(SystemInfo &r_info) :
+	InfoConstructor(SystemExeInfo &r_info) :
 			InfoConstructor<Cs...>(r_info) {
 		extract_info<std::remove_reference_t<std::remove_pointer_t<C>>>(is_specialization<std::remove_reference_t<std::remove_pointer_t<C>>, Query>(), r_info);
 	}
 };
 
-/// Creates a SystemInfo, extracting the information from a system function.
+/// Creates a SystemExeInfo, extracting the information from a system function.
 template <class... RCs>
-SystemInfo get_system_info_from_function(void (*system_func)(RCs...)) {
-	SystemInfo si;
+SystemExeInfo get_system_info_from_function(void (*system_func)(RCs...)) {
+	SystemExeInfo si;
 	InfoConstructor<RCs...> a(si);
 	return si;
 }

@@ -35,6 +35,11 @@ struct ResourceInfo {
 	godex::Resource *(*create_resource)();
 };
 
+struct SystemInfo {
+	String description;
+	get_system_exec_info_func exec_info;
+};
+
 class ECS : public Object {
 	GDCLASS(ECS, Object)
 
@@ -83,30 +88,32 @@ public:
 	static StringName get_resource_name(godex::resource_id p_resource_id);
 
 	// ~~ Systems ~~
-	static void register_system(get_system_info_func p_get_info_func, StringName p_name, String p_description = "");
+	static void register_system(get_system_exec_info_func p_get_info_func, StringName p_name, String p_description = "");
 
 	// Register the system and returns the ID.
 	static godex::system_id register_dynamic_system(StringName p_name, const godex::DynamicSystemInfo *p_info);
 
-// This macro save the user the need to pass a `SystemInfo`, indeed it wraps
-// the passed function with a labda function that creates a `SystemInfo`.
-// By defining the same name of the method, the IDE autocomplete shows the method
-// name `register_system`, properly + it's impossible use the function directly
-// by mistake.
-#define register_system(func, name, desc)                                  \
-	register_system([]() -> SystemInfo {                                   \
-		SystemInfo i = SystemBuilder::get_system_info_from_function(func); \
-		i.system_func = [](World *p_world) {                               \
-			SystemBuilder::system_exec_func(p_world, func);                \
-		};                                                                 \
-		return i;                                                          \
-	},                                                                     \
+// This macro save the user the need to pass a `SystemExeInfo`, indeed it wraps
+// the passed function with a labda function that creates a `SystemExeInfo`.
+// By defining the same name of the method, the IDE autocomplete shows the
+// method name `register_system`, properly + it's impossible use the function
+// directly by mistake.
+#define register_system(func, name, desc)                                     \
+	register_system([]() -> SystemExeInfo {                                   \
+		SystemExeInfo i = SystemBuilder::get_system_info_from_function(func); \
+		i.system_func = [](World *p_world) {                                  \
+			SystemBuilder::system_exec_func(p_world, func);                   \
+		};                                                                    \
+		return i;                                                             \
+	},                                                                        \
 			name, desc)
 
 	/// Returns the system id or UINT32_MAX if not found.
 	static godex::system_id find_system_id(StringName p_name);
 	static uint32_t get_systems_count();
-	static const SystemInfo &get_system_info(godex::system_id p_id);
+	static SystemExeInfo get_system_info(godex::system_id p_id);
+	static StringName get_system_name(godex::system_id p_id);
+	static String get_system_desc(godex::system_id p_id);
 	static void set_dynamic_system_target(godex::system_id p_id, Object *p_target);
 	static bool verify_system_id(godex::system_id p_id);
 

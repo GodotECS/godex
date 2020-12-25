@@ -76,7 +76,7 @@ public:
 	/// Ends the query execution.
 	void end();
 
-	void get_system_info(SystemInfo &p_info) const;
+	void get_system_info(SystemExeInfo &p_info) const;
 
 private:
 	bool has_entity(EntityID p_id) const;

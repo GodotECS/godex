@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "core/templates/local_vector.h"
 #include "../iterators/dynamic_query.h"
+#include "core/templates/local_vector.h"
 #include "system.h"
 
 class World;
@@ -13,15 +13,18 @@ namespace godex {
 /// This function register the `DynamicSystemInfo` in a static array (generated
 /// at compile time) and returns a pointer to a function that is able to call
 /// `godex::DynamicSystemInfo::executor()` with the passed `DynamicSystemInfo`.
-system_execute register_dynamic_system(const DynamicSystemInfo &p_info);
+uint32_t register_dynamic_system(const DynamicSystemInfo &p_info);
+get_system_exec_info_func get_dynamic_system_get_info(uint32_t p_dynamic_system_id);
 
+/// `DynamicSystemInfo` is a class used to compose a system at runtime.
 class DynamicSystemInfo {
 	struct DResource {
 		uint32_t resource_id;
 		bool is_mutable;
 	};
 
-	Object *target;
+	Object *target_script = nullptr;
+
 	/// Map used to map the list of Resources to the script.
 	LocalVector<uint32_t> resource_element_map;
 	/// Map used to map the list of Components to the script.
@@ -33,15 +36,15 @@ public:
 	DynamicSystemInfo();
 
 	void set_target(Object *p_target);
+	void set_target(system_execute p_target);
 	void with_resource(uint32_t p_resource_id, bool p_mutable);
 	void with_component(uint32_t p_component_id, bool p_mutable);
 	void without_component(uint32_t p_component_id);
 
-	SystemInfo get_system_info() const;
-
 public:
 	static StringName for_each_name;
 	/// This function is called
+	static SystemExeInfo get_info(DynamicSystemInfo &p_info, system_execute p_exec);
 	static void executor(World *p_world, DynamicSystemInfo &p_info);
 };
 
