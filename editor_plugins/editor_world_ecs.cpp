@@ -688,7 +688,12 @@ void EditorWorldECS::pipeline_item_position_change(const StringName &p_name, uin
 		return;
 	}
 
-	pipeline->insert_system(p_name, p_new_position);
+	editor->get_undo_redo()->create_action(TTR("Change system position"));
+	editor->get_undo_redo()->add_do_method(pipeline.ptr(), "insert_system", p_name, p_new_position);
+	// Undo by resetting the `system_names` because the `insert_system` changes
+	// the array not trivially.
+	editor->get_undo_redo()->add_undo_method(pipeline.ptr(), "set_systems_name", pipeline->get_systems_name().duplicate(true));
+	editor->get_undo_redo()->commit_action();
 }
 
 void EditorWorldECS::pipeline_system_remove(const StringName &p_name) {
@@ -696,7 +701,12 @@ void EditorWorldECS::pipeline_system_remove(const StringName &p_name) {
 		return;
 	}
 
-	pipeline->remove_system(p_name);
+	editor->get_undo_redo()->create_action(TTR("Remove system"));
+	editor->get_undo_redo()->add_do_method(pipeline.ptr(), "remove_system", p_name);
+	// Undo by resetting the `system_names` because the `insert_system` changes
+	// the array not trivially.
+	editor->get_undo_redo()->add_undo_method(pipeline.ptr(), "set_systems_name", pipeline->get_systems_name().duplicate(true));
+	editor->get_undo_redo()->commit_action();
 }
 
 void EditorWorldECS::add_sys_show() {
