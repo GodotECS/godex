@@ -55,7 +55,7 @@ void PipelineECS::insert_system(const StringName &p_system_name, uint32_t p_pos)
 	// Make sure to remove any previously declared link.
 	systems_name.erase(p_system_name);
 
-	if (p_pos == UINT32_MAX) {
+	if (int(p_pos) >= systems_name.size()) {
 		// Just push back.
 		systems_name.push_back(p_system_name);
 	} else {

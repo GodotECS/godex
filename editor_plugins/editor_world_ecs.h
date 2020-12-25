@@ -9,22 +9,33 @@ class EditorNode;
 class WorldECS;
 class PipelineECS;
 class EditorWorldECS;
+class SpinBox;
 
 class SystemInfoBox : public MarginContainer {
 	GDCLASS(SystemInfoBox, MarginContainer);
 
 	EditorNode *editor = nullptr;
-	Label *system_name = nullptr;
+	EditorWorldECS *editor_world_ecs = nullptr;
+	Button *position_btn = nullptr;
+	SpinBox *position_input = nullptr;
+	Label *system_name_lbl = nullptr;
 	ItemList *system_data_list = nullptr;
 
-public:
-	SystemInfoBox(EditorNode *p_editor);
-	SystemInfoBox(EditorNode *p_ditor, const String &p_system_name);
+	StringName system_name;
 
-	void set_system_name(const String &p_name);
+public:
+	SystemInfoBox(EditorNode *p_editor, EditorWorldECS *editor_world_ecs);
+	SystemInfoBox(EditorNode *p_ditor, EditorWorldECS *editor_world_ecs, const String &p_system_name);
+	~SystemInfoBox();
+
+	void set_position(uint32_t p_position);
+	void set_system_name(const StringName &p_name, bool p_valid = true);
 	void add_system_element(const String &p_name, bool is_write);
 
 	Point2 name_global_transform() const;
+
+	void position_btn_pressed();
+	void system_position_changed(double p_value);
 };
 
 class DrawLayer : public Control {
@@ -99,6 +110,8 @@ public:
 	void pipeline_remove_show_confirmation();
 	void pipeline_remove();
 	void pipeline_panel_update();
+
+	void pipeline_item_position_change(const StringName &p_name, uint32_t p_new_position);
 
 	void add_sys_show();
 	void add_sys_hide();

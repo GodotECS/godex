@@ -10,8 +10,9 @@
 #include "editor/editor_scale.h"
 #include "scene/gui/color_rect.h"
 
-SystemInfoBox::SystemInfoBox(EditorNode *p_editor) :
-		editor(p_editor) {
+SystemInfoBox::SystemInfoBox(EditorNode *p_editor, EditorWorldECS *p_editor_world_ecs) :
+		editor(p_editor),
+		editor_world_ecs(p_editor_world_ecs) {
 	add_theme_constant_override("margin_right", 2);
 	add_theme_constant_override("margin_top", 2);
 	add_theme_constant_override("margin_left", 2);
@@ -26,7 +27,7 @@ SystemInfoBox::SystemInfoBox(EditorNode *p_editor) :
 	MarginContainer *inner_container = memnew(MarginContainer);
 	inner_container->add_theme_constant_override("margin_right", 2);
 	inner_container->add_theme_constant_override("margin_top", 2);
-	inner_container->add_theme_constant_override("margin_left", 20);
+	inner_container->add_theme_constant_override("margin_left", 10);
 	inner_container->add_theme_constant_override("margin_bottom", 2);
 	add_child(inner_container);
 
@@ -35,10 +36,27 @@ SystemInfoBox::SystemInfoBox(EditorNode *p_editor) :
 	box->set_v_size_flags(0);
 	inner_container->add_child(box);
 
-	system_name = memnew(Label);
-	system_name->set_h_size_flags(0);
-	system_name->set_v_size_flags(0);
-	box->add_child(system_name);
+	position_btn = memnew(Button);
+	position_btn->set_text("#0");
+	position_btn->set_h_size_flags(0);
+	position_btn->set_v_size_flags(0);
+	position_btn->set_flat(true);
+	position_btn->connect("pressed", callable_mp(this, &SystemInfoBox::position_btn_pressed));
+	box->add_child(position_btn);
+
+	position_input = memnew(SpinBox);
+	position_input->set_h_size_flags(0);
+	position_input->set_v_size_flags(0);
+	position_input->set_visible(false);
+	position_input->set_max(10000);
+	position_input->set_step(-1); // Invert the spin box direction.
+	position_input->connect("value_changed", callable_mp(this, &SystemInfoBox::system_position_changed), Vector<Variant>(), CONNECT_DEFERRED);
+	box->add_child(position_input);
+
+	system_name_lbl = memnew(Label);
+	system_name_lbl->set_h_size_flags(0);
+	system_name_lbl->set_v_size_flags(0);
+	box->add_child(system_name_lbl);
 
 	system_data_list = memnew(ItemList);
 	system_data_list->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
@@ -50,13 +68,23 @@ SystemInfoBox::SystemInfoBox(EditorNode *p_editor) :
 	box->add_child(system_data_list);
 }
 
-SystemInfoBox::SystemInfoBox(EditorNode *p_editor, const String &p_system_name) :
-		SystemInfoBox(p_editor) {
+SystemInfoBox::SystemInfoBox(EditorNode *p_editor, EditorWorldECS *p_editor_world_ecs, const String &p_system_name) :
+		SystemInfoBox(p_editor, p_editor_world_ecs) {
 	set_system_name(p_system_name);
 }
 
-void SystemInfoBox::set_system_name(const String &p_name) {
-	system_name->set_text(p_name);
+SystemInfoBox::~SystemInfoBox() {
+}
+
+void SystemInfoBox::set_position(uint32_t p_position) {
+	position_input->set_visible(false);
+	position_input->set_value(p_position);
+	position_btn->set_text("#" + itos(p_position));
+}
+
+void SystemInfoBox::set_system_name(const StringName &p_name, bool p_valid) {
+	system_name_lbl->set_text(String(p_name) + (p_valid ? "" : " [INVALID]"));
+	system_name = p_name;
 }
 
 void SystemInfoBox::add_system_element(const String &p_name, bool is_write) {
@@ -70,8 +98,23 @@ void SystemInfoBox::add_system_element(const String &p_name, bool is_write) {
 }
 
 Point2 SystemInfoBox::name_global_transform() const {
-	Control *nc = static_cast<Control *>(system_name->get_parent());
+	Control *nc = static_cast<Control *>(system_name_lbl->get_parent());
 	return nc->get_global_position() + Vector2(0.0, nc->get_size().y / 2.0);
+}
+
+void SystemInfoBox::position_btn_pressed() {
+	position_input->set_visible(!position_input->is_visible());
+}
+
+void SystemInfoBox::system_position_changed(double p_value) {
+	if (position_input->is_visible() == false) {
+		// If not visible nothing to do.
+		return;
+	}
+	position_input->set_visible(false);
+
+	const uint32_t new_position = p_value;
+	editor_world_ecs->pipeline_item_position_change(system_name, new_position);
 }
 
 DrawLayer::DrawLayer() {
@@ -587,7 +630,7 @@ void EditorWorldECS::pipeline_panel_update() {
 			// Init a native system.
 			const uint32_t system_id = ECS::find_system_id(system_name);
 			if (system_id == UINT32_MAX) {
-				info_box->set_system_name(String(system_name) + " [INVALID]");
+				info_box->set_system_name(system_name, false);
 			} else {
 				const SystemInfo &system_info = ECS::get_system_info(system_id);
 
@@ -623,6 +666,14 @@ void EditorWorldECS::pipeline_panel_update() {
 			}
 		}
 	}
+}
+
+void EditorWorldECS::pipeline_item_position_change(const StringName &p_name, uint32_t p_new_position) {
+	if (pipeline.is_null()) {
+		return;
+	}
+
+	pipeline->insert_system(p_name, p_new_position);
 }
 
 void EditorWorldECS::add_sys_show() {
@@ -957,9 +1008,14 @@ void EditorWorldECS::_changed_callback(Object *p_changed, const char *p_prop) {
 }
 
 SystemInfoBox *EditorWorldECS::pipeline_panel_add_system() {
-	SystemInfoBox *info_box = memnew(SystemInfoBox(editor));
+	SystemInfoBox *info_box = memnew(SystemInfoBox(editor, this));
+
+	const uint32_t position = pipeline_systems.size();
+	info_box->set_position(position);
+
 	pipeline_systems.push_back(info_box);
 	pipeline_panel->add_child(info_box);
+
 	return info_box;
 }
 
