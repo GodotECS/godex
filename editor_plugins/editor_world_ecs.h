@@ -18,6 +18,7 @@ class SystemInfoBox : public MarginContainer {
 	EditorWorldECS *editor_world_ecs = nullptr;
 	Button *position_btn = nullptr;
 	SpinBox *position_input = nullptr;
+	Button *remove_btn = nullptr;
 	Label *system_name_lbl = nullptr;
 	ItemList *system_data_list = nullptr;
 
@@ -36,6 +37,8 @@ public:
 
 	void position_btn_pressed();
 	void system_position_changed(double p_value);
+
+	void system_remove();
 };
 
 class DrawLayer : public Control {
@@ -112,6 +115,7 @@ public:
 	void pipeline_panel_update();
 
 	void pipeline_item_position_change(const StringName &p_name, uint32_t p_new_position);
+	void pipeline_system_remove(const StringName &p_name);
 
 	void add_sys_show();
 	void add_sys_hide();

@@ -53,6 +53,14 @@ SystemInfoBox::SystemInfoBox(EditorNode *p_editor, EditorWorldECS *p_editor_worl
 	position_input->connect("value_changed", callable_mp(this, &SystemInfoBox::system_position_changed), Vector<Variant>(), CONNECT_DEFERRED);
 	box->add_child(position_input);
 
+	remove_btn = memnew(Button);
+	remove_btn->set_icon(editor->get_theme_base()->get_theme_icon("Remove", "EditorIcons"));
+	remove_btn->set_h_size_flags(0);
+	remove_btn->set_v_size_flags(0);
+	remove_btn->set_visible(false);
+	remove_btn->connect("pressed", callable_mp(this, &SystemInfoBox::system_remove), Vector<Variant>(), CONNECT_DEFERRED);
+	box->add_child(remove_btn);
+
 	system_name_lbl = memnew(Label);
 	system_name_lbl->set_h_size_flags(0);
 	system_name_lbl->set_v_size_flags(0);
@@ -79,6 +87,7 @@ SystemInfoBox::~SystemInfoBox() {
 void SystemInfoBox::set_position(uint32_t p_position) {
 	position_input->set_visible(false);
 	position_input->set_value(p_position);
+	remove_btn->set_visible(false);
 	position_btn->set_text("#" + itos(p_position));
 }
 
@@ -104,6 +113,7 @@ Point2 SystemInfoBox::name_global_transform() const {
 
 void SystemInfoBox::position_btn_pressed() {
 	position_input->set_visible(!position_input->is_visible());
+	remove_btn->set_visible(!remove_btn->is_visible());
 }
 
 void SystemInfoBox::system_position_changed(double p_value) {
@@ -112,9 +122,14 @@ void SystemInfoBox::system_position_changed(double p_value) {
 		return;
 	}
 	position_input->set_visible(false);
+	remove_btn->set_visible(false);
 
 	const uint32_t new_position = p_value;
 	editor_world_ecs->pipeline_item_position_change(system_name, new_position);
+}
+
+void SystemInfoBox::system_remove() {
+	editor_world_ecs->pipeline_system_remove(system_name);
 }
 
 DrawLayer::DrawLayer() {
@@ -673,7 +688,25 @@ void EditorWorldECS::pipeline_item_position_change(const StringName &p_name, uin
 		return;
 	}
 
-	pipeline->insert_system(p_name, p_new_position);
+	editor->get_undo_redo()->create_action(TTR("Change system position"));
+	editor->get_undo_redo()->add_do_method(pipeline.ptr(), "insert_system", p_name, p_new_position);
+	// Undo by resetting the `system_names` because the `insert_system` changes
+	// the array not trivially.
+	editor->get_undo_redo()->add_undo_method(pipeline.ptr(), "set_systems_name", pipeline->get_systems_name().duplicate(true));
+	editor->get_undo_redo()->commit_action();
+}
+
+void EditorWorldECS::pipeline_system_remove(const StringName &p_name) {
+	if (pipeline.is_null()) {
+		return;
+	}
+
+	editor->get_undo_redo()->create_action(TTR("Remove system"));
+	editor->get_undo_redo()->add_do_method(pipeline.ptr(), "remove_system", p_name);
+	// Undo by resetting the `system_names` because the `insert_system` changes
+	// the array not trivially.
+	editor->get_undo_redo()->add_undo_method(pipeline.ptr(), "set_systems_name", pipeline->get_systems_name().duplicate(true));
+	editor->get_undo_redo()->commit_action();
 }
 
 void EditorWorldECS::add_sys_show() {

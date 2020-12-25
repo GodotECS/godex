@@ -52,6 +52,8 @@ public:
 	/// needed.
 	void insert_system(const StringName &p_system_name, uint32_t p_pos = UINT32_MAX);
 
+	void remove_system(const StringName &p_system_name);
+
 	/// Builds the pipeline and returns it.
 	Pipeline *get_pipeline();
 };

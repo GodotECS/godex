@@ -15,6 +15,7 @@ void PipelineECS::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_systems_name"), &PipelineECS::get_systems_name);
 
 	ClassDB::bind_method(D_METHOD("insert_system", "system_name", "position"), &PipelineECS::insert_system, DEFVAL(-1));
+	ClassDB::bind_method(D_METHOD("remove_system", "system_name"), &PipelineECS::remove_system);
 
 	ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "pipeline_name"), "set_pipeline_name", "get_pipeline_name");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "systems_name"), "set_systems_name", "get_systems_name");
@@ -55,7 +56,7 @@ void PipelineECS::insert_system(const StringName &p_system_name, uint32_t p_pos)
 	// Make sure to remove any previously declared link.
 	systems_name.erase(p_system_name);
 
-	if (int(p_pos) >= systems_name.size()) {
+	if (p_pos >= uint32_t(systems_name.size())) {
 		// Just push back.
 		systems_name.push_back(p_system_name);
 	} else {
@@ -64,6 +65,11 @@ void PipelineECS::insert_system(const StringName &p_system_name, uint32_t p_pos)
 		systems_name.insert(p_pos, p_system_name);
 	}
 
+	_change_notify("systems_name");
+}
+
+void PipelineECS::remove_system(const StringName &p_system_name) {
+	systems_name.erase(p_system_name);
 	_change_notify("systems_name");
 }
 
