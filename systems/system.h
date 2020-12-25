@@ -7,6 +7,7 @@
 
 class World;
 
+// TODO rename using `func_` as prefix.
 typedef void (*system_execute)(World *p_world);
 
 // TODO this goes around, which copy the resource a bunch of times.
@@ -19,4 +20,5 @@ struct SystemExeInfo {
 	system_execute system_func = nullptr;
 };
 
+// TODO rename using `func_` as prefix.
 typedef SystemExeInfo (*get_system_exec_info_func)();

@@ -15,14 +15,14 @@ class TagTestComponent : public godex::Component {
 	COMPONENT(TagTestComponent, DenseVector)
 };
 
-struct TestSystem1Resource : public godex::Resource {
+class TestSystem1Resource : public godex::Resource {
 	RESOURCE(TestSystem1Resource)
 
 public:
 	int a = 10;
 };
 
-namespace godex_tests {
+namespace godex_tests_system {
 
 void test_system_tag(Query<TransformComponent, const TagTestComponent> &p_query) {
 	while (p_query.is_done() == false) {
@@ -61,6 +61,7 @@ TEST_CASE("[Modules][ECS] Test system and query") {
 
 	Pipeline pipeline;
 	pipeline.add_system(test_system_tag);
+	pipeline.build();
 
 	for (uint32_t i = 0; i < 3; i += 1) {
 		pipeline.dispatch(&world);
@@ -134,7 +135,8 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 	// Create the pipeline.
 	Pipeline pipeline;
 	// Add the system to the pipeline.
-	pipeline.add_registered_system(ECS::get_system_info(system_id));
+	pipeline.add_registered_system(system_id);
+	pipeline.build();
 
 	// Dispatch
 	for (uint32_t i = 0; i < 3; i += 1) {
@@ -175,6 +177,26 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 	}
 }
 
+TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
+	return;
+	World world;
+
+	EntityID entity_1 = world
+								.create_entity()
+								.with(TransformComponent());
+
+	godex::DynamicSystemInfo dynamic_system_info;
+	dynamic_system_info.with_component(TransformComponent::get_component_id(), true);
+	//dynamic_system_info.set_target(&test_system_tag);
+
+	uint32_t system_id = ECS::register_dynamic_system("TestDynamicSystem.gd", &dynamic_system_info);
+
+	Pipeline pipeline;
+	// Add the system to the pipeline.
+	pipeline.add_registered_system(system_id);
+	pipeline.build();
+}
+
 TEST_CASE("[Modules][ECS] Test system and resource") {
 	ECS::register_resource<TestSystem1Resource>();
 
@@ -191,6 +213,7 @@ TEST_CASE("[Modules][ECS] Test system and resource") {
 		Pipeline pipeline;
 		// Add the system to the pipeline.
 		pipeline.add_system(test_system_with_resource);
+		pipeline.build();
 
 		// Dispatch
 		for (uint32_t i = 0; i < 3; i += 1) {
@@ -211,6 +234,7 @@ TEST_CASE("[Modules][ECS] Test system and resource") {
 		Pipeline pipeline;
 		// Add the system to the pipeline.
 		pipeline.add_system(test_system_with_null_resource);
+		pipeline.build();
 
 		// Dispatch
 		for (uint32_t i = 0; i < 3; i += 1) {
@@ -228,6 +252,6 @@ TEST_CASE("[Modules][ECS] Test system and resource") {
 
 // TODO test resources with C++ and Scripts systems.
 
-} // namespace godex_tests
+} // namespace godex_tests_system
 
 #endif // TEST_ECS_SYSTEM_H

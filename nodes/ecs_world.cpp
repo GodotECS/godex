@@ -86,7 +86,7 @@ Pipeline *PipelineECS::get_pipeline() {
 		const StringName system_name = systems_name[i];
 		const godex::system_id id = ECS::find_system_id(system_name);
 		ERR_CONTINUE_MSG(id == UINT32_MAX, "The system " + system_name + " was not found.");
-		pipeline->add_registered_system(ECS::get_system_info(id));
+		pipeline->add_registered_system(id);
 	}
 
 	return pipeline;
