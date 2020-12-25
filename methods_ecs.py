@@ -58,9 +58,15 @@ def generate_dynamic_system_funcs():
     f.write("}\n")
 
     f.write("\n")
-    f.write("get_system_exec_info_func godex::get_dynamic_system_get_info(uint32_t p_id){\n")
+    f.write("get_system_exec_info_func godex::get_dynamic_system_get_exec_info(uint32_t p_id){\n")
     f.write("	CRASH_COND_MSG(p_id >= DYNAMIC_SYSTEMS_MAX, \"The ID \" + itos(p_id) + \" is out of bounds \" + itos(DYNAMIC_SYSTEMS_MAX) + \". Please open an issue so we can increase this limit.\");\n")
     f.write("	return dynamic_systems_get_info_ptr[p_id];\n")
+    f.write("}\n")
+
+    f.write("\n")
+    f.write("godex::DynamicSystemInfo* godex::get_dynamic_system_info(uint32_t p_id){\n")
+    f.write("	CRASH_COND_MSG(p_id >= DYNAMIC_SYSTEMS_MAX, \"The ID \" + itos(p_id) + \" is out of bounds \" + itos(DYNAMIC_SYSTEMS_MAX) + \". Please open an issue so we can increase this limit.\");\n")
+    f.write("	return &dynamic_info[p_id];\n")
     f.write("}\n")
 
     f.close()
