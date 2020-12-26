@@ -36,35 +36,32 @@ void godex::DynamicSystemInfo::without_component(uint32_t p_component_id) {
 
 StringName godex::DynamicSystemInfo::for_each_name;
 
-SystemExeInfo godex::DynamicSystemInfo::get_info(DynamicSystemInfo &p_info, system_execute p_exec) {
-	SystemExeInfo info;
-	info.system_func = p_exec;
-
+void godex::DynamicSystemInfo::get_info(DynamicSystemInfo &p_info, system_execute p_exec, SystemExeInfo &r_out) {
 	if (p_info.target_sub_pipeline) {
 		// Sub pipeline execution.
 		// The pipeline must be fully build at this point
 		CRASH_COND_MSG(p_info.target_sub_pipeline->is_ready() == false, "The sub pipeline is not yet builded. Make sure to fully build it before using it as sub pipeline.");
 		// Extract all the pipeline dependencies.
-		p_info.target_sub_pipeline->get_systems_dependencies(info);
+		p_info.target_sub_pipeline->get_systems_dependencies(r_out);
 	} else {
 		// Script function.
-		ERR_FAIL_COND_V_MSG(p_info.target_script == nullptr, SystemExeInfo(), "[FATAL] This system doesn't have target assigned.");
+		ERR_FAIL_COND_MSG(p_info.target_script == nullptr, "[FATAL] This system doesn't have target assigned.");
 
 		// Script execution.
-		ERR_FAIL_COND_V(p_info.query.is_valid() == false, SystemExeInfo());
+		ERR_FAIL_COND(p_info.query.is_valid() == false);
 
 		for (uint32_t i = 0; i < p_info.resources.size(); i += 1) {
 			if (p_info.resources[i].is_mutable) {
-				info.mutable_resources.push_back(p_info.resources[i].resource_id);
+				r_out.mutable_resources.push_back(p_info.resources[i].resource_id);
 			} else {
-				info.immutable_resources.push_back(p_info.resources[i].resource_id);
+				r_out.immutable_resources.push_back(p_info.resources[i].resource_id);
 			}
 		}
 
-		p_info.query.get_system_info(info);
+		p_info.query.get_system_info(r_out);
 	}
 
-	return info;
+	r_out.system_func = p_exec;
 }
 
 void godex::DynamicSystemInfo::executor(World *p_world, DynamicSystemInfo &p_info) {

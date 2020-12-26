@@ -33,13 +33,17 @@ void Pipeline::build() {
 
 	systems.reserve(systems_info.size());
 
+	SystemExeInfo info;
 	for (uint32_t i = 0; i < systems_info.size(); i += 1) {
-		const SystemExeInfo info = systems_info[i]();
+		info.clear();
+		systems_info[i](info);
+
 #ifdef DEBUG_ENABLED
 		// This is automated by the `add_system` macro or by
 		// `ECS::register_system` macro, so is never supposed to happen.
 		CRASH_COND_MSG(info.system_func == nullptr, "At this point `info.system_func` is supposed to be not null. To add a system use the following syntax: `add_system(function_name);` or use the `ECS` class to get the `SystemExeInfo` if it's a registered system.");
 #endif
+
 		systems.push_back(info.system_func);
 	}
 }
@@ -49,8 +53,11 @@ bool Pipeline::is_ready() const {
 }
 
 void Pipeline::get_systems_dependencies(SystemExeInfo &p_info) const {
+	SystemExeInfo other_info;
 	for (uint32_t i = 0; i < systems_info.size(); i += 1) {
-		const SystemExeInfo other_info = systems_info[i]();
+		other_info.clear();
+
+		systems_info[i](other_info);
 
 		// Handles the Components.
 		for (uint32_t t = 0; t < other_info.immutable_components.size(); t += 1) {

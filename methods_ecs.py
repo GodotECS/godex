@@ -28,8 +28,8 @@ def generate_dynamic_system_funcs():
         f.write("	godex::DynamicSystemInfo::executor(p_world, dynamic_info[" + str(i) + "]);\n")
         f.write("}\n")
         f.write("\n")
-        f.write("SystemExeInfo dynamic_system_get_info_internal_" + str(i) + "() {\n")
-        f.write("	return godex::DynamicSystemInfo::get_info(dynamic_info[" + str(i) + "], dynamic_system_exec_internal_"+str(i)+");\n")
+        f.write("void dynamic_system_get_info_internal_" + str(i) + "(SystemExeInfo& r_info) {\n")
+        f.write("	godex::DynamicSystemInfo::get_info(dynamic_info[" + str(i) + "], dynamic_system_exec_internal_"+str(i)+", r_info);\n")
         f.write("}\n")
 
     # Write the array that olds the function pointers.

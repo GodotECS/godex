@@ -51,10 +51,8 @@ struct InfoConstructor<C, Cs...> : InfoConstructor<Cs...> {
 
 /// Creates a SystemExeInfo, extracting the information from a system function.
 template <class... RCs>
-SystemExeInfo get_system_info_from_function(void (*system_func)(RCs...)) {
-	SystemExeInfo si;
-	InfoConstructor<RCs...> a(si);
-	return si;
+void get_system_info_from_function(SystemExeInfo &r_info, void (*system_func)(RCs...)) {
+	InfoConstructor<RCs...> a(r_info);
 }
 
 // This is an utility used to convert the type to a reference (`&`).

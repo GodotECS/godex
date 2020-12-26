@@ -647,7 +647,8 @@ void EditorWorldECS::pipeline_panel_update() {
 			if (system_id == UINT32_MAX) {
 				info_box->set_system_name(system_name, false);
 			} else {
-				const SystemExeInfo system_exec_info = ECS::get_system_exe_info(system_id);
+				SystemExeInfo system_exec_info;
+				ECS::get_system_exe_info(system_id, system_exec_info);
 				const StringName key_name = ECS::get_system_name(system_id);
 
 				info_box->set_system_name(key_name);

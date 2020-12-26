@@ -52,9 +52,8 @@ public:
 
 public:
 	static StringName for_each_name;
-	// TODO instead to return the info consider pass it as reference, to avoid
-	// any copy.
-	static SystemExeInfo get_info(DynamicSystemInfo &p_info, system_execute p_exec);
+
+	static void get_info(DynamicSystemInfo &p_info, system_execute p_exec, SystemExeInfo &r_out);
 	static void executor(World *p_world, DynamicSystemInfo &p_info);
 };
 
