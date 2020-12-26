@@ -692,7 +692,7 @@ void EditorWorldECS::pipeline_panel_update() {
 				ECS::get_system_exe_info(system_id, system_exec_info);
 				const StringName key_name = ECS::get_system_name(system_id);
 
-				const bool is_dispatcher = ECS::is_system_pipeline_dispatcher(system_id);
+				const bool is_dispatcher = ECS::is_system_dispatcher(system_id);
 				if (is_dispatcher) {
 					// This is a dispatcher system, don't print the dependencies.
 					info_box->set_pipeline_dispatcher(world_ecs->get_system_dispatchers_pipeline(key_name));
@@ -820,7 +820,7 @@ void EditorWorldECS::add_sys_update(const String &p_search) {
 		}
 
 		TreeItem *item = add_sys_tree->create_item(native_root);
-		if (ECS::is_system_pipeline_dispatcher(system_id)) {
+		if (ECS::is_system_dispatcher(system_id)) {
 			item->set_icon(0, editor->get_theme_base()->get_theme_icon("ShaderMaterial", "EditorIcons"));
 		} else {
 			item->set_icon(0, editor->get_theme_base()->get_theme_icon("ShaderGlobalsOverride", "EditorIcons"));

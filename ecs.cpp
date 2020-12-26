@@ -170,22 +170,22 @@ void ECS::set_dynamic_system_target(godex::system_id p_id, Object *p_target) {
 	info->set_target(p_target);
 }
 
-void ECS::set_dynamic_system_pipeline(godex::system_id p_id, Pipeline *p_pipeline) {
-	ERR_FAIL_COND_MSG(verify_system_id(p_id) == false, "This system " + itos(p_id) + " doesn't exists.");
-	ERR_FAIL_COND_MSG(systems_info[p_id].dynamic_system_id == UINT32_MAX, "The system " + itos(p_id) + " is not a dynamic system.");
-	godex::DynamicSystemInfo *info = godex::get_dynamic_system_info(systems_info[p_id].dynamic_system_id);
-	ERR_FAIL_COND_MSG(info->is_sub_pipeline_dispatcher() == false, "The system " + itos(p_id) + " is not a sub pipeline dispatcher.");
-	info->set_pipeline(p_pipeline);
-}
-
-bool ECS::is_system_pipeline_dispatcher(godex::system_id p_id) {
+bool ECS::is_system_dispatcher(godex::system_id p_id) {
 	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, false, "This system " + itos(p_id) + " doesn't exists.");
 	if (systems_info[p_id].dynamic_system_id == UINT32_MAX) {
 		// Only dynamic systems are pipeline_dispatchers.
 		return false;
 	}
 	godex::DynamicSystemInfo *info = godex::get_dynamic_system_info(systems_info[p_id].dynamic_system_id);
-	return info->is_sub_pipeline_dispatcher();
+	return info->is_system_dispatcher();
+}
+
+void ECS::set_system_pipeline(godex::system_id p_id, Pipeline *p_pipeline) {
+	ERR_FAIL_COND_MSG(verify_system_id(p_id) == false, "This system " + itos(p_id) + " doesn't exists.");
+	ERR_FAIL_COND_MSG(systems_info[p_id].dynamic_system_id == UINT32_MAX, "The system " + itos(p_id) + " is not a dynamic system.");
+	godex::DynamicSystemInfo *info = godex::get_dynamic_system_info(systems_info[p_id].dynamic_system_id);
+	ERR_FAIL_COND_MSG(info->is_system_dispatcher() == false, "The system " + itos(p_id) + " is not a sub pipeline dispatcher.");
+	info->set_pipeline(p_pipeline);
 }
 
 bool ECS::verify_system_id(godex::system_id p_id) {

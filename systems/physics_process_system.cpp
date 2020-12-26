@@ -61,7 +61,7 @@ void physics_pipeline_dispatcher(World *p_world, Pipeline *p_pipeline) {
 
 	engine->get_engine()->set_in_physics_frame(true);
 
-	for (uint32_t i = 0; i < godot_iterator->get_main_frame_time().physics_steps; i += 1) {
+	for (int i = 0; i < godot_iterator->get_main_frame_time().physics_steps; i += 1) {
 		// Dispatches the sub pipeline.
 		p_pipeline->dispatch(p_world);
 

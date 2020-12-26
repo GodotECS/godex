@@ -224,7 +224,7 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 	sub_pipeline_system.with_resource(TestSystemSubPipeResource::get_resource_id(), false);
 
 	const uint32_t sub_pipeline_system_id = ECS::register_dynamic_system("TestSubPipelineExecute", &sub_pipeline_system);
-	ECS::set_dynamic_system_pipeline(sub_pipeline_system_id, &sub_pipeline);
+	ECS::set_system_pipeline(sub_pipeline_system_id, &sub_pipeline);
 
 	// ~~ Main pipeline ~~
 	Pipeline main_pipeline;

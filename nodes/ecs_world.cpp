@@ -90,13 +90,13 @@ Pipeline *PipelineECS::get_pipeline(WorldECS *p_associated_world) {
 
 		ERR_CONTINUE_MSG(ECS::verify_system_id(id) == false, "The system " + system_name + " was not found.");
 
-		if (ECS::is_system_pipeline_dispatcher(id)) {
+		if (ECS::is_system_dispatcher(id)) {
 			// Special treatment for systems dispatchers: Init before set.
 
 			const StringName pipeline_name = p_associated_world->get_system_dispatchers_pipeline(system_name);
 			Ref<PipelineECS> sub_pipeline = p_associated_world->find_pipeline(pipeline_name);
 			ERR_CONTINUE_MSG(sub_pipeline.is_null(), "The pipeline " + pipeline_name + " is not found. It's needed to set it as sub pipeline for the system: " + system_name);
-			ECS::set_dynamic_system_pipeline(id, sub_pipeline->get_pipeline(p_associated_world));
+			ECS::set_system_pipeline(id, sub_pipeline->get_pipeline(p_associated_world));
 		}
 
 		pipeline->add_registered_system(id);
