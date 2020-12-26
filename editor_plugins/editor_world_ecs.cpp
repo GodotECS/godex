@@ -758,7 +758,7 @@ void EditorWorldECS::add_sys_update(const String &p_search) {
 		}
 
 		TreeItem *item = add_sys_tree->create_item(native_root);
-		item->set_text(0, name);
+		item->set_text(0, key_name);
 		item->set_meta("system_name", key_name);
 		item->set_meta("desc", desc);
 	}

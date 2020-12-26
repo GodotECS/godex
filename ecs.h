@@ -92,7 +92,7 @@ public:
 	static void register_system(func_get_system_exe_info p_func_get_exe_info, StringName p_name, String p_description = "");
 
 	// Register the system and returns the ID.
-	static godex::system_id register_dynamic_system(StringName p_name, const godex::DynamicSystemInfo *p_info);
+	static godex::system_id register_dynamic_system(StringName p_name, const godex::DynamicSystemInfo *p_info, const String &p_description = String());
 
 // This macro save the user the need to pass a `SystemExeInfo`, indeed it wraps
 // the passed function with a labda function that creates a `SystemExeInfo`.
@@ -118,6 +118,7 @@ public:
 	static StringName get_system_name(godex::system_id p_id);
 	static String get_system_desc(godex::system_id p_id);
 	static void set_dynamic_system_target(godex::system_id p_id, Object *p_target);
+	static void set_dynamic_system_pipeline(godex::system_id p_id, Pipeline *p_pipeline);
 	static bool verify_system_id(godex::system_id p_id);
 
 protected:

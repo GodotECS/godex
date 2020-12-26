@@ -61,8 +61,15 @@ void register_godex_types() {
 	ECS::register_resource<MessageQueueResource>();
 
 	// ~ Register engine systems ~
-	//ECS::register_system(physics_2d_process_system, "Physics2dProcessSystem", "Steps the physics 2D [not yet implemented].");
-	ECS::register_system(physics_3d_process_system, "Physics3dProcessSystem", "Steps the physics.");
+	{
+		// Register 3D physics systems.
+		godex::DynamicSystemInfo physics_dispatcher;
+		create_physics_dispatcher_system(physics_dispatcher);
+		ECS::register_dynamic_system("PhysicsPipelineDispatcher", &physics_dispatcher, "System that dispatches its sub pipeline at fixed rate. The rate is defined by `Physics Hz` in the settings.");
+
+		ECS::register_system(call_physics_process, "CallPhysicsProcess", "Updates the Godot Nodes (2D/3D) transform and fetches the events from the physics engine.");
+		ECS::register_system(step_physics_server_3d, "StepPhysicsServer3D", "Steps the PhysicsServer3D.");
+	}
 }
 
 void unregister_godex_types() {

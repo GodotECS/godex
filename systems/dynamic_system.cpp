@@ -40,6 +40,10 @@ void godex::DynamicSystemInfo::set_pipeline(Pipeline *p_target) {
 	target_sub_pipeline = p_target;
 }
 
+bool godex::DynamicSystemInfo::is_sub_pipeline_dispatcher() const {
+	return sub_pipeline_execute != nullptr;
+}
+
 StringName godex::DynamicSystemInfo::for_each_name;
 
 void godex::DynamicSystemInfo::get_info(DynamicSystemInfo &p_info, func_system_execute p_exec, SystemExeInfo &r_out) {
