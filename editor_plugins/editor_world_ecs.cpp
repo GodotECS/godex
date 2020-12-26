@@ -62,8 +62,8 @@ SystemInfoBox::SystemInfoBox(EditorNode *p_editor, EditorWorldECS *p_editor_worl
 	box->add_child(remove_btn);
 
 	system_name_lbl = memnew(Label);
-	system_name_lbl->set_h_size_flags(0);
-	system_name_lbl->set_v_size_flags(0);
+	system_name_lbl->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+	system_name_lbl->set_v_size_flags(SizeFlags::SIZE_EXPAND);
 	box->add_child(system_name_lbl);
 
 	system_data_list = memnew(ItemList);
@@ -410,8 +410,9 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		add_sys_desc->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 		add_sys_desc->set_v_size_flags(0);
 		add_sys_desc->set_custom_minimum_size(Size2i(0, 50));
-		add_sys_desc->set_h_scroll(true);
-		add_sys_desc->set_v_scroll(false);
+		add_sys_desc->set_h_scroll(false);
+		add_sys_desc->set_v_scroll(true);
+		add_sys_desc->set_wrap_enabled(true);
 		add_sys_desc->set_context_menu_enabled(false);
 		add_sys_desc->set_shortcut_keys_enabled(false);
 		add_sys_desc->set_virtual_keyboard_enabled(false);
