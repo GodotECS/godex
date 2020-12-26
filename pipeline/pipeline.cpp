@@ -9,16 +9,16 @@ Pipeline::Pipeline() {
 // Unset the macro defined into the `pipeline.h` so to properly point the method
 // definition.
 #undef add_system
-void Pipeline::add_system(get_system_exec_info_func p_get_info_func) {
+void Pipeline::add_system(func_get_system_exe_info p_func_get_exe_info) {
 #ifdef DEBUG_ENABLED
 	// This is automated by the `add_system` macro or by
 	// `ECS::register_system` macro, so is never supposed to happen.
-	CRASH_COND_MSG(p_get_info_func == nullptr, "The passed system constructor can't be nullptr at this point.");
+	CRASH_COND_MSG(p_func_get_exe_info == nullptr, "The passed system constructor can't be nullptr at this point.");
 	// Using crash cond because pipeline composition is not directly exposed
 	// to the user.
 	CRASH_COND_MSG(is_ready(), "The pipeline is ready, you can't modify it.");
 #endif
-	systems_info.push_back(p_get_info_func);
+	systems_info.push_back(p_func_get_exe_info);
 }
 
 void Pipeline::add_registered_system(godex::system_id p_id) {
@@ -31,7 +31,7 @@ void Pipeline::build() {
 #endif
 	ready = true;
 
-	systems.reserve(systems_info.size());
+	systems_exe.reserve(systems_info.size());
 
 	SystemExeInfo info;
 	for (uint32_t i = 0; i < systems_info.size(); i += 1) {
@@ -44,7 +44,7 @@ void Pipeline::build() {
 		CRASH_COND_MSG(info.system_func == nullptr, "At this point `info.system_func` is supposed to be not null. To add a system use the following syntax: `add_system(function_name);` or use the `ECS` class to get the `SystemExeInfo` if it's a registered system.");
 #endif
 
-		systems.push_back(info.system_func);
+		systems_exe.push_back(info.system_func);
 	}
 }
 
@@ -101,7 +101,7 @@ void Pipeline::get_systems_dependencies(SystemExeInfo &p_info) const {
 
 void Pipeline::reset() {
 	systems_info.clear();
-	systems.clear();
+	systems_exe.clear();
 	ready = false;
 }
 
@@ -109,7 +109,7 @@ void Pipeline::dispatch(World *p_world) {
 #ifdef DEBUG_ENABLED
 	CRASH_COND_MSG(ready == false, "You can't dispatch a pipeline which is not yet builded. Please call `build`.");
 #endif
-	for (uint32_t i = 0; i < systems.size(); i += 1) {
-		systems[i](p_world);
+	for (uint32_t i = 0; i < systems_exe.size(); i += 1) {
+		systems_exe[i](p_world);
 	}
 }

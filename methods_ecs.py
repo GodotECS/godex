@@ -34,7 +34,7 @@ def generate_dynamic_system_funcs():
 
     # Write the array that olds the function pointers.
     f.write("\n")
-    f.write("get_system_exec_info_func dynamic_systems_get_info_ptr[DYNAMIC_SYSTEMS_MAX] = {\n")
+    f.write("func_get_system_exe_info func_get_dynamic_systems_exe_info_ptr[DYNAMIC_SYSTEMS_MAX] = {\n")
     for i in range(max_dynamic_systems):
         if i > 0:
             f.write(", ")
@@ -42,7 +42,7 @@ def generate_dynamic_system_funcs():
     f.write("};\n")
 
     f.write("\n")
-    f.write("system_execute dynamic_systems_ptr[DYNAMIC_SYSTEMS_MAX] = {\n")
+    f.write("func_system_execute dynamic_systems_ptr[DYNAMIC_SYSTEMS_MAX] = {\n")
     for i in range(max_dynamic_systems):
         if i > 0:
             f.write(", ")
@@ -58,9 +58,9 @@ def generate_dynamic_system_funcs():
     f.write("}\n")
 
     f.write("\n")
-    f.write("get_system_exec_info_func godex::get_dynamic_system_get_exec_info(uint32_t p_id){\n")
+    f.write("func_get_system_exe_info godex::get_func_dynamic_system_exec_info(uint32_t p_id){\n")
     f.write("	CRASH_COND_MSG(p_id >= DYNAMIC_SYSTEMS_MAX, \"The ID \" + itos(p_id) + \" is out of bounds \" + itos(DYNAMIC_SYSTEMS_MAX) + \". Please open an issue so we can increase this limit.\");\n")
-    f.write("	return dynamic_systems_get_info_ptr[p_id];\n")
+    f.write("	return func_get_dynamic_systems_exe_info_ptr[p_id];\n")
     f.write("}\n")
 
     f.write("\n")

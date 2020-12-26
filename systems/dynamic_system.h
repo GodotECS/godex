@@ -18,7 +18,7 @@ class DynamicSystemInfo;
 /// at compile time) and returns a pointer to a function that is able to call
 /// `godex::DynamicSystemInfo::executor()` with the passed `DynamicSystemInfo`.
 uint32_t register_dynamic_system(const DynamicSystemInfo &p_info);
-get_system_exec_info_func get_dynamic_system_get_exec_info(uint32_t p_dynamic_system_id);
+func_get_system_exe_info get_func_dynamic_system_exec_info(uint32_t p_dynamic_system_id);
 DynamicSystemInfo *get_dynamic_system_info(uint32_t p_dynamic_system_id);
 
 /// `DynamicSystemInfo` is a class used to compose a system at runtime.
@@ -53,7 +53,7 @@ public:
 public:
 	static StringName for_each_name;
 
-	static void get_info(DynamicSystemInfo &p_info, system_execute p_exec, SystemExeInfo &r_out);
+	static void get_info(DynamicSystemInfo &p_info, func_system_execute p_exec, SystemExeInfo &r_out);
 	static void executor(World *p_world, DynamicSystemInfo &p_info);
 };
 
