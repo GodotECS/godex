@@ -14,6 +14,8 @@ namespace godex {
 
 class DynamicSystemInfo;
 
+typedef void (*func_system_execute_pipeline)(World *p_world, Pipeline *p_pipeline);
+
 /// This function register the `DynamicSystemInfo` in a static array (generated
 /// at compile time) and returns a pointer to a function that is able to call
 /// `godex::DynamicSystemInfo::executor()` with the passed `DynamicSystemInfo`.
@@ -24,14 +26,17 @@ DynamicSystemInfo *get_dynamic_system_info(uint32_t p_dynamic_system_id);
 /// `DynamicSystemInfo` is a class used to compose a system at runtime.
 /// It's able to execute script systems and sub pipeline systems, in both case
 /// the dependency graph is only known at runtime.
+// TODO this works, but I'm not really happy about it.
+//      Please, split this class or improve the mechanism so that script query
+//      and sub pipeline executor are not held by the same class at the same time.
 class DynamicSystemInfo {
+	// ~~ Script system ~~
 	struct DResource {
 		uint32_t resource_id;
 		bool is_mutable;
 	};
 
 	Object *target_script = nullptr;
-	Pipeline *target_sub_pipeline = nullptr;
 
 	/// Map used to map the list of Resources to the script.
 	LocalVector<uint32_t> resource_element_map;
@@ -40,15 +45,21 @@ class DynamicSystemInfo {
 	LocalVector<DResource> resources;
 	DynamicQuery query;
 
+	// ~~ Sub pipeline system ~~
+	func_system_execute_pipeline sub_pipeline_execute = nullptr;
+	Pipeline *target_sub_pipeline = nullptr;
+
 public:
 	DynamicSystemInfo();
 
 	void set_target(Object *p_target);
-	void set_target(Pipeline *p_pipeline);
 
 	void with_resource(uint32_t p_resource_id, bool p_mutable);
 	void with_component(uint32_t p_component_id, bool p_mutable);
 	void without_component(uint32_t p_component_id);
+
+	void set_target(func_system_execute_pipeline p_sub_pipeline_execite);
+	void set_pipeline(Pipeline *p_pipeline);
 
 public:
 	static StringName for_each_name;

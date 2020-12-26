@@ -22,6 +22,13 @@ public:
 	int a = 10;
 };
 
+class TestSystemSubPipeResource : public godex::Resource {
+	RESOURCE(TestSystemSubPipeResource)
+
+public:
+	int exe_count = 0;
+};
+
 namespace godex_tests_system {
 
 void test_system_tag(Query<TransformComponent, const TagTestComponent> &p_query) {
@@ -177,24 +184,85 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 	}
 }
 
+void test_sub_pipeline_execute(World *p_world, Pipeline *p_pipeline) {
+	CRASH_COND_MSG(p_world == nullptr, "The world is never nullptr in this test.");
+	CRASH_COND_MSG(p_pipeline == nullptr, "The pipeline is never nullptr in this test.");
+	CRASH_COND_MSG(p_pipeline->is_ready() == false, "The pipeline is not supposed to be not ready at this point.");
+
+	uint32_t exe_count = 0;
+	// Extract the info and forget about the resource, so the pipeline can
+	// access it safely.
+	{
+		const TestSystemSubPipeResource *res = p_world->get_resource<TestSystemSubPipeResource>();
+		exe_count = res->exe_count;
+	}
+
+	for (uint32_t i = 0; i < exe_count; i += 1) {
+		p_pipeline->dispatch(p_world);
+	}
+}
+
+void test_system_transform_add_x(Query<TransformComponent> &p_query) {
+	while (p_query.is_done() == false) {
+		auto [transform] = p_query.get();
+		transform.transform.origin.x += 100.0;
+		p_query.next_entity();
+	}
+}
+
 TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
-	return;
+	ECS::register_resource<TestSystemSubPipeResource>();
+
+	// ~~ Sub pipeline ~~
+	Pipeline sub_pipeline;
+	sub_pipeline.add_system(test_system_transform_add_x);
+	sub_pipeline.build();
+
+	godex::DynamicSystemInfo sub_pipeline_system;
+	sub_pipeline_system.set_target(test_sub_pipeline_execute);
+	sub_pipeline_system.set_pipeline(&sub_pipeline);
+	// Used internally by the system.
+	sub_pipeline_system.with_resource(TestSystemSubPipeResource::get_resource_id(), false);
+
+	const uint32_t sub_pipeline_system_id = ECS::register_dynamic_system("TestSubPipelineExecute", &sub_pipeline_system);
+
+	// ~~ Main pipeline ~~
+	Pipeline main_pipeline;
+	main_pipeline.add_registered_system(sub_pipeline_system_id);
+	main_pipeline.build();
+
+	// ~~ Create world ~~
 	World world;
+	world.add_resource<TestSystemSubPipeResource>();
+	world.get_resource<TestSystemSubPipeResource>()->exe_count = 2;
 
 	EntityID entity_1 = world
 								.create_entity()
 								.with(TransformComponent());
 
-	godex::DynamicSystemInfo dynamic_system_info;
-	dynamic_system_info.with_component(TransformComponent::get_component_id(), true);
-	//dynamic_system_info.set_target(&test_system_tag);
+	// ~~ Test ~~
+	{
+		main_pipeline.dispatch(&world);
+		main_pipeline.dispatch(&world);
 
-	uint32_t system_id = ECS::register_dynamic_system("TestDynamicSystem.gd", &dynamic_system_info);
+		// The subsystem is dispatched 2 times per main pipeline dispatch,
+		// since we are dispatching the main pipeline 2 times the
+		// `test_system_transform_add_x` add 100, four times.
+		const TransformComponent &comp = world.get_storage<TransformComponent>()->get(entity_1);
+		CHECK(ABS(comp.transform.origin.x - 400.0) <= CMP_EPSILON);
+	}
 
-	Pipeline pipeline;
-	// Add the system to the pipeline.
-	pipeline.add_registered_system(system_id);
-	pipeline.build();
+	{
+		// Now change the sub execution to 6
+		world.get_resource<TestSystemSubPipeResource>()->exe_count = 6;
+
+		// Dispatch the main pipeline
+		main_pipeline.dispatch(&world);
+
+		// Verify the execution is properly done by making sure the value is 1000.
+		const TransformComponent &comp = world.get_storage<TransformComponent>()->get(entity_1);
+		CHECK(ABS(comp.transform.origin.x - 1000.0) <= CMP_EPSILON);
+	}
 }
 
 TEST_CASE("[Modules][ECS] Test system and resource") {
@@ -246,7 +314,7 @@ TEST_CASE("[Modules][ECS] Test system and resource") {
 	}
 }
 
-TEST_CASE("[Modules][ECS] Test system and resource") {
+TEST_CASE("[Modules][ECS] Test system and script resource") {
 	// TODO
 }
 
