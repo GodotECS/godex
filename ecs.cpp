@@ -98,7 +98,7 @@ StringName ECS::get_resource_name(godex::resource_id p_resource_id) {
 #undef register_system
 void ECS::register_system(get_system_exec_info_func p_get_info_func, StringName p_name, String p_description) {
 	{
-		const uint32_t id = find_system_id(p_name);
+		const uint32_t id = get_system_id(p_name);
 		ERR_FAIL_COND_MSG(id != UINT32_MAX, "The system is already registered.");
 	}
 
@@ -114,7 +114,7 @@ void ECS::register_system(get_system_exec_info_func p_get_info_func, StringName 
 godex::system_id ECS::register_dynamic_system(StringName p_name, const godex::DynamicSystemInfo *p_info) {
 	ERR_FAIL_COND_V_MSG(p_info == nullptr, UINT32_MAX, "`DynamicSysteInfo` can't be nullptr.");
 	{
-		const uint32_t id = find_system_id(p_name);
+		const uint32_t id = get_system_id(p_name);
 		ERR_FAIL_COND_V_MSG(id != UINT32_MAX, UINT32_MAX, "The system is already registered.");
 	}
 
@@ -134,7 +134,7 @@ godex::system_id ECS::register_dynamic_system(StringName p_name, const godex::Dy
 	return id;
 }
 
-godex::system_id ECS::find_system_id(StringName p_name) {
+godex::system_id ECS::get_system_id(const StringName &p_name) {
 	const int64_t index = systems.find(p_name);
 	return index >= 0 ? godex::system_id(index) : UINT32_MAX;
 }

@@ -643,7 +643,7 @@ void EditorWorldECS::pipeline_panel_update() {
 
 		} else {
 			// Init a native system.
-			const uint32_t system_id = ECS::find_system_id(system_name);
+			const uint32_t system_id = ECS::get_system_id(system_name);
 			if (system_id == UINT32_MAX) {
 				info_box->set_system_name(system_name, false);
 			} else {

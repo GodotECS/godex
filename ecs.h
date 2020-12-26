@@ -109,7 +109,7 @@ public:
 			name, desc)
 
 	/// Returns the system id or UINT32_MAX if not found.
-	static godex::system_id find_system_id(StringName p_name); // TODO rename to `get_system_id`.
+	static godex::system_id get_system_id(const StringName &p_name);
 	static uint32_t get_systems_count();
 	/// Returns the function that can be used to obtain the `SystemExeInfo`.
 	static get_system_exec_info_func get_func_system_exe_info(godex::system_id p_id);
