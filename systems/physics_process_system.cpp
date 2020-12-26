@@ -75,7 +75,7 @@ void physics_pipeline_dispatcher(World *p_world, Pipeline *p_pipeline) {
 	engine->get_engine()->set_in_physics_frame(false);
 }
 
-void create_physics_dispatcher_system(godex::DynamicSystemInfo &r_info) {
+void create_physics_system_dispatcher(godex::DynamicSystemInfo &r_info) {
 	r_info.set_target(physics_pipeline_dispatcher);
 	r_info.with_resource(GodotIteratorInfoResource::get_resource_id(), false);
 	r_info.with_resource(EngineResource::get_resource_id(), true);
