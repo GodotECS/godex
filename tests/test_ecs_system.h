@@ -220,11 +220,11 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 
 	godex::DynamicSystemInfo sub_pipeline_system;
 	sub_pipeline_system.set_target(test_sub_pipeline_execute);
-	sub_pipeline_system.set_pipeline(&sub_pipeline);
-	// Used internally by the system.
+	// Used internally by the `test_sub_pipeline_execute`.
 	sub_pipeline_system.with_resource(TestSystemSubPipeResource::get_resource_id(), false);
 
 	const uint32_t sub_pipeline_system_id = ECS::register_dynamic_system("TestSubPipelineExecute", &sub_pipeline_system);
+	ECS::set_dynamic_system_pipeline(sub_pipeline_system_id, &sub_pipeline);
 
 	// ~~ Main pipeline ~~
 	Pipeline main_pipeline;

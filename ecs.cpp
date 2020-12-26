@@ -111,7 +111,7 @@ void ECS::register_system(func_get_system_exe_info p_func_get_exe_info, StringNa
 	print_line("System: " + p_name + " registered with ID: " + itos(id));
 }
 
-godex::system_id ECS::register_dynamic_system(StringName p_name, const godex::DynamicSystemInfo *p_info) {
+godex::system_id ECS::register_dynamic_system(StringName p_name, const godex::DynamicSystemInfo *p_info, const String &p_description) {
 	ERR_FAIL_COND_V_MSG(p_info == nullptr, UINT32_MAX, "`DynamicSysteInfo` can't be nullptr.");
 	{
 		const uint32_t id = get_system_id(p_name);
@@ -125,7 +125,7 @@ godex::system_id ECS::register_dynamic_system(StringName p_name, const godex::Dy
 	const uint32_t dynamic_system_id = godex::register_dynamic_system(*p_info);
 
 	systems.push_back(p_name);
-	systems_info.push_back({ "Script system",
+	systems_info.push_back({ p_description,
 			dynamic_system_id,
 			godex::get_func_dynamic_system_exec_info(dynamic_system_id) });
 
@@ -168,6 +168,14 @@ void ECS::set_dynamic_system_target(godex::system_id p_id, Object *p_target) {
 	ERR_FAIL_COND_MSG(systems_info[p_id].dynamic_system_id == UINT32_MAX, "The system " + itos(p_id) + " is not a dynamic system.");
 	godex::DynamicSystemInfo *info = godex::get_dynamic_system_info(systems_info[p_id].dynamic_system_id);
 	info->set_target(p_target);
+}
+
+void ECS::set_dynamic_system_pipeline(godex::system_id p_id, Pipeline *p_pipeline) {
+	ERR_FAIL_COND_MSG(verify_system_id(p_id) == false, "This system " + itos(p_id) + " doesn't exists.");
+	ERR_FAIL_COND_MSG(systems_info[p_id].dynamic_system_id == UINT32_MAX, "The system " + itos(p_id) + " is not a dynamic system.");
+	godex::DynamicSystemInfo *info = godex::get_dynamic_system_info(systems_info[p_id].dynamic_system_id);
+	ERR_FAIL_COND_MSG(info->is_sub_pipeline_dispatcher() == false, "The system " + itos(p_id) + " is not a sub pipeline dispatcher.");
+	info->set_pipeline(p_pipeline);
 }
 
 bool ECS::verify_system_id(godex::system_id p_id) {
@@ -225,7 +233,12 @@ WorldCommands *ECS::get_commands() {
 }
 
 void ECS::set_active_world_pipeline(Pipeline *p_pipeline) {
-	// TODO Make sure to never change the pipeline during dispatching.
+#ifdef DEBUG_ENABLED
+	if (p_pipeline) {
+		// Using crash cond because the user doesn't never use this API directly.
+		CRASH_COND_MSG(p_pipeline->is_ready() == false, "The submitted pipeline is not fully build.");
+	}
+#endif
 	active_world_pipeline = p_pipeline;
 }
 

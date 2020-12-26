@@ -80,6 +80,8 @@ Pipeline *PipelineECS::get_pipeline() {
 		return pipeline;
 	}
 
+	// Build the pipeline.
+
 	pipeline = memnew(Pipeline);
 
 	for (int i = 0; i < systems_name.size(); i += 1) {
@@ -88,6 +90,8 @@ Pipeline *PipelineECS::get_pipeline() {
 		ERR_CONTINUE_MSG(id == UINT32_MAX, "The system " + system_name + " was not found.");
 		pipeline->add_registered_system(id);
 	}
+
+	pipeline->build();
 
 	return pipeline;
 }
