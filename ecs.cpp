@@ -148,9 +148,9 @@ get_system_exec_info_func ECS::get_func_system_exe_info(godex::system_id p_id) {
 	return systems_info[p_id].exec_info;
 }
 
-SystemExeInfo ECS::get_system_exe_info(godex::system_id p_id) {
-	ERR_FAIL_INDEX_V_MSG(p_id, systems_info.size(), SystemExeInfo(), "The SystemID: " + itos(p_id) + " doesn't exists.");
-	return systems_info[p_id].exec_info();
+void ECS::get_system_exe_info(godex::system_id p_id, SystemExeInfo &r_info) {
+	ERR_FAIL_INDEX_MSG(p_id, systems_info.size(), "The SystemID: " + itos(p_id) + " doesn't exists.");
+	return systems_info[p_id].exec_info(r_info);
 }
 
 StringName ECS::get_system_name(godex::system_id p_id) {

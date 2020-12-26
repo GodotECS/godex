@@ -99,21 +99,22 @@ public:
 // By defining the same name of the method, the IDE autocomplete shows the
 // method name `register_system`, properly + it's impossible use the function
 // directly by mistake.
-#define register_system(func, name, desc)                                     \
-	register_system([]() -> SystemExeInfo {                                   \
-		SystemExeInfo i = SystemBuilder::get_system_info_from_function(func); \
-		i.system_func = [](World *p_world) {                                  \
-			SystemBuilder::system_exec_func(p_world, func);                   \
-		};                                                                    \
-		return i;                                                             \
-	},                                                                        \
+#define register_system(func, name, desc)                           \
+	register_system([](SystemExeInfo &r_info) {                     \
+		SystemBuilder::get_system_info_from_function(r_info, func); \
+		r_info.system_func = [](World *p_world) {                   \
+			SystemBuilder::system_exec_func(p_world, func);         \
+		};                                                          \
+	},                                                              \
 			name, desc)
 
 	/// Returns the system id or UINT32_MAX if not found.
-	static godex::system_id find_system_id(StringName p_name);
+	static godex::system_id find_system_id(StringName p_name); // TODO rename to `get_system_id`.
 	static uint32_t get_systems_count();
+	/// Returns the function that can be used to obtain the `SystemExeInfo`.
 	static get_system_exec_info_func get_func_system_exe_info(godex::system_id p_id);
-	static SystemExeInfo get_system_exe_info(godex::system_id p_id);
+	/// Returns the `SystemExeInfo`.
+	static void get_system_exe_info(godex::system_id p_id, SystemExeInfo &r_info);
 	static StringName get_system_name(godex::system_id p_id);
 	static String get_system_desc(godex::system_id p_id);
 	static void set_dynamic_system_target(godex::system_id p_id, Object *p_target);

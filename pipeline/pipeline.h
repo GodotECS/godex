@@ -48,11 +48,10 @@ public:
 // By defining the same name of the method, the IDE autocomplete shows the method
 // name `add_system`, properly + it's impossible use the function directly
 // by mistake.
-#define add_system(func)                                                      \
-	add_system([]() -> SystemExeInfo {                                        \
-		SystemExeInfo i = SystemBuilder::get_system_info_from_function(func); \
-		i.system_func = [](World *p_world) {                                  \
-			SystemBuilder::system_exec_func(p_world, func);                   \
-		};                                                                    \
-		return i;                                                             \
+#define add_system(func)                                            \
+	add_system([](SystemExeInfo &r_info) {                          \
+		SystemBuilder::get_system_info_from_function(r_info, func); \
+		r_info.system_func = [](World *p_world) {                   \
+			SystemBuilder::system_exec_func(p_world, func);         \
+		};                                                          \
 	})
