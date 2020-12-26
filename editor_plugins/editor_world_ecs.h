@@ -14,6 +14,15 @@ class SpinBox;
 class SystemInfoBox : public MarginContainer {
 	GDCLASS(SystemInfoBox, MarginContainer);
 
+public:
+	enum SystemMode {
+		SYSTEM_NATIVE,
+		SYSTEM_DISPATCHER,
+		SYSTEM_SCRIPT,
+		SYSTEM_INVALID,
+	};
+
+private:
 	EditorNode *editor = nullptr;
 	EditorWorldECS *editor_world_ecs = nullptr;
 	Button *position_btn = nullptr;
@@ -21,16 +30,18 @@ class SystemInfoBox : public MarginContainer {
 	Button *remove_btn = nullptr;
 	Label *system_name_lbl = nullptr;
 	ItemList *system_data_list = nullptr;
+	LineEdit *dispatcher_pipeline_name = nullptr;
 
 	StringName system_name;
+	SystemMode mode = SYSTEM_INVALID;
 
 public:
 	SystemInfoBox(EditorNode *p_editor, EditorWorldECS *editor_world_ecs);
-	SystemInfoBox(EditorNode *p_ditor, EditorWorldECS *editor_world_ecs, const String &p_system_name);
 	~SystemInfoBox();
 
 	void set_position(uint32_t p_position);
-	void set_system_name(const StringName &p_name, bool p_valid = true);
+	void setup_system(const StringName &p_name, SystemMode p_mode);
+	void set_pipeline_dispatcher(const StringName &p_current_pipeline_name);
 	void add_system_element(const String &p_name, bool is_write);
 
 	Point2 name_global_transform() const;
@@ -39,6 +50,7 @@ public:
 	void system_position_changed(double p_value);
 
 	void system_remove();
+	void dispatcher_pipeline_change(const String &p_value);
 };
 
 class DrawLayer : public Control {
@@ -116,6 +128,7 @@ public:
 
 	void pipeline_item_position_change(const StringName &p_name, uint32_t p_new_position);
 	void pipeline_system_remove(const StringName &p_name);
+	void pipeline_system_dispatcher_set_pipeline(const StringName &p_system_name, const StringName &p_pipeline_name);
 
 	void add_sys_show();
 	void add_sys_hide();

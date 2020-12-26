@@ -6,6 +6,7 @@
 
 class Pipeline;
 class World;
+class WorldECS;
 
 /// The `PipelineECS` is a resource that holds the `Pipeline` object, and the
 /// info to build it.
@@ -54,8 +55,9 @@ public:
 
 	void remove_system(const StringName &p_system_name);
 
-	/// Builds the pipeline and returns it.
-	Pipeline *get_pipeline();
+	/// Builds the pipeline and returns it. The associated world is used to
+	/// fetch the pipeline in case a `SystemDispatcher` is used.
+	Pipeline *get_pipeline(WorldECS *p_associated_world);
 };
 
 /// The `WorldECS` class holds the `World` information that is where all the
@@ -77,6 +79,10 @@ class WorldECS : public Node {
 	bool is_active = false;
 
 	Vector<Ref<PipelineECS>> pipelines;
+	/// Stores the system dispatchers for the pipelines of this world.
+	///  KEY                   VALUE
+	/// {SystemDispatcherName: PipelineName}
+	Dictionary system_dispatchers_map;
 	StringName active_pipeline;
 	Vector<StringName> resources;
 
@@ -109,6 +115,12 @@ public:
 
 	Ref<PipelineECS> find_pipeline(StringName p_name);
 	int find_pipeline_index(StringName p_name) const;
+
+	void set_system_dispatchers_map(Dictionary p_map);
+	Dictionary get_system_dispatchers_map() const;
+
+	void set_system_dispatchers_pipeline(const StringName &p_system_name, const StringName &p_pipeline_name);
+	StringName get_system_dispatchers_pipeline(const StringName &p_system_name);
 
 	void set_active_pipeline(StringName p_name);
 	StringName get_active_pipeline() const;

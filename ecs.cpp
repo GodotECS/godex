@@ -178,6 +178,16 @@ void ECS::set_dynamic_system_pipeline(godex::system_id p_id, Pipeline *p_pipelin
 	info->set_pipeline(p_pipeline);
 }
 
+bool ECS::is_system_pipeline_dispatcher(godex::system_id p_id) {
+	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, false, "This system " + itos(p_id) + " doesn't exists.");
+	if (systems_info[p_id].dynamic_system_id == UINT32_MAX) {
+		// Only dynamic systems are pipeline_dispatchers.
+		return false;
+	}
+	godex::DynamicSystemInfo *info = godex::get_dynamic_system_info(systems_info[p_id].dynamic_system_id);
+	return info->is_sub_pipeline_dispatcher();
+}
+
 bool ECS::verify_system_id(godex::system_id p_id) {
 	return systems.size() > p_id;
 }

@@ -73,7 +73,7 @@ void PipelineECS::remove_system(const StringName &p_system_name) {
 	_change_notify("systems_name");
 }
 
-Pipeline *PipelineECS::get_pipeline() {
+Pipeline *PipelineECS::get_pipeline(WorldECS *p_associated_world) {
 	// Build the pipeline.
 
 	if (pipeline) {
@@ -87,7 +87,18 @@ Pipeline *PipelineECS::get_pipeline() {
 	for (int i = 0; i < systems_name.size(); i += 1) {
 		const StringName system_name = systems_name[i];
 		const godex::system_id id = ECS::get_system_id(system_name);
-		ERR_CONTINUE_MSG(id == UINT32_MAX, "The system " + system_name + " was not found.");
+
+		ERR_CONTINUE_MSG(ECS::verify_system_id(id) == false, "The system " + system_name + " was not found.");
+
+		if (ECS::is_system_pipeline_dispatcher(id)) {
+			// Special treatment for systems dispatchers: Init before set.
+
+			const StringName pipeline_name = p_associated_world->get_system_dispatchers_pipeline(system_name);
+			Ref<PipelineECS> sub_pipeline = p_associated_world->find_pipeline(pipeline_name);
+			ERR_CONTINUE_MSG(sub_pipeline.is_null(), "The pipeline " + pipeline_name + " is not found. It's needed to set it as sub pipeline for the system: " + system_name);
+			ECS::set_dynamic_system_pipeline(id, sub_pipeline->get_pipeline(p_associated_world));
+		}
+
 		pipeline->add_registered_system(id);
 	}
 
@@ -100,6 +111,10 @@ void WorldECS::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("add_pipeline", "pipeline"), &WorldECS::add_pipeline);
 	ClassDB::bind_method(D_METHOD("remove_pipeline", "pipeline"), &WorldECS::remove_pipeline);
 
+	ClassDB::bind_method(D_METHOD("set_system_dispatchers_map", "map"), &WorldECS::set_system_dispatchers_map);
+	ClassDB::bind_method(D_METHOD("get_system_dispatchers_map"), &WorldECS::get_system_dispatchers_map);
+	ClassDB::bind_method(D_METHOD("set_system_dispatchers_pipeline"), &WorldECS::set_system_dispatchers_pipeline);
+
 	ClassDB::bind_method(D_METHOD("set_active_pipeline", "name"), &WorldECS::set_active_pipeline);
 	ClassDB::bind_method(D_METHOD("get_active_pipeline"), &WorldECS::get_active_pipeline);
 
@@ -108,6 +123,7 @@ void WorldECS::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("add_resource", "resource_name"), &WorldECS::add_resource);
 	ClassDB::bind_method(D_METHOD("remove_resource", "resource_name"), &WorldECS::remove_resource);
 
+	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "system_dispatchers_map"), "set_system_dispatchers_map", "get_system_dispatchers_map");
 	ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "active_pipeline"), "set_active_pipeline", "get_active_pipeline");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "resources", PROPERTY_HINT_ARRAY_TYPE, "StringName"), "set_resources", "get_resources");
 }
@@ -251,6 +267,22 @@ int WorldECS::find_pipeline_index(StringName p_name) const {
 	return -1;
 }
 
+void WorldECS::set_system_dispatchers_map(Dictionary p_map) {
+	system_dispatchers_map = p_map;
+}
+
+Dictionary WorldECS::get_system_dispatchers_map() const {
+	return system_dispatchers_map;
+}
+
+void WorldECS::set_system_dispatchers_pipeline(const StringName &p_system_name, const StringName &p_pipeline_name) {
+	system_dispatchers_map[p_system_name] = p_pipeline_name;
+}
+
+StringName WorldECS::get_system_dispatchers_pipeline(const StringName &p_system_name) {
+	return system_dispatchers_map.get(p_system_name, StringName());
+}
+
 void WorldECS::set_active_pipeline(StringName p_name) {
 	active_pipeline = p_name;
 	if (Engine::get_singleton()->is_editor_hint()) {
@@ -259,7 +291,7 @@ void WorldECS::set_active_pipeline(StringName p_name) {
 	if (ECS::get_singleton()->get_active_world() == world) {
 		Ref<PipelineECS> pip = find_pipeline(p_name);
 		if (pip.is_valid()) {
-			ECS::get_singleton()->set_active_world_pipeline(pip->get_pipeline());
+			ECS::get_singleton()->set_active_world_pipeline(pip->get_pipeline(this));
 		} else {
 			ECS::get_singleton()->set_active_world_pipeline(nullptr);
 		}
@@ -309,7 +341,7 @@ void WorldECS::active_world() {
 		// Set the pipeline.
 		Ref<PipelineECS> pip = find_pipeline(active_pipeline);
 		if (pip.is_valid()) {
-			ECS::get_singleton()->set_active_world_pipeline(pip->get_pipeline());
+			ECS::get_singleton()->set_active_world_pipeline(pip->get_pipeline(this));
 		}
 
 		// Mark as active

@@ -32,9 +32,6 @@ void call_physics_process(
 	const float frame_slice = p_iterator_info->get_frame_slice();
 	const float time_scale = p_iterator_info->get_time_scale();
 
-	const bool was_in_physics = p_engine->get_engine()->is_in_physics_frame();
-	p_engine->get_engine()->set_in_physics_frame(true);
-
 	// Make sure to update Godot nodes Signals and Transforms.
 	p_physics_3d->get_physics()->flush_queries();
 
@@ -46,14 +43,11 @@ void call_physics_process(
 		return;
 	}
 
-	// TODO Flush the queue. This may be bad for multithread. Consider remove this.
+	// TODO Flush the queue. This may be bad for multithread. Consider remove
+	// this or put it in its own System.
 	p_message_queue->get_queue()->flush();
 
 	p_engine->get_engine()->set_physics_frames(p_engine->get_engine()->get_physics_frames() + 1);
-
-	// Change `in_physics` only if this system is not being executed within the
-	// `PhysicsPipelineDispatcher`.
-	p_engine->get_engine()->set_in_physics_frame(was_in_physics == true);
 }
 
 void physics_pipeline_dispatcher(World *p_world, Pipeline *p_pipeline) {

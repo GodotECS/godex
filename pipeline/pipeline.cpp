@@ -38,6 +38,8 @@ void Pipeline::build() {
 		info.clear();
 		systems_info[i](info);
 
+		ERR_CONTINUE_MSG(info.valid == false, "The system " + itos(i) + " is invalid, skip.");
+
 #ifdef DEBUG_ENABLED
 		// This is automated by the `add_system` macro or by
 		// `ECS::register_system` macro, so is never supposed to happen.

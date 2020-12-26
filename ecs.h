@@ -119,6 +119,7 @@ public:
 	static String get_system_desc(godex::system_id p_id);
 	static void set_dynamic_system_target(godex::system_id p_id, Object *p_target);
 	static void set_dynamic_system_pipeline(godex::system_id p_id, Pipeline *p_pipeline);
+	static bool is_system_pipeline_dispatcher(godex::system_id p_id);
 	static bool verify_system_id(godex::system_id p_id);
 
 protected:
