@@ -40,7 +40,7 @@ void godex::DynamicSystemInfo::set_pipeline(Pipeline *p_target) {
 	target_sub_pipeline = p_target;
 }
 
-bool godex::DynamicSystemInfo::is_sub_pipeline_dispatcher() const {
+bool godex::DynamicSystemInfo::is_system_dispatcher() const {
 	return sub_pipeline_execute != nullptr;
 }
 

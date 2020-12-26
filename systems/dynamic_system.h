@@ -61,7 +61,7 @@ public:
 	void set_target(func_system_execute_pipeline p_sub_pipeline_execite);
 	void set_pipeline(Pipeline *p_pipeline);
 
-	bool is_sub_pipeline_dispatcher() const;
+	bool is_system_dispatcher() const;
 
 public:
 	static StringName for_each_name;
