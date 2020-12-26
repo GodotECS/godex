@@ -96,7 +96,7 @@ StringName ECS::get_resource_name(godex::resource_id p_resource_id) {
 
 // Undefine the macro defined into `ecs.h` so we can define the method properly.
 #undef register_system
-void ECS::register_system(get_system_exec_info_func p_get_info_func, StringName p_name, String p_description) {
+void ECS::register_system(func_get_system_exe_info p_func_get_exe_info, StringName p_name, String p_description) {
 	{
 		const uint32_t id = get_system_id(p_name);
 		ERR_FAIL_COND_MSG(id != UINT32_MAX, "The system is already registered.");
@@ -106,7 +106,7 @@ void ECS::register_system(get_system_exec_info_func p_get_info_func, StringName 
 	systems.push_back(p_name);
 	systems_info.push_back({ p_description,
 			UINT32_MAX,
-			p_get_info_func });
+			p_func_get_exe_info });
 
 	print_line("System: " + p_name + " registered with ID: " + itos(id));
 }
@@ -127,7 +127,7 @@ godex::system_id ECS::register_dynamic_system(StringName p_name, const godex::Dy
 	systems.push_back(p_name);
 	systems_info.push_back({ "Script system",
 			dynamic_system_id,
-			godex::get_dynamic_system_get_exec_info(dynamic_system_id) });
+			godex::get_func_dynamic_system_exec_info(dynamic_system_id) });
 
 	print_line("Dynamic system: " + p_name + " registered with ID: " + itos(id));
 
@@ -143,7 +143,7 @@ uint32_t ECS::get_systems_count() {
 	return systems.size();
 }
 
-get_system_exec_info_func ECS::get_func_system_exe_info(godex::system_id p_id) {
+func_get_system_exe_info ECS::get_func_system_exe_info(godex::system_id p_id) {
 	ERR_FAIL_INDEX_V_MSG(p_id, systems_info.size(), nullptr, "The SystemID: " + itos(p_id) + " doesn't exists.");
 	return systems_info[p_id].exec_info;
 }

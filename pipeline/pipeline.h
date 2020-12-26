@@ -11,8 +11,8 @@ class World;
 
 class Pipeline {
 	bool ready = false;
-	LocalVector<get_system_exec_info_func> systems_info;
-	LocalVector<system_execute> systems;
+	LocalVector<func_get_system_exe_info> systems_info;
+	LocalVector<func_system_execute> systems_exe;
 
 public:
 	Pipeline();
@@ -23,7 +23,7 @@ public:
 	void add_registered_system(uint32_t p_id);
 
 	/// Add a system that is not registered via `ECS`.
-	void add_system(get_system_exec_info_func p_get_info_func);
+	void add_system(func_get_system_exe_info p_func_get_exe_info);
 
 	/// Build the pipelines and makes it ready to dispatch.
 	/// You can't modify it anymore, after calling this.

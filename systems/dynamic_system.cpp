@@ -36,7 +36,7 @@ void godex::DynamicSystemInfo::without_component(uint32_t p_component_id) {
 
 StringName godex::DynamicSystemInfo::for_each_name;
 
-void godex::DynamicSystemInfo::get_info(DynamicSystemInfo &p_info, system_execute p_exec, SystemExeInfo &r_out) {
+void godex::DynamicSystemInfo::get_info(DynamicSystemInfo &p_info, func_system_execute p_exec, SystemExeInfo &r_out) {
 	if (p_info.target_sub_pipeline) {
 		// Sub pipeline execution.
 		// The pipeline must be fully build at this point

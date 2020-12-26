@@ -38,7 +38,7 @@ struct ResourceInfo {
 struct SystemInfo {
 	String description;
 	uint32_t dynamic_system_id = UINT32_MAX;
-	get_system_exec_info_func exec_info;
+	func_get_system_exe_info exec_info;
 };
 
 class ECS : public Object {
@@ -89,7 +89,7 @@ public:
 	static StringName get_resource_name(godex::resource_id p_resource_id);
 
 	// ~~ Systems ~~
-	static void register_system(get_system_exec_info_func p_get_info_func, StringName p_name, String p_description = "");
+	static void register_system(func_get_system_exe_info p_func_get_exe_info, StringName p_name, String p_description = "");
 
 	// Register the system and returns the ID.
 	static godex::system_id register_dynamic_system(StringName p_name, const godex::DynamicSystemInfo *p_info);
@@ -112,7 +112,7 @@ public:
 	static godex::system_id get_system_id(const StringName &p_name);
 	static uint32_t get_systems_count();
 	/// Returns the function that can be used to obtain the `SystemExeInfo`.
-	static get_system_exec_info_func get_func_system_exe_info(godex::system_id p_id);
+	static func_get_system_exe_info get_func_system_exe_info(godex::system_id p_id);
 	/// Returns the `SystemExeInfo`.
 	static void get_system_exe_info(godex::system_id p_id, SystemExeInfo &r_info);
 	static StringName get_system_name(godex::system_id p_id);
