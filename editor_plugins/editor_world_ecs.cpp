@@ -37,7 +37,7 @@ SystemInfoBox::SystemInfoBox(EditorNode *p_editor, EditorWorldECS *p_editor_worl
 	inner_container->add_child(box);
 
 	position_btn = memnew(Button);
-	position_btn->set_text("#0");
+	position_btn->set_text("0");
 	position_btn->set_h_size_flags(0);
 	position_btn->set_v_size_flags(0);
 	position_btn->set_flat(true);
@@ -74,11 +74,15 @@ SystemInfoBox::SystemInfoBox(EditorNode *p_editor, EditorWorldECS *p_editor_worl
 	system_data_list->set_fixed_icon_size(Size2(13.0, 13.0));
 	system_data_list->add_theme_constant_override("hseparation", 7.0);
 	box->add_child(system_data_list);
-}
 
-SystemInfoBox::SystemInfoBox(EditorNode *p_editor, EditorWorldECS *p_editor_world_ecs, const String &p_system_name) :
-		SystemInfoBox(p_editor, p_editor_world_ecs) {
-	set_system_name(p_system_name);
+	dispatcher_pipeline_name = memnew(LineEdit);
+	dispatcher_pipeline_name->set_placeholder(TTR("Pipeline name."));
+	dispatcher_pipeline_name->set_right_icon(editor->get_theme_base()->get_theme_icon("Rename", "EditorIcons"));
+	dispatcher_pipeline_name->set_visible(false);
+	dispatcher_pipeline_name->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+	dispatcher_pipeline_name->set_v_size_flags(SizeFlags::SIZE_EXPAND);
+	dispatcher_pipeline_name->connect("text_changed", callable_mp(this, &SystemInfoBox::dispatcher_pipeline_change));
+	box->add_child(dispatcher_pipeline_name);
 }
 
 SystemInfoBox::~SystemInfoBox() {
@@ -88,12 +92,40 @@ void SystemInfoBox::set_position(uint32_t p_position) {
 	position_input->set_visible(false);
 	position_input->set_value(p_position);
 	remove_btn->set_visible(false);
-	position_btn->set_text("#" + itos(p_position));
+	position_btn->set_text(itos(p_position));
 }
 
-void SystemInfoBox::set_system_name(const StringName &p_name, bool p_valid) {
-	system_name_lbl->set_text(String(p_name) + (p_valid ? "" : " [INVALID]"));
+void SystemInfoBox::setup_system(const StringName &p_name, SystemMode p_mode) {
+	system_name_lbl->set_text(String(p_name) + (p_mode == SYSTEM_INVALID ? " [INVALID]" : ""));
 	system_name = p_name;
+
+	StringName icon_name;
+	switch (p_mode) {
+		case SYSTEM_INVALID:
+			icon_name = "FileDeadBigThumb";
+			break;
+		case SYSTEM_NATIVE:
+			icon_name = "ShaderGlobalsOverride";
+			break;
+		case SYSTEM_DISPATCHER:
+			icon_name = "ShaderMaterial";
+			system_data_list->set_visible(false);
+			dispatcher_pipeline_name->set_visible(true);
+			break;
+		case SYSTEM_SCRIPT:
+			icon_name = "Script";
+			break;
+	}
+
+	position_btn->set_icon(editor->get_theme_base()->get_theme_icon(icon_name, "EditorIcons"));
+
+	mode = p_mode;
+}
+
+void SystemInfoBox::set_pipeline_dispatcher(const StringName &p_current_pipeline_name) {
+	// Set the pipeline name before marking this system as dispatcher so
+	// we can avoid trigger the name change.
+	dispatcher_pipeline_name->set_text(p_current_pipeline_name);
 }
 
 void SystemInfoBox::add_system_element(const String &p_name, bool is_write) {
@@ -130,6 +162,15 @@ void SystemInfoBox::system_position_changed(double p_value) {
 
 void SystemInfoBox::system_remove() {
 	editor_world_ecs->pipeline_system_remove(system_name);
+}
+
+void SystemInfoBox::dispatcher_pipeline_change(const String &p_value) {
+	if (mode != SYSTEM_DISPATCHER) {
+		// Nothing to do.
+		return;
+	}
+
+	editor_world_ecs->pipeline_system_dispatcher_set_pipeline(system_name, p_value);
 }
 
 DrawLayer::DrawLayer() {
@@ -638,47 +679,55 @@ void EditorWorldECS::pipeline_panel_update() {
 
 		if (String(system_name).ends_with(".gd")) {
 			// Init a script system.
-			info_box->set_system_name(system_name);
+			info_box->setup_system(system_name, SystemInfoBox::SYSTEM_SCRIPT);
 			// TODO add script system components
 
 		} else {
 			// Init a native system.
 			const uint32_t system_id = ECS::get_system_id(system_name);
 			if (system_id == UINT32_MAX) {
-				info_box->set_system_name(system_name, false);
+				info_box->setup_system(system_name, SystemInfoBox::SYSTEM_INVALID);
 			} else {
 				SystemExeInfo system_exec_info;
 				ECS::get_system_exe_info(system_id, system_exec_info);
 				const StringName key_name = ECS::get_system_name(system_id);
 
-				info_box->set_system_name(key_name);
+				const bool is_dispatcher = ECS::is_system_pipeline_dispatcher(system_id);
+				if (is_dispatcher) {
+					// This is a dispatcher system, don't print the dependencies.
+					info_box->set_pipeline_dispatcher(world_ecs->get_system_dispatchers_pipeline(key_name));
+					info_box->setup_system(key_name, SystemInfoBox::SYSTEM_DISPATCHER);
+				} else {
+					// Normal native system, add dependencies.
+					info_box->setup_system(key_name, SystemInfoBox::SYSTEM_NATIVE);
 
-				// Draw immutable components.
-				for (uint32_t u = 0; u < system_exec_info.immutable_components.size(); u += 1) {
-					info_box->add_system_element(
-							ECS::get_component_name(system_exec_info.immutable_components[u]),
-							false);
-				}
+					// Draw immutable components.
+					for (uint32_t u = 0; u < system_exec_info.immutable_components.size(); u += 1) {
+						info_box->add_system_element(
+								ECS::get_component_name(system_exec_info.immutable_components[u]),
+								false);
+					}
 
-				// Draw mutable components.
-				for (uint32_t u = 0; u < system_exec_info.mutable_components.size(); u += 1) {
-					info_box->add_system_element(
-							ECS::get_component_name(system_exec_info.mutable_components[u]),
-							true);
-				}
+					// Draw mutable components.
+					for (uint32_t u = 0; u < system_exec_info.mutable_components.size(); u += 1) {
+						info_box->add_system_element(
+								ECS::get_component_name(system_exec_info.mutable_components[u]),
+								true);
+					}
 
-				// Draw immutable resources.
-				for (uint32_t u = 0; u < system_exec_info.immutable_resources.size(); u += 1) {
-					info_box->add_system_element(
-							String(ECS::get_resource_name(system_exec_info.immutable_resources[u])) + " [res]",
-							false);
-				}
+					// Draw immutable resources.
+					for (uint32_t u = 0; u < system_exec_info.immutable_resources.size(); u += 1) {
+						info_box->add_system_element(
+								String(ECS::get_resource_name(system_exec_info.immutable_resources[u])) + " [res]",
+								false);
+					}
 
-				// Draw immutable resources.
-				for (uint32_t u = 0; u < system_exec_info.mutable_resources.size(); u += 1) {
-					info_box->add_system_element(
-							String(ECS::get_resource_name(system_exec_info.mutable_resources[u])) + " [res]",
-							true);
+					// Draw immutable resources.
+					for (uint32_t u = 0; u < system_exec_info.mutable_resources.size(); u += 1) {
+						info_box->add_system_element(
+								String(ECS::get_resource_name(system_exec_info.mutable_resources[u])) + " [res]",
+								true);
+					}
 				}
 			}
 		}
@@ -711,6 +760,19 @@ void EditorWorldECS::pipeline_system_remove(const StringName &p_name) {
 	editor->get_undo_redo()->commit_action();
 }
 
+void EditorWorldECS::pipeline_system_dispatcher_set_pipeline(const StringName &p_system_name, const StringName &p_pipeline_name) {
+	if (world_ecs == nullptr) {
+		return;
+	}
+
+	editor->get_undo_redo()->create_action(TTR("System dispatcher pipeline change."));
+	editor->get_undo_redo()->add_do_method(world_ecs, "set_system_dispatchers_pipeline", p_system_name, p_pipeline_name);
+	// Undo by resetting the `map` because the `set_system_dispatchers_pipeline`
+	// changes the array not trivially.
+	editor->get_undo_redo()->add_undo_method(world_ecs, "set_system_dispatchers_map", world_ecs->get_system_dispatchers_map().duplicate(true));
+	editor->get_undo_redo()->commit_action();
+}
+
 void EditorWorldECS::add_sys_show() {
 	// Display the modal window centered.
 	const Vector2i modal_pos = (Vector2i(get_viewport_rect().size) - add_sys_window->get_size()) / 2.0;
@@ -739,9 +801,9 @@ void EditorWorldECS::add_sys_update(const String &p_search) {
 	// Native systems
 	TreeItem *native_root = nullptr;
 
-	for (uint32_t i = 0; i < ECS::get_systems_count(); i += 1) {
-		const StringName key_name = ECS::get_system_name(i);
-		const String desc = ECS::get_system_desc(i);
+	for (uint32_t system_id = 0; system_id < ECS::get_systems_count(); system_id += 1) {
+		const StringName key_name = ECS::get_system_name(system_id);
+		const String desc = ECS::get_system_desc(system_id);
 
 		const String name(String(key_name).to_lower());
 		if (search.empty() == false && name.find(search) != 0) {
@@ -758,6 +820,11 @@ void EditorWorldECS::add_sys_update(const String &p_search) {
 		}
 
 		TreeItem *item = add_sys_tree->create_item(native_root);
+		if (ECS::is_system_pipeline_dispatcher(system_id)) {
+			item->set_icon(0, editor->get_theme_base()->get_theme_icon("ShaderMaterial", "EditorIcons"));
+		} else {
+			item->set_icon(0, editor->get_theme_base()->get_theme_icon("ShaderGlobalsOverride", "EditorIcons"));
+		}
 		item->set_text(0, key_name);
 		item->set_meta("system_name", key_name);
 		item->set_meta("desc", desc);
@@ -786,6 +853,7 @@ void EditorWorldECS::add_sys_update(const String &p_search) {
 			}
 
 			TreeItem *item = add_sys_tree->create_item(script_root);
+			item->set_icon(0, editor->get_theme_base()->get_theme_icon("Script", "EditorIcons"));
 			item->set_text(0, system_name);
 			item->set_meta("system_name", system_name);
 			item->set_meta("desc", "GDScript: " + sys_script_path);

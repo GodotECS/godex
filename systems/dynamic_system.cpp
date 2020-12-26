@@ -47,6 +47,9 @@ bool godex::DynamicSystemInfo::is_sub_pipeline_dispatcher() const {
 StringName godex::DynamicSystemInfo::for_each_name;
 
 void godex::DynamicSystemInfo::get_info(DynamicSystemInfo &p_info, func_system_execute p_exec, SystemExeInfo &r_out) {
+	// Assume is invalid.
+	r_out.valid = false;
+
 	// Validate.
 	if (p_info.sub_pipeline_execute) {
 		ERR_FAIL_COND_MSG(p_info.target_sub_pipeline == nullptr, "No sub pipeline set.");
@@ -82,6 +85,9 @@ void godex::DynamicSystemInfo::get_info(DynamicSystemInfo &p_info, func_system_e
 	}
 
 	r_out.system_func = p_exec;
+
+	// Arrived here, we can assume the system is valid.
+	r_out.valid = true;
 }
 
 void godex::DynamicSystemInfo::executor(World *p_world, DynamicSystemInfo &p_info) {
