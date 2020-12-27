@@ -20,8 +20,10 @@ class DynamicQuery : public Object {
 	bool can_change = true;
 	LocalVector<uint32_t> component_ids;
 	LocalVector<bool> mutability;
+	LocalVector<uint32_t> reject_component_ids;
 	LocalVector<AccessComponent> access_components;
 	LocalVector<Storage *> storages;
+	LocalVector<Storage *> reject_storages;
 
 	World *world = nullptr;
 	uint32_t entity_id = UINT32_MAX;
@@ -33,6 +35,9 @@ public:
 
 	/// Add component.
 	void with_component(uint32_t p_component_id, bool p_mutable = false);
+
+	/// Excludes this component from the query.
+	void without_component(uint32_t p_component_id);
 
 	/// Returns true if this query is valid.
 	bool is_valid() const;

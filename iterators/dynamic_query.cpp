@@ -6,6 +6,7 @@ using godex::DynamicQuery;
 
 void DynamicQuery::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("with_component", "component_id", "mutable"), &DynamicQuery::with_component, DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("without_component", "component_id"), &DynamicQuery::without_component);
 	ClassDB::bind_method(D_METHOD("is_valid"), &DynamicQuery::is_valid);
 	ClassDB::bind_method(D_METHOD("build"), &DynamicQuery::build);
 	ClassDB::bind_method(D_METHOD("reset"), &DynamicQuery::reset);
@@ -29,8 +30,26 @@ void DynamicQuery::with_component(uint32_t p_component_id, bool p_mutable) {
 		ERR_FAIL_MSG("The component_id " + itos(p_component_id) + " is invalid.");
 	}
 
+	ERR_FAIL_COND_MSG(component_ids.find(p_component_id) != -1, "The component " + itos(p_component_id) + " is already part of this query.");
+	ERR_FAIL_COND_MSG(reject_component_ids.find(p_component_id) != -1, "The component " + itos(p_component_id) + " is already part of this query.");
+
 	component_ids.push_back(p_component_id);
 	mutability.push_back(p_mutable);
+}
+
+void DynamicQuery::without_component(uint32_t p_component_id) {
+	ERR_FAIL_COND_MSG(is_valid() == false, "This query is not valid.");
+	ERR_FAIL_COND_MSG(can_change == false, "This query can't change at this point, you have to `clear` it.");
+	if (unlikely(ECS::verify_component_id(p_component_id) == false)) {
+		// Invalidate.
+		valid = false;
+		ERR_FAIL_MSG("The component_id " + itos(p_component_id) + " is invalid.");
+	}
+
+	ERR_FAIL_COND_MSG(component_ids.find(p_component_id) != -1, "The component " + itos(p_component_id) + " is already part of this query.");
+	ERR_FAIL_COND_MSG(reject_component_ids.find(p_component_id) != -1, "The component " + itos(p_component_id) + " is already part of this query.");
+
+	reject_component_ids.push_back(p_component_id);
 }
 
 bool DynamicQuery::is_valid() const {
@@ -45,8 +64,9 @@ bool DynamicQuery::build() {
 
 	can_change = false;
 
-	// Build the access_component is this way doesn't make the `ObjectDB`
-	// complain for some reason.
+	// Build the access_component in this way the `ObjectDB` doesn't
+	// complain for some reason, otherwise it needs to use pointers
+	// (AccessComponent is a parent of Object).
 	access_components.resize(component_ids.size());
 	for (uint32_t i = 0; i < component_ids.size(); i += 1) {
 		access_components[i].__mut = mutability[i];
@@ -97,10 +117,20 @@ void DynamicQuery::begin(World *p_world) {
 	storages.resize(component_ids.size());
 	for (uint32_t i = 0; i < component_ids.size(); i += 1) {
 		storages[i] = world->get_storage(component_ids[i]);
-		ERR_FAIL_COND_MSG(storages[i] == nullptr, "There is a storage nullptr. This is not supposed to happen.");
+		if (unlikely(storages[i] == nullptr)) {
+			// The query can end now because there is an entire not used storage.
+			entity_id = UINT32_MAX;
+			return;
+		}
 	}
 
-	// At this point all the storages are taken
+	reject_storages.resize(reject_component_ids.size());
+	for (uint32_t i = 0; i < reject_component_ids.size(); i += 1) {
+		reject_storages[i] = world->get_storage(reject_component_ids[i]);
+		// `reject_storage` can be `nullptr`.
+	}
+
+	// At this point all the storages are taken.
 
 	// Search the fist entity
 	entity_id = 0;
@@ -167,11 +197,23 @@ void DynamicQuery::get_system_info(SystemExeInfo &p_info) const {
 }
 
 bool DynamicQuery::has_entity(EntityID p_id) const {
+	// Make sure this entity has all the following components.
 	for (uint32_t i = 0; i < storages.size(); i += 1) {
 		if (storages[i]->has(p_id) == false) {
+			// The component is not found.
 			return false;
 		}
 	}
+
+	// Make sure this entity DOESN'T have the following components.
+	for (uint32_t i = 0; i < reject_storages.size(); i += 1) {
+		if (likely(reject_storages[i]) && reject_storages[i]->has(p_id)) {
+			// The component is found.
+			return false;
+		}
+	}
+
+	// This entity can be fetched.
 	return true;
 }
 
