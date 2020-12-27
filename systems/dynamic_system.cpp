@@ -99,17 +99,26 @@ void godex::DynamicSystemInfo::executor(World *p_world, DynamicSystemInfo &p_inf
 		ERR_FAIL_COND_MSG(p_info.target_script == nullptr, "[FATAL] This system doesn't have target assigned.");
 
 		// Create the array where the storages are hold.
+		LocalVector<AccessResource> resource_access;
 		LocalVector<Variant> access;
 		LocalVector<Variant *> access_ptr;
+
+		resource_access.reserve(p_info.resources.size());
 		access.resize(p_info.resource_element_map.size() + p_info.query_element_map.size());
 		access_ptr.resize(access.size());
 
 		// First extract the resources.
 		for (uint32_t i = 0; i < p_info.resources.size(); i += 1) {
-			CRASH_NOW_MSG("TODO implement");
-			// TODO get the resource
-			//p_world->get_resource(p_info.resources[i].resource_id);
-			// TODO map to aceess
+			// Prepare the `AccessResource`.
+			const uint32_t index = resource_access.size();
+			resource_access.resize(index + 1);
+
+			resource_access[index].resource = p_world->get_resource(p_info.resources[i].resource_id);
+			resource_access[index].mut = p_info.resources[i].is_mutable;
+
+			// Assign
+			access[p_info.resource_element_map[i]] = &resource_access[index];
+			access_ptr[p_info.resource_element_map[i]] = &access[p_info.resource_element_map[i]];
 		}
 
 		// Map the query components, so the function can be called with the
