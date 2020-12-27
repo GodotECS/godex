@@ -6,6 +6,10 @@
 #include "../world/world.h"
 #include <tuple>
 
+template <class C>
+class WithoutFilter {
+};
+
 template <class... Cs>
 class QueryStorage {
 public:
@@ -15,6 +19,38 @@ public:
 	std::tuple<Cs &...> get(EntityID p_id) const { return std::tuple(); }
 
 	static void get_components(LocalVector<uint32_t> &r_mutable_components, LocalVector<uint32_t> &r_immutable_components) {}
+};
+
+template <class C, class... Cs>
+class QueryStorage<WithoutFilter<C>, Cs...> : QueryStorage<Cs...> {
+	TypedStorage<C> *storage = nullptr;
+
+public:
+	QueryStorage(World *p_world) :
+			QueryStorage<Cs...>(p_world) {
+		storage = p_world->get_storage<C>();
+		ERR_FAIL_COND_MSG(storage == nullptr, "The storage" + String(typeid(TypedStorage<C>).name()) + " is null.");
+	}
+
+	bool has_data(EntityID p_entity) const {
+		if (unlikely(storage == nullptr)) {
+			// When the storage is null the `WithoutFilter` is always `true`.
+			return true;
+		}
+		return storage->has(p_entity) == false && QueryStorage<Cs...>::has_data(p_entity);
+	}
+
+	std::tuple<Cs &...> get(EntityID p_id) const {
+		// Just keep going, the `WithoutFilter` doesn't collect data.
+		return QueryStorage<Cs...>::get(p_id);
+	}
+
+	static void get_components(LocalVector<uint32_t> &r_mutable_components, LocalVector<uint32_t> &r_immutable_components) {
+		// The `WithoutFilter` collects the data always immutable.
+		r_immutable_components.push_back(C::get_component_id());
+
+		QueryStorage<Cs...>::get_components(r_mutable_components, r_immutable_components);
+	}
 };
 
 template <class C, class... Cs>
@@ -29,7 +65,7 @@ public:
 	}
 
 	bool has_data(EntityID p_entity) const {
-		if (storage == nullptr) {
+		if (unlikely(storage == nullptr)) {
 			return false;
 		}
 		return storage->has(p_entity) && QueryStorage<Cs...>::has_data(p_entity);
@@ -74,7 +110,7 @@ public:
 		// Prepare the query: advances to the first available entity.
 		id = 0;
 		if (q.has_data(0) == false) {
-			next_entity();
+			next();
 		}
 	}
 
@@ -84,14 +120,14 @@ public:
 
 	void operator+=(uint32_t p_i) {
 		for (uint32_t i = 0; i < p_i; i += 1) {
-			next_entity();
+			next();
 			if (is_done()) {
 				break;
 			}
 		}
 	}
 
-	void next_entity() {
+	void next() {
 		const uint32_t last_id = world->get_last_entity_id();
 		if (unlikely(id == UINT32_MAX || last_id == UINT32_MAX)) {
 			id = UINT32_MAX;
