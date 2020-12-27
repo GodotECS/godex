@@ -4,10 +4,23 @@
 
 using godex::DynamicQuery;
 
+void DynamicQuery::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("with_component", "component_id", "mutable"), &DynamicQuery::with_component, DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("is_valid"), &DynamicQuery::is_valid);
+	ClassDB::bind_method(D_METHOD("build"), &DynamicQuery::build);
+	ClassDB::bind_method(D_METHOD("reset"), &DynamicQuery::reset);
+	ClassDB::bind_method(D_METHOD("get_component", "index"), &DynamicQuery::get_access);
+	ClassDB::bind_method(D_METHOD("begin", "world"), &DynamicQuery::begin_script);
+	ClassDB::bind_method(D_METHOD("is_done"), &DynamicQuery::is_done);
+	ClassDB::bind_method(D_METHOD("get_current_entity_id"), &DynamicQuery::get_current_entity_id_script);
+	ClassDB::bind_method(D_METHOD("next"), &DynamicQuery::next);
+	ClassDB::bind_method(D_METHOD("end"), &DynamicQuery::end);
+}
+
 DynamicQuery::DynamicQuery() {
 }
 
-void DynamicQuery::add_component(uint32_t p_component_id, bool p_mutable) {
+void DynamicQuery::with_component(uint32_t p_component_id, bool p_mutable) {
 	ERR_FAIL_COND_MSG(is_valid() == false, "This query is not valid.");
 	ERR_FAIL_COND_MSG(can_change == false, "This query can't change at this point, you have to `clear` it.");
 	if (unlikely(ECS::verify_component_id(p_component_id) == false)) {
@@ -61,6 +74,12 @@ godex::AccessComponent *DynamicQuery::get_access(uint32_t p_index) {
 	return access_components.ptr() + p_index;
 }
 
+void DynamicQuery::begin_script(Object *p_world) {
+	World *world = godex::AccessResource::unwrap<World>(p_world);
+	ERR_FAIL_COND_MSG(world == nullptr, "The given object is not a `World` `Resource`.");
+	begin(world);
+}
+
 void DynamicQuery::begin(World *p_world) {
 	// Can't change anymore.
 	build();
@@ -86,7 +105,7 @@ void DynamicQuery::begin(World *p_world) {
 	// Search the fist entity
 	entity_id = 0;
 	if (has_entity(0) == false) {
-		next_entity();
+		next();
 	} else {
 		fetch();
 	}
@@ -96,13 +115,17 @@ bool DynamicQuery::is_done() const {
 	return entity_id == UINT32_MAX;
 }
 
+uint32_t DynamicQuery::get_current_entity_id_script() const {
+	return entity_id;
+}
+
 EntityID DynamicQuery::get_current_entity_id() const {
 	return entity_id;
 }
 
 // TODO see how to improve this lookup mechanism so that no cache is miss and
 // it's fast.
-void DynamicQuery::next_entity() {
+void DynamicQuery::next() {
 	const uint32_t last_id = world->get_last_entity_id();
 	if (unlikely(entity_id == UINT32_MAX || last_id == UINT32_MAX)) {
 		entity_id = UINT32_MAX;

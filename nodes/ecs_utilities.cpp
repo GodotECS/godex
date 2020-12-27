@@ -1,11 +1,11 @@
 #include "ecs_utilities.h"
 
+#include "../ecs.h"
+#include "../systems/dynamic_system.h"
 #include "core/config/engine.h"
 #include "core/config/project_settings.h"
 #include "core/io/resource_loader.h"
 #include "core/object/script_language.h"
-#include "../ecs.h"
-#include "../systems/dynamic_system.h"
 
 void System::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("with_resource", "resource_name", "mutability"), &System::with_resource);
@@ -310,11 +310,9 @@ uint32_t ScriptECS::reload_system(const String &p_path) {
 		system->set_script(script);
 
 		if (Engine::get_singleton()->is_editor_hint() == false) {
-			godex::DynamicSystemInfo info;
-			system->prepare(&info);
 			system->id = ECS::register_dynamic_system(
-					name,
-					&info);
+					name);
+			system->prepare(ECS::get_dynamic_system_info(system->id));
 		}
 	}
 	return id;

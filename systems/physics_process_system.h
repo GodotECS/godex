@@ -35,7 +35,7 @@ void call_physics_process(
 		MessageQueueResource *p_message_queue);
 
 /// Creates a dynamic system where
-void create_physics_system_dispatcher(godex::DynamicSystemInfo &r_info);
+void create_physics_system_dispatcher(godex::DynamicSystemInfo *r_info);
 
 // ~~ 3D ~~
 void step_physics_server_3d(

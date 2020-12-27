@@ -6,6 +6,7 @@
 #include "core/config/engine.h"
 #include "core/object/message_queue.h"
 #include "ecs.h"
+#include "iterators/dynamic_query.h"
 #include "nodes/ecs_utilities.h"
 #include "nodes/ecs_world.h"
 #include "nodes/entity.h"
@@ -38,6 +39,7 @@ void register_godex_types() {
 	ClassDB::register_class<Entity>();
 	ClassDB::register_class<Component>();
 	ClassDB::register_class<System>();
+	ClassDB::register_class<godex::DynamicQuery>();
 
 	// Create and register singleton
 	ECS *ecs = memnew(ECS);
@@ -64,9 +66,8 @@ void register_godex_types() {
 	// ~ Register engine systems ~
 	{
 		// Register 3D physics systems.
-		godex::DynamicSystemInfo physics_dispatcher;
-		create_physics_system_dispatcher(physics_dispatcher);
-		ECS::register_dynamic_system("PhysicsSystemDispatcher", &physics_dispatcher, "System that dispatches the specified pipeline at fixed rate. The rate is defined by `Physics Hz` in the project settings.");
+		const godex::system_id id = ECS::register_dynamic_system("PhysicsSystemDispatcher", "System that dispatches the specified pipeline at fixed rate. The rate is defined by `Physics Hz` in the project settings.");
+		create_physics_system_dispatcher(ECS::get_dynamic_system_info(id));
 
 		ECS::register_system(call_physics_process, "CallPhysicsProcess", "Updates the Godot Nodes (2D/3D) transform and fetches the events from the physics engine.");
 		ECS::register_system(step_physics_server_3d, "StepPhysicsServer3D", "Steps the PhysicsServer3D.");

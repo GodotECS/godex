@@ -19,7 +19,7 @@ typedef void (*func_system_execute_pipeline)(World *p_world, Pipeline *p_pipelin
 /// This function register the `DynamicSystemInfo` in a static array (generated
 /// at compile time) and returns a pointer to a function that is able to call
 /// `godex::DynamicSystemInfo::executor()` with the passed `DynamicSystemInfo`.
-uint32_t register_dynamic_system(const DynamicSystemInfo &p_info);
+uint32_t register_dynamic_system();
 func_get_system_exe_info get_func_dynamic_system_exec_info(uint32_t p_dynamic_system_id);
 DynamicSystemInfo *get_dynamic_system_info(uint32_t p_dynamic_system_id);
 
