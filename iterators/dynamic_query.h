@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../components/component.h"
+#include "core/object/object.h"
 #include "core/string/string_name.h"
 #include "core/templates/local_vector.h"
 
@@ -12,7 +13,9 @@ namespace godex {
 /// that the scripts can still interact with the `World`.
 /// Cache this query allow to save the time needed to lookup the components IDs,
 /// so it's advised store it and use when needed.
-class DynamicQuery {
+class DynamicQuery : public Object {
+	GDCLASS(DynamicQuery, Object)
+
 	bool valid = true;
 	bool can_change = true;
 	LocalVector<uint32_t> component_ids;
@@ -23,11 +26,13 @@ class DynamicQuery {
 	World *world = nullptr;
 	uint32_t entity_id = UINT32_MAX;
 
+	static void _bind_methods();
+
 public:
 	DynamicQuery();
 
 	/// Add component.
-	void add_component(uint32_t p_component_id, bool p_mutable = false);
+	void with_component(uint32_t p_component_id, bool p_mutable = false);
 
 	/// Returns true if this query is valid.
 	bool is_valid() const;
@@ -45,15 +50,17 @@ public:
 
 	/// Start the execution of this query.
 	void begin(World *p_world);
+	void begin_script(Object *p_world);
 
 	/// Returns `false` if this query can still return the components via `get`.
 	bool is_done() const;
 
 	/// Returns entity id.
 	EntityID get_current_entity_id() const;
+	uint32_t get_current_entity_id_script() const;
 
 	/// Advance entity
-	void next_entity();
+	void next();
 
 	/// Ends the query execution.
 	void end();

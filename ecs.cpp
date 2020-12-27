@@ -113,8 +113,7 @@ void ECS::register_system(func_get_system_exe_info p_func_get_exe_info, StringNa
 	print_line("System: " + p_name + " registered with ID: " + itos(id));
 }
 
-godex::system_id ECS::register_dynamic_system(StringName p_name, const godex::DynamicSystemInfo *p_info, const String &p_description) {
-	ERR_FAIL_COND_V_MSG(p_info == nullptr, UINT32_MAX, "`DynamicSysteInfo` can't be nullptr.");
+godex::system_id ECS::register_dynamic_system(StringName p_name, const String &p_description) {
 	{
 		const uint32_t id = get_system_id(p_name);
 		ERR_FAIL_COND_V_MSG(id != UINT32_MAX, UINT32_MAX, "The system is already registered.");
@@ -124,7 +123,7 @@ godex::system_id ECS::register_dynamic_system(StringName p_name, const godex::Dy
 
 	// Used to assign a static function to this dynamic system, check the
 	// DynamicSystem doc to know more (../systems/dynamic_system.h).
-	const uint32_t dynamic_system_id = godex::register_dynamic_system(*p_info);
+	const uint32_t dynamic_system_id = godex::register_dynamic_system();
 
 	systems.push_back(p_name);
 	systems_info.push_back({ p_description,
@@ -170,6 +169,12 @@ void ECS::set_dynamic_system_target(godex::system_id p_id, Object *p_target) {
 	ERR_FAIL_COND_MSG(systems_info[p_id].dynamic_system_id == UINT32_MAX, "The system " + itos(p_id) + " is not a dynamic system.");
 	godex::DynamicSystemInfo *info = godex::get_dynamic_system_info(systems_info[p_id].dynamic_system_id);
 	info->set_target(p_target);
+}
+
+godex::DynamicSystemInfo *ECS::get_dynamic_system_info(godex::system_id p_id) {
+	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, nullptr, "This system " + itos(p_id) + " doesn't exists.");
+	ERR_FAIL_COND_V_MSG(systems_info[p_id].dynamic_system_id == UINT32_MAX, nullptr, "The system " + itos(p_id) + " is not a dynamic system.");
+	return godex::get_dynamic_system_info(systems_info[p_id].dynamic_system_id);
 }
 
 bool ECS::is_system_dispatcher(godex::system_id p_id) {

@@ -50,10 +50,9 @@ def generate_dynamic_system_funcs():
     f.write("};\n")
 
     f.write("\n")
-    f.write("uint32_t godex::register_dynamic_system(const DynamicSystemInfo &p_info) {\n")
+    f.write("uint32_t godex::register_dynamic_system() {\n")
     f.write("	const uint32_t id = registered_dynamic_system_count++;\n")
     f.write("	CRASH_COND_MSG(id >= DYNAMIC_SYSTEMS_MAX, \"You can't register more than \" + itos(DYNAMIC_SYSTEMS_MAX) + \" dynamic systems. Please open an issue so we can increase this limit.\");\n")
-    f.write("	dynamic_info[id] = p_info;\n")
     f.write("	return id;\n")
     f.write("}\n")
 

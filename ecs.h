@@ -91,11 +91,6 @@ public:
 	// ~~ Systems ~~
 	static void register_system(func_get_system_exe_info p_func_get_exe_info, StringName p_name, String p_description = "");
 
-	// Register the system and returns the ID.
-	static godex::system_id register_dynamic_system(StringName p_name, const godex::DynamicSystemInfo *p_info, const String &p_description = String());
-
-// This macro save the user the need to pass a `SystemExeInfo`, indeed it wraps
-// the passed function with a labda function that creates a `SystemExeInfo`.
 // By defining the same name of the method, the IDE autocomplete shows the
 // method name `register_system`, properly + it's impossible use the function
 // directly by mistake.
@@ -108,6 +103,11 @@ public:
 	},                                                              \
 			name, desc)
 
+	// Register the system and returns the ID.
+	static godex::system_id register_dynamic_system(StringName p_name, const String &p_description = String());
+
+	// This macro save the user the need to pass a `SystemExeInfo`, indeed it wraps
+	// the passed function with a labda function that creates a `SystemExeInfo`.
 	/// Returns the system id or UINT32_MAX if not found.
 	static godex::system_id get_system_id(const StringName &p_name);
 	static uint32_t get_systems_count();
@@ -121,6 +121,7 @@ public:
 	static String get_system_desc(godex::system_id p_id);
 
 	static void set_dynamic_system_target(godex::system_id p_id, Object *p_target);
+	static godex::DynamicSystemInfo *get_dynamic_system_info(godex::system_id p_id);
 
 	/// Returns `true` when the system dispatches a pipeline when executed.
 	static bool is_system_dispatcher(godex::system_id p_id);

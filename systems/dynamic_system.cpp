@@ -22,7 +22,7 @@ void godex::DynamicSystemInfo::with_resource(uint32_t p_resource_id, bool p_muta
 void godex::DynamicSystemInfo::with_component(uint32_t p_component_id, bool p_mutable) {
 	const uint32_t index = resource_element_map.size() + query_element_map.size();
 	query_element_map.push_back(index);
-	query.add_component(p_component_id, p_mutable);
+	query.with_component(p_component_id, p_mutable);
 }
 
 void godex::DynamicSystemInfo::without_component(uint32_t p_component_id) {
@@ -129,7 +129,7 @@ void godex::DynamicSystemInfo::executor(World *p_world, DynamicSystemInfo &p_inf
 		}
 
 		p_info.query.begin(p_world);
-		for (; p_info.query.is_done() == false; p_info.query.next_entity()) {
+		for (; p_info.query.is_done() == false; p_info.query.next()) {
 			Callable::CallError err;
 			p_info.target_script->call(for_each_name, const_cast<const Variant **>(access_ptr.ptr()), access_ptr.size(), err);
 			if (err.error != Callable::CallError::CALL_OK) {

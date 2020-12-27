@@ -145,11 +145,11 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 	}
 
 	// Build dynamic query.
-	godex::DynamicSystemInfo dynamic_system_info;
-	dynamic_system_info.with_component(TransformComponent::get_component_id(), true);
-	dynamic_system_info.with_component(test_dyn_component_id, true);
-	dynamic_system_info.set_target(&target_obj);
-	uint32_t system_id = ECS::register_dynamic_system("TestDynamicSystem.gd", &dynamic_system_info);
+	const uint32_t system_id = ECS::register_dynamic_system("TestDynamicSystem.gd");
+	godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
+	dynamic_system_info->with_component(TransformComponent::get_component_id(), true);
+	dynamic_system_info->with_component(test_dyn_component_id, true);
+	dynamic_system_info->set_target(&target_obj);
 
 	// Create the pipeline.
 	Pipeline pipeline;
@@ -230,12 +230,11 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 	sub_pipeline.add_system(test_system_transform_add_x);
 	sub_pipeline.build();
 
-	godex::DynamicSystemInfo sub_pipeline_system;
-	sub_pipeline_system.set_target(test_sub_pipeline_execute);
+	const uint32_t sub_pipeline_system_id = ECS::register_dynamic_system("TestSubPipelineExecute");
+	godex::DynamicSystemInfo *sub_pipeline_system = ECS::get_dynamic_system_info(sub_pipeline_system_id);
+	sub_pipeline_system->set_target(test_sub_pipeline_execute);
 	// Used internally by the `test_sub_pipeline_execute`.
-	sub_pipeline_system.with_resource(TestSystemSubPipeResource::get_resource_id(), false);
-
-	const uint32_t sub_pipeline_system_id = ECS::register_dynamic_system("TestSubPipelineExecute", &sub_pipeline_system);
+	sub_pipeline_system->with_resource(TestSystemSubPipeResource::get_resource_id(), false);
 	ECS::set_system_pipeline(sub_pipeline_system_id, &sub_pipeline);
 
 	// ~~ Main pipeline ~~
@@ -349,11 +348,11 @@ TEST_CASE("[Modules][ECS] Test system resource fetch with dynamic query.") {
 	}
 
 	// Build dynamic query.
-	godex::DynamicSystemInfo dynamic_system_info;
-	dynamic_system_info.with_resource(TestSystemSubPipeResource::get_resource_id(), true);
-	dynamic_system_info.with_component(TransformComponent::get_component_id(), false);
-	dynamic_system_info.set_target(&target_obj);
-	const uint32_t system_id = ECS::register_dynamic_system("TestResourceDynamicSystem.gd", &dynamic_system_info);
+	const uint32_t system_id = ECS::register_dynamic_system("TestResourceDynamicSystem.gd");
+	godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
+	dynamic_system_info->with_resource(TestSystemSubPipeResource::get_resource_id(), true);
+	dynamic_system_info->with_component(TransformComponent::get_component_id(), false);
+	dynamic_system_info->set_target(&target_obj);
 
 	// Create the pipeline.
 	Pipeline pipeline;
@@ -390,11 +389,11 @@ TEST_CASE("[Modules][ECS] Test WorldECSCommands from dynamic query.") {
 	}
 
 	// Build dynamic query.
-	godex::DynamicSystemInfo dynamic_system_info;
-	dynamic_system_info.with_resource(World::get_resource_id(), true);
-	dynamic_system_info.with_component(TransformComponent::get_component_id(), false);
-	dynamic_system_info.set_target(&target_obj);
-	const uint32_t system_id = ECS::register_dynamic_system("TestSpawnDynamicSystem.gd", &dynamic_system_info);
+	const uint32_t system_id = ECS::register_dynamic_system("TestSpawnDynamicSystem.gd");
+	godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
+	dynamic_system_info->with_resource(World::get_resource_id(), true);
+	dynamic_system_info->with_component(TransformComponent::get_component_id(), false);
+	dynamic_system_info->set_target(&target_obj);
 
 	// Create the pipeline.
 	Pipeline pipeline;
