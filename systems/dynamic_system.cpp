@@ -26,7 +26,7 @@ void godex::DynamicSystemInfo::with_component(uint32_t p_component_id, bool p_mu
 }
 
 void godex::DynamicSystemInfo::without_component(uint32_t p_component_id) {
-	CRASH_NOW_MSG("TODO implement this please.");
+	query.without_component(p_component_id);
 }
 
 void godex::DynamicSystemInfo::set_target(func_system_execute_pipeline p_system_exe) {
