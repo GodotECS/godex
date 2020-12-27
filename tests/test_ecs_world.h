@@ -5,6 +5,8 @@
 
 #include "../components/transform_component.h"
 #include "../ecs.h"
+#include "../nodes/ecs_world.h"
+#include "../nodes/entity.h"
 #include "../world/world.h"
 
 struct Test1Resource : public godex::Resource {
@@ -187,6 +189,33 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 		CHECK(world.get_resource<Test1Resource>() == nullptr);
 		CHECK(world.get_resource(Test1Resource::get_resource_id()) == nullptr);
 	}
+}
+
+TEST_CASE("[Modules][ECS] Test WorldECSCommands create entity from prefab.") {
+	World world;
+
+	AccessResource world_res_access;
+	world_res_access.__resource = &world;
+	world_res_access.__mut = true;
+
+	Entity entity_prefab;
+
+	Dictionary defaults;
+	defaults["transform"] = Transform(Basis(), Vector3(10.0, 0.0, 0.0));
+	entity_prefab.add_component("TransformComponent", defaults);
+
+	const uint32_t entity_id = WorldECSCommands::get_singleton()->create_entity_from_prefab(
+			&world_res_access,
+			&entity_prefab);
+
+	// Make sure something is created.
+	CHECK(entity_id != UINT32_MAX);
+
+	// Make sure the component is created
+	CHECK(world.get_storage<TransformComponent>()->has(0));
+
+	// Make sure the default is also set.
+	CHECK(ABS(world.get_storage<TransformComponent>()->get(0).transform.origin.x - 10) <= CMP_EPSILON);
 }
 
 } // namespace godex_tests_world

@@ -49,6 +49,8 @@ public:
 	}
 };
 
+// TODO make this under godex namespace.
+
 // TODO [!important!]
 // TODO when access this Resource mutably the system always have to run in
 // TODO single thread. This is a special condition.

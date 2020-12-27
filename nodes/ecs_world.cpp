@@ -5,6 +5,7 @@
 
 #include "../ecs.h"
 #include "../nodes/ecs_utilities.h"
+#include "../nodes/entity.h"
 #include "../pipeline/pipeline.h"
 #include "../world/world.h"
 
@@ -399,6 +400,15 @@ void WorldECSCommands::destroy_entity(Object *p_world, uint32_t p_entity_id) {
 	World *world = AccessResource::unwrap<World>(p_world);
 	ERR_FAIL_COND_MSG(world == nullptr, "The passed variable is not a `Resource` of type `World`.");
 	return world->destroy_entity(p_entity_id);
+}
+
+uint32_t WorldECSCommands::create_entity_from_prefab(Object *p_world, Object *p_entity) {
+	const Entity *entity = cast_to<Entity>(p_entity);
+	ERR_FAIL_COND_V_MSG(entity == nullptr, UINT32_MAX, "The passed object is not an `Entity` `Node`.");
+	World *world = AccessResource::unwrap<World>(p_world);
+	ERR_FAIL_COND_V_MSG(world == nullptr, UINT32_MAX, "The passed variable is not a `Resource` of type `World`.");
+
+	return entity->_create_entity(world);
 }
 
 void WorldECSCommands::add_component(Object *p_world, uint32_t entity_id, const StringName &p_component_name, const Dictionary &p_data) {

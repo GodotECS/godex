@@ -24,6 +24,7 @@ public:
 	virtual String get_type_name() const override;
 
 	virtual void insert(EntityID p_entity, T p_data) override;
+	virtual void insert_dynamic(EntityID p_entity, const Dictionary &p_data) override;
 	virtual bool has(EntityID p_entity) const override;
 	virtual const godex::Component *get_ptr(EntityID p_entity) const;
 	virtual godex::Component *get_ptr(EntityID p_entity);
@@ -79,6 +80,21 @@ void DenseVector<T>::insert(EntityID p_entity, T p_data) {
 	// Store the data
 	data.push_back(p_data);
 	data_to_entity.push_back(p_entity);
+}
+
+template <class T>
+void DenseVector<T>::insert_dynamic(EntityID p_entity, const Dictionary &p_data) {
+	const uint32_t index = data.size();
+	insert_entity(p_entity, index);
+
+	// Create the data.
+	data.resize(index + 1);
+	data_to_entity.push_back(p_entity);
+
+	// Set the custom data if any.
+	for (const Variant *key = p_data.next(); key; key = p_data.next(key)) {
+		data[index].set(StringName(*key), *p_data.getptr(*key));
+	}
 }
 
 template <class T>
