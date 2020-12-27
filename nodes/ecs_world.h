@@ -149,7 +149,8 @@ public:
 	uint32_t create_entity(Object *p_world);
 	void destroy_entity(Object *p_world, uint32_t p_entity_id);
 
-	//uint32_t create_entity_from_prefab(Entity *p_entity);
+	/// Creates an entity coping the components from the given `Entity`.
+	uint32_t create_entity_from_prefab(Object *p_world, Object *p_entity);
 
 	void add_component(Object *p_world, uint32_t entity_id, const StringName &p_component_name, const Dictionary &p_data);
 };

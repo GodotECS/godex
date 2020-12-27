@@ -7,9 +7,12 @@
 #include "scene/main/node.h"
 
 class WorldECS;
+class World;
 
 class Entity : public Node {
 	GDCLASS(Entity, Node);
+
+	friend class WorldECSCommands;
 
 	EntityID entity_id;
 	Dictionary components_data;
@@ -42,6 +45,7 @@ public:
 
 private:
 	void create_entity();
+	EntityID _create_entity(World *p_world) const;
 	void destroy_entity();
 	void update_components_data();
 };
