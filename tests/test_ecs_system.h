@@ -25,8 +25,20 @@ public:
 class TestSystemSubPipeResource : public godex::Resource {
 	RESOURCE(TestSystemSubPipeResource)
 
+	static void _bind_properties() {
+		add_property(PropertyInfo(Variant::INT, "exe_count"), &TestSystemSubPipeResource::set_exe_count, &TestSystemSubPipeResource::get_exe_count);
+	}
+
 public:
 	int exe_count = 0;
+
+	void set_exe_count(int p_i) {
+		exe_count = p_i;
+	}
+
+	int get_exe_count() const {
+		return exe_count;
+	}
 };
 
 namespace godex_tests_system {
@@ -132,7 +144,7 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 		ERR_FAIL_COND(build_and_assign_script(&target_obj, code) == false);
 	}
 
-	// Build dynami component.
+	// Build dynamic query.
 	godex::DynamicSystemInfo dynamic_system_info;
 	dynamic_system_info.with_component(TransformComponent::get_component_id(), true);
 	dynamic_system_info.with_component(test_dyn_component_id, true);
@@ -314,8 +326,46 @@ TEST_CASE("[Modules][ECS] Test system and resource") {
 	}
 }
 
-TEST_CASE("[Modules][ECS] Test system and script resource") {
-	// TODO
+TEST_CASE("[Modules][ECS] Test system with C++ resources") {
+	World world;
+	world.add_resource<TestSystemSubPipeResource>();
+	world.get_resource<TestSystemSubPipeResource>()->exe_count = 20;
+
+	world
+			.create_entity()
+			.with(TransformComponent());
+
+	Object target_obj;
+	{
+		// Create the script.
+		String code;
+		code += "extends Object\n";
+		code += "\n";
+		code += "func _for_each(test_resource, transform_com):\n";
+		code += "	test_resource.exe_count = 10\n";
+		code += "\n";
+
+		ERR_FAIL_COND(build_and_assign_script(&target_obj, code) == false);
+	}
+
+	// Build dynamic query.
+	godex::DynamicSystemInfo dynamic_system_info;
+	dynamic_system_info.with_resource(TestSystemSubPipeResource::get_resource_id(), true);
+	dynamic_system_info.with_component(TransformComponent::get_component_id(), false);
+	dynamic_system_info.set_target(&target_obj);
+	const uint32_t system_id = ECS::register_dynamic_system("TestResourceDynamicSystem.gd", &dynamic_system_info);
+
+	// Create the pipeline.
+	Pipeline pipeline;
+	// Add the system to the pipeline.
+	pipeline.add_registered_system(system_id);
+	pipeline.build();
+
+	// Dispatch 1 time.
+	pipeline.dispatch(&world);
+
+	// Make sure the `exe_count` is changed to 10 by the script.
+	CHECK(world.get_resource<TestSystemSubPipeResource>()->exe_count == 10);
 }
 
 // TODO test resources with C++ and Scripts systems.
