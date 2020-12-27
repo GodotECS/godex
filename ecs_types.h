@@ -157,3 +157,17 @@ public:                                                                         
 	}
 
 } // namespace godex
+
+#define SINGLETON_MAKER(m_class)                                                                      \
+private:                                                                                              \
+	static inline m_class *singleton = nullptr;                                                       \
+	m_class() {}                                                                                      \
+																									  \
+public:                                                                                               \
+	static m_class *get_singleton() {                                                                 \
+		if (unlikely(singleton == nullptr)) {                                                         \
+			singleton = memnew(m_class);                                                              \
+			Engine::get_singleton()->add_singleton(Engine::Singleton(get_class_static(), singleton)); \
+		}                                                                                             \
+		return singleton;                                                                             \
+	}
