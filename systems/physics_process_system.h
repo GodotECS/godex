@@ -25,6 +25,9 @@ public:
 };
 
 void call_physics_process(
+		// This is needed to force process this system in single thread so that
+		// `_physics_process()` can run safely.
+		World *p_world,
 		GodotIteratorInfoResource *p_iterator_info,
 		Physics3DServerResource *p_physics,
 		EngineResource *p_engine,

@@ -7,6 +7,7 @@
 class Pipeline;
 class World;
 class WorldECS;
+class Entity;
 
 /// The `PipelineECS` is a resource that holds the `Pipeline` object, and the
 /// info to build it.
@@ -134,3 +135,19 @@ private:
 	void active_world();
 	void unactive_world();
 };
+
+// TODO remove.
+/// Directy access to the active world.
+//class WorldECSQuery : public Object {
+//	World *world = nullptr;
+//
+//protected:
+//	static void _bind_methods();
+//
+//public:
+//	uint32_t create_entity_from_prefab(Entity *p_entity);
+//	uint32_t create_entity();
+//	void destroy_entity(uint32_t p_entity_id);
+//
+//	void add_component(uint32_t entity_id, const StringName &p_component_name, const Dictionary &p_variables);
+//};

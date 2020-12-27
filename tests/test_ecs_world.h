@@ -14,7 +14,15 @@ public:
 	int a = 10;
 };
 
-namespace godex_tests {
+namespace godex_tests_world {
+
+TEST_CASE("[Modules][ECS] Test world has self resource.") {
+	World world;
+	godex::Resource *world_ptr = world.get_resource(World::get_resource_id());
+
+	// Make sure `World` contains a pointer of itself as resource.
+	CHECK(&world == world_ptr);
+}
 
 TEST_CASE("[Modules][ECS] Test world") {
 	World world;
@@ -181,6 +189,6 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 	}
 }
 
-} // namespace godex_tests
+} // namespace godex_tests_world
 
 #endif // TEST_ECS_WORLD_H

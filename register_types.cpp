@@ -54,6 +54,7 @@ void register_godex_types() {
 	ECS::register_component<TransformComponent>();
 
 	// ~ Register engine resources ~
+	ECS::register_resource<World>();
 	ECS::register_resource<GodotIteratorInfoResource>();
 	ECS::register_resource<OsResource>();
 	ECS::register_resource<EngineResource>();

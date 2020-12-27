@@ -12,6 +12,15 @@ const EntityBuilder &EntityBuilder::with(uint32_t p_component_id, const Dictiona
 	return *this;
 }
 
+World::World() {
+	// Add self as resource, so that the `Systems` can obtain it.
+	resources.resize(World::get_resource_id() + 1);
+	for (uint32_t i = 0; i <= World::get_resource_id(); i += 1) {
+		resources[i] = nullptr;
+	}
+	resources[World::get_resource_id()] = this;
+}
+
 EntityID World::create_entity_index() {
 	return entity_count++;
 }
@@ -114,6 +123,7 @@ void World::destroy_storage(uint32_t p_component_id) {
 
 void World::add_resource(godex::resource_id p_id) {
 	ERR_FAIL_COND_MSG(ECS::verify_resource_id(p_id) == false, "The resource is not registered.");
+	ERR_FAIL_COND_MSG(p_id == World::get_resource_id(), "The resource `World` is an internal type automatically register by the `World` itself. You can't add it again.");
 
 	if (p_id >= resources.size()) {
 		const uint32_t start = resources.size();
@@ -130,6 +140,7 @@ void World::add_resource(godex::resource_id p_id) {
 
 void World::remove_resource(godex::resource_id p_id) {
 	ERR_FAIL_COND_MSG(ECS::verify_resource_id(p_id) == false, "The resource is not registered.");
+	ERR_FAIL_COND_MSG(p_id == World::get_resource_id(), "The resource `World` is an internal type automatically register by the `World` itself. You can't remove it.");
 
 	if (unlikely(p_id >= resources.size() || resources[p_id] == nullptr)) {
 		// Nothing to do.

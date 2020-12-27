@@ -6,7 +6,6 @@
 #include "core/object/object.h"
 #include "core/templates/local_vector.h"
 #include "core/templates/oa_hash_map.h"
-#include "world/world_commands.h"
 
 #include "systems/system.h"
 #include "systems/system_builder.h"
@@ -58,7 +57,8 @@ class ECS : public Object {
 
 	World *active_world = nullptr;
 	Pipeline *active_world_pipeline = nullptr;
-	WorldCommands commands;
+	bool dispatching = false;
+	AccessResource world_access;
 
 public:
 	// ~~ Components ~~
@@ -146,14 +146,9 @@ public:
 	/// is generated.
 	void set_active_world(World *p_world);
 	World *get_active_world() const;
+	AccessResource *get_active_world_gds();
 
 	bool has_active_world() const;
-
-	/// Returns a command object that can be used to spawn entities, add
-	/// components.
-	/// This function returns nullptr when the world is dispatched because
-	/// it's unsafe interact during that phase.
-	WorldCommands *get_commands();
 
 	void set_active_world_pipeline(Pipeline *p_pipeline);
 	Pipeline *get_active_world_pipeline() const;
