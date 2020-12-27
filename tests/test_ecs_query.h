@@ -15,9 +15,44 @@ class TagQueryTestComponent : public godex::Component {
 
 namespace godex_tests {
 
-TEST_CASE("[Modules][ECS] Test dynamic query") {
+TEST_CASE("[Modules][ECS] Test static query") {
 	ECS::register_component<TagQueryTestComponent>();
 
+	World world;
+
+	EntityID entity_1 = world
+								.create_entity()
+								.with(TransformComponent())
+								.with(TagQueryTestComponent());
+
+	EntityID entity_2 = world
+								.create_entity()
+								.with(TransformComponent(Transform(Basis(), Vector3(0.0, 0.0, 23.0))));
+
+	EntityID entity_3 = world
+								.create_entity()
+								.with(TransformComponent())
+								.with(TagQueryTestComponent());
+
+	// Test WithoutFilter.
+	{
+		// Check the API `without_component()`.
+		Query<TransformComponent, WithoutFilter<TagQueryTestComponent>> query(&world);
+
+		// This query fetches the entity that have only the `TransformComponent`.
+		CHECK(query.is_done() == false);
+		query.get();
+		//auto [transform, _f] = query.get();
+		//CHECK(ABS(transform.transform.origin.z - 23.0) <= CMP_EPSILON);
+
+		query.next();
+
+		// Now it's done
+		CHECK(query.is_done());
+	}
+}
+
+TEST_CASE("[Modules][ECS] Test dynamic query") {
 	World world;
 
 	EntityID entity_1 = world

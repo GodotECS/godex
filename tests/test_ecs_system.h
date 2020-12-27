@@ -47,7 +47,7 @@ void test_system_tag(Query<TransformComponent, const TagTestComponent> &p_query)
 	while (p_query.is_done() == false) {
 		auto [transform, component] = p_query.get();
 		transform.transform.origin.x += 100.0;
-		p_query.next_entity();
+		p_query.next();
 	}
 }
 
@@ -218,7 +218,7 @@ void test_system_transform_add_x(Query<TransformComponent> &p_query) {
 	while (p_query.is_done() == false) {
 		auto [transform] = p_query.get();
 		transform.transform.origin.x += 100.0;
-		p_query.next_entity();
+		p_query.next();
 	}
 }
 
