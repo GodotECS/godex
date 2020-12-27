@@ -3,12 +3,12 @@
 /* Author: AndreaCatania */
 
 #include "../ecs_types.h"
+#include "core/object/class_db.h"
 #include "core/object/object.h"
 #include "core/templates/oa_hash_map.h"
 
 #define RESOURCE(m_class)                                                                      \
 	ECSCLASS(m_class)                                                                          \
-	friend class World;                                                                        \
 																							   \
 private:                                                                                       \
 	/* Creation */                                                                             \
@@ -58,3 +58,18 @@ public:
 };
 
 } // namespace godex
+
+/// This class is used to give Resource access from GDScript and make sure the
+/// mutability is respected.
+class AccessResource : public Object {
+public:
+	godex::Resource *resource = nullptr;
+	bool mut = false;
+
+	AccessResource();
+
+	bool _setv(const StringName &p_name, const Variant &p_data);
+	bool _getv(const StringName &p_name, Variant &r_data) const;
+
+	bool is_mutable() const;
+};

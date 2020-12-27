@@ -18,11 +18,13 @@ PhysicsServer3D *Physics3DServerResource::get_physics() {
 }
 
 void call_physics_process(
+		World *p_world,
 		GodotIteratorInfoResource *p_iterator_info,
 		Physics3DServerResource *p_physics_3d,
 		EngineResource *p_engine,
 		OsResource *p_os,
 		MessageQueueResource *p_message_queue) {
+	CRASH_COND_MSG(p_world == nullptr, "This is never nullptr because the `World` resource is automatically created by the `World` itself");
 	ERR_FAIL_COND_MSG(p_iterator_info == nullptr, "The GodotIteratorInfoResource is not part of this world. Add it to use the physics.");
 	ERR_FAIL_COND_MSG(p_physics_3d == nullptr, "The Physics3DServerResource is not part of this world. Add it to use the physics.");
 	ERR_FAIL_COND_MSG(p_engine == nullptr, "The EngineResource is not part of this world. Add it to use the physics.");

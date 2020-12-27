@@ -5,7 +5,7 @@
 */
 
 #include "../ecs_types.h"
-//#include "../resources/ecs_resource.h"
+#include "../resources/ecs_resource.h"
 #include "../storages/storage.h"
 #include "core/string/string_name.h"
 #include "core/templates/local_vector.h"
@@ -49,13 +49,21 @@ public:
 	}
 };
 
-class World {
+// TODO [!important!]
+// TODO when access this Resource mutably the system always have to run in
+// TODO single thread. This is a special condition.
+// TODO [!important!]
+class World : public godex::Resource {
+	RESOURCE(World)
+
 	LocalVector<Storage *> storages;
 	LocalVector<godex::Resource *> resources;
 	uint32_t entity_count = 0;
 	EntityBuilder entity_builder = EntityBuilder(this);
 
 public:
+	World();
+
 	/// Creates a new Entity id. You can add the components using the function
 	/// `add_component`.
 	EntityID create_entity_index();

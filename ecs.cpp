@@ -17,6 +17,8 @@ LocalVector<StringName> ECS::systems;
 LocalVector<SystemInfo> ECS::systems_info;
 
 void ECS::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_active_world"), &ECS::get_active_world_gds);
+
 	ADD_SIGNAL(MethodInfo("world_loaded"));
 	ADD_SIGNAL(MethodInfo("world_pre_unload"));
 	ADD_SIGNAL(MethodInfo("world_unloaded"));
@@ -231,15 +233,14 @@ World *ECS::get_active_world() const {
 	return active_world;
 }
 
-bool ECS::has_active_world() const {
-	return active_world != nullptr;
+AccessResource *ECS::get_active_world_gds() {
+	ERR_FAIL_COND_V_MSG(active_world == nullptr, nullptr, "No active world at the moment.");
+	world_access.resource = active_world;
+	return &world_access;
 }
 
-WorldCommands *ECS::get_commands() {
-	// TODO make sure this returns nullptr when the world is dispatched.
-	ERR_FAIL_COND_V_MSG(active_world == nullptr, nullptr, "No active WorldsECS.");
-	commands.world = active_world;
-	return &commands;
+bool ECS::has_active_world() const {
+	return active_world != nullptr;
 }
 
 void ECS::set_active_world_pipeline(Pipeline *p_pipeline) {
@@ -262,7 +263,9 @@ bool ECS::has_active_world_pipeline() const {
 
 void ECS::dispatch_active_world() {
 	if (likely(active_world && active_world_pipeline)) {
+		dispatching = true;
 		active_world_pipeline->dispatch(active_world);
+		dispatching = false;
 	}
 }
 

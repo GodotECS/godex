@@ -315,7 +315,7 @@ void Entity::create_entity() {
 	if (ECS::get_singleton()->has_active_world()) {
 		// It's safe dereference command because this function is always called
 		// when the world is not dispatching.
-		entity_id = ECS::get_singleton()->get_commands()->create_entity();
+		entity_id = ECS::get_singleton()->get_active_world()->create_entity();
 
 		for (
 				const Variant *key = components_data.next(nullptr);
@@ -323,7 +323,7 @@ void Entity::create_entity() {
 				key = components_data.next(key)) {
 			const uint32_t component_id = ECS::get_component_id(*key);
 			ERR_CONTINUE(component_id == UINT32_MAX);
-			ECS::get_singleton()->get_commands()->add_component(
+			ECS::get_singleton()->get_active_world()->add_component(
 					entity_id,
 					component_id,
 					*components_data.getptr(*key));
@@ -340,7 +340,7 @@ void Entity::destroy_entity() {
 	if (ECS::get_singleton()->has_active_world()) {
 		// It's safe dereference command because this function is always called
 		// when the world is not dispatching.
-		ECS::get_singleton()->get_commands()->destroy_entity(entity_id);
+		ECS::get_singleton()->get_active_world()->destroy_entity(entity_id);
 	}
 
 	entity_id = EntityID();
