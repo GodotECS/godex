@@ -6,7 +6,7 @@ godex::Resource::Resource() {}
 
 void godex::Resource::_bind_properties() {}
 
-godex::resource_id godex::Resource::cid() const {
+godex::resource_id godex::Resource::rid() const {
 	CRASH_NOW_MSG("The `Resource` class must always be tagged using the macro `RESOURCE()`.");
 	return UINT32_MAX;
 }

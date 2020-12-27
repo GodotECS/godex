@@ -212,10 +212,35 @@ TEST_CASE("[Modules][ECS] Test WorldECSCommands create entity from prefab.") {
 	CHECK(entity_id != UINT32_MAX);
 
 	// Make sure the component is created
-	CHECK(world.get_storage<TransformComponent>()->has(0));
+
+	Object *comp = WorldECSCommands::get_singleton()->get_entity_component(
+			&world_res_access,
+			entity_id,
+			"TransformComponent");
+
+	CHECK(comp != nullptr);
+
+	TransformComponent *transf = godex::AccessComponent::unwrap<TransformComponent>(comp);
 
 	// Make sure the default is also set.
-	CHECK(ABS(world.get_storage<TransformComponent>()->get(0).transform.origin.x - 10) <= CMP_EPSILON);
+	CHECK(ABS(transf->transform.origin.x - 10) <= CMP_EPSILON);
+}
+
+TEST_CASE("[Modules][ECS] Test WorldECSCommands fetch resources.") {
+	World world;
+
+	AccessResource world_res_access;
+	world_res_access.__resource = &world;
+	world_res_access.__mut = true;
+
+	Object *world_res_raw = WorldECSCommands::get_singleton()->get_resource(
+			&world_res_access,
+			"World");
+
+	CHECK(world_res_raw != nullptr);
+
+	World *world_ptr = AccessResource::unwrap<World>(world_res_raw);
+	CHECK(&world == world_ptr);
 }
 
 } // namespace godex_tests_world

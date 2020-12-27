@@ -41,6 +41,7 @@ private:                                                                        
 																									  \
 public:                                                                                               \
 	static uint32_t get_component_id() { return component_id; }                                       \
+	virtual godex::component_id cid() const override { return component_id; }                         \
 																									  \
 	ECS_PROPERTY_MAPPER(m_class)                                                                      \
 private:
@@ -54,6 +55,9 @@ public:
 public:
 	static void _bind_properties();
 
+	/// Returns the component ID.
+	virtual component_id cid() const;
+
 	virtual const LocalVector<PropertyInfo> *get_properties() const;
 	virtual bool set(const StringName &p_name, const Variant &p_data);
 	virtual bool get(const StringName &p_name, Variant &r_data) const;
@@ -64,4 +68,54 @@ public:
 	Variant get(const StringName &p_name) const;
 };
 
+/// This class is used to make sure the `Query` mutability is respected.
+class AccessComponent : public Object {
+	friend class DynamicQuery;
+
+public:
+	godex::Component *__component = nullptr;
+	bool __mut = false;
+
+	AccessComponent();
+
+	virtual bool _setv(const StringName &p_name, const Variant &p_data) override;
+	virtual bool _getv(const StringName &p_name, Variant &r_data) const override;
+
+	bool is_mutable() const;
+
+public:
+	template <class T>
+	static T *unwrap(Object *p_access_resource);
+
+	template <class T>
+	static const T *unwrap(const Object *p_access_resource);
+};
+
+template <class T>
+T *AccessComponent::unwrap(Object *p_access_resource) {
+	AccessComponent *comp = Object::cast_to<AccessComponent>(p_access_resource);
+	if (unlikely(comp == nullptr)) {
+		return nullptr;
+	}
+
+	ERR_FAIL_COND_V_MSG(comp->__mut == false, nullptr, "This is an immutable component.");
+	if (likely(comp->__component->cid() == T::get_component_id())) {
+		return static_cast<T *>(comp->__component);
+	} else {
+		return nullptr;
+	}
+}
+
+template <class T>
+const T *AccessComponent::unwrap(const Object *p_access_resource) {
+	const AccessComponent *comp = Object::cast_to<AccessComponent>(p_access_resource);
+	if (unlikely(comp == nullptr)) {
+		return nullptr;
+	}
+	if (likely(comp->__component->cid() == T::get_component_id())) {
+		return static_cast<const T *>(comp->__component);
+	} else {
+		return nullptr;
+	}
+}
 } // namespace godex

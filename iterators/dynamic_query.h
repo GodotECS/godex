@@ -8,24 +8,6 @@ class World;
 
 namespace godex {
 
-/// This class is used to make sure the `Query` mutability is respected.
-class AccessComponent : public Object {
-	friend class DynamicQuery;
-
-	godex::Component *component = nullptr;
-	bool mut = false;
-
-	void set_mutable(bool p_mut);
-
-public:
-	AccessComponent();
-
-	virtual bool _setv(const StringName &p_name, const Variant &p_data) override;
-	virtual bool _getv(const StringName &p_name, Variant &r_data) const override;
-
-	bool is_mutable() const;
-};
-
 /// This query is slower compared to `Query` but can be builded at runtime, so
 /// that the scripts can still interact with the `World`.
 /// Cache this query allow to save the time needed to lookup the components IDs,

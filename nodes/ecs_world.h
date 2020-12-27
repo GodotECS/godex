@@ -2,7 +2,9 @@
 
 /* Author: AndreaCatania */
 
+#include "../components/component.h"
 #include "../ecs_types.h"
+#include "../resources/ecs_resource.h"
 #include "scene/main/node.h"
 
 class Pipeline;
@@ -145,6 +147,9 @@ class WorldECSCommands : public Object {
 protected:
 	static void _bind_methods();
 
+	godex::AccessComponent access_component_utility;
+	AccessResource access_resource_utility;
+
 public:
 	uint32_t create_entity(Object *p_world);
 	void destroy_entity(Object *p_world, uint32_t p_entity_id);
@@ -153,4 +158,12 @@ public:
 	uint32_t create_entity_from_prefab(Object *p_world, Object *p_entity);
 
 	void add_component(Object *p_world, uint32_t entity_id, const StringName &p_component_name, const Dictionary &p_data);
+
+	/// Returns the component of the entity or null if not assigned.
+	/// The returned object lifetime is short, never store it.
+	Object *get_entity_component(Object *p_world, uint32_t entity_id, const StringName &p_component_name);
+
+	/// Returns the resource or null if not present in the world.
+	/// The returned object lifetime is short, never store it.
+	Object *get_resource(Object *p_world, const StringName &p_resource_name);
 };

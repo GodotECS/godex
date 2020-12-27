@@ -2,27 +2,7 @@
 
 #include "../ecs.h"
 
-using godex::AccessComponent;
 using godex::DynamicQuery;
-
-void AccessComponent::set_mutable(bool p_mut) {
-	mut = p_mut;
-}
-
-AccessComponent::AccessComponent() {}
-
-bool AccessComponent::_setv(const StringName &p_name, const Variant &p_data) {
-	ERR_FAIL_COND_V_MSG(mut == false, false, "This component was taken as not mutable.");
-	return component->set(p_name, p_data);
-}
-
-bool AccessComponent::_getv(const StringName &p_name, Variant &r_data) const {
-	return component->get(p_name, r_data);
-}
-
-bool AccessComponent::is_mutable() const {
-	return mut;
-}
 
 DynamicQuery::DynamicQuery() {
 }
@@ -56,7 +36,7 @@ bool DynamicQuery::build() {
 	// complain for some reason.
 	access_components.resize(component_ids.size());
 	for (uint32_t i = 0; i < component_ids.size(); i += 1) {
-		access_components[i].set_mutable(mutability[i]);
+		access_components[i].__mut = mutability[i];
 	}
 
 	return true;
@@ -75,7 +55,7 @@ uint32_t DynamicQuery::access_count() const {
 	return component_ids.size();
 }
 
-AccessComponent *DynamicQuery::get_access(uint32_t p_index) {
+godex::AccessComponent *DynamicQuery::get_access(uint32_t p_index) {
 	ERR_FAIL_COND_V_MSG(is_valid() == false, nullptr, "The query is invalid.");
 	build();
 	return access_components.ptr() + p_index;
@@ -145,7 +125,7 @@ void DynamicQuery::next_entity() {
 void DynamicQuery::end() {
 	// Clear any component reference.
 	for (uint32_t i = 0; i < component_ids.size(); i += 1) {
-		access_components[i].component = nullptr;
+		access_components[i].__component = nullptr;
 	}
 
 	world = nullptr;
@@ -176,6 +156,6 @@ void DynamicQuery::fetch() {
 	ERR_FAIL_COND_MSG(entity_id == UINT32_MAX, "There is nothing to fetch.");
 
 	for (uint32_t i = 0; i < storages.size(); i += 1) {
-		access_components[i].component = storages[i]->get_ptr(entity_id);
+		access_components[i].__component = storages[i]->get_ptr(entity_id);
 	}
 }

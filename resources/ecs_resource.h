@@ -26,7 +26,7 @@ private:                                                                    \
 																			\
 public:                                                                     \
 	static uint32_t get_resource_id() { return resource_id; }               \
-	virtual godex::resource_id cid() const override { return resource_id; } \
+	virtual godex::resource_id rid() const override { return resource_id; } \
 																			\
 	ECS_PROPERTY_MAPPER(m_class)                                            \
 private:
@@ -42,8 +42,8 @@ public:
 public:
 	static void _bind_properties();
 
-	/// Returns the component ID.
-	virtual resource_id cid() const;
+	/// Returns the resouce ID.
+	virtual resource_id rid() const;
 
 	virtual const LocalVector<PropertyInfo> *get_properties() const;
 	virtual bool set(const StringName &p_name, const Variant &p_data);
@@ -87,7 +87,7 @@ T *AccessResource::unwrap(Object *p_access_resource) {
 	}
 
 	ERR_FAIL_COND_V_MSG(res->__mut == false, nullptr, "This is an immutable resource.");
-	if (likely(res->__resource->cid() == T::get_resource_id())) {
+	if (likely(res->__resource->rid() == T::get_resource_id())) {
 		return static_cast<T *>(res->__resource);
 	} else {
 		return nullptr;
@@ -100,7 +100,7 @@ const T *AccessResource::unwrap(const Object *p_access_resource) {
 	if (unlikely(res == nullptr)) {
 		return nullptr;
 	}
-	if (likely(res->__resource->cid() == T::get_resource_id())) {
+	if (likely(res->__resource->rid() == T::get_resource_id())) {
 		return static_cast<const T *>(res->__resource);
 	} else {
 		return nullptr;
