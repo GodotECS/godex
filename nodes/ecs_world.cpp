@@ -397,13 +397,13 @@ void WorldECSCommands::_bind_methods() {
 }
 
 uint32_t WorldECSCommands::create_entity(Object *p_world) {
-	World *world = AccessResource::unwrap<World>(p_world);
+	World *world = godex::AccessResource::unwrap<World>(p_world);
 	ERR_FAIL_COND_V_MSG(world == nullptr, UINT32_MAX, "The passed variable is not a `Resource` of type `World`.");
 	return world->create_entity_index();
 }
 
 void WorldECSCommands::destroy_entity(Object *p_world, uint32_t p_entity_id) {
-	World *world = AccessResource::unwrap<World>(p_world);
+	World *world = godex::AccessResource::unwrap<World>(p_world);
 	ERR_FAIL_COND_MSG(world == nullptr, "The passed variable is not a `Resource` of type `World`.");
 	return world->destroy_entity(p_entity_id);
 }
@@ -411,14 +411,14 @@ void WorldECSCommands::destroy_entity(Object *p_world, uint32_t p_entity_id) {
 uint32_t WorldECSCommands::create_entity_from_prefab(Object *p_world, Object *p_entity) {
 	const Entity *entity = cast_to<Entity>(p_entity);
 	ERR_FAIL_COND_V_MSG(entity == nullptr, UINT32_MAX, "The passed object is not an `Entity` `Node`.");
-	World *world = AccessResource::unwrap<World>(p_world);
+	World *world = godex::AccessResource::unwrap<World>(p_world);
 	ERR_FAIL_COND_V_MSG(world == nullptr, UINT32_MAX, "The passed variable is not a `Resource` of type `World`.");
 
 	return entity->_create_entity(world);
 }
 
 void WorldECSCommands::add_component(Object *p_world, uint32_t entity_id, const StringName &p_component_name, const Dictionary &p_data) {
-	World *world = AccessResource::unwrap<World>(p_world);
+	World *world = godex::AccessResource::unwrap<World>(p_world);
 	ERR_FAIL_COND_MSG(world == nullptr, "The passed variable is not a `Resource` of type `World`.");
 	const godex::component_id id = ECS::get_component_id(p_component_name);
 	ERR_FAIL_COND_MSG(ECS::verify_component_id(id) == false, "The passed component_name is not valid.");
@@ -426,7 +426,7 @@ void WorldECSCommands::add_component(Object *p_world, uint32_t entity_id, const 
 }
 
 Object *WorldECSCommands::get_entity_component(Object *p_world, uint32_t entity_id, const StringName &p_component_name) {
-	World *world = AccessResource::unwrap<World>(p_world);
+	World *world = godex::AccessResource::unwrap<World>(p_world);
 	ERR_FAIL_COND_V_MSG(world == nullptr, nullptr, "The passed variable is not a `Resource` of type `World`.");
 	const godex::component_id id = ECS::get_component_id(p_component_name);
 	ERR_FAIL_COND_V_MSG(ECS::verify_component_id(id) == false, nullptr, "The passed component_name is not valid.");
@@ -442,7 +442,7 @@ Object *WorldECSCommands::get_entity_component(Object *p_world, uint32_t entity_
 }
 
 Object *WorldECSCommands::get_resource(Object *p_world, const StringName &p_resource_name) {
-	World *world = AccessResource::unwrap<World>(p_world);
+	World *world = godex::AccessResource::unwrap<World>(p_world);
 	ERR_FAIL_COND_V_MSG(world == nullptr, nullptr, "The passed variable is not a `Resource` of type `World`.");
 	const godex::resource_id id = ECS::get_resource_id(p_resource_name);
 	ERR_FAIL_COND_V_MSG(ECS::verify_resource_id(id) == false, nullptr, "The passed `resource_name` is not valid.");

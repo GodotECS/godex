@@ -194,7 +194,7 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 TEST_CASE("[Modules][ECS] Test WorldECSCommands create entity from prefab.") {
 	World world;
 
-	AccessResource world_res_access;
+	godex::AccessResource world_res_access;
 	world_res_access.__resource = &world;
 	world_res_access.__mut = true;
 
@@ -229,7 +229,7 @@ TEST_CASE("[Modules][ECS] Test WorldECSCommands create entity from prefab.") {
 TEST_CASE("[Modules][ECS] Test WorldECSCommands fetch resources.") {
 	World world;
 
-	AccessResource world_res_access;
+	godex::AccessResource world_res_access;
 	world_res_access.__resource = &world;
 	world_res_access.__mut = true;
 
@@ -239,7 +239,7 @@ TEST_CASE("[Modules][ECS] Test WorldECSCommands fetch resources.") {
 
 	CHECK(world_res_raw != nullptr);
 
-	World *world_ptr = AccessResource::unwrap<World>(world_res_raw);
+	World *world_ptr = godex::AccessResource::unwrap<World>(world_res_raw);
 	CHECK(&world == world_ptr);
 }
 

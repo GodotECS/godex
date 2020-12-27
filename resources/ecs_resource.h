@@ -55,8 +55,6 @@ public:
 	Variant get(const StringName &p_name) const;
 };
 
-} // namespace godex
-
 /// This class is used to give `Resource` access from GDScript and make sure the
 /// mutability is respected.
 class AccessResource : public Object {
@@ -106,3 +104,5 @@ const T *AccessResource::unwrap(const Object *p_access_resource) {
 		return nullptr;
 	}
 }
+
+} // namespace godex

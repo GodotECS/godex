@@ -148,7 +148,7 @@ protected:
 	static void _bind_methods();
 
 	godex::AccessComponent access_component_utility;
-	AccessResource access_resource_utility;
+	godex::AccessResource access_resource_utility;
 
 public:
 	uint32_t create_entity(Object *p_world);

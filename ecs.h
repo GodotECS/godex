@@ -58,7 +58,7 @@ class ECS : public Object {
 	World *active_world = nullptr;
 	Pipeline *active_world_pipeline = nullptr;
 	bool dispatching = false;
-	AccessResource world_access;
+	godex::AccessResource world_access;
 
 public:
 	// ~~ Components ~~
@@ -146,7 +146,7 @@ public:
 	/// is generated.
 	void set_active_world(World *p_world);
 	World *get_active_world() const;
-	AccessResource *get_active_world_gds();
+	godex::AccessResource *get_active_world_gds();
 
 	bool has_active_world() const;
 

@@ -233,7 +233,7 @@ World *ECS::get_active_world() const {
 	return active_world;
 }
 
-AccessResource *ECS::get_active_world_gds() {
+godex::AccessResource *ECS::get_active_world_gds() {
 	ERR_FAIL_COND_V_MSG(active_world == nullptr, nullptr, "No active world at the moment.");
 	world_access.__resource = active_world;
 	world_access.__mut = true;
