@@ -113,8 +113,8 @@ void godex::DynamicSystemInfo::executor(World *p_world, DynamicSystemInfo &p_inf
 			const uint32_t index = resource_access.size();
 			resource_access.resize(index + 1);
 
-			resource_access[index].resource = p_world->get_resource(p_info.resources[i].resource_id);
-			resource_access[index].mut = p_info.resources[i].is_mutable;
+			resource_access[index].__resource = p_world->get_resource(p_info.resources[i].resource_id);
+			resource_access[index].__mut = p_info.resources[i].is_mutable;
 
 			// Assign
 			access[p_info.resource_element_map[i]] = &resource_access[index];

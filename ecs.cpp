@@ -235,7 +235,8 @@ World *ECS::get_active_world() const {
 
 AccessResource *ECS::get_active_world_gds() {
 	ERR_FAIL_COND_V_MSG(active_world == nullptr, nullptr, "No active world at the moment.");
-	world_access.resource = active_world;
+	world_access.__resource = active_world;
+	world_access.__mut = true;
 	return &world_access;
 }
 

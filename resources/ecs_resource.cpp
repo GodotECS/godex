@@ -6,6 +6,11 @@ godex::Resource::Resource() {}
 
 void godex::Resource::_bind_properties() {}
 
+godex::resource_id godex::Resource::cid() const {
+	CRASH_NOW_MSG("The `Resource` class must always be tagged using the macro `RESOURCE()`.");
+	return UINT32_MAX;
+}
+
 const LocalVector<PropertyInfo> *godex::Resource::get_properties() const {
 	CRASH_NOW_MSG("The `Resource` class must always be tagged using the macro `RESOURCE()`.");
 	return nullptr;
@@ -40,16 +45,16 @@ Variant godex::Resource::get(const StringName &p_name) const {
 AccessResource::AccessResource() {}
 
 bool AccessResource::_setv(const StringName &p_name, const Variant &p_data) {
-	ERR_FAIL_COND_V_MSG(resource == nullptr, false, "This Resource is not found.");
-	ERR_FAIL_COND_V_MSG(mut == false, false, "This `Resource` was taken as not mutable.");
-	return resource->set(p_name, p_data);
+	ERR_FAIL_COND_V_MSG(__resource == nullptr, false, "This Resource is not found.");
+	ERR_FAIL_COND_V_MSG(__mut == false, false, "This `Resource` was taken as not mutable.");
+	return __resource->set(p_name, p_data);
 }
 
 bool AccessResource::_getv(const StringName &p_name, Variant &r_data) const {
-	ERR_FAIL_COND_V_MSG(resource == nullptr, false, "This Resource is not found.");
-	return resource->get(p_name, r_data);
+	ERR_FAIL_COND_V_MSG(__resource == nullptr, false, "This Resource is not found.");
+	return __resource->get(p_name, r_data);
 }
 
 bool AccessResource::is_mutable() const {
-	return mut;
+	return __mut;
 }

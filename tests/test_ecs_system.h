@@ -326,7 +326,7 @@ TEST_CASE("[Modules][ECS] Test system and resource") {
 	}
 }
 
-TEST_CASE("[Modules][ECS] Test system with C++ resources") {
+TEST_CASE("[Modules][ECS] Test system resource fetch with dynamic query.") {
 	World world;
 	world.add_resource<TestSystemSubPipeResource>();
 	world.get_resource<TestSystemSubPipeResource>()->exe_count = 20;
@@ -368,7 +368,50 @@ TEST_CASE("[Modules][ECS] Test system with C++ resources") {
 	CHECK(world.get_resource<TestSystemSubPipeResource>()->exe_count == 10);
 }
 
-// TODO test resources with C++ and Scripts systems.
+TEST_CASE("[Modules][ECS] Test WorldECSCommands from dynamic query.") {
+	World world;
+	world
+			.create_entity()
+			.with(TransformComponent());
+
+	Object target_obj;
+	{
+		// Create the script.
+		String code;
+		code += "extends Object\n";
+		code += "\n";
+		code += "func _for_each(world, transform_com):\n";
+		code += "	var data := {\"transform\": Transform(Basis(), Vector3(10, 0, 0))}\n";
+		code += "	var id := WorldECSCommands.create_entity(world)\n";
+		code += "	WorldECSCommands.add_component(world, id, \"TransformComponent\", data)\n";
+		code += "\n";
+
+		ERR_FAIL_COND(build_and_assign_script(&target_obj, code) == false);
+	}
+
+	// Build dynamic query.
+	godex::DynamicSystemInfo dynamic_system_info;
+	dynamic_system_info.with_resource(World::get_resource_id(), true);
+	dynamic_system_info.with_component(TransformComponent::get_component_id(), false);
+	dynamic_system_info.set_target(&target_obj);
+	const uint32_t system_id = ECS::register_dynamic_system("TestSpawnDynamicSystem.gd", &dynamic_system_info);
+
+	// Create the pipeline.
+	Pipeline pipeline;
+	// Add the system to the pipeline.
+	pipeline.add_registered_system(system_id);
+	pipeline.build();
+
+	// Dispatch 1 time.
+	pipeline.dispatch(&world);
+
+	// Make sure the entity 0 has the `TransformComponent`
+	CHECK(world.get_storage<TransformComponent>()->has(0));
+	// but also the runtime created one (entity 1) has it.
+	CHECK(world.get_storage<TransformComponent>()->has(1));
+	// Make sure the default is also set.
+	CHECK(ABS(world.get_storage<TransformComponent>()->get(1).transform.origin.x - 10) <= CMP_EPSILON);
+}
 
 } // namespace godex_tests_system
 

@@ -2,6 +2,7 @@
 
 /* Author: AndreaCatania */
 
+#include "../ecs_types.h"
 #include "scene/main/node.h"
 
 class Pipeline;
@@ -136,18 +137,19 @@ private:
 	void unactive_world();
 };
 
-// TODO remove.
-/// Directy access to the active world.
-//class WorldECSQuery : public Object {
-//	World *world = nullptr;
-//
-//protected:
-//	static void _bind_methods();
-//
-//public:
-//	uint32_t create_entity_from_prefab(Entity *p_entity);
-//	uint32_t create_entity();
-//	void destroy_entity(uint32_t p_entity_id);
-//
-//	void add_component(uint32_t entity_id, const StringName &p_component_name, const Dictionary &p_variables);
-//};
+/// World Manipulatort
+class WorldECSCommands : public Object {
+	GDCLASS(WorldECSCommands, Object)
+	SINGLETON_MAKER(WorldECSCommands)
+
+protected:
+	static void _bind_methods();
+
+public:
+	uint32_t create_entity(Object *p_world);
+	void destroy_entity(Object *p_world, uint32_t p_entity_id);
+
+	//uint32_t create_entity_from_prefab(Entity *p_entity);
+
+	void add_component(Object *p_world, uint32_t entity_id, const StringName &p_component_name, const Dictionary &p_data);
+};

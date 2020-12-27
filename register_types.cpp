@@ -71,6 +71,14 @@ void register_godex_types() {
 		ECS::register_system(call_physics_process, "CallPhysicsProcess", "Updates the Godot Nodes (2D/3D) transform and fetches the events from the physics engine.");
 		ECS::register_system(step_physics_server_3d, "StepPhysicsServer3D", "Steps the PhysicsServer3D.");
 	}
+
+	// ~~ Register Godot singleton ~~
+	// NOTE: These singleton doesn't store data but are here only to provide
+	// access to functionalities. This enforces the separation between data and
+	// functions.
+	// TODO improve this, maybe propose to GODOT to add `static functions`
+	// access?
+	WorldECSCommands::get_singleton();
 }
 
 void unregister_godex_types() {
