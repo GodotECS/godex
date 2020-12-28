@@ -22,10 +22,18 @@
 // TODO improve this workflow once the new pipeline is integrated.
 class REP : public Object {
 public:
-	void register_editor_plugins() {
-		if (EditorNode::get_singleton() != nullptr) {
-			EditorNode::get_singleton()->add_editor_plugin(memnew(EntityEditorPlugin(EditorNode::get_singleton())));
-			EditorNode::get_singleton()->add_editor_plugin(memnew(WorldECSEditorPlugin(EditorNode::get_singleton())));
+	// TODO this should go in a better place, like at the end of the
+	// engine setup: https://github.com/godotengine/godot-proposals/issues/1593
+	void setup_ecs() {
+		if (Engine::get_singleton()->is_editor_hint()) {
+			if (EditorNode::get_singleton() != nullptr) {
+				// Setup editor plugins
+				EditorNode::get_singleton()->add_editor_plugin(memnew(EntityEditorPlugin(EditorNode::get_singleton())));
+				EditorNode::get_singleton()->add_editor_plugin(memnew(WorldECSEditorPlugin(EditorNode::get_singleton())));
+			}
+		} else {
+			// Load the Scripted Components/Resources/Systems
+			ScriptECS::register_runtime_scripts();
 		}
 	}
 } rep;
@@ -46,10 +54,8 @@ void register_godex_types() {
 	ECS::__set_singleton(ecs);
 	Engine::get_singleton()->add_singleton(Engine::Singleton("ECS", ecs));
 
-	// Register editor plugins
-	if (Engine::get_singleton()->is_editor_hint()) {
-		MessageQueue::get_singleton()->push_callable(callable_mp(&rep, &REP::register_editor_plugins));
-	}
+	// Register in editor things.
+	MessageQueue::get_singleton()->push_callable(callable_mp(&rep, &REP::setup_ecs));
 
 	// ~ Register engine components ~
 	ECS::register_component<MeshComponent>();

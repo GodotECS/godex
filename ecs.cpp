@@ -139,6 +139,8 @@ godex::system_id ECS::register_dynamic_system(StringName p_name, const String &p
 			dynamic_system_id,
 			godex::get_func_dynamic_system_exec_info(dynamic_system_id) });
 
+	godex::get_dynamic_system_info(dynamic_system_id)->set_system_id(id);
+
 	print_line("Dynamic system: " + p_name + " registered with ID: " + itos(id));
 
 	return id;

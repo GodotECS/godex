@@ -37,6 +37,7 @@ class DynamicSystemInfo {
 	};
 
 	Object *target_script = nullptr;
+	uint32_t system_id = UINT32_MAX;
 
 	/// Map used to map the list of Resources to the script.
 	LocalVector<uint32_t> resource_element_map;
@@ -52,6 +53,7 @@ class DynamicSystemInfo {
 public:
 	DynamicSystemInfo();
 
+	void set_system_id(uint32_t p_id);
 	void set_target(Object *p_target);
 
 	void with_resource(uint32_t p_resource_id, bool p_mutable);

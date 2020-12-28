@@ -38,7 +38,7 @@ void Pipeline::build() {
 		info.clear();
 		systems_info[i](info);
 
-		ERR_CONTINUE_MSG(info.valid == false, "The system " + itos(i) + " is invalid, skip.");
+		ERR_CONTINUE_MSG(info.valid == false, "[FATAL][FATAL][FATAL][PIPELINE-FATAL] The system with index: " + itos(i) + " is invalid. Excluded from pipeline.");
 
 #ifdef DEBUG_ENABLED
 		// This is automated by the `add_system` macro or by
