@@ -25,6 +25,12 @@ void godex::DynamicSystemInfo::with_component(uint32_t p_component_id, bool p_mu
 	query.with_component(p_component_id, p_mutable);
 }
 
+void godex::DynamicSystemInfo::maybe_component(uint32_t p_component_id, bool p_mutable) {
+	const uint32_t index = resource_element_map.size() + query_element_map.size();
+	query_element_map.push_back(index);
+	query.maybe_component(p_component_id, p_mutable);
+}
+
 void godex::DynamicSystemInfo::without_component(uint32_t p_component_id) {
 	query.without_component(p_component_id);
 }
@@ -121,15 +127,21 @@ void godex::DynamicSystemInfo::executor(World *p_world, DynamicSystemInfo &p_inf
 			access_ptr[p_info.resource_element_map[i]] = &access[p_info.resource_element_map[i]];
 		}
 
-		// Map the query components, so the function can be called with the
-		// right parameter order.
-		for (uint32_t c = 0; c < p_info.query.access_count(); c += 1) {
-			access[p_info.query_element_map[c]] = p_info.query.get_access(c);
-			access_ptr[p_info.query_element_map[c]] = &access[p_info.query_element_map[c]];
-		}
-
 		p_info.query.begin(p_world);
 		for (; p_info.query.is_done() == false; p_info.query.next()) {
+			// Map the query components, so the function can be called with the
+			// right parameter order.
+			for (uint32_t c = 0; c < p_info.query.access_count(); c += 1) {
+				AccessComponent *ac = p_info.query.get_access(c);
+				if (ac->__component) {
+					access[p_info.query_element_map[c]] = ac;
+				} else {
+					// No component, just set null.
+					access[p_info.query_element_map[c]] = Variant::NIL;
+				}
+				access_ptr[p_info.query_element_map[c]] = &access[p_info.query_element_map[c]];
+			}
+
 			Callable::CallError err;
 			p_info.target_script->call(for_each_name, const_cast<const Variant **>(access_ptr.ptr()), access_ptr.size(), err);
 			if (err.error != Callable::CallError::CALL_OK) {

@@ -223,6 +223,39 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 
 		query.end();
 	}
+
+	{
+		// Check the API `maybe_component()`.
+		godex::DynamicQuery query;
+		query.with_component(TransformComponent::get_component_id());
+		query.maybe_component(TagQueryTestComponent::get_component_id());
+
+		query.begin(&world);
+
+		// This query fetches the entity that have only the `TransformComponent`.
+		CHECK(query.is_done() == false);
+		CHECK(query.get_current_entity_id() == entity_1);
+		CHECK(query.get_access(0)->__component != nullptr);
+		CHECK(query.get_access(1)->__component != nullptr);
+		query.next();
+
+		CHECK(query.is_done() == false);
+		CHECK(query.get_current_entity_id() == entity_2);
+		CHECK(query.get_access(0)->__component != nullptr);
+		CHECK(query.get_access(1)->__component == nullptr);
+		query.next();
+
+		CHECK(query.is_done() == false);
+		CHECK(query.get_current_entity_id() == entity_3);
+		CHECK(query.get_access(0)->__component != nullptr);
+		CHECK(query.get_access(1)->__component != nullptr);
+		query.next();
+
+		// Now it's done
+		CHECK(query.is_done());
+
+		query.end();
+	}
 }
 
 TEST_CASE("[Modules][ECS] Test dynamic query with dynamic storages.") {
