@@ -160,6 +160,9 @@ public:
 	void add_component(Object *p_world, uint32_t entity_id, const StringName &p_component_name, const Dictionary &p_data);
 	void add_component_by_id(Object *p_world, uint32_t entity_id, uint32_t p_component_id, const Dictionary &p_data);
 
+	void remove_component(Object *p_world, uint32_t entity_id, const StringName &p_component_name);
+	void remove_component_by_id(Object *p_world, uint32_t entity_id, uint32_t p_component_id);
+
 	/// Returns the component of the entity or null if not assigned.
 	/// The returned object lifetime is short, never store it.
 	Object *get_entity_component(Object *p_world, uint32_t entity_id, const StringName &p_component_name);

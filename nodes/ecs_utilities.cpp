@@ -44,28 +44,24 @@ System::~System() {
 void System::with_resource(const StringName &p_resource, Mutability p_mutability) {
 	ERR_FAIL_COND_MSG(info == nullptr, "No info set. This function can be called only within the `_prepare`.");
 	const godex::resource_id id = ECS::get_resource_id(p_resource);
-	ERR_FAIL_COND_MSG(id == UINT32_MAX, "The resource " + p_resource + " is unknown.");
 	info->with_resource(id, p_mutability == MUTABLE);
 }
 
 void System::with_component(const StringName &p_component, Mutability p_mutability) {
 	ERR_FAIL_COND_MSG(info == nullptr, "No info set. This function can be called only within the `_prepare`.");
 	const godex::component_id id = ECS::get_component_id(p_component);
-	ERR_FAIL_COND_MSG(id == UINT32_MAX, "The component " + p_component + " is unknown.");
 	info->with_component(id, p_mutability == MUTABLE);
 }
 
 void System::maybe_component(const StringName &p_component, Mutability p_mutability) {
 	ERR_FAIL_COND_MSG(info == nullptr, "No info set. This function can be called only within the `_prepare`.");
 	const godex::component_id id = ECS::get_component_id(p_component);
-	ERR_FAIL_COND_MSG(id == UINT32_MAX, "The component " + p_component + " is unknown.");
 	info->maybe_component(id, p_mutability == MUTABLE);
 }
 
 void System::without_component(const StringName &p_component) {
 	ERR_FAIL_COND_MSG(info == nullptr, "No info set. This function can be called only within the `_prepare`.");
 	const godex::component_id id = ECS::get_component_id(p_component);
-	ERR_FAIL_COND_MSG(id == UINT32_MAX, "The component " + p_component + " is unknown.");
 	info->without_component(id);
 }
 

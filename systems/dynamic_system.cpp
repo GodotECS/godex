@@ -8,6 +8,10 @@
 
 godex::DynamicSystemInfo::DynamicSystemInfo() {}
 
+void godex::DynamicSystemInfo::set_system_id(uint32_t p_id) {
+	system_id = p_id;
+}
+
 void godex::DynamicSystemInfo::set_target(Object *p_target) {
 	target_script = p_target;
 	target_sub_pipeline = nullptr;
@@ -103,6 +107,7 @@ void godex::DynamicSystemInfo::executor(World *p_world, DynamicSystemInfo &p_inf
 	} else {
 		// Script function.
 		ERR_FAIL_COND_MSG(p_info.target_script == nullptr, "[FATAL] This system doesn't have target assigned.");
+		ERR_FAIL_COND_MSG(p_info.query.is_valid() == false, "[FATAL] Please check the system " + ECS::get_system_name(p_info.system_id) + " _prepare because the generated query is invalid.");
 
 		// Create the array where the storages are hold.
 		LocalVector<AccessResource> resource_access;
@@ -146,7 +151,7 @@ void godex::DynamicSystemInfo::executor(World *p_world, DynamicSystemInfo &p_inf
 			p_info.target_script->call(for_each_name, const_cast<const Variant **>(access_ptr.ptr()), access_ptr.size(), err);
 			if (err.error != Callable::CallError::CALL_OK) {
 				p_info.query.end();
-				ERR_FAIL_COND(err.error != Callable::CallError::CALL_OK);
+				ERR_FAIL_COND_MSG(err.error != Callable::CallError::CALL_OK, "System function execution error: " + itos(err.error) + " System name: " + ECS::get_system_name(p_info.system_id) + ". Please check the parameters.");
 			}
 		}
 		p_info.query.end();

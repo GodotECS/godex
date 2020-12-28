@@ -89,7 +89,7 @@ Pipeline *PipelineECS::get_pipeline(WorldECS *p_associated_world) {
 		const StringName system_name = systems_name[i];
 		const godex::system_id id = ECS::get_system_id(system_name);
 
-		ERR_CONTINUE_MSG(ECS::verify_system_id(id) == false, "The system " + system_name + " was not found.");
+		ERR_CONTINUE_MSG(ECS::verify_system_id(id) == false, "[FATAL][FATAL][FATAL][PIPELINE-FATAL] The system " + system_name + " was not found.");
 
 		if (ECS::is_system_dispatcher(id)) {
 			// Special treatment for systems dispatchers: Init before set.
@@ -176,8 +176,8 @@ void WorldECS::_get_property_list(List<PropertyInfo> *p_list) const {
 void WorldECS::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_READY:
-			// TODO this should go in a better place, like at the end of the
-			// engine setup: https://github.com/godotengine/godot-proposals/issues/1593
+			// Make sure to register all scripted components/resources/systems
+			// at this point.
 			ScriptECS::register_runtime_scripts();
 
 			add_to_group("_world_ecs");
@@ -390,8 +390,12 @@ void WorldECSCommands::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("destroy_entity", "world", "entity_id"), &WorldECSCommands::destroy_entity);
 
 	ClassDB::bind_method(D_METHOD("create_entity_from_prefab", "world", "entity_node"), &WorldECSCommands::create_entity_from_prefab);
+
 	ClassDB::bind_method(D_METHOD("add_component", "world", "component_name", "data"), &WorldECSCommands::add_component);
 	ClassDB::bind_method(D_METHOD("add_component_by_id", "world", "component_id", "data"), &WorldECSCommands::add_component_by_id);
+
+	ClassDB::bind_method(D_METHOD("remove_component", "world", "component_name", "data"), &WorldECSCommands::remove_component);
+	ClassDB::bind_method(D_METHOD("remove_component_by_id", "world", "component_id", "data"), &WorldECSCommands::remove_component_by_id);
 
 	ClassDB::bind_method(D_METHOD("get_entity_component", "world", "entity_id", "component_name"), &WorldECSCommands::get_entity_component);
 	ClassDB::bind_method(D_METHOD("get_entity_component_by_id", "world", "entity_id", "component_id"), &WorldECSCommands::get_entity_component_by_id);
@@ -430,6 +434,17 @@ void WorldECSCommands::add_component_by_id(Object *p_world, uint32_t entity_id, 
 	ERR_FAIL_COND_MSG(world == nullptr, "The passed variable is not a `Resource` of type `World`.");
 	ERR_FAIL_COND_MSG(ECS::verify_component_id(p_component_id) == false, "The passed component is not valid.");
 	world->add_component(entity_id, p_component_id, p_data);
+}
+
+void WorldECSCommands::remove_component(Object *p_world, uint32_t entity_id, const StringName &p_component_name) {
+	remove_component_by_id(p_world, entity_id, ECS::get_component_id(p_component_name));
+}
+
+void WorldECSCommands::remove_component_by_id(Object *p_world, uint32_t entity_id, uint32_t p_component_id) {
+	World *world = godex::AccessResource::unwrap<World>(p_world);
+	ERR_FAIL_COND_MSG(world == nullptr, "The passed variable is not a `Resource` of type `World`.");
+	ERR_FAIL_COND_MSG(ECS::verify_component_id(p_component_id) == false, "The passed component is not valid.");
+	world->remove_component(entity_id, p_component_id);
 }
 
 Object *WorldECSCommands::get_entity_component(Object *p_world, uint32_t entity_id, const StringName &p_component_name) {
