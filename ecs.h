@@ -156,6 +156,30 @@ public:
 
 	bool has_active_world_pipeline() const;
 
+	godex::component_id get_component_id_obj(StringName p_component_name) const {
+		return get_component_id(p_component_name);
+	}
+
+	bool verify_component_id_obj(godex::system_id p_id) const {
+		return verify_component_id(p_id);
+	}
+
+	godex::component_id get_resource_id_obj(StringName p_resource_name) const {
+		return get_resource_id(p_resource_name);
+	}
+
+	bool verify_resource_id_obj(godex::system_id p_id) const {
+		return verify_resource_id(p_id);
+	}
+
+	godex::component_id get_system_id_obj(StringName p_system_name) const {
+		return get_system_id(p_system_name);
+	}
+
+	bool verify_system_id_obj(godex::system_id p_id) const {
+		return verify_system_id(p_id);
+	}
+
 private:
 	void dispatch_active_world();
 	void ecs_init();

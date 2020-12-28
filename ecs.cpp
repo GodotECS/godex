@@ -19,6 +19,15 @@ LocalVector<SystemInfo> ECS::systems_info;
 void ECS::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_active_world"), &ECS::get_active_world_gds);
 
+	ClassDB::bind_method(D_METHOD("get_component_id", "name"), &ECS::get_component_id_obj);
+	ClassDB::bind_method(D_METHOD("verify_component_id", "name"), &ECS::verify_component_id_obj);
+
+	ClassDB::bind_method(D_METHOD("get_resource_id", "name"), &ECS::get_resource_id_obj);
+	ClassDB::bind_method(D_METHOD("verify_resource_id", "name"), &ECS::verify_resource_id_obj);
+
+	ClassDB::bind_method(D_METHOD("get_system_id", "name"), &ECS::get_system_id_obj);
+	ClassDB::bind_method(D_METHOD("verify_system_id", "name"), &ECS::verify_system_id_obj);
+
 	ADD_SIGNAL(MethodInfo("world_loaded"));
 	ADD_SIGNAL(MethodInfo("world_pre_unload"));
 	ADD_SIGNAL(MethodInfo("world_unloaded"));

@@ -391,9 +391,13 @@ void WorldECSCommands::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("create_entity_from_prefab", "world", "entity_node"), &WorldECSCommands::create_entity_from_prefab);
 	ClassDB::bind_method(D_METHOD("add_component", "world", "component_name", "data"), &WorldECSCommands::add_component);
+	ClassDB::bind_method(D_METHOD("add_component_by_id", "world", "component_id", "data"), &WorldECSCommands::add_component_by_id);
 
 	ClassDB::bind_method(D_METHOD("get_entity_component", "world", "entity_id", "component_name"), &WorldECSCommands::get_entity_component);
+	ClassDB::bind_method(D_METHOD("get_entity_component_by_id", "world", "entity_id", "component_id"), &WorldECSCommands::get_entity_component_by_id);
+
 	ClassDB::bind_method(D_METHOD("get_resource", "world", "resource_name"), &WorldECSCommands::get_resource);
+	ClassDB::bind_method(D_METHOD("get_resource_by_id", "world", "resource_name"), &WorldECSCommands::get_resource_by_id);
 }
 
 uint32_t WorldECSCommands::create_entity(Object *p_world) {
@@ -418,20 +422,26 @@ uint32_t WorldECSCommands::create_entity_from_prefab(Object *p_world, Object *p_
 }
 
 void WorldECSCommands::add_component(Object *p_world, uint32_t entity_id, const StringName &p_component_name, const Dictionary &p_data) {
+	add_component_by_id(p_world, entity_id, ECS::get_component_id(p_component_name), p_data);
+}
+
+void WorldECSCommands::add_component_by_id(Object *p_world, uint32_t entity_id, uint32_t p_component_id, const Dictionary &p_data) {
 	World *world = godex::AccessResource::unwrap<World>(p_world);
 	ERR_FAIL_COND_MSG(world == nullptr, "The passed variable is not a `Resource` of type `World`.");
-	const godex::component_id id = ECS::get_component_id(p_component_name);
-	ERR_FAIL_COND_MSG(ECS::verify_component_id(id) == false, "The passed component_name is not valid.");
-	world->add_component(entity_id, id, p_data);
+	ERR_FAIL_COND_MSG(ECS::verify_component_id(p_component_id) == false, "The passed component is not valid.");
+	world->add_component(entity_id, p_component_id, p_data);
 }
 
 Object *WorldECSCommands::get_entity_component(Object *p_world, uint32_t entity_id, const StringName &p_component_name) {
+	return get_entity_component_by_id(p_world, entity_id, ECS::get_component_id(p_component_name));
+}
+
+Object *WorldECSCommands::get_entity_component_by_id(Object *p_world, uint32_t entity_id, uint32_t p_component_id) {
 	World *world = godex::AccessResource::unwrap<World>(p_world);
 	ERR_FAIL_COND_V_MSG(world == nullptr, nullptr, "The passed variable is not a `Resource` of type `World`.");
-	const godex::component_id id = ECS::get_component_id(p_component_name);
-	ERR_FAIL_COND_V_MSG(ECS::verify_component_id(id) == false, nullptr, "The passed component_name is not valid.");
+	ERR_FAIL_COND_V_MSG(ECS::verify_component_id(p_component_id) == false, nullptr, "The passed component_name is not valid.");
 
-	access_component_utility.__component = world->get_storage(id)->get_ptr(entity_id);
+	access_component_utility.__component = world->get_storage(p_component_id)->get_ptr(entity_id);
 	if (unlikely(access_component_utility.__component == nullptr)) {
 		return nullptr;
 	}
@@ -442,12 +452,15 @@ Object *WorldECSCommands::get_entity_component(Object *p_world, uint32_t entity_
 }
 
 Object *WorldECSCommands::get_resource(Object *p_world, const StringName &p_resource_name) {
+	return get_resource_by_id(p_world, ECS::get_resource_id(p_resource_name));
+}
+
+Object *WorldECSCommands::get_resource_by_id(Object *p_world, uint32_t p_resource_id) {
 	World *world = godex::AccessResource::unwrap<World>(p_world);
 	ERR_FAIL_COND_V_MSG(world == nullptr, nullptr, "The passed variable is not a `Resource` of type `World`.");
-	const godex::resource_id id = ECS::get_resource_id(p_resource_name);
-	ERR_FAIL_COND_V_MSG(ECS::verify_resource_id(id) == false, nullptr, "The passed `resource_name` is not valid.");
+	ERR_FAIL_COND_V_MSG(ECS::verify_resource_id(p_resource_id) == false, nullptr, "The passed `resource_name` is not valid.");
 
-	access_resource_utility.__resource = world->get_resource(id);
+	access_resource_utility.__resource = world->get_resource(p_resource_id);
 	if (unlikely(access_resource_utility.__resource == nullptr)) {
 		return nullptr;
 	}
