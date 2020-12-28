@@ -158,12 +158,15 @@ public:
 	uint32_t create_entity_from_prefab(Object *p_world, Object *p_entity);
 
 	void add_component(Object *p_world, uint32_t entity_id, const StringName &p_component_name, const Dictionary &p_data);
+	void add_component_by_id(Object *p_world, uint32_t entity_id, uint32_t p_component_id, const Dictionary &p_data);
 
 	/// Returns the component of the entity or null if not assigned.
 	/// The returned object lifetime is short, never store it.
 	Object *get_entity_component(Object *p_world, uint32_t entity_id, const StringName &p_component_name);
+	Object *get_entity_component_by_id(Object *p_world, uint32_t entity_id, uint32_t p_component_id);
 
 	/// Returns the resource or null if not present in the world.
 	/// The returned object lifetime is short, never store it.
 	Object *get_resource(Object *p_world, const StringName &p_resource_name);
+	Object *get_resource_by_id(Object *p_world, uint32_t p_resource_id);
 };
