@@ -56,6 +56,7 @@ public:
 
 	void with_resource(uint32_t p_resource_id, bool p_mutable);
 	void with_component(uint32_t p_component_id, bool p_mutable);
+	void maybe_component(uint32_t p_component_id, bool p_mutable);
 	void without_component(uint32_t p_component_id);
 
 	void set_target(func_system_execute_pipeline p_sub_pipeline_execite);

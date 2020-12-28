@@ -110,19 +110,25 @@ const godex::Component *DenseVector<T>::get_ptr(EntityID p_entity) const {
 
 template <class T>
 godex::Component *DenseVector<T>::get_ptr(EntityID p_entity) {
+#ifdef DEBUG_ENABLED
 	CRASH_COND_MSG(has(p_entity) == false, "This entity doesn't have anything stored into this storage.");
+#endif
 	return &data[entity_to_data[p_entity]];
 }
 
 template <class T>
 const T &DenseVector<T>::get(EntityID p_entity) const {
+#ifdef DEBUG_ENABLED
 	CRASH_COND_MSG(has(p_entity) == false, "This entity doesn't have anything stored into this storage.");
+#endif
 	return data[entity_to_data[p_entity]];
 }
 
 template <class T>
 T &DenseVector<T>::get(EntityID p_entity) {
+#ifdef DEBUG_ENABLED
 	CRASH_COND_MSG(has(p_entity) == false, "This entity doesn't have anything stored into this storage.");
+#endif
 	return data[entity_to_data[p_entity]];
 }
 

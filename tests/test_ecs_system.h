@@ -137,8 +137,9 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 		code += "\n";
 		code += "func _for_each(transform_com, test_comp):\n";
 		code += "	transform_com.transform.origin.x += 100.0\n";
-		code += "	test_comp.variable_1 += 1\n";
-		code += "	test_comp.variable_2 = Transform()\n";
+		code += "	if test_comp != null:\n";
+		code += "		test_comp.variable_1 += 1\n";
+		code += "		test_comp.variable_2 = Transform()\n";
 		code += "\n";
 
 		ERR_FAIL_COND(build_and_assign_script(&target_obj, code) == false);
@@ -148,7 +149,7 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 	const uint32_t system_id = ECS::register_dynamic_system("TestDynamicSystem.gd");
 	godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
 	dynamic_system_info->with_component(TransformComponent::get_component_id(), true);
-	dynamic_system_info->with_component(test_dyn_component_id, true);
+	dynamic_system_info->maybe_component(test_dyn_component_id, true);
 	dynamic_system_info->set_target(&target_obj);
 
 	// Create the pipeline.
@@ -173,9 +174,8 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 		// This entity is expected to change.
 		CHECK(ABS(entity_1_origin.x - 300.0) <= CMP_EPSILON);
 
-		// This entity doesn't have a `TagTestComponent` so the systems should not
-		// change it.
-		CHECK(entity_2_origin.x <= CMP_EPSILON);
+		// This entity is expected to change.
+		CHECK(ABS(entity_2_origin.x - 300.0) <= CMP_EPSILON);
 
 		// This entity is expected to change.
 		CHECK(ABS(entity_3_origin.x - 300.0) <= CMP_EPSILON);

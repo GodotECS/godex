@@ -6,6 +6,7 @@ using godex::DynamicQuery;
 
 void DynamicQuery::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("with_component", "component_id", "mutable"), &DynamicQuery::with_component, DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("maybe_component", "component_id", "mutable"), &DynamicQuery::maybe_component, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("without_component", "component_id"), &DynamicQuery::without_component);
 	ClassDB::bind_method(D_METHOD("is_valid"), &DynamicQuery::is_valid);
 	ClassDB::bind_method(D_METHOD("build"), &DynamicQuery::build);
@@ -22,19 +23,11 @@ DynamicQuery::DynamicQuery() {
 }
 
 void DynamicQuery::with_component(uint32_t p_component_id, bool p_mutable) {
-	ERR_FAIL_COND_MSG(is_valid() == false, "This query is not valid.");
-	ERR_FAIL_COND_MSG(can_change == false, "This query can't change at this point, you have to `clear` it.");
-	if (unlikely(ECS::verify_component_id(p_component_id) == false)) {
-		// Invalidate.
-		valid = false;
-		ERR_FAIL_MSG("The component_id " + itos(p_component_id) + " is invalid.");
-	}
+	_with_component(p_component_id, p_mutable, true);
+}
 
-	ERR_FAIL_COND_MSG(component_ids.find(p_component_id) != -1, "The component " + itos(p_component_id) + " is already part of this query.");
-	ERR_FAIL_COND_MSG(reject_component_ids.find(p_component_id) != -1, "The component " + itos(p_component_id) + " is already part of this query.");
-
-	component_ids.push_back(p_component_id);
-	mutability.push_back(p_mutable);
+void DynamicQuery::maybe_component(uint32_t p_component_id, bool p_mutable) {
+	_with_component(p_component_id, p_mutable, false);
 }
 
 void DynamicQuery::without_component(uint32_t p_component_id) {
@@ -50,6 +43,23 @@ void DynamicQuery::without_component(uint32_t p_component_id) {
 	ERR_FAIL_COND_MSG(reject_component_ids.find(p_component_id) != -1, "The component " + itos(p_component_id) + " is already part of this query.");
 
 	reject_component_ids.push_back(p_component_id);
+}
+
+void DynamicQuery::_with_component(uint32_t p_component_id, bool p_mutable, bool p_required) {
+	ERR_FAIL_COND_MSG(is_valid() == false, "This query is not valid.");
+	ERR_FAIL_COND_MSG(can_change == false, "This query can't change at this point, you have to `clear` it.");
+	if (unlikely(ECS::verify_component_id(p_component_id) == false)) {
+		// Invalidate.
+		valid = false;
+		ERR_FAIL_MSG("The component_id " + itos(p_component_id) + " is invalid.");
+	}
+
+	ERR_FAIL_COND_MSG(component_ids.find(p_component_id) != -1, "The component " + itos(p_component_id) + " is already part of this query.");
+	ERR_FAIL_COND_MSG(reject_component_ids.find(p_component_id) != -1, "The component " + itos(p_component_id) + " is already part of this query.");
+
+	component_ids.push_back(p_component_id);
+	mutability.push_back(p_mutable);
+	required.push_back(p_required);
 }
 
 bool DynamicQuery::is_valid() const {
@@ -199,8 +209,8 @@ void DynamicQuery::get_system_info(SystemExeInfo &p_info) const {
 bool DynamicQuery::has_entity(EntityID p_id) const {
 	// Make sure this entity has all the following components.
 	for (uint32_t i = 0; i < storages.size(); i += 1) {
-		if (storages[i]->has(p_id) == false) {
-			// The component is not found.
+		if (required[i] && storages[i]->has(p_id) == false) {
+			// The component is not found and it's required.
 			return false;
 		}
 	}
@@ -221,6 +231,11 @@ void DynamicQuery::fetch() {
 	ERR_FAIL_COND_MSG(entity_id == UINT32_MAX, "There is nothing to fetch.");
 
 	for (uint32_t i = 0; i < storages.size(); i += 1) {
-		access_components[i].__component = storages[i]->get_ptr(entity_id);
+		if (required[i] || storages[i]->has(entity_id)) {
+			access_components[i].__component = storages[i]->get_ptr(entity_id);
+		} else {
+			// This data is not required and is not found.
+			access_components[i].__component = nullptr;
+		}
 	}
 }
