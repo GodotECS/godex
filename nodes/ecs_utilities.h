@@ -34,6 +34,7 @@ public:
 
 	void with_resource(const StringName &p_resource_name, Mutability p_mutability);
 	void with_component(const StringName &p_component_name, Mutability p_mutability);
+	void maybe_component(const StringName &p_component_name, Mutability p_mutability);
 	void without_component(const StringName &p_component_name);
 
 	godex::system_id get_id() const;

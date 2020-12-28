@@ -10,6 +10,7 @@
 void System::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("with_resource", "resource_name", "mutability"), &System::with_resource);
 	ClassDB::bind_method(D_METHOD("with_component", "component_name", "mutability"), &System::with_component);
+	ClassDB::bind_method(D_METHOD("maybe_component", "component_name", "mutability"), &System::maybe_component);
 	ClassDB::bind_method(D_METHOD("without_component", "component_name"), &System::without_component);
 
 	BIND_ENUM_CONSTANT(IMMUTABLE);
@@ -52,6 +53,13 @@ void System::with_component(const StringName &p_component, Mutability p_mutabili
 	const godex::component_id id = ECS::get_component_id(p_component);
 	ERR_FAIL_COND_MSG(id == UINT32_MAX, "The component " + p_component + " is unknown.");
 	info->with_component(id, p_mutability == MUTABLE);
+}
+
+void System::maybe_component(const StringName &p_component, Mutability p_mutability) {
+	ERR_FAIL_COND_MSG(info == nullptr, "No info set. This function can be called only within the `_prepare`.");
+	const godex::component_id id = ECS::get_component_id(p_component);
+	ERR_FAIL_COND_MSG(id == UINT32_MAX, "The component " + p_component + " is unknown.");
+	info->maybe_component(id, p_mutability == MUTABLE);
 }
 
 void System::without_component(const StringName &p_component) {
