@@ -55,7 +55,9 @@ void register_godex_types() {
 	Engine::get_singleton()->add_singleton(Engine::Singleton("ECS", ecs));
 
 	// Register in editor things.
-	MessageQueue::get_singleton()->push_callable(callable_mp(&rep, &REP::setup_ecs));
+	if (MessageQueue::get_singleton()) {
+		MessageQueue::get_singleton()->push_callable(callable_mp(&rep, &REP::setup_ecs));
+	}
 
 	// ~ Register engine components ~
 	ECS::register_component<MeshComponent>();
