@@ -46,7 +46,7 @@ namespace godex_tests_system {
 void test_system_tag(Query<TransformComponent, const TagTestComponent> &p_query) {
 	while (p_query.is_done() == false) {
 		auto [transform, component] = p_query.get();
-		transform.transform.origin.x += 100.0;
+		transform->transform.origin.x += 100.0;
 		p_query.next();
 	}
 }
@@ -217,7 +217,7 @@ void test_sub_pipeline_execute(World *p_world, Pipeline *p_pipeline) {
 void test_system_transform_add_x(Query<TransformComponent> &p_query) {
 	while (p_query.is_done() == false) {
 		auto [transform] = p_query.get();
-		transform.transform.origin.x += 100.0;
+		transform->transform.origin.x += 100.0;
 		p_query.next();
 	}
 }

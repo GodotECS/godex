@@ -34,16 +34,59 @@ TEST_CASE("[Modules][ECS] Test static query") {
 								.with(TransformComponent())
 								.with(TagQueryTestComponent());
 
-	// Test WithoutFilter.
+	// Test `Without` filter.
 	{
-		// Check the API `without_component()`.
-		Query<TransformComponent, WithoutFilter<TagQueryTestComponent>> query(&world);
+		Query<const TransformComponent, Without<TagQueryTestComponent>> query(&world);
 
 		// This query fetches the entity that have only the `TransformComponent`.
 		CHECK(query.is_done() == false);
-		query.get();
-		//auto [transform, _f] = query.get();
-		//CHECK(ABS(transform.transform.origin.z - 23.0) <= CMP_EPSILON);
+		auto [transform, tag] = query.get();
+		CHECK(ABS(transform->transform.origin.z - 23.0) <= CMP_EPSILON);
+		CHECK(query.get_current_entity() == entity_2);
+		CHECK(tag == nullptr);
+
+		query.next();
+
+		// Now it's done
+		CHECK(query.is_done());
+	}
+
+	// Test `Maybe` filter.
+	{
+		Query<const TransformComponent, Maybe<TagQueryTestComponent>> query(&world);
+
+		// This query fetches all entities but return nullptr when
+		// `TagQueryTestComponent` is not set.
+		{
+			// Entity 1
+			CHECK(query.is_done() == false);
+			auto [transform, tag] = query.get();
+			CHECK(query.get_current_entity() == entity_1);
+			CHECK(transform != nullptr);
+			CHECK(tag != nullptr);
+		}
+
+		query.next();
+
+		{
+			// Entity 2
+			CHECK(query.is_done() == false);
+			auto [transform, tag] = query.get();
+			CHECK(query.get_current_entity() == entity_2);
+			CHECK(transform != nullptr);
+			CHECK(tag == nullptr);
+		}
+
+		query.next();
+
+		{
+			// Entity 3
+			CHECK(query.is_done() == false);
+			auto [transform, tag] = query.get();
+			CHECK(query.get_current_entity() == entity_3);
+			CHECK(transform != nullptr);
+			CHECK(tag != nullptr);
+		}
 
 		query.next();
 

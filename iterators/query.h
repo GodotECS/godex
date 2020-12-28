@@ -6,43 +6,66 @@
 #include "../world/world.h"
 #include <tuple>
 
-template <class C>
-class WithoutFilter {
+// ~~ Utility to remove the filter from the query. ~~
+template <typename T>
+struct remove_filter {
+	typedef T type;
 };
 
+template <template <typename> class X, typename T>
+struct remove_filter<X<T>> {
+	typedef T type;
+};
+
+template <typename T>
+using remove_filter_t = typename remove_filter<T>::type;
+
+// ~~ Query filters. ~~
+template <class C>
+struct Without {};
+
+template <class C>
+struct Maybe {};
+
+// ~~ Query storage, is used to fetch a single data. ~~
+
+/// `QueryStorage` specialization with 0 template arguments.
 template <class... Cs>
 class QueryStorage {
 public:
 	QueryStorage(World *p_world) {}
 
 	bool has_data(EntityID p_entity) const { return true; }
-	std::tuple<Cs &...> get(EntityID p_id) const { return std::tuple(); }
+	std::tuple<Cs *...> get(EntityID p_id) const { return std::tuple(); }
 
 	static void get_components(LocalVector<uint32_t> &r_mutable_components, LocalVector<uint32_t> &r_immutable_components) {}
 };
 
+/// `QueryStorage` `Maybe` filter specialization.
 template <class C, class... Cs>
-class QueryStorage<WithoutFilter<C>, Cs...> : QueryStorage<Cs...> {
+class QueryStorage<Maybe<C>, Cs...> : QueryStorage<Cs...> {
 	TypedStorage<C> *storage = nullptr;
 
 public:
 	QueryStorage(World *p_world) :
-			QueryStorage<Cs...>(p_world) {
-		storage = p_world->get_storage<C>();
+			QueryStorage<Cs...>(p_world),
+			storage(p_world->get_storage<C>()) {
 		ERR_FAIL_COND_MSG(storage == nullptr, "The storage" + String(typeid(TypedStorage<C>).name()) + " is null.");
 	}
 
 	bool has_data(EntityID p_entity) const {
-		if (unlikely(storage == nullptr)) {
-			// When the storage is null the `WithoutFilter` is always `true`.
-			return true;
-		}
-		return storage->has(p_entity) == false && QueryStorage<Cs...>::has_data(p_entity);
+		// The `Maybe` filter never stops the execution.
+		return QueryStorage<Cs...>::has_data(p_entity);
 	}
 
-	std::tuple<Cs &...> get(EntityID p_id) const {
-		// Just keep going, the `WithoutFilter` doesn't collect data.
-		return QueryStorage<Cs...>::get(p_id);
+	std::tuple<C *, remove_filter_t<Cs> *...> get(EntityID p_id) const {
+		if (likely(storage != nullptr) && storage->has(p_id)) {
+			C *c = static_cast<C *>(storage->get_ptr(p_id));
+			return std::tuple_cat(std::tuple<C *>(c), QueryStorage<Cs...>::get(p_id));
+		} else {
+			// Nothing to fetch, just set nullptr.
+			return std::tuple_cat(std::tuple<C *>(nullptr), QueryStorage<Cs...>::get(p_id));
+		}
 	}
 
 	static void get_components(LocalVector<uint32_t> &r_mutable_components, LocalVector<uint32_t> &r_immutable_components) {
@@ -53,14 +76,48 @@ public:
 	}
 };
 
+/// `QueryStorage` `With` filter specialization.
+template <class C, class... Cs>
+class QueryStorage<Without<C>, Cs...> : QueryStorage<Cs...> {
+	TypedStorage<C> *storage = nullptr;
+
+public:
+	QueryStorage(World *p_world) :
+			QueryStorage<Cs...>(p_world),
+			storage(p_world->get_storage<C>()) {
+		ERR_FAIL_COND_MSG(storage == nullptr, "The storage" + String(typeid(TypedStorage<C>).name()) + " is null.");
+	}
+
+	bool has_data(EntityID p_entity) const {
+		if (unlikely(storage == nullptr)) {
+			// When the storage is null the `Without` is always `true`.
+			return true;
+		}
+		return storage->has(p_entity) == false && QueryStorage<Cs...>::has_data(p_entity);
+	}
+
+	std::tuple<C *, remove_filter_t<Cs> *...> get(EntityID p_id) const {
+		// Just keep going, the `Without` filter doesn't collect data.
+		return std::tuple_cat(std::tuple<C *>(nullptr), QueryStorage<Cs...>::get(p_id));
+	}
+
+	static void get_components(LocalVector<uint32_t> &r_mutable_components, LocalVector<uint32_t> &r_immutable_components) {
+		// The `WithoutFilter` collects the data always immutable.
+		r_immutable_components.push_back(C::get_component_id());
+
+		QueryStorage<Cs...>::get_components(r_mutable_components, r_immutable_components);
+	}
+};
+
+/// `QueryStorage` no filter specialization.
 template <class C, class... Cs>
 class QueryStorage<C, Cs...> : QueryStorage<Cs...> {
 	TypedStorage<C> *storage = nullptr;
 
 public:
 	QueryStorage(World *p_world) :
-			QueryStorage<Cs...>(p_world) {
-		storage = p_world->get_storage<C>();
+			QueryStorage<Cs...>(p_world),
+			storage(p_world->get_storage<C>()) {
 		ERR_FAIL_COND_MSG(storage == nullptr, "The storage" + String(typeid(TypedStorage<C>).name()) + " is null.");
 	}
 
@@ -71,15 +128,15 @@ public:
 		return storage->has(p_entity) && QueryStorage<Cs...>::has_data(p_entity);
 	}
 
-	std::tuple<C &, Cs &...> get(EntityID p_id) const {
+	std::tuple<C *, remove_filter_t<Cs> *...> get(EntityID p_id) const {
 #ifdef DEBUG_ENABLED
 		// This can't happen because `is_done` returns true.
 		CRASH_COND_MSG(storage == nullptr, "The storage" + String(typeid(TypedStorage<C>).name()) + " is null.");
 #endif
 
-		C &c = storage->get(p_id);
+		C *c = static_cast<C *>(storage->get_ptr(p_id));
 
-		return std::tuple_cat(std::tuple<C &>(c), QueryStorage<Cs...>::get(p_id));
+		return std::tuple_cat(std::tuple<C *>(c), QueryStorage<Cs...>::get(p_id));
 	}
 
 	static void get_components(LocalVector<uint32_t> &r_mutable_components, LocalVector<uint32_t> &r_immutable_components) {
@@ -102,7 +159,7 @@ class Query {
 	World *world;
 	uint32_t id = UINT32_MAX;
 
-	QueryStorage<std::remove_reference_t<Cs>...> q;
+	QueryStorage<Cs...> q;
 
 public:
 	Query(World *p_world) :
@@ -116,6 +173,10 @@ public:
 
 	bool is_done() const {
 		return id == UINT32_MAX;
+	}
+
+	EntityID get_current_entity() const {
+		return id;
 	}
 
 	void operator+=(uint32_t p_i) {
@@ -148,12 +209,12 @@ public:
 
 	// TODO The lockup mechanism of this query must be improved to avoid any
 	// useless operation.
-	std::tuple<std::remove_reference_t<Cs> &...> get() const {
+	std::tuple<remove_filter_t<Cs> *...> get() const {
 		CRASH_COND_MSG(id == UINT32_MAX, "No entities! Please use `is_done` to correctly stop the system execution.");
 		return q.get(id);
 	}
 
 	static void get_components(LocalVector<uint32_t> &r_mutable_components, LocalVector<uint32_t> &r_immutable_components) {
-		QueryStorage<std::remove_reference_t<Cs>...>::get_components(r_mutable_components, r_immutable_components);
+		QueryStorage<Cs...>::get_components(r_mutable_components, r_immutable_components);
 	}
 };
