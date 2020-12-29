@@ -11,7 +11,7 @@ class MeshComponent : public godex::Component {
 
 	Ref<Mesh> mesh;
 	Ref<Material> material_override;
-	uint32_t layers;
+	uint32_t layers = 1;
 
 	RID instance;
 	RID mesh_rid;
