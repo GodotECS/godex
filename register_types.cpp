@@ -15,6 +15,8 @@
 #include "godot/nodes/ecs_world.h"
 #include "godot/nodes/entity.h"
 #include "godot/resources/godot_engine_resources.h"
+#include "godot/resources/visual_servers_resource.h"
+#include "godot/systems/mesh_updater_system.h"
 #include "godot/systems/physics_process_system.h"
 
 // TODO improve this workflow once the new pipeline is integrated.
@@ -61,23 +63,37 @@ void register_godex_types() {
 	ECS::register_component<MeshComponent>();
 	ECS::register_component<TransformComponent>();
 
-	// ~ Register engine resources ~
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Register engine resources
 	ECS::register_resource<World>();
+
+	// Engine
 	ECS::register_resource<GodotIteratorInfoResource>();
 	ECS::register_resource<OsResource>();
 	ECS::register_resource<EngineResource>();
-	ECS::register_resource<Physics3DServerResource>();
 	ECS::register_resource<MessageQueueResource>();
 
-	// ~ Register engine systems ~
+	// Rendering
+	ECS::register_resource<RenderingServerResource>();
+	ECS::register_resource<RenderingScenarioResource>();
+
+	// Physics
+	ECS::register_resource<Physics3DServerResource>();
+
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Register engine systems
+	// Engine
+	ECS::register_system(call_physics_process, "CallPhysicsProcess", "Updates the Godot Nodes (2D/3D) transform and fetches the events from the physics engine.");
+
+	// Rendering
+	ECS::register_system(scenario_manager_system, "ScenarioManagerSystem", "Compatibility layer that allow to read the main window scenario and put in the ECS lifecycle; so that `MeshComponent` can properly show the mesh.");
+	ECS::register_system(mesh_updater_system, "MeshUpdaterSystem", "Handles the mesh lifetime. This is required if you want to use `MeshComponent`");
+	ECS::register_system(mesh_transform_updater_system, "MeshTransformUpdaterSystem", "Handles the mesh transformation. This is required if you want to use `MeshComponent`");
+
+	// Physics 3D
 	{
-		// Register 3D physics systems.
 		const godex::system_id id = ECS::register_dynamic_system("PhysicsSystemDispatcher", "System that dispatches the specified pipeline at fixed rate. The rate is defined by `Physics Hz` in the project settings.");
 		create_physics_system_dispatcher(ECS::get_dynamic_system_info(id));
-
-		ECS::register_system(call_physics_process, "CallPhysicsProcess", "Updates the Godot Nodes (2D/3D) transform and fetches the events from the physics engine.");
-		ECS::register_system(step_physics_server_3d, "StepPhysicsServer3D", "Steps the PhysicsServer3D.");
 	}
+	ECS::register_system(step_physics_server_3d, "StepPhysicsServer3D", "Steps the PhysicsServer3D.");
 
 	// ~~ Register Godot singleton ~~
 	// NOTE: These singleton doesn't store data but are here only to provide

@@ -223,7 +223,7 @@ TEST_CASE("[Modules][ECS] Test WorldECSCommands create entity from prefab.") {
 	TransformComponent *transf = godex::AccessComponent::unwrap<TransformComponent>(comp);
 
 	// Make sure the default is also set.
-	CHECK(ABS(transf->transform.origin.x - 10) <= CMP_EPSILON);
+	CHECK(ABS(transf->get_transform().origin.x - 10) <= CMP_EPSILON);
 }
 
 TEST_CASE("[Modules][ECS] Test WorldECSCommands fetch resources.") {

@@ -6,6 +6,8 @@ MeshComponent::MeshComponent() {}
 
 void MeshComponent::_bind_properties() {
 	add_property(PropertyInfo(Variant::OBJECT, "mesh", PROPERTY_HINT_RESOURCE_TYPE, "Mesh"), &MeshComponent::set_mesh, &MeshComponent::get_mesh);
+	add_property(PropertyInfo(Variant::OBJECT, "material_override", PROPERTY_HINT_RESOURCE_TYPE, "ShaderMaterial,StandardMaterial3D", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_DEFERRED_SET_RESOURCE), &MeshComponent::set_material_override, &MeshComponent::get_material_override);
+	add_property(PropertyInfo(Variant::INT, "layers", PROPERTY_HINT_LAYERS_3D_RENDER), &MeshComponent::set_layer_mask, &MeshComponent::get_layer_mask);
 }
 
 void MeshComponent::set_mesh(const Ref<Mesh> &p_mesh) {
@@ -14,4 +16,36 @@ void MeshComponent::set_mesh(const Ref<Mesh> &p_mesh) {
 
 Ref<Mesh> MeshComponent::get_mesh() const {
 	return mesh;
+}
+
+void MeshComponent::set_material_override(const Ref<Material> &p_material) {
+	material_override = p_material;
+}
+
+Ref<Material> MeshComponent::get_material_override() const {
+	return material_override;
+}
+
+void MeshComponent::set_layer_mask(uint32_t p_mask) {
+	layers = p_mask;
+}
+
+uint32_t MeshComponent::get_layer_mask() const {
+	return layers;
+}
+
+void MeshComponent::set_instance(const RID &p_instance) {
+	instance = p_instance;
+}
+
+RID MeshComponent::get_instance() const {
+	return instance;
+}
+
+void MeshComponent::set_mesh_rid(const RID &p_base) {
+	mesh_rid = p_base;
+}
+
+RID MeshComponent::get_mesh_rid() const {
+	return mesh_rid;
 }
