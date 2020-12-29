@@ -126,6 +126,7 @@ bool Entity::set_component_value(StringName p_component_name, StringName p_prope
 			components_data[p_component_name] = Dictionary();
 		}
 		(components_data[p_component_name].operator Dictionary())[p_property_name] = p_value;
+		print_line("Component " + p_component_name + " property " + p_property_name + " changed to " + p_value);
 		update_components_data();
 		return true;
 	} else {
@@ -164,7 +165,7 @@ bool Entity::_get_component_value(StringName p_component_name, StringName p_prop
 			if (value != nullptr) {
 				// Property is stored, just return it.
 				r_ret = *value;
-				return false;
+				return true;
 			}
 		}
 
