@@ -5,8 +5,8 @@
 using godex::DynamicQuery;
 
 void DynamicQuery::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("with_component", "component_id", "mutable"), &DynamicQuery::with_component, DEFVAL(false));
-	ClassDB::bind_method(D_METHOD("maybe_component", "component_id", "mutable"), &DynamicQuery::maybe_component, DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("with_component", "component_id", "mutable"), &DynamicQuery::with_component);
+	ClassDB::bind_method(D_METHOD("maybe_component", "component_id", "mutable"), &DynamicQuery::maybe_component);
 	ClassDB::bind_method(D_METHOD("without_component", "component_id"), &DynamicQuery::without_component);
 	ClassDB::bind_method(D_METHOD("is_valid"), &DynamicQuery::is_valid);
 	ClassDB::bind_method(D_METHOD("build"), &DynamicQuery::build);

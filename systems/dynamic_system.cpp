@@ -54,6 +54,10 @@ bool godex::DynamicSystemInfo::is_system_dispatcher() const {
 	return sub_pipeline_execute != nullptr;
 }
 
+EntityID godex::DynamicSystemInfo::get_current_entity_id() const {
+	return query.get_current_entity_id();
+}
+
 StringName godex::DynamicSystemInfo::for_each_name;
 
 void godex::DynamicSystemInfo::get_info(DynamicSystemInfo &p_info, func_system_execute p_exec, SystemExeInfo &r_out) {

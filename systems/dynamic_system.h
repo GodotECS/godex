@@ -66,6 +66,8 @@ public:
 
 	bool is_system_dispatcher() const;
 
+	EntityID get_current_entity_id() const;
+
 public:
 	static StringName for_each_name;
 

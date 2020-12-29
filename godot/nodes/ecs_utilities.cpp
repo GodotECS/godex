@@ -13,6 +13,10 @@ void System::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("maybe_component", "component_name", "mutability"), &System::maybe_component);
 	ClassDB::bind_method(D_METHOD("without_component", "component_name"), &System::without_component);
 
+	ClassDB::bind_method(D_METHOD("get_current_entity_id"), &System::get_current_entity_id);
+
+	ClassDB::bind_method(D_METHOD("get_system_id"), &System::get_system_id);
+
 	BIND_ENUM_CONSTANT(IMMUTABLE);
 	BIND_ENUM_CONSTANT(MUTABLE);
 
@@ -20,16 +24,19 @@ void System::_bind_methods() {
 	// TODO how to define `_for_each`? It has  dynamic argument, depending on the `_prepare` function.
 }
 
-void System::prepare(godex::DynamicSystemInfo *p_info) {
+void System::prepare(godex::DynamicSystemInfo *p_info, godex::system_id p_id) {
 	ERR_FAIL_COND_MSG(p_info == nullptr, "[FATAL] This is not supposed to happen.");
+
 	// Set the components and resources
+	id = p_id;
 	info = p_info;
 	Callable::CallError err;
+	prepare_in_progress = true;
 	call("_prepare", nullptr, 0, err);
-	info = nullptr;
+	prepare_in_progress = false;
 
 	// Set this object as target.
-	p_info->set_target(this);
+	info->set_target(this);
 }
 
 System::System() {
@@ -42,31 +49,36 @@ System::~System() {
 }
 
 void System::with_resource(const StringName &p_resource, Mutability p_mutability) {
-	ERR_FAIL_COND_MSG(info == nullptr, "No info set. This function can be called only within the `_prepare`.");
+	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
 	const godex::resource_id id = ECS::get_resource_id(p_resource);
 	info->with_resource(id, p_mutability == MUTABLE);
 }
 
 void System::with_component(const StringName &p_component, Mutability p_mutability) {
-	ERR_FAIL_COND_MSG(info == nullptr, "No info set. This function can be called only within the `_prepare`.");
+	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
 	const godex::component_id id = ECS::get_component_id(p_component);
 	info->with_component(id, p_mutability == MUTABLE);
 }
 
 void System::maybe_component(const StringName &p_component, Mutability p_mutability) {
-	ERR_FAIL_COND_MSG(info == nullptr, "No info set. This function can be called only within the `_prepare`.");
+	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
 	const godex::component_id id = ECS::get_component_id(p_component);
 	info->maybe_component(id, p_mutability == MUTABLE);
 }
 
 void System::without_component(const StringName &p_component) {
-	ERR_FAIL_COND_MSG(info == nullptr, "No info set. This function can be called only within the `_prepare`.");
+	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
 	const godex::component_id id = ECS::get_component_id(p_component);
 	info->without_component(id);
 }
 
-godex::system_id System::get_id() const {
+godex::system_id System::get_system_id() const {
 	return id;
+}
+
+uint32_t System::get_current_entity_id() const {
+	ERR_FAIL_COND_V_MSG(info == nullptr, UINT32_MAX, "This systems doesn't seems ready.");
+	return info->get_current_entity_id();
 }
 
 String System::validate_script(Ref<Script> p_script) {
@@ -316,7 +328,7 @@ uint32_t ScriptECS::reload_system(const String &p_path) {
 		if (Engine::get_singleton()->is_editor_hint() == false) {
 			system->id = ECS::register_dynamic_system(
 					name);
-			system->prepare(ECS::get_dynamic_system_info(system->id));
+			system->prepare(ECS::get_dynamic_system_info(system->id), system->id);
 		}
 	}
 	return id;

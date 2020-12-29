@@ -18,9 +18,10 @@ class System : public Resource {
 
 	godex::DynamicSystemInfo *info = nullptr;
 	godex::system_id id = UINT32_MAX;
+	bool prepare_in_progress = false;
 
 	static void _bind_methods();
-	void prepare(godex::DynamicSystemInfo *p_info);
+	void prepare(godex::DynamicSystemInfo *p_info, godex::system_id p_id);
 
 public:
 	enum Mutability {
@@ -37,7 +38,9 @@ public:
 	void maybe_component(const StringName &p_component_name, Mutability p_mutability);
 	void without_component(const StringName &p_component_name);
 
-	godex::system_id get_id() const;
+	godex::system_id get_system_id() const;
+
+	uint32_t get_current_entity_id() const;
 
 	static String validate_script(Ref<Script> p_script);
 };
