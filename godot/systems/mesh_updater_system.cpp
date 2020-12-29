@@ -10,6 +10,10 @@ void scenario_manager_system(
 		// thread, so I can access the `SceneTree` safely.
 		World *p_world) {
 	ERR_FAIL_COND_MSG(p_scenario == nullptr, "The `RenderingScenarioResource` `Resource` is not part of this world. Add it please.");
+
+	// Assume everything is up to date.
+	p_scenario->set_changed(false);
+
 	RID main_scenario = SceneTree::get_singleton()->get_root()->get_world_3d()->get_scenario();
 	if (p_scenario->get_scenario() != main_scenario) {
 		p_scenario->set_scenario(main_scenario);
@@ -36,6 +40,7 @@ void mesh_updater_system(
 			// Instance the Mesh.
 			RID instance = rs->get_rs()->instance_create();
 			mesh_comp->set_instance(instance);
+			rs->get_rs()->instance_set_scenario(mesh_comp->get_instance(), p_scenario->get_scenario());
 		} else {
 			// Nothing changed.
 			// TODO try to never trigger this.
