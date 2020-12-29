@@ -7,8 +7,8 @@ class OS;
 class Engine;
 class MessageQueue;
 
-class GodotIteratorInfoResource : public godex::Resource {
-	RESOURCE(GodotIteratorInfoResource)
+class FrameTimeResource : public godex::Resource {
+	RESOURCE(FrameTimeResource)
 
 	static void _bind_properties();
 
@@ -18,11 +18,15 @@ class GodotIteratorInfoResource : public godex::Resource {
 	/// Godot calculates the amount of physics frames for this tick, and put
 	/// the information here.
 	MainFrameTime frame_time;
-	float frame_slice;
-	float time_scale;
+
+	/// Dynamic frame delta.
+	real_t delta = 1.0;
+
+	/// Physics delta.
+	real_t physics_delta = 1.0;
 
 public:
-	GodotIteratorInfoResource();
+	FrameTimeResource();
 
 	void set_exit(bool p_exit);
 	bool get_exit() const;
@@ -30,11 +34,11 @@ public:
 	void set_main_frame_time(const MainFrameTime &p_frame_time);
 	const MainFrameTime &get_main_frame_time() const;
 
-	void set_frame_slice(float p_frame_slice);
-	float get_frame_slice() const;
+	void set_delta(real_t p_delta);
+	real_t get_delta() const;
 
-	void set_time_scale(float p_time_scale);
-	float get_time_scale() const;
+	void set_physics_delta(real_t p_delta);
+	real_t get_physics_delta() const;
 };
 
 class OsResource : public godex::Resource {

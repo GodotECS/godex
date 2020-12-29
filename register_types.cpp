@@ -67,7 +67,7 @@ void register_godex_types() {
 	ECS::register_resource<World>();
 
 	// Engine
-	ECS::register_resource<GodotIteratorInfoResource>();
+	ECS::register_resource<FrameTimeResource>();
 	ECS::register_resource<OsResource>();
 	ECS::register_resource<EngineResource>();
 	ECS::register_resource<MessageQueueResource>();
