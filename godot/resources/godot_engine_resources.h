@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ecs_resource.h"
+#include "../../resources/ecs_resource.h"
 #include "main/main_timer_sync.h"
 
 class OS;

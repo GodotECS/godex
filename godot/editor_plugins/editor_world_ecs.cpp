@@ -2,7 +2,7 @@
 
 #include "editor_world_ecs.h"
 
-#include "../ecs.h"
+#include "../../ecs.h"
 #include "../nodes/ecs_utilities.h"
 #include "../nodes/ecs_world.h"
 #include "core/io/resource_loader.h"

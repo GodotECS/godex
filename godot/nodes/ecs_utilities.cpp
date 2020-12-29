@@ -1,7 +1,7 @@
 #include "ecs_utilities.h"
 
-#include "../ecs.h"
-#include "../systems/dynamic_system.h"
+#include "../../ecs.h"
+#include "../../systems/dynamic_system.h"
 #include "core/config/engine.h"
 #include "core/config/project_settings.h"
 #include "core/io/resource_loader.h"

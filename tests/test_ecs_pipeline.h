@@ -3,8 +3,8 @@
 
 #include "tests/test_macros.h"
 
-#include "../components/transform_component.h"
 #include "../ecs.h"
+#include "../godot/components/transform_component.h"
 #include "../pipeline/pipeline.h"
 
 class PipelineTestResource1 : public godex::Resource {

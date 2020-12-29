@@ -3,7 +3,7 @@
 #ifndef TRANSFOMR_COMPONENT_H
 #define TRANSFOMR_COMPONENT_H
 
-#include "component.h"
+#include "../../components/component.h"
 
 class TransformComponent : public godex::Component {
 	COMPONENT(TransformComponent, DenseVector)

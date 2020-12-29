@@ -3,9 +3,9 @@
 
 #include "tests/test_macros.h"
 
-#include "../components/mesh_component.h"
-#include "../components/transform_component.h"
 #include "../ecs.h"
+#include "../godot/components/mesh_component.h"
+#include "../godot/components/transform_component.h"
 
 namespace godex_tests {
 

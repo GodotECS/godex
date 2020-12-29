@@ -4,8 +4,8 @@
 #include "tests/test_macros.h"
 
 #include "../components/dynamic_component.h"
-#include "../components/transform_component.h"
 #include "../ecs.h"
+#include "../godot/components/transform_component.h"
 #include "../pipeline/pipeline.h"
 #include "../systems/dynamic_system.h"
 #include "../world/world.h"

@@ -3,7 +3,7 @@
 #ifndef MESH_COMPONENT_H
 #define MESH_COMPONENT_H
 
-#include "component.h"
+#include "../../components/component.h"
 
 class MeshComponent : public godex::Component {
 	COMPONENT(MeshComponent, DenseVector)

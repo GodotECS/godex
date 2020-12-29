@@ -3,10 +3,10 @@
 
 #include "tests/test_macros.h"
 
-#include "../components/transform_component.h"
 #include "../ecs.h"
-#include "../nodes/ecs_world.h"
-#include "../nodes/entity.h"
+#include "../godot/components/transform_component.h"
+#include "../godot/nodes/ecs_world.h"
+#include "../godot/nodes/entity.h"
 #include "../world/world.h"
 
 struct Test1Resource : public godex::Resource {

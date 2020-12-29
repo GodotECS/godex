@@ -1,6 +1,6 @@
 #include "physics_process_system.h"
 
-#include "../pipeline/pipeline.h"
+#include "../../pipeline/pipeline.h"
 #include "../resources/godot_engine_resources.h"
 #include "core/config/engine.h"
 #include "core/object/message_queue.h"
