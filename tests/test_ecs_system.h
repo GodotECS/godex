@@ -46,7 +46,7 @@ namespace godex_tests_system {
 void test_system_tag(Query<TransformComponent, const TagTestComponent> &p_query) {
 	while (p_query.is_done() == false) {
 		auto [transform, component] = p_query.get();
-		transform->transform.origin.x += 100.0;
+		transform->get_transform_mut().origin.x += 100.0;
 		p_query.next();
 	}
 }
@@ -217,7 +217,7 @@ void test_sub_pipeline_execute(World *p_world, Pipeline *p_pipeline) {
 void test_system_transform_add_x(Query<TransformComponent> &p_query) {
 	while (p_query.is_done() == false) {
 		auto [transform] = p_query.get();
-		transform->transform.origin.x += 100.0;
+		transform->get_transform_mut().origin.x += 100.0;
 		p_query.next();
 	}
 }
@@ -260,7 +260,7 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 		// since we are dispatching the main pipeline 2 times the
 		// `test_system_transform_add_x` add 100, four times.
 		const TransformComponent &comp = world.get_storage<TransformComponent>()->get(entity_1);
-		CHECK(ABS(comp.transform.origin.x - 400.0) <= CMP_EPSILON);
+		CHECK(ABS(comp.get_transform().origin.x - 400.0) <= CMP_EPSILON);
 	}
 
 	{
@@ -272,7 +272,7 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 
 		// Verify the execution is properly done by making sure the value is 1000.
 		const TransformComponent &comp = world.get_storage<TransformComponent>()->get(entity_1);
-		CHECK(ABS(comp.transform.origin.x - 1000.0) <= CMP_EPSILON);
+		CHECK(ABS(comp.get_transform().origin.x - 1000.0) <= CMP_EPSILON);
 	}
 }
 
@@ -409,7 +409,7 @@ TEST_CASE("[Modules][ECS] Test WorldECSCommands from dynamic query.") {
 	// but also the runtime created one (entity 1) has it.
 	CHECK(world.get_storage<TransformComponent>()->has(1));
 	// Make sure the default is also set.
-	CHECK(ABS(world.get_storage<TransformComponent>()->get(1).transform.origin.x - 10) <= CMP_EPSILON);
+	CHECK(ABS(world.get_storage<TransformComponent>()->get(1).get_transform().origin.x - 10) <= CMP_EPSILON);
 }
 
 } // namespace godex_tests_system
