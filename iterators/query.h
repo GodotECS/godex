@@ -50,7 +50,6 @@ public:
 	QueryStorage(World *p_world) :
 			QueryStorage<Cs...>(p_world),
 			storage(p_world->get_storage<C>()) {
-		ERR_FAIL_COND_MSG(storage == nullptr, "The storage" + String(typeid(TypedStorage<C>).name()) + " is null.");
 	}
 
 	bool has_data(EntityID p_entity) const {
@@ -85,7 +84,6 @@ public:
 	QueryStorage(World *p_world) :
 			QueryStorage<Cs...>(p_world),
 			storage(p_world->get_storage<C>()) {
-		ERR_FAIL_COND_MSG(storage == nullptr, "The storage" + String(typeid(TypedStorage<C>).name()) + " is null.");
 	}
 
 	bool has_data(EntityID p_entity) const {
@@ -118,7 +116,6 @@ public:
 	QueryStorage(World *p_world) :
 			QueryStorage<Cs...>(p_world),
 			storage(p_world->get_storage<C>()) {
-		ERR_FAIL_COND_MSG(storage == nullptr, "The storage" + String(typeid(TypedStorage<C>).name()) + " is null.");
 	}
 
 	bool has_data(EntityID p_entity) const {
