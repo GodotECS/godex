@@ -2,9 +2,9 @@
 
 /* Author: AndreaCatania */
 
-#include "../components/component.h"
-#include "../ecs_types.h"
-#include "../resources/ecs_resource.h"
+#include "../../components/component.h"
+#include "../../ecs_types.h"
+#include "../../resources/ecs_resource.h"
 #include "scene/main/node.h"
 
 class Pipeline;

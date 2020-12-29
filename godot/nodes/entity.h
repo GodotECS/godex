@@ -2,7 +2,7 @@
 
 /* Author: AndreaCatania */
 
-#include "../components/component.h"
+#include "../../components/component.h"
 #include "core/templates/local_vector.h"
 #include "scene/main/node.h"
 

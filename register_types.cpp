@@ -1,23 +1,21 @@
 
 #include "./register_types.h"
 
-#include "components/mesh_component.h"
-#include "components/transform_component.h"
 #include "core/config/engine.h"
 #include "core/object/message_queue.h"
 #include "ecs.h"
 #include "iterators/dynamic_query.h"
-#include "nodes/ecs_utilities.h"
-#include "nodes/ecs_world.h"
-#include "nodes/entity.h"
 #include "systems/dynamic_system.h"
 
-#include "editor_plugins/editor_world_ecs.h"
-#include "editor_plugins/entity_editor_plugin.h"
-
-#include "resources/godot_engine_resources.h"
-
-#include "systems/physics_process_system.h"
+#include "godot/components/mesh_component.h"
+#include "godot/components/transform_component.h"
+#include "godot/editor_plugins/editor_world_ecs.h"
+#include "godot/editor_plugins/entity_editor_plugin.h"
+#include "godot/nodes/ecs_utilities.h"
+#include "godot/nodes/ecs_world.h"
+#include "godot/nodes/entity.h"
+#include "godot/resources/godot_engine_resources.h"
+#include "godot/systems/physics_process_system.h"
 
 // TODO improve this workflow once the new pipeline is integrated.
 class REP : public Object {

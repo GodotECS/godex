@@ -1,8 +1,8 @@
 #ifndef PHYSICS_PROCESS_SYSTEM_H
 #define PHYSICS_PROCESS_SYSTEM_H
 
-#include "../resources/ecs_resource.h"
-#include "dynamic_system.h"
+#include "../../resources/ecs_resource.h"
+#include "../../systems/dynamic_system.h"
 #include "servers/physics_server_3d.h"
 
 class GodotIteratorInfoResource;

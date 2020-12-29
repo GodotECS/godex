@@ -8,7 +8,6 @@ Import("env_modules")
 ecs = env_modules.Clone()
 
 # Module source files
-ecs.add_source_files(env.modules_sources, "nodes/*.cpp")
 ecs.add_source_files(env.modules_sources, "storages/*.cpp")
 ecs.add_source_files(env.modules_sources, "components/*.cpp")
 ecs.add_source_files(env.modules_sources, "iterators/*.cpp")
@@ -18,7 +17,10 @@ ecs.add_source_files(env.modules_sources, "world/*.cpp")
 ecs.add_source_files(env.modules_sources, "pipeline/*.cpp")
 ecs.add_source_files(env.modules_sources, "*.cpp")
 
-ecs.add_source_files(env.modules_sources, "editor_plugins/*.cpp")
-
+ecs.add_source_files(env.modules_sources, "godot/components/*.cpp")
+ecs.add_source_files(env.modules_sources, "godot/editor_plugins/*.cpp")
+ecs.add_source_files(env.modules_sources, "godot/nodes/*.cpp")
+ecs.add_source_files(env.modules_sources, "godot/resources/*.cpp")
+ecs.add_source_files(env.modules_sources, "godot/systems/*.cpp")
 
 methods_ecs.generate_dynamic_system_funcs()

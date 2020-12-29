@@ -7,8 +7,8 @@
 
 #include "core/object/message_queue.h"
 #include "ecs.h"
+#include "godot/resources/godot_engine_resources.h"
 #include "main/main_timer_sync.h"
-#include "resources/godot_engine_resources.h"
 #include "world/world.h"
 
 bool Main::custom_iteration(MainFrameTime *p_frame_time, float p_frame_slice, float p_time_scale) {
