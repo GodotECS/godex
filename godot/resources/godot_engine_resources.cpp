@@ -4,42 +4,44 @@
 #include "core/object/message_queue.h"
 #include "core/os/os.h"
 
-void GodotIteratorInfoResource::_bind_properties() {
+void FrameTimeResource::_bind_properties() {
+	add_property(PropertyInfo(Variant::FLOAT, "delta"), &FrameTimeResource::set_delta, &FrameTimeResource::get_delta);
+	add_property(PropertyInfo(Variant::FLOAT, "physics_delta"), &FrameTimeResource::set_physics_delta, &FrameTimeResource::get_physics_delta);
 }
 
-GodotIteratorInfoResource::GodotIteratorInfoResource() {
+FrameTimeResource::FrameTimeResource() {
 }
 
-void GodotIteratorInfoResource::set_exit(bool p_exit) {
+void FrameTimeResource::set_exit(bool p_exit) {
 	exit = p_exit;
 }
 
-bool GodotIteratorInfoResource::get_exit() const {
+bool FrameTimeResource::get_exit() const {
 	return exit;
 }
 
-void GodotIteratorInfoResource::set_main_frame_time(const MainFrameTime &p_frame_time) {
+void FrameTimeResource::set_main_frame_time(const MainFrameTime &p_frame_time) {
 	frame_time = p_frame_time;
 }
 
-const MainFrameTime &GodotIteratorInfoResource::get_main_frame_time() const {
+const MainFrameTime &FrameTimeResource::get_main_frame_time() const {
 	return frame_time;
 }
 
-void GodotIteratorInfoResource::set_frame_slice(float p_frame_slice) {
-	frame_slice = p_frame_slice;
+void FrameTimeResource::set_delta(real_t p_delta) {
+	delta = p_delta;
 }
 
-float GodotIteratorInfoResource::get_frame_slice() const {
-	return frame_slice;
+real_t FrameTimeResource::get_delta() const {
+	return delta;
 }
 
-void GodotIteratorInfoResource::set_time_scale(float p_time_scale) {
-	time_scale = p_time_scale;
+void FrameTimeResource::set_physics_delta(real_t p_delta) {
+	physics_delta = p_delta;
 }
 
-float GodotIteratorInfoResource::get_time_scale() const {
-	return time_scale;
+real_t FrameTimeResource::get_physics_delta() const {
+	return physics_delta;
 }
 
 void OsResource::_bind_properties() {}

@@ -19,20 +19,19 @@ PhysicsServer3D *Physics3DServerResource::get_physics() {
 
 void call_physics_process(
 		World *p_world,
-		GodotIteratorInfoResource *p_iterator_info,
+		FrameTimeResource *p_iterator_info,
 		Physics3DServerResource *p_physics_3d,
 		EngineResource *p_engine,
 		OsResource *p_os,
 		MessageQueueResource *p_message_queue) {
 	CRASH_COND_MSG(p_world == nullptr, "This is never nullptr because the `World` resource is automatically created by the `World` itself");
-	ERR_FAIL_COND_MSG(p_iterator_info == nullptr, "The GodotIteratorInfoResource is not part of this world. Add it to use the physics.");
+	ERR_FAIL_COND_MSG(p_iterator_info == nullptr, "The FrameTimeResource is not part of this world. Add it to use the physics.");
 	ERR_FAIL_COND_MSG(p_physics_3d == nullptr, "The Physics3DServerResource is not part of this world. Add it to use the physics.");
 	ERR_FAIL_COND_MSG(p_engine == nullptr, "The EngineResource is not part of this world. Add it to use the physics.");
 	ERR_FAIL_COND_MSG(p_os == nullptr, "The OsResource is not part of this world. Add it to use the physics.");
 	ERR_FAIL_COND_MSG(p_message_queue == nullptr, "The MessageQueueResource is not part of this world. Add it to use the physics.");
 
-	const float frame_slice = p_iterator_info->get_frame_slice();
-	const float time_scale = p_iterator_info->get_time_scale();
+	const float physics_delta = p_iterator_info->get_physics_delta();
 
 	// Make sure to update Godot nodes Signals and Transforms.
 	p_physics_3d->get_physics()->flush_queries();
@@ -40,7 +39,7 @@ void call_physics_process(
 	// TODO put 2D flush_query and sync here.
 
 	// Call `_physics_process`
-	if (p_os->get_os()->get_main_loop()->iteration(frame_slice * time_scale)) {
+	if (p_os->get_os()->get_main_loop()->iteration(physics_delta)) {
 		p_iterator_info->set_exit(true);
 		return;
 	}
@@ -55,8 +54,8 @@ void call_physics_process(
 void physics_pipeline_dispatcher(World *p_world, Pipeline *p_pipeline) {
 	ERR_FAIL_COND_MSG(p_pipeline == nullptr, "The `PhysicsPipelineDispatcher` doesn't have a pipeline assigned, so it's doing nothing. Assign it please.");
 
-	const GodotIteratorInfoResource *godot_iterator = p_world->get_resource<GodotIteratorInfoResource>();
-	ERR_FAIL_COND_MSG(godot_iterator == nullptr, "The Resource `GodotIteratorInfoResource` is not supposed to be null when using the `PhysicsPipelineDispatcher` `System`.");
+	const FrameTimeResource *godot_iterator = p_world->get_resource<FrameTimeResource>();
+	ERR_FAIL_COND_MSG(godot_iterator == nullptr, "The Resource `FrameTimeResource` is not supposed to be null when using the `PhysicsPipelineDispatcher` `System`.");
 
 	EngineResource *engine = p_world->get_resource<EngineResource>();
 	ERR_FAIL_COND_MSG(engine == nullptr, "The Resource `EngineResource` is not supposed to be null when using the `PhysicsPipelineDispatcher` `System`.");
@@ -79,25 +78,24 @@ void physics_pipeline_dispatcher(World *p_world, Pipeline *p_pipeline) {
 
 void create_physics_system_dispatcher(godex::DynamicSystemInfo *r_info) {
 	r_info->set_target(physics_pipeline_dispatcher);
-	r_info->with_resource(GodotIteratorInfoResource::get_resource_id(), false);
+	r_info->with_resource(FrameTimeResource::get_resource_id(), false);
 	r_info->with_resource(EngineResource::get_resource_id(), true);
 	// Don't define any pipeline yet.
 	r_info->set_pipeline(nullptr);
 }
 
 void step_physics_server_3d(
-		const GodotIteratorInfoResource *p_iterator_info,
+		const FrameTimeResource *p_iterator_info,
 		Physics3DServerResource *p_physics,
 		EngineResource *p_engine) {
-	ERR_FAIL_COND_MSG(p_iterator_info == nullptr, "The GodotIteratorInfoResource is not part of this world. Add it to use the physics.");
+	ERR_FAIL_COND_MSG(p_iterator_info == nullptr, "The FrameTimeResource is not part of this world. Add it to use the physics.");
 	ERR_FAIL_COND_MSG(p_physics == nullptr, "The Physics3DServerResource is not part of this world. Add it to use the physics.");
 	ERR_FAIL_COND_MSG(p_engine == nullptr, "The EngineResource is not part of this world. Add it to use the physics.");
 
-	const float frame_slice = p_iterator_info->get_frame_slice();
-	const float time_scale = p_iterator_info->get_time_scale();
+	const float physics_delta = p_iterator_info->get_physics_delta();
 
 	// Step the physics server.
-	p_physics->get_physics()->step(frame_slice * time_scale);
+	p_physics->get_physics()->step(physics_delta);
 
 	p_engine->get_engine()->set_physics_frames(p_engine->get_engine()->get_physics_frames() + 1);
 }
