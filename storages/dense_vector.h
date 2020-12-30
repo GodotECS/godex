@@ -138,8 +138,17 @@ void DenseVector<T>::remove(EntityID p_entity) {
 
 	const uint32_t last = data.size() - 1;
 
-	if (p_entity < last) {
+	if (entity_to_data[p_entity] != last) {
+		// This entity is the last one, so swap the alst with the current one
+		// to remove.
+
+		// Copy the last array element on the data element to remove.
 		data[entity_to_data[p_entity]] = data[last];
+
+		// Make sure the entity for the last array element, points to the right slot.
+		entity_to_data[data_to_entity[last]] = entity_to_data[p_entity];
+
+		// Now updated the data to entity by simply coping what's in the last.
 		data_to_entity[entity_to_data[p_entity]] = data_to_entity[last];
 	}
 
