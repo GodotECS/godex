@@ -26,17 +26,18 @@ void System::_bind_methods() {
 
 void System::prepare(godex::DynamicSystemInfo *p_info, godex::system_id p_id) {
 	ERR_FAIL_COND_MSG(p_info == nullptr, "[FATAL] This is not supposed to happen.");
+	ERR_FAIL_COND_MSG(get_script_instance() == nullptr, "[FATAL] This is not supposed to happen.");
 
 	// Set the components and resources
 	id = p_id;
 	info = p_info;
 	Callable::CallError err;
 	prepare_in_progress = true;
-	call("_prepare", nullptr, 0, err);
+	get_script_instance()->call("_prepare", nullptr, 0, err);
 	prepare_in_progress = false;
 
 	// Set this object as target.
-	info->set_target(this);
+	info->set_target(get_script_instance());
 }
 
 System::System() {

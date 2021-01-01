@@ -120,7 +120,7 @@ public:
 	static StringName get_system_name(godex::system_id p_id);
 	static String get_system_desc(godex::system_id p_id);
 
-	static void set_dynamic_system_target(godex::system_id p_id, Object *p_target);
+	static void set_dynamic_system_target(godex::system_id p_id, ScriptInstance *p_target);
 	static godex::DynamicSystemInfo *get_dynamic_system_info(godex::system_id p_id);
 
 	/// Returns `true` when the system dispatches a pipeline when executed.

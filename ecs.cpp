@@ -175,7 +175,7 @@ String ECS::get_system_desc(godex::system_id p_id) {
 	return systems_info[p_id].description;
 }
 
-void ECS::set_dynamic_system_target(godex::system_id p_id, Object *p_target) {
+void ECS::set_dynamic_system_target(godex::system_id p_id, ScriptInstance *p_target) {
 	ERR_FAIL_COND_MSG(verify_system_id(p_id) == false, "This system " + itos(p_id) + " doesn't exists.");
 	ERR_FAIL_COND_MSG(systems_info[p_id].dynamic_system_id == UINT32_MAX, "The system " + itos(p_id) + " is not a dynamic system.");
 	godex::DynamicSystemInfo *info = godex::get_dynamic_system_info(systems_info[p_id].dynamic_system_id);
