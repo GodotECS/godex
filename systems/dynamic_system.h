@@ -38,6 +38,8 @@ class DynamicSystemInfo {
 
 	ScriptInstance *target_script = nullptr;
 
+	bool compiled = false;
+
 	// Function direct access, for fast GDScript execution.
 	GDScriptFunction *gdscript_function = nullptr;
 
@@ -49,6 +51,14 @@ class DynamicSystemInfo {
 	LocalVector<uint32_t> query_element_map;
 	LocalVector<DResource> resources;
 	DynamicQuery query;
+
+	// Accessors.
+	LocalVector<Variant> access;
+	LocalVector<Variant *> access_ptr;
+
+	// Accessors resource.
+	LocalVector<Object> resource_accessors;
+	LocalVector<Object> resource_accessors_obj;
 
 	// ~~ Sub pipeline system ~~
 	func_system_execute_pipeline sub_pipeline_execute = nullptr;
@@ -67,6 +77,8 @@ public:
 
 	void set_target(func_system_execute_pipeline p_sub_pipeline_execite);
 	void set_pipeline(Pipeline *p_pipeline);
+
+	bool build();
 
 	bool is_system_dispatcher() const;
 

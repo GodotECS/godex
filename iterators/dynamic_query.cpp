@@ -77,9 +77,16 @@ bool DynamicQuery::build() {
 	// Build the access_component in this way the `ObjectDB` doesn't
 	// complain for some reason, otherwise it needs to use pointers
 	// (AccessComponent is a parent of Object).
-	access_components.resize(component_ids.size());
+	accessors.resize(component_ids.size());
+	accessors_obj.resize(component_ids.size());
 	for (uint32_t i = 0; i < component_ids.size(); i += 1) {
-		access_components[i].__mut = mutability[i];
+		accessors[i].__mut = mutability[i];
+
+		// The function `set_script_and_instance` is the only way to set a
+		// script instance with lifetime handled by us. The only requirement is
+		// submit a pointer to a `Script`, though we can cheat :P
+		const Variant pointer_to_anything = &accessors_obj[i];
+		accessors_obj[i].set_script_and_instance(pointer_to_anything, &accessors[i]);
 	}
 
 	return true;
@@ -90,7 +97,8 @@ void DynamicQuery::reset() {
 	can_change = true;
 	component_ids.clear();
 	mutability.clear();
-	access_components.clear();
+	accessors.clear();
+	accessors_obj.clear();
 	world = nullptr;
 }
 
@@ -98,10 +106,10 @@ uint32_t DynamicQuery::access_count() const {
 	return component_ids.size();
 }
 
-godex::AccessComponent *DynamicQuery::get_access(uint32_t p_index) {
+Object *DynamicQuery::get_access(uint32_t p_index) {
 	ERR_FAIL_COND_V_MSG(is_valid() == false, nullptr, "The query is invalid.");
 	build();
-	return access_components.ptr() + p_index;
+	return accessors_obj.ptr() + p_index;
 }
 
 void DynamicQuery::begin_script(Object *p_world) {
@@ -188,7 +196,7 @@ void DynamicQuery::next() {
 void DynamicQuery::end() {
 	// Clear any component reference.
 	for (uint32_t i = 0; i < component_ids.size(); i += 1) {
-		access_components[i].__component = nullptr;
+		accessors[i].__target = nullptr;
 	}
 
 	world = nullptr;
@@ -232,10 +240,10 @@ void DynamicQuery::fetch() {
 
 	for (uint32_t i = 0; i < storages.size(); i += 1) {
 		if (required[i] || storages[i]->has(entity_id)) {
-			access_components[i].__component = storages[i]->get_ptr(entity_id);
+			accessors[i].__target = storages[i]->get_ptr(entity_id);
 		} else {
 			// This data is not required and is not found.
-			access_components[i].__component = nullptr;
+			accessors[i].__target = nullptr;
 		}
 	}
 }
