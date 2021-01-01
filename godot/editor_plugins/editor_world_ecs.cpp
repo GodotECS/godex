@@ -199,36 +199,36 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		editor(p_editor) {
 	set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 	set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-	set_anchor(MARGIN_LEFT, 0.0);
-	set_anchor(MARGIN_TOP, 0.0);
-	set_anchor(MARGIN_RIGHT, 1.0);
-	set_anchor(MARGIN_BOTTOM, 1.0);
-	set_margin(MARGIN_LEFT, 0.0);
-	set_margin(MARGIN_TOP, 0.0);
-	set_margin(MARGIN_RIGHT, 0.0);
-	set_margin(MARGIN_BOTTOM, 0.0);
+	set_anchor(SIDE_LEFT, 0.0);
+	set_anchor(SIDE_TOP, 0.0);
+	set_anchor(SIDE_RIGHT, 1.0);
+	set_anchor(SIDE_BOTTOM, 1.0);
+	set_offset(SIDE_LEFT, 0.0);
+	set_offset(SIDE_TOP, 0.0);
+	set_offset(SIDE_RIGHT, 0.0);
+	set_offset(SIDE_BOTTOM, 0.0);
 
 	HBoxContainer *main_hb = memnew(HBoxContainer);
 	main_hb->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 	main_hb->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-	main_hb->set_anchor(MARGIN_LEFT, 0.0);
-	main_hb->set_anchor(MARGIN_TOP, 0.0);
-	main_hb->set_anchor(MARGIN_RIGHT, 1.0);
-	main_hb->set_anchor(MARGIN_BOTTOM, 1.0);
+	main_hb->set_anchor(SIDE_LEFT, 0.0);
+	main_hb->set_anchor(SIDE_TOP, 0.0);
+	main_hb->set_anchor(SIDE_RIGHT, 1.0);
+	main_hb->set_anchor(SIDE_BOTTOM, 1.0);
 	add_child(main_hb);
 
 	DrawLayer *draw_layer = memnew(DrawLayer);
 	draw_layer->editor = this;
 	draw_layer->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 	draw_layer->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-	draw_layer->set_anchor(MARGIN_LEFT, 0.0);
-	draw_layer->set_anchor(MARGIN_TOP, 0.0);
-	draw_layer->set_anchor(MARGIN_RIGHT, 1.0);
-	draw_layer->set_anchor(MARGIN_BOTTOM, 1.0);
-	draw_layer->set_margin(MARGIN_LEFT, 0.0);
-	draw_layer->set_margin(MARGIN_TOP, 0.0);
-	draw_layer->set_margin(MARGIN_RIGHT, 0.0);
-	draw_layer->set_margin(MARGIN_BOTTOM, 0.0);
+	draw_layer->set_anchor(SIDE_LEFT, 0.0);
+	draw_layer->set_anchor(SIDE_TOP, 0.0);
+	draw_layer->set_anchor(SIDE_RIGHT, 1.0);
+	draw_layer->set_anchor(SIDE_BOTTOM, 1.0);
+	draw_layer->set_offset(SIDE_LEFT, 0.0);
+	draw_layer->set_offset(SIDE_TOP, 0.0);
+	draw_layer->set_offset(SIDE_RIGHT, 0.0);
+	draw_layer->set_offset(SIDE_BOTTOM, 0.0);
 	add_child(draw_layer);
 
 	// ~~ Left Panel ~~
@@ -338,19 +338,19 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		Panel *panel = memnew(Panel);
 		panel->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 		panel->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		panel->set_anchor(MARGIN_LEFT, 0.0);
-		panel->set_anchor(MARGIN_TOP, 0.0);
-		panel->set_anchor(MARGIN_RIGHT, 1.0);
-		panel->set_anchor(MARGIN_BOTTOM, 1.0);
+		panel->set_anchor(SIDE_LEFT, 0.0);
+		panel->set_anchor(SIDE_TOP, 0.0);
+		panel->set_anchor(SIDE_RIGHT, 1.0);
+		panel->set_anchor(SIDE_BOTTOM, 1.0);
 		main_container->add_child(panel);
 
 		ScrollContainer *wrapper = memnew(ScrollContainer);
 		wrapper->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 		wrapper->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		wrapper->set_anchor(MARGIN_LEFT, 0.0);
-		wrapper->set_anchor(MARGIN_TOP, 0.0);
-		wrapper->set_anchor(MARGIN_RIGHT, 1.0);
-		wrapper->set_anchor(MARGIN_BOTTOM, 1.0);
+		wrapper->set_anchor(SIDE_LEFT, 0.0);
+		wrapper->set_anchor(SIDE_TOP, 0.0);
+		wrapper->set_anchor(SIDE_RIGHT, 1.0);
+		wrapper->set_anchor(SIDE_BOTTOM, 1.0);
 		wrapper->set_enable_h_scroll(true);
 		wrapper->set_enable_v_scroll(false);
 		panel->add_child(wrapper);
@@ -487,7 +487,7 @@ void EditorWorldECS::show_editor() {
 			// If the given pipeline is not own by the current `WorldECS`.
 			world_ecs->get_pipelines().find(pipeline) == -1) {
 		// Reset the assigned pipeline.
-		if (world_ecs == nullptr || world_ecs->get_pipelines().empty()) {
+		if (world_ecs == nullptr || world_ecs->get_pipelines().is_empty()) {
 			set_pipeline(Ref<PipelineECS>());
 		} else {
 			set_pipeline(world_ecs->get_pipelines()[0]);
@@ -788,7 +788,7 @@ void EditorWorldECS::add_sys_hide() {
 
 void EditorWorldECS::add_sys_update(const String &p_search) {
 	String search = p_search;
-	if (search.empty()) {
+	if (search.is_empty()) {
 		search = add_sys_search->get_text();
 	}
 	search = search.to_lower();
@@ -807,7 +807,7 @@ void EditorWorldECS::add_sys_update(const String &p_search) {
 		const String desc = ECS::get_system_desc(system_id);
 
 		const String name(String(key_name).to_lower());
-		if (search.empty() == false && name.find(search) != 0) {
+		if (search.is_empty() == false && name.find(search) != -1) {
 			// System filtered.
 			continue;
 		}
@@ -840,7 +840,7 @@ void EditorWorldECS::add_sys_update(const String &p_search) {
 			const String sys_script_path = sys_scripts[i];
 			const String system_name = sys_script_path.get_file();
 
-			if (search.empty() == false && system_name.to_lower().find(search) != 0) {
+			if (search.is_empty() == false && system_name.to_lower().find(search) != -1) {
 				// System filtered.
 				continue;
 			}
@@ -888,7 +888,7 @@ void EditorWorldECS::add_sys_add() {
 	}
 
 	if (pipeline.is_null()) {
-		if (world_ecs->get_pipelines().empty()) {
+		if (world_ecs->get_pipelines().is_empty()) {
 			// No pipelines, just create the default one.
 			Ref<PipelineECS> def_pip;
 			def_pip.instance();
@@ -1009,7 +1009,7 @@ void EditorWorldECS::resource_add_hide_menu() {
 
 void EditorWorldECS::resource_add_tree_update(const String &p_search) {
 	String search = p_search;
-	if (search.empty()) {
+	if (search.is_empty()) {
 		search = add_res_search->get_text();
 	}
 	search = search.to_lower();
@@ -1027,7 +1027,7 @@ void EditorWorldECS::resource_add_tree_update(const String &p_search) {
 		StringName key_name = ECS::get_resource_name(i);
 
 		const String name(String(key_name).to_lower());
-		if (search.empty() == false && name.find(search) != 0) {
+		if (search.is_empty() == false && name.find(search) != -1) {
 			// System filtered.
 			continue;
 		}
@@ -1054,7 +1054,7 @@ void EditorWorldECS::resource_add_tree_update(const String &p_search) {
 			const String res_script_path = res_scripts[i];
 			const String res_name = res_script_path.get_file();
 
-			if (search.empty() == false && res_name.to_lower().find(search) != 0) {
+			if (search.is_empty() == false && res_name.to_lower().find(search) != -1) {
 				// System filtered.
 				continue;
 			}
