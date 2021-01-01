@@ -219,7 +219,7 @@ String WorldECS::get_configuration_warning() const {
 	get_tree()->get_nodes_in_group("_world_ecs", &nodes);
 
 	if (nodes.size() > 1) {
-		if (!warning.empty()) {
+		if (!warning.is_empty()) {
 			warning += "\n\n";
 		}
 		warning += TTR("Only one WorldECS is allowed per scene (or set of instanced scenes).");

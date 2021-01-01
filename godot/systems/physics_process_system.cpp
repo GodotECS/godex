@@ -39,7 +39,7 @@ void call_physics_process(
 	// TODO put 2D flush_query and sync here.
 
 	// Call `_physics_process`
-	if (p_os->get_os()->get_main_loop()->iteration(physics_delta)) {
+	if (p_os->get_os()->get_main_loop()->physics_process(physics_delta)) {
 		p_iterator_info->set_exit(true);
 		return;
 	}
