@@ -151,6 +151,7 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 	dynamic_system_info->with_component(TransformComponent::get_component_id(), true);
 	dynamic_system_info->maybe_component(test_dyn_component_id, true);
 	dynamic_system_info->set_target(target_obj.get_script_instance());
+	dynamic_system_info->build();
 
 	// Create the pipeline.
 	Pipeline pipeline;

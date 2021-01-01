@@ -6,7 +6,6 @@
 #include "../storages/dense_vector.h"
 #include "core/object/class_db.h"
 #include "core/object/object.h"
-#include "core/templates/local_vector.h"
 #include "core/templates/oa_hash_map.h"
 
 namespace godex {
@@ -68,52 +67,27 @@ public:
 	Variant get(const StringName &p_name) const;
 };
 
-/// This class is used to make sure the `Query` mutability is respected.
-class AccessComponent : public Object {
-	friend class DynamicQuery;
-
-public:
-	godex::Component *__component = nullptr;
-	bool __mut = false;
-
-	AccessComponent();
-
-	virtual bool _setv(const StringName &p_name, const Variant &p_data) override;
-	virtual bool _getv(const StringName &p_name, Variant &r_data) const override;
-
-	bool is_mutable() const;
-
-public:
-	template <class T>
-	static T *unwrap(Object *p_access_resource);
-
-	template <class T>
-	static const T *unwrap(const Object *p_access_resource);
-};
-
 template <class T>
-T *AccessComponent::unwrap(Object *p_access_resource) {
-	AccessComponent *comp = Object::cast_to<AccessComponent>(p_access_resource);
-	if (unlikely(comp == nullptr)) {
+T *unwrap_component(Object *p_access_resource) {
+	DataAccessorScriptInstance<Component> *comp = dynamic_cast<DataAccessorScriptInstance<Component> *>(p_access_resource->get_script_instance());
+	if (unlikely(comp == nullptr || comp->__target == nullptr)) {
 		return nullptr;
 	}
-
-	ERR_FAIL_COND_V_MSG(comp->__mut == false, nullptr, "This is an immutable component.");
-	if (likely(comp->__component->cid() == T::get_component_id())) {
-		return static_cast<T *>(comp->__component);
+	if (likely(comp->__target->cid() == T::get_component_id())) {
+		return static_cast<T *>(comp->__target);
 	} else {
 		return nullptr;
 	}
 }
 
 template <class T>
-const T *AccessComponent::unwrap(const Object *p_access_resource) {
-	const AccessComponent *comp = Object::cast_to<AccessComponent>(p_access_resource);
-	if (unlikely(comp == nullptr)) {
+const T *unwrap_component(const Object *p_access_resource) {
+	const DataAccessorScriptInstance<Component> *comp = dynamic_cast<DataAccessorScriptInstance<Component> *>(p_access_resource->get_script_instance());
+	if (unlikely(comp == nullptr || comp->__target == nullptr)) {
 		return nullptr;
 	}
-	if (likely(comp->__component->cid() == T::get_component_id())) {
-		return static_cast<const T *>(comp->__component);
+	if (likely(comp->__target->cid() == T::get_component_id())) {
+		return static_cast<const T *>(comp->__target);
 	} else {
 		return nullptr;
 	}
