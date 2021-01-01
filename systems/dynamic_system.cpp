@@ -1,6 +1,7 @@
 #include "dynamic_system.h"
 
 #include "../pipeline/pipeline.h"
+#include "modules/gdscript/gdscript.cpp"
 
 // This include contains the function needed to convert a script system to a
 // compile time system.
@@ -12,8 +13,17 @@ void godex::DynamicSystemInfo::set_system_id(uint32_t p_id) {
 	system_id = p_id;
 }
 
-void godex::DynamicSystemInfo::set_target(Object *p_target) {
+void godex::DynamicSystemInfo::set_target(ScriptInstance *p_target) {
 	target_script = p_target;
+	gdscript_function = nullptr;
+
+	GDScriptInstance *gd_script_instance = dynamic_cast<GDScriptInstance *>(p_target);
+	if (gd_script_instance) {
+		// This is a GDScript, take the direct function access.
+		Ref<GDScript> script = p_target->get_script();
+		gdscript_function = script->get_member_functions()[for_each_name];
+	}
+
 	target_sub_pipeline = nullptr;
 }
 
@@ -41,6 +51,7 @@ void godex::DynamicSystemInfo::without_component(uint32_t p_component_id) {
 
 void godex::DynamicSystemInfo::set_target(func_system_execute_pipeline p_system_exe) {
 	target_script = nullptr;
+	gdscript_function = nullptr;
 	sub_pipeline_execute = p_system_exe;
 }
 
@@ -152,7 +163,22 @@ void godex::DynamicSystemInfo::executor(World *p_world, DynamicSystemInfo &p_inf
 			}
 
 			Callable::CallError err;
-			p_info.target_script->call(for_each_name, const_cast<const Variant **>(access_ptr.ptr()), access_ptr.size(), err);
+			// Call the script function.
+			if (p_info.gdscript_function) {
+				// Accelerated GDScript function access.
+				p_info.gdscript_function->call(
+						static_cast<GDScriptInstance *>(p_info.target_script),
+						const_cast<const Variant **>(access_ptr.ptr()),
+						access_ptr.size(),
+						err);
+			} else {
+				// Other script execution.
+				p_info.target_script->call(
+						for_each_name,
+						const_cast<const Variant **>(access_ptr.ptr()),
+						access_ptr.size(),
+						err);
+			}
 			if (err.error != Callable::CallError::CALL_OK) {
 				p_info.query.end();
 				ERR_FAIL_COND_MSG(err.error != Callable::CallError::CALL_OK, "System function execution error: " + itos(err.error) + " System name: " + ECS::get_system_name(p_info.system_id) + ". Please check the parameters.");

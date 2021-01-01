@@ -7,8 +7,8 @@
 #include "system.h"
 
 class World;
-
 class Pipeline;
+class GDScriptFunction;
 
 namespace godex {
 
@@ -36,7 +36,11 @@ class DynamicSystemInfo {
 		bool is_mutable;
 	};
 
-	Object *target_script = nullptr;
+	ScriptInstance *target_script = nullptr;
+
+	// Function direct access, for fast GDScript execution.
+	GDScriptFunction *gdscript_function = nullptr;
+
 	uint32_t system_id = UINT32_MAX;
 
 	/// Map used to map the list of Resources to the script.
@@ -54,7 +58,7 @@ public:
 	DynamicSystemInfo();
 
 	void set_system_id(uint32_t p_id);
-	void set_target(Object *p_target);
+	void set_target(ScriptInstance *p_target);
 
 	void with_resource(uint32_t p_resource_id, bool p_mutable);
 	void with_component(uint32_t p_component_id, bool p_mutable);

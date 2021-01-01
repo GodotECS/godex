@@ -150,7 +150,7 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 	godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
 	dynamic_system_info->with_component(TransformComponent::get_component_id(), true);
 	dynamic_system_info->maybe_component(test_dyn_component_id, true);
-	dynamic_system_info->set_target(&target_obj);
+	dynamic_system_info->set_target(target_obj.get_script_instance());
 
 	// Create the pipeline.
 	Pipeline pipeline;
@@ -352,7 +352,7 @@ TEST_CASE("[Modules][ECS] Test system resource fetch with dynamic query.") {
 	godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
 	dynamic_system_info->with_resource(TestSystemSubPipeResource::get_resource_id(), true);
 	dynamic_system_info->with_component(TransformComponent::get_component_id(), false);
-	dynamic_system_info->set_target(&target_obj);
+	dynamic_system_info->set_target(target_obj.get_script_instance());
 
 	// Create the pipeline.
 	Pipeline pipeline;
@@ -393,7 +393,7 @@ TEST_CASE("[Modules][ECS] Test WorldECSCommands from dynamic query.") {
 	godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
 	dynamic_system_info->with_resource(World::get_resource_id(), true);
 	dynamic_system_info->with_component(TransformComponent::get_component_id(), false);
-	dynamic_system_info->set_target(&target_obj);
+	dynamic_system_info->set_target(target_obj.get_script_instance());
 
 	// Create the pipeline.
 	Pipeline pipeline;
