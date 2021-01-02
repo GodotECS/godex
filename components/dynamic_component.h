@@ -8,7 +8,7 @@ class DynamicComponentInfo {
 
 	uint32_t component_id = UINT32_MAX;
 	// Maps the property to the position
-	OAHashMap<StringName, uint32_t> property_map; // TODO make this LocalVector?
+	LocalVector<StringName> property_map;
 	LocalVector<PropertyInfo> properties;
 	LocalVector<Variant> defaults;
 	StorageType storage_type = StorageType::NONE;
@@ -23,9 +23,9 @@ public:
 	}
 
 	Variant get_property_default(StringName p_name) const {
-		const uint32_t *id_ptr = property_map.lookup_ptr(p_name);
-		ERR_FAIL_COND_V_MSG(id_ptr == nullptr, Variant(), "The property " + p_name + " doesn't exists on this component " + ECS::get_component_name(component_id));
-		return defaults[*id_ptr];
+		const uint32_t i = get_property_id(p_name);
+		ERR_FAIL_COND_V_MSG(i == UINT32_MAX, Variant(), "The property " + p_name + " doesn't exists on this component " + ECS::get_component_name(component_id));
+		return defaults[i];
 	}
 
 	const LocalVector<Variant> &get_property_defaults() const {
@@ -33,9 +33,9 @@ public:
 	}
 
 	uint32_t get_property_id(StringName p_name) const {
-		const uint32_t *id_ptr = property_map.lookup_ptr(p_name);
-		ERR_FAIL_COND_V_MSG(id_ptr == nullptr, UINT32_MAX, "The property " + p_name + " doesn't exists on this component " + ECS::get_component_name(component_id));
-		return *id_ptr;
+		const int64_t i = property_map.find(p_name);
+		ERR_FAIL_COND_V_MSG(i == -1, UINT32_MAX, "The property " + p_name + " doesn't exists on this component " + ECS::get_component_name(component_id));
+		return i;
 	}
 
 	bool validate_type(uint32_t p_index, Variant::Type p_type) const {

@@ -47,6 +47,7 @@ ECS::ECS() :
 }
 
 ECS::~ECS() {
+	world_access.set_script_instance(nullptr);
 }
 
 const LocalVector<StringName> &ECS::get_registered_components() {
@@ -330,7 +331,7 @@ uint32_t ECS::register_script_component(StringName p_name, const LocalVector<Scr
 			return UINT32_MAX;
 		}
 
-		info->property_map.insert(p_properties[i].property.name, i);
+		info->property_map.push_back(p_properties[i].property.name);
 		info->properties[i] = p_properties[i].property;
 		info->defaults[i] = p_properties[i].default_value;
 	}

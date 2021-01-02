@@ -12,7 +12,7 @@ RenderingServer *RenderingServerResource::get_rs() {
 }
 
 void RenderingScenarioResource::_bind_properties() {
-	//add_property(PropertyInfo("scenario"), &RenderingScenarioResource::set_scenario, &RenderingScenarioResource::get_scenario);
+	ECS_BIND_PROPERTY(RenderingScenarioResource, PropertyInfo(Variant::OBJECT, "scenario"), scenario);
 }
 
 void RenderingScenarioResource::set_scenario(RID p_scenario_rid) {

@@ -26,7 +26,7 @@ class TestSystemSubPipeResource : public godex::Resource {
 	RESOURCE(TestSystemSubPipeResource)
 
 	static void _bind_properties() {
-		add_property(PropertyInfo(Variant::INT, "exe_count"), &TestSystemSubPipeResource::set_exe_count, &TestSystemSubPipeResource::get_exe_count);
+		ECS_BIND_PROPERTY(TestSystemSubPipeResource, PropertyInfo(Variant::INT, "exe_count"), exe_count);
 	}
 
 public:

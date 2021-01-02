@@ -73,54 +73,21 @@ typedef uint32_t system_id;
 
 namespace godex {
 
-struct SetMethodHandleBase {
-	virtual ~SetMethodHandleBase() {}
-	virtual void set(void *p_object, const Variant &p_data) = 0;
-};
-
-template <class C, class T>
-struct SetMethodHandle : public SetMethodHandleBase {
-	T method;
-
-	virtual void set(void *p_object, const Variant &p_data) override {
-		(static_cast<C *>(p_object)->*method)(p_data);
-	}
-};
-
-struct GetMethodHandleBase {
-	virtual ~GetMethodHandleBase() {}
-	virtual Variant get(const void *p_object) = 0;
-};
-
-template <class C, class T>
-struct GetMethodHandle : public GetMethodHandleBase {
-	T method;
-
-	virtual Variant get(const void *p_object) override {
-		return (static_cast<const C *>(p_object)->*method)();
-	}
-};
+typedef bool (*func_setter)(void *, const Variant &p_data);
+typedef bool (*func_getter)(const void *, Variant &r_data);
 
 #define ECS_PROPERTY_MAPPER(m_class)                                                                                                   \
 private:                                                                                                                               \
 	/* Properties */                                                                                                                   \
-	static inline OAHashMap<StringName, uint32_t> property_map;                                                                        \
+	static inline LocalVector<StringName> property_map;                                                                                \
 	static inline LocalVector<PropertyInfo> properties;                                                                                \
-	static inline LocalVector<godex::SetMethodHandleBase *> set_map;                                                                   \
-	static inline LocalVector<godex::GetMethodHandleBase *> get_map;                                                                   \
-	template <class M1, class M2>                                                                                                      \
-	static void add_property(const PropertyInfo &p_info, M1 p_set, M2 p_get) {                                                         \
-		const uint32_t index = properties.size();                                                                                      \
-		property_map.insert(p_info.name, index);                                                                                       \
+	static inline LocalVector<godex::func_setter> setters;                                                                             \
+	static inline LocalVector<godex::func_getter> getters;                                                                             \
+	static void add_property(const PropertyInfo &p_info, godex::func_setter p_set, godex::func_getter p_get) {                         \
+		property_map.push_back(p_info.name);                                                                                           \
 		properties.push_back(p_info);                                                                                                  \
-																																	   \
-		godex::SetMethodHandle<m_class, M1> *handle_set = new godex::SetMethodHandle<m_class, M1>;                                     \
-		handle_set->method = p_set;                                                                                                    \
-		set_map.push_back(handle_set);                                                                                                 \
-																																	   \
-		godex::GetMethodHandle<m_class, M2> *handle_get = new godex::GetMethodHandle<m_class, M2>;                                     \
-		handle_get->method = p_get;                                                                                                    \
-		get_map.push_back(handle_get);                                                                                                 \
+		setters.push_back(p_set);                                                                                                      \
+		getters.push_back(p_get);                                                                                                      \
 	}                                                                                                                                  \
 	static LocalVector<PropertyInfo> *get_properties_static() {                                                                        \
 		return &properties;                                                                                                            \
@@ -137,28 +104,57 @@ private:                                                                        
 	virtual const LocalVector<PropertyInfo> *get_properties() const override {                                                         \
 		return get_properties_static();                                                                                                \
 	}                                                                                                                                  \
+	uint32_t get_property_index(const StringName &p_name) const {                                                                      \
+		const int64_t i = property_map.find(p_name);                                                                                   \
+		return i == -1 ? UINT32_MAX : uint32_t(i);                                                                                     \
+	}                                                                                                                                  \
 																																	   \
 public:                                                                                                                                \
 	virtual bool set(const StringName &p_name, const Variant &p_data) override {                                                       \
-		const uint32_t *i_ptr = property_map.lookup_ptr(p_name);                                                                       \
-		ERR_FAIL_COND_V_MSG(i_ptr == nullptr, false, "The parameter " + p_name + " doesn't exist in this component.");                 \
-		return set(*i_ptr, p_data);                                                                                                    \
+		const uint32_t i = get_property_index(p_name);                                                                                 \
+		ERR_FAIL_COND_V_MSG(i == UINT32_MAX, false, "The parameter " + p_name + " doesn't exist in this component.");                  \
+		return setters[i](this, p_data);                                                                                               \
 	}                                                                                                                                  \
 	virtual bool get(const StringName &p_name, Variant &r_data) const override {                                                       \
-		const uint32_t *i_ptr = property_map.lookup_ptr(p_name);                                                                       \
-		ERR_FAIL_COND_V_MSG(i_ptr == nullptr, false, "The parameter " + p_name + " doesn't exist in this component.");                 \
-		return get(*i_ptr, r_data);                                                                                                    \
+		const uint32_t i = get_property_index(p_name);                                                                                 \
+		ERR_FAIL_COND_V_MSG(i == UINT32_MAX, false, "The parameter " + p_name + " doesn't exist in this component.");                  \
+		return getters[i](this, r_data);                                                                                               \
 	}                                                                                                                                  \
 	virtual bool set(const uint32_t p_index, const Variant &p_data) override {                                                         \
-		ERR_FAIL_COND_V_MSG(p_index >= set_map.size(), false, "The parameter " + itos(p_index) + " doesn't exist in this component."); \
-		set_map[p_index]->set(this, p_data);                                                                                           \
-		return true;                                                                                                                   \
+		ERR_FAIL_COND_V_MSG(p_index >= setters.size(), false, "The parameter " + itos(p_index) + " doesn't exist in this component."); \
+		return setters[p_index](this, p_data);                                                                                         \
 	}                                                                                                                                  \
 	virtual bool get(const uint32_t p_index, Variant &r_data) const override {                                                         \
-		ERR_FAIL_COND_V_MSG(p_index >= get_map.size(), false, "The parameter " + itos(p_index) + " doesn't exist in this component."); \
-		r_data = get_map[p_index]->get(this);                                                                                          \
-		return true;                                                                                                                   \
+		ERR_FAIL_COND_V_MSG(p_index >= getters.size(), false, "The parameter " + itos(p_index) + " doesn't exist in this component."); \
+		return getters[p_index](this, r_data);                                                                                         \
 	}
+
+/// Must be called in `_bind_property` and can be used to just bind a property.
+#define ECS_BIND_PROPERTY(clazz, prop_info, prop)                \
+	add_property(                                                \
+			prop_info,                                           \
+			[](void *self, const Variant &p_data) -> bool {      \
+				static_cast<clazz *>(self)->prop = p_data;       \
+				return true;                                     \
+			},                                                   \
+			[](const void *self, Variant &r_data) -> bool {      \
+				r_data = static_cast<const clazz *>(self)->prop; \
+				return true;                                     \
+			});
+
+/// Must be called in `_bind_property` and can be used to bind set and get of a
+/// property. Useful when you have to parse the set/get data.
+#define ECS_BIND_PROPERTY_FUNC(clazz, prop_info, set_func, get_func)   \
+	add_property(                                                      \
+			prop_info,                                                 \
+			[](void *self, const Variant &p_data) -> bool {            \
+				static_cast<clazz *>(self)->set_func(p_data);          \
+				return true;                                           \
+			},                                                         \
+			[](const void *self, Variant &r_data) -> bool {            \
+				r_data = static_cast<const clazz *>(self)->get_func(); \
+				return true;                                           \
+			});
 
 } // namespace godex
 
