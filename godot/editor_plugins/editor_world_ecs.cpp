@@ -807,7 +807,7 @@ void EditorWorldECS::add_sys_update(const String &p_search) {
 		const String desc = ECS::get_system_desc(system_id);
 
 		const String name(String(key_name).to_lower());
-		if (search.is_empty() == false && name.find(search) != -1) {
+		if (search.is_empty() == false && name.find(search) == -1) {
 			// System filtered.
 			continue;
 		}
@@ -840,7 +840,7 @@ void EditorWorldECS::add_sys_update(const String &p_search) {
 			const String sys_script_path = sys_scripts[i];
 			const String system_name = sys_script_path.get_file();
 
-			if (search.is_empty() == false && system_name.to_lower().find(search) != -1) {
+			if (search.is_empty() == false && system_name.to_lower().find(search) == -1) {
 				// System filtered.
 				continue;
 			}
@@ -1027,7 +1027,7 @@ void EditorWorldECS::resource_add_tree_update(const String &p_search) {
 		StringName key_name = ECS::get_resource_name(i);
 
 		const String name(String(key_name).to_lower());
-		if (search.is_empty() == false && name.find(search) != -1) {
+		if (search.is_empty() == false && name.find(search) == -1) {
 			// System filtered.
 			continue;
 		}
@@ -1054,7 +1054,7 @@ void EditorWorldECS::resource_add_tree_update(const String &p_search) {
 			const String res_script_path = res_scripts[i];
 			const String res_name = res_script_path.get_file();
 
-			if (search.is_empty() == false && res_name.to_lower().find(search) != -1) {
+			if (search.is_empty() == false && res_name.to_lower().find(search) == -1) {
 				// System filtered.
 				continue;
 			}
