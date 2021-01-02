@@ -1168,7 +1168,7 @@ WorldECSEditorPlugin::WorldECSEditorPlugin(EditorNode *p_node) :
 }
 
 WorldECSEditorPlugin::~WorldECSEditorPlugin() {
-	editor->get_viewport()->remove_child(ecs_editor);
+	editor->get_main_control()->remove_child(ecs_editor);
 	memdelete(ecs_editor);
 	ecs_editor = nullptr;
 }
