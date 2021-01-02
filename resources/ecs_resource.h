@@ -55,51 +55,27 @@ public:
 	Variant get(const StringName &p_name) const;
 };
 
-/// This class is used to give `Resource` access from GDScript and make sure the
-/// mutability is respected.
-class AccessResource : public Object {
-public:
-	godex::Resource *__resource = nullptr;
-	bool __mut = false;
-
-	AccessResource();
-
-	bool _setv(const StringName &p_name, const Variant &p_data);
-	bool _getv(const StringName &p_name, Variant &r_data) const;
-
-	bool is_mutable() const;
-
-public:
-	template <class T>
-	static T *unwrap(Object *p_access_resource);
-
-	template <class T>
-	static const T *unwrap(const Object *p_access_resource);
-};
-
 template <class T>
-T *AccessResource::unwrap(Object *p_access_resource) {
-	AccessResource *res = Object::cast_to<AccessResource>(p_access_resource);
-	if (unlikely(res == nullptr)) {
+T *unwrap_resource(Object *p_access_resource) {
+	DataAccessorScriptInstance<Resource> *res = dynamic_cast<DataAccessorScriptInstance<Resource> *>(p_access_resource->get_script_instance());
+	if (unlikely(res == nullptr || res->__target == nullptr)) {
 		return nullptr;
 	}
-
-	ERR_FAIL_COND_V_MSG(res->__mut == false, nullptr, "This is an immutable resource.");
-	if (likely(res->__resource->rid() == T::get_resource_id())) {
-		return static_cast<T *>(res->__resource);
+	if (likely(res->__target->rid() == T::get_resource_id())) {
+		return static_cast<T *>(res->__target);
 	} else {
 		return nullptr;
 	}
 }
 
 template <class T>
-const T *AccessResource::unwrap(const Object *p_access_resource) {
-	const AccessResource *res = Object::cast_to<AccessResource>(p_access_resource);
-	if (unlikely(res == nullptr)) {
+const T *unwrap_resource(const Object *p_access_resource) {
+	const DataAccessorScriptInstance<Resource> *res = dynamic_cast<DataAccessorScriptInstance<Resource> *>(p_access_resource->get_script_instance());
+	if (unlikely(res == nullptr || res->__target == nullptr)) {
 		return nullptr;
 	}
-	if (likely(res->__resource->rid() == T::get_resource_id())) {
-		return static_cast<const T *>(res->__resource);
+	if (likely(res->__target->rid() == T::get_resource_id())) {
+		return static_cast<const T *>(res->__target);
 	} else {
 		return nullptr;
 	}

@@ -194,9 +194,12 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 TEST_CASE("[Modules][ECS] Test WorldECSCommands create entity from prefab.") {
 	World world;
 
-	godex::AccessResource world_res_access;
-	world_res_access.__resource = &world;
-	world_res_access.__mut = true;
+	DataAccessorScriptInstance<godex::Resource> *world_accessor = memnew(DataAccessorScriptInstance<godex::Resource>);
+	world_accessor->__target = &world;
+	world_accessor->__mut = true;
+
+	Object world_access;
+	world_access.set_script_instance(world_accessor);
 
 	Entity entity_prefab;
 
@@ -205,7 +208,7 @@ TEST_CASE("[Modules][ECS] Test WorldECSCommands create entity from prefab.") {
 	entity_prefab.add_component("TransformComponent", defaults);
 
 	const uint32_t entity_id = WorldECSCommands::get_singleton()->create_entity_from_prefab(
-			&world_res_access,
+			&world_access,
 			&entity_prefab);
 
 	// Make sure something is created.
@@ -214,13 +217,13 @@ TEST_CASE("[Modules][ECS] Test WorldECSCommands create entity from prefab.") {
 	// Make sure the component is created
 
 	Object *comp = WorldECSCommands::get_singleton()->get_entity_component(
-			&world_res_access,
+			&world_access,
 			entity_id,
 			"TransformComponent");
 
 	CHECK(comp != nullptr);
 
-	TransformComponent *transf = godex::AccessComponent::unwrap<TransformComponent>(comp);
+	TransformComponent *transf = godex::unwrap_component<TransformComponent>(comp);
 
 	// Make sure the default is also set.
 	CHECK(ABS(transf->get_transform().origin.x - 10) <= CMP_EPSILON);
@@ -229,17 +232,20 @@ TEST_CASE("[Modules][ECS] Test WorldECSCommands create entity from prefab.") {
 TEST_CASE("[Modules][ECS] Test WorldECSCommands fetch resources.") {
 	World world;
 
-	godex::AccessResource world_res_access;
-	world_res_access.__resource = &world;
-	world_res_access.__mut = true;
+	DataAccessorScriptInstance<godex::Resource> *world_accessor = memnew(DataAccessorScriptInstance<godex::Resource>);
+	world_accessor->__target = &world;
+	world_accessor->__mut = true;
+
+	Object world_access;
+	world_access.set_script_instance(world_accessor);
 
 	Object *world_res_raw = WorldECSCommands::get_singleton()->get_resource(
-			&world_res_access,
+			&world_access,
 			"World");
 
 	CHECK(world_res_raw != nullptr);
 
-	World *world_ptr = godex::AccessResource::unwrap<World>(world_res_raw);
+	World *world_ptr = godex::unwrap_resource<World>(world_res_raw);
 	CHECK(&world == world_ptr);
 }
 

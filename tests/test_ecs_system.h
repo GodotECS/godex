@@ -237,6 +237,7 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 	// Used internally by the `test_sub_pipeline_execute`.
 	sub_pipeline_system->with_resource(TestSystemSubPipeResource::get_resource_id(), false);
 	ECS::set_system_pipeline(sub_pipeline_system_id, &sub_pipeline);
+	sub_pipeline_system->build();
 
 	// ~~ Main pipeline ~~
 	Pipeline main_pipeline;
@@ -354,6 +355,7 @@ TEST_CASE("[Modules][ECS] Test system resource fetch with dynamic query.") {
 	dynamic_system_info->with_resource(TestSystemSubPipeResource::get_resource_id(), true);
 	dynamic_system_info->with_component(TransformComponent::get_component_id(), false);
 	dynamic_system_info->set_target(target_obj.get_script_instance());
+	dynamic_system_info->build();
 
 	// Create the pipeline.
 	Pipeline pipeline;
@@ -395,6 +397,7 @@ TEST_CASE("[Modules][ECS] Test WorldECSCommands from dynamic query.") {
 	dynamic_system_info->with_resource(World::get_resource_id(), true);
 	dynamic_system_info->with_component(TransformComponent::get_component_id(), false);
 	dynamic_system_info->set_target(target_obj.get_script_instance());
+	dynamic_system_info->build();
 
 	// Create the pipeline.
 	Pipeline pipeline;

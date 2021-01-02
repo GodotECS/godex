@@ -22,7 +22,7 @@ class DynamicQuery : public Object {
 	LocalVector<bool> mutability;
 	LocalVector<bool> required;
 	LocalVector<uint32_t> reject_component_ids;
-	LocalVector<DataAccessorScriptInstance<Component>> accessors;
+	LocalVector<DataAccessorScriptInstance<Component> *> accessors;
 	LocalVector<Object> accessors_obj;
 	LocalVector<Storage *> storages;
 	LocalVector<Storage *> reject_storages;
@@ -49,6 +49,7 @@ public:
 
 	/// Build the query, it's not need call this explicitely.
 	bool build();
+	void unbuild();
 
 	/// Clear the query so this memory can be reused.
 	void reset();
@@ -56,7 +57,8 @@ public:
 	uint32_t access_count() const;
 	/// The returned pointer is valid only for the execution of the query.
 	/// If you reset the query, copy it (move the object), this pointer is invalidated.
-	Object *get_access(uint32_t p_index);
+	Object *get_access_gd(uint32_t p_index);
+	DataAccessorScriptInstance<godex::Component> *get_access(uint32_t p_index);
 
 	/// Start the execution of this query.
 	void begin(World *p_world);
