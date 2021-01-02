@@ -7,6 +7,7 @@
 #include "core/string/ustring.h"
 #include "core/templates/list.h"
 #include "core/templates/local_vector.h"
+#include "modules/gdscript/gdscript.h"
 
 #define ECSCLASS(m_class)                             \
 private:                                              \
@@ -164,7 +165,6 @@ public:                                                                         
 #define SINGLETON_MAKER(m_class)                                                                      \
 private:                                                                                              \
 	static inline m_class *singleton = nullptr;                                                       \
-	m_class() {}                                                                                      \
 																									  \
 public:                                                                                               \
 	static m_class *get_singleton() {                                                                 \
@@ -175,6 +175,9 @@ public:                                                                         
 		return singleton;                                                                             \
 	}
 
+/// This is useful to access the storages fast. Since `Object::set` check fist
+/// the script. However, in future would be really nice make `Object::set` virtual
+/// so to override it and avoid all this useless extra work.
 template <class E>
 class DataAccessorScriptInstance : public ScriptInstance {
 public:
@@ -182,10 +185,21 @@ public:
 	E *__target = nullptr;
 	bool __mut = false;
 
+	bool is_mutable() const {
+		return __mut;
+	}
+
 	virtual bool set(const StringName &p_name, const Variant &p_value) override {
 		ERR_FAIL_COND_V(__target == nullptr, false);
 		ERR_FAIL_COND_V_MSG(__mut == false, false, "This element was taken as not mutable.");
 		return __target->set(p_name, p_value);
+	}
+
+	// Slow version
+	Variant get(const StringName &p_name) const {
+		Variant ret;
+		get(p_name, ret);
+		return ret;
 	}
 
 	virtual bool get(const StringName &p_name, Variant &r_ret) const override {
@@ -256,7 +270,10 @@ public:
 	}
 
 	virtual Ref<Script> get_script() const override {
-		return Ref<Script>();
+		// Just to return something to make godot not crash.
+		Ref<GDScript> s;
+		s.instance();
+		return s;
 	}
 
 	virtual bool is_placeholder() const override {

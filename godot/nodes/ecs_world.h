@@ -147,10 +147,14 @@ class WorldECSCommands : public Object {
 protected:
 	static void _bind_methods();
 
-	godex::AccessComponent access_component_utility;
-	godex::AccessResource access_resource_utility;
+	Object access_component_obj;
+	Object access_resource_obj;
+	DataAccessorScriptInstance<godex::Component> *component_accessor;
+	DataAccessorScriptInstance<godex::Resource> *resource_accessor;
 
 public:
+	WorldECSCommands();
+
 	uint32_t create_entity(Object *p_world);
 	void destroy_entity(Object *p_world, uint32_t p_entity_id);
 

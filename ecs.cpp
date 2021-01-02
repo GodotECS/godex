@@ -39,6 +39,11 @@ ECS::ECS() :
 		// TODO Do I need this? https://github.com/godotengine/godot-proposals/issues/1593
 		MessageQueue::get_singleton()->push_callable(callable_mp(this, &ECS::ecs_init));
 	}
+
+	// Don't need to destroy this, the `Object` does it (unfortunately).
+	world_accessor = memnew(DataAccessorScriptInstance<godex::Resource>);
+	world_accessor->__mut = true;
+	world_access.set_script_instance(world_accessor);
 }
 
 ECS::~ECS() {
@@ -249,10 +254,9 @@ World *ECS::get_active_world() const {
 	return active_world;
 }
 
-godex::AccessResource *ECS::get_active_world_gds() {
+Object *ECS::get_active_world_gds() {
 	ERR_FAIL_COND_V_MSG(active_world == nullptr, nullptr, "No active world at the moment.");
-	world_access.__resource = active_world;
-	world_access.__mut = true;
+	world_accessor->__target = active_world;
 	return &world_access;
 }
 

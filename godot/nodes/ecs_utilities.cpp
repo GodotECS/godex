@@ -38,6 +38,7 @@ void System::prepare(godex::DynamicSystemInfo *p_info, godex::system_id p_id) {
 
 	// Set this object as target.
 	info->set_target(get_script_instance());
+	info->build();
 }
 
 System::System() {

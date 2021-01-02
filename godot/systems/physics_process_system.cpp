@@ -82,6 +82,8 @@ void create_physics_system_dispatcher(godex::DynamicSystemInfo *r_info) {
 	r_info->with_resource(EngineResource::get_resource_id(), true);
 	// Don't define any pipeline yet.
 	r_info->set_pipeline(nullptr);
+	// Build.
+	r_info->build();
 }
 
 void step_physics_server_3d(

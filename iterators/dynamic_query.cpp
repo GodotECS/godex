@@ -11,7 +11,7 @@ void DynamicQuery::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_valid"), &DynamicQuery::is_valid);
 	ClassDB::bind_method(D_METHOD("build"), &DynamicQuery::build);
 	ClassDB::bind_method(D_METHOD("reset"), &DynamicQuery::reset);
-	ClassDB::bind_method(D_METHOD("get_component", "index"), &DynamicQuery::get_access);
+	ClassDB::bind_method(D_METHOD("get_component", "index"), &DynamicQuery::get_access_gd);
 	ClassDB::bind_method(D_METHOD("begin", "world"), &DynamicQuery::begin_script);
 	ClassDB::bind_method(D_METHOD("is_done"), &DynamicQuery::is_done);
 	ClassDB::bind_method(D_METHOD("get_current_entity_id"), &DynamicQuery::get_current_entity_id_script);
@@ -80,13 +80,12 @@ bool DynamicQuery::build() {
 	accessors.resize(component_ids.size());
 	accessors_obj.resize(component_ids.size());
 	for (uint32_t i = 0; i < component_ids.size(); i += 1) {
-		accessors[i].__mut = mutability[i];
-
-		// The function `set_script_and_instance` is the only way to set a
-		// script instance with lifetime handled by us. The only requirement is
-		// submit a pointer to a `Script`, though we can cheat :P
-		const Variant pointer_to_anything = &accessors_obj[i];
-		accessors_obj[i].set_script_and_instance(pointer_to_anything, &accessors[i]);
+		// Creating a new pointer because `set_script_instance` handles
+		// the pointer lifetime unfortunately so set an automatic memory
+		// pointer is not safe.
+		accessors[i] = memnew(DataAccessorScriptInstance<godex::Component>);
+		accessors[i]->__mut = mutability[i];
+		accessors_obj[i].set_script_instance(accessors[i]);
 	}
 
 	return true;
@@ -106,14 +105,20 @@ uint32_t DynamicQuery::access_count() const {
 	return component_ids.size();
 }
 
-Object *DynamicQuery::get_access(uint32_t p_index) {
+Object *DynamicQuery::get_access_gd(uint32_t p_index) {
 	ERR_FAIL_COND_V_MSG(is_valid() == false, nullptr, "The query is invalid.");
 	build();
 	return accessors_obj.ptr() + p_index;
 }
 
+DataAccessorScriptInstance<godex::Component> *DynamicQuery::get_access(uint32_t p_index) {
+	ERR_FAIL_COND_V_MSG(is_valid() == false, nullptr, "The query is invalid.");
+	build();
+	return accessors[p_index];
+}
+
 void DynamicQuery::begin_script(Object *p_world) {
-	World *world = godex::AccessResource::unwrap<World>(p_world);
+	World *world = godex::unwrap_resource<World>(p_world);
 	ERR_FAIL_COND_MSG(world == nullptr, "The given object is not a `World` `Resource`.");
 	begin(world);
 }
@@ -196,7 +201,7 @@ void DynamicQuery::next() {
 void DynamicQuery::end() {
 	// Clear any component reference.
 	for (uint32_t i = 0; i < component_ids.size(); i += 1) {
-		accessors[i].__target = nullptr;
+		accessors[i]->__target = nullptr;
 	}
 
 	world = nullptr;
@@ -240,10 +245,10 @@ void DynamicQuery::fetch() {
 
 	for (uint32_t i = 0; i < storages.size(); i += 1) {
 		if (required[i] || storages[i]->has(entity_id)) {
-			accessors[i].__target = storages[i]->get_ptr(entity_id);
+			accessors[i]->__target = storages[i]->get_ptr(entity_id);
 		} else {
 			// This data is not required and is not found.
-			accessors[i].__target = nullptr;
+			accessors[i]->__target = nullptr;
 		}
 	}
 }

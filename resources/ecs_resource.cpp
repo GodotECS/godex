@@ -41,20 +41,3 @@ Variant godex::Resource::get(const StringName &p_name) const {
 	get(p_name, r);
 	return r;
 }
-
-godex::AccessResource::AccessResource() {}
-
-bool godex::AccessResource::_setv(const StringName &p_name, const Variant &p_data) {
-	ERR_FAIL_COND_V_MSG(__resource == nullptr, false, "This Resource is not found.");
-	ERR_FAIL_COND_V_MSG(__mut == false, false, "This `Resource` was taken as not mutable.");
-	return __resource->set(p_name, p_data);
-}
-
-bool godex::AccessResource::_getv(const StringName &p_name, Variant &r_data) const {
-	ERR_FAIL_COND_V_MSG(__resource == nullptr, false, "This Resource is not found.");
-	return __resource->get(p_name, r_data);
-}
-
-bool godex::AccessResource::is_mutable() const {
-	return __mut;
-}

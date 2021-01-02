@@ -73,6 +73,8 @@ bool godex::DynamicSystemInfo::build() {
 		gdscript_function = script->get_member_functions()[for_each_name];
 	}
 
+	query.build();
+
 	// ~~ Init the script accessors. ~~
 	{
 		access.resize(resource_element_map.size() + query_element_map.size());
@@ -84,7 +86,15 @@ bool godex::DynamicSystemInfo::build() {
 
 		// Set the resource accessors.
 		for (uint32_t i = 0; i < resources.size(); i += 1) {
-			// Assign
+			// Set the mutability.
+			// Creating a new pointer because `set_script_instance` handles
+			// the pointer lifetime unfortunately so set an automatic memory
+			// pointer is not safe.
+			resource_accessors[i] = memnew(DataAccessorScriptInstance<Resource>);
+			resource_accessors[i]->__mut = resources[i].is_mutable;
+			resource_accessors_obj[i].set_script_instance(resource_accessors[i]);
+
+			// Assign the accessor.
 			access[resource_element_map[i]] = &resource_accessors_obj[i];
 			access_ptr[resource_element_map[i]] = &access[resource_element_map[i]];
 		}
@@ -92,20 +102,13 @@ bool godex::DynamicSystemInfo::build() {
 		// Init the component storage accessors.
 		// Map the query components, so the function can be called with the
 		// right parameter order.
-		//for (uint32_t c = 0; c < query.access_count(); c += 1) {
-		//	AccessComponent *ac = query.get_access(c);
-		//	if (ac->__component) {
-		//		access[p_info.query_element_map[c]] = ac;
-		//	} else {
-		//		// No component, just set null.
-		//		access[p_info.query_element_map[c]] = Variant::NIL;
-		//	}
-		//	access_ptr[p_info.query_element_map[c]] = &access[p_info.query_element_map[c]];
-		//}
-
-		//resource_access.reserve(p_info.resources.size());
-		//access.resize(p_info.resource_element_map.size() + p_info.query_element_map.size());
-		//access_ptr.resize(access.size());
+		// It's fine store the accessor pointers here because the query is
+		// stored together with the `DynamicSystemInfo`.
+		for (uint32_t c = 0; c < query.access_count(); c += 1) {
+			Object *ac = query.get_access_gd(c);
+			access[query_element_map[c]] = ac;
+			access_ptr[query_element_map[c]] = &access[query_element_map[c]];
+		}
 	}
 
 	return true;
@@ -177,36 +180,35 @@ void godex::DynamicSystemInfo::executor(World *p_world, DynamicSystemInfo &p_inf
 		ERR_FAIL_COND_MSG(p_info.query.is_valid() == false, "[FATAL] Please check the system " + ECS::get_system_name(p_info.system_id) + " _prepare because the generated query is invalid.");
 
 		// First extract the resources.
-		//for (uint32_t i = 0; i < p_info.resources.size(); i += 1) {
-		//	// Set the accessors pointers.
-		//	p_info.resource_accessors[i].__resource = p_world->get_resource(p_info.resources[i].resource_id);
-		//	p_info.resource_accessors[i].__mut = p_info.resources[i].is_mutable;
-		//}
+		for (uint32_t i = 0; i < p_info.resources.size(); i += 1) {
+			// Set the accessors pointers.
+			p_info.resource_accessors[i]->__target = p_world->get_resource(p_info.resources[i].resource_id);
+		}
 
 		p_info.query.begin(p_world);
-		//for (; p_info.query.is_done() == false; p_info.query.next()) {
-		//	Callable::CallError err;
-		//	// Call the script function.
-		//	if (p_info.gdscript_function) {
-		//		// Accelerated GDScript function access.
-		//		p_info.gdscript_function->call(
-		//				static_cast<GDScriptInstance *>(p_info.target_script),
-		//				const_cast<const Variant **>(access_ptr.ptr()),
-		//				access_ptr.size(),
-		//				err);
-		//	} else {
-		//		// Other script execution.
-		//		p_info.target_script->call(
-		//				for_each_name,
-		//				const_cast<const Variant **>(access_ptr.ptr()),
-		//				access_ptr.size(),
-		//				err);
-		//	}
-		//	if (err.error != Callable::CallError::CALL_OK) {
-		//		p_info.query.end();
-		//		ERR_FAIL_COND_MSG(err.error != Callable::CallError::CALL_OK, "System function execution error: " + itos(err.error) + " System name: " + ECS::get_system_name(p_info.system_id) + ". Please check the parameters.");
-		//	}
-		//}
+		for (; p_info.query.is_done() == false; p_info.query.next()) {
+			Callable::CallError err;
+			// Call the script function.
+			if (p_info.gdscript_function) {
+				// Accelerated GDScript function access.
+				p_info.gdscript_function->call(
+						static_cast<GDScriptInstance *>(p_info.target_script),
+						const_cast<const Variant **>(p_info.access_ptr.ptr()),
+						p_info.access_ptr.size(),
+						err);
+			} else {
+				// Other script execution.
+				p_info.target_script->call(
+						for_each_name,
+						const_cast<const Variant **>(p_info.access_ptr.ptr()),
+						p_info.access_ptr.size(),
+						err);
+			}
+			if (err.error != Callable::CallError::CALL_OK) {
+				p_info.query.end();
+				ERR_FAIL_COND_MSG(err.error != Callable::CallError::CALL_OK, "System function execution error: " + itos(err.error) + " System name: " + ECS::get_system_name(p_info.system_id) + ". Please check the parameters.");
+			}
+		}
 		p_info.query.end();
 	}
 }

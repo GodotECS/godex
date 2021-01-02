@@ -57,7 +57,7 @@ class DynamicSystemInfo {
 	LocalVector<Variant *> access_ptr;
 
 	// Accessors resource.
-	LocalVector<Object> resource_accessors;
+	LocalVector<DataAccessorScriptInstance<Resource> *> resource_accessors;
 	LocalVector<Object> resource_accessors_obj;
 
 	// ~~ Sub pipeline system ~~
