@@ -1163,7 +1163,7 @@ void EditorWorldECS::pipeline_panel_draw_batch(uint32_t p_start_system, uint32_t
 WorldECSEditorPlugin::WorldECSEditorPlugin(EditorNode *p_node) :
 		editor(p_node) {
 	ecs_editor = memnew(EditorWorldECS(p_node));
-	editor->get_viewport()->add_child(ecs_editor);
+	editor->get_main_control()->add_child(ecs_editor);
 	ecs_editor->hide_editor();
 }
 
