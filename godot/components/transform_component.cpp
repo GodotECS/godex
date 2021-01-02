@@ -30,5 +30,5 @@ bool TransformComponent::is_changed() const {
 }
 
 void TransformComponent::_bind_properties() {
-	add_property(PropertyInfo(Variant::TRANSFORM, "transform"), &TransformComponent::set_transform, &TransformComponent::get_transform);
+	ECS_BIND_PROPERTY(TransformComponent, PropertyInfo(Variant::TRANSFORM, "transform"), transform);
 }

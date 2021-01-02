@@ -5,8 +5,8 @@
 #include "core/os/os.h"
 
 void FrameTimeResource::_bind_properties() {
-	add_property(PropertyInfo(Variant::FLOAT, "delta"), &FrameTimeResource::set_delta, &FrameTimeResource::get_delta);
-	add_property(PropertyInfo(Variant::FLOAT, "physics_delta"), &FrameTimeResource::set_physics_delta, &FrameTimeResource::get_physics_delta);
+	ECS_BIND_PROPERTY(FrameTimeResource, PropertyInfo(Variant::FLOAT, "delta"), delta);
+	ECS_BIND_PROPERTY(FrameTimeResource, PropertyInfo(Variant::FLOAT, "physics_delta"), physics_delta);
 }
 
 FrameTimeResource::FrameTimeResource() {
