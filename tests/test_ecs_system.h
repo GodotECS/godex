@@ -206,8 +206,8 @@ void test_sub_pipeline_execute(World *p_world, Pipeline *p_pipeline) {
 	// Extract the info and forget about the databag, so the pipeline can
 	// access it safely.
 	{
-		const TestSystemSubPipeDatabag *res = p_world->get_databag<TestSystemSubPipeDatabag>();
-		exe_count = res->exe_count;
+		const TestSystemSubPipeDatabag *bag = p_world->get_databag<TestSystemSubPipeDatabag>();
+		exe_count = bag->exe_count;
 	}
 
 	for (uint32_t i = 0; i < exe_count; i += 1) {

@@ -660,14 +660,14 @@ void EditorWorldECS::pipeline_panel_update() {
 					// Draw immutable databags.
 					for (uint32_t u = 0; u < system_exec_info.immutable_databags.size(); u += 1) {
 						info_box->add_system_element(
-								String(ECS::get_databag_name(system_exec_info.immutable_databags[u])) + " [res]",
+								String(ECS::get_databag_name(system_exec_info.immutable_databags[u])) + " [databag]",
 								false);
 					}
 
 					// Draw immutable databags.
 					for (uint32_t u = 0; u < system_exec_info.mutable_databags.size(); u += 1) {
 						info_box->add_system_element(
-								String(ECS::get_databag_name(system_exec_info.mutable_databags[u])) + " [res]",
+								String(ECS::get_databag_name(system_exec_info.mutable_databags[u])) + " [databag]",
 								true);
 					}
 				}
