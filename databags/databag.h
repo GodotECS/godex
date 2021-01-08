@@ -57,12 +57,12 @@ public:
 
 template <class T>
 T *unwrap_databag(Object *p_access_databag) {
-	DataAccessorScriptInstance<Databag> *res = dynamic_cast<DataAccessorScriptInstance<Databag> *>(p_access_databag->get_script_instance());
-	if (unlikely(res == nullptr || res->__target == nullptr)) {
+	DataAccessorScriptInstance<Databag> *bag = dynamic_cast<DataAccessorScriptInstance<Databag> *>(p_access_databag->get_script_instance());
+	if (unlikely(bag == nullptr || bag->__target == nullptr)) {
 		return nullptr;
 	}
-	if (likely(res->__target->rid() == T::get_databag_id())) {
-		return static_cast<T *>(res->__target);
+	if (likely(bag->__target->rid() == T::get_databag_id())) {
+		return static_cast<T *>(bag->__target);
 	} else {
 		return nullptr;
 	}
@@ -70,12 +70,12 @@ T *unwrap_databag(Object *p_access_databag) {
 
 template <class T>
 const T *unwrap_databag(const Object *p_access_databag) {
-	const DataAccessorScriptInstance<Databag> *res = dynamic_cast<DataAccessorScriptInstance<Databag> *>(p_access_databag->get_script_instance());
-	if (unlikely(res == nullptr || res->__target == nullptr)) {
+	const DataAccessorScriptInstance<Databag> *bag = dynamic_cast<DataAccessorScriptInstance<Databag> *>(p_access_databag->get_script_instance());
+	if (unlikely(bag == nullptr || bag->__target == nullptr)) {
 		return nullptr;
 	}
-	if (likely(res->__target->rid() == T::get_databag_id())) {
-		return static_cast<const T *>(res->__target);
+	if (likely(bag->__target->rid() == T::get_databag_id())) {
+		return static_cast<const T *>(bag->__target);
 	} else {
 		return nullptr;
 	}
