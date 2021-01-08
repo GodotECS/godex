@@ -15,7 +15,7 @@ class Pipeline;
 class DynamicComponentInfo;
 
 namespace godex {
-class Resource;
+class Databag;
 class DynamicSystemInfo;
 } // namespace godex
 
@@ -28,10 +28,10 @@ struct ComponentInfo {
 	DynamicComponentInfo *dynamic_component_info = nullptr;
 };
 
-/// These functions are implemented by the `RESOURCE` macro and assigned during
+/// These functions are implemented by the `DATABAG` macro and assigned during
 /// component registration.
-struct ResourceInfo {
-	godex::Resource *(*create_resource)();
+struct DatabagInfo {
+	godex::Databag *(*create_databag)();
 };
 
 struct SystemInfo {
@@ -49,8 +49,8 @@ class ECS : public Object {
 	static LocalVector<StringName> components;
 	static LocalVector<ComponentInfo> components_info;
 
-	static LocalVector<StringName> resources;
-	static LocalVector<ResourceInfo> resources_info;
+	static LocalVector<StringName> databags;
+	static LocalVector<DatabagInfo> databags_info;
 
 	static LocalVector<StringName> systems;
 	static LocalVector<SystemInfo> systems_info;
@@ -58,7 +58,7 @@ class ECS : public Object {
 	World *active_world = nullptr;
 	Pipeline *active_world_pipeline = nullptr;
 	bool dispatching = false;
-	DataAccessorScriptInstance<godex::Resource> *world_accessor;
+	DataAccessorScriptInstance<godex::Databag> *world_accessor;
 	Object world_access;
 
 public:
@@ -78,16 +78,16 @@ public:
 	static const LocalVector<PropertyInfo> *get_component_properties(godex::component_id p_component_id);
 	static Variant get_component_property_default(godex::component_id p_component_id, StringName p_property_name);
 
-	// ~~ Resources ~~
+	// ~~ Databags ~~
 	template <class C>
-	static void register_resource();
+	static void register_databag();
 
-	static bool verify_resource_id(godex::resource_id p_id);
+	static bool verify_databag_id(godex::databag_id p_id);
 
-	static godex::Resource *create_resource(godex::resource_id p_id);
-	static uint32_t get_resource_count();
-	static godex::resource_id get_resource_id(const StringName &p_name);
-	static StringName get_resource_name(godex::resource_id p_resource_id);
+	static godex::Databag *create_databag(godex::databag_id p_id);
+	static uint32_t get_databag_count();
+	static godex::databag_id get_databag_id(const StringName &p_name);
+	static StringName get_databag_name(godex::databag_id p_databag_id);
 
 	// ~~ Systems ~~
 	static void register_system(func_get_system_exe_info p_func_get_exe_info, StringName p_name, String p_description = "");
@@ -165,15 +165,15 @@ public:
 		return verify_component_id(p_id);
 	}
 
-	godex::component_id get_resource_id_obj(StringName p_resource_name) const {
-		return get_resource_id(p_resource_name);
+	godex::databag_id get_databag_id_obj(StringName p_databag_name) const {
+		return get_databag_id(p_databag_name);
 	}
 
-	bool verify_resource_id_obj(godex::system_id p_id) const {
-		return verify_resource_id(p_id);
+	bool verify_databag_id_obj(godex::databag_id p_id) const {
+		return verify_databag_id(p_id);
 	}
 
-	godex::component_id get_system_id_obj(StringName p_system_name) const {
+	godex::system_id get_system_id_obj(StringName p_system_name) const {
 		return get_system_id(p_system_name);
 	}
 
@@ -203,13 +203,13 @@ void ECS::register_component() {
 }
 
 template <class R>
-void ECS::register_resource() {
-	ERR_FAIL_COND_MSG(R::get_resource_id() != UINT32_MAX, "This resource is already registered.");
+void ECS::register_databag() {
+	ERR_FAIL_COND_MSG(R::get_databag_id() != UINT32_MAX, "This databag is already registered.");
 
-	StringName resource_name = R::get_class_static();
-	R::resource_id = resources.size();
+	StringName databag_name = R::get_class_static();
+	R::databag_id = databags.size();
 	R::_bind_properties();
-	resources.push_back(resource_name);
-	resources_info.push_back(ResourceInfo{
-			R::create_resource_no_type });
+	databags.push_back(databag_name);
+	databags_info.push_back(DatabagInfo{
+			R::create_databag_no_type });
 }

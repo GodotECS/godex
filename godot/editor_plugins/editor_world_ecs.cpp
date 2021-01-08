@@ -395,7 +395,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 	{
 		add_script_window = memnew(ConfirmationDialog);
 		add_script_window->set_min_size(Size2i(500, 180));
-		add_script_window->set_title(TTR("Add script System / Component / Resource"));
+		add_script_window->set_title(TTR("Add script System / Component / Databag"));
 		add_script_window->set_hide_on_ok(false);
 		add_script_window->get_ok_button()->set_text(TTR("Create"));
 		add_script_window->connect("confirmed", callable_mp(this, &EditorWorldECS::add_script_do));
@@ -657,17 +657,17 @@ void EditorWorldECS::pipeline_panel_update() {
 								true);
 					}
 
-					// Draw immutable resources.
-					for (uint32_t u = 0; u < system_exec_info.immutable_resources.size(); u += 1) {
+					// Draw immutable databags.
+					for (uint32_t u = 0; u < system_exec_info.immutable_databags.size(); u += 1) {
 						info_box->add_system_element(
-								String(ECS::get_resource_name(system_exec_info.immutable_resources[u])) + " [res]",
+								String(ECS::get_databag_name(system_exec_info.immutable_databags[u])) + " [res]",
 								false);
 					}
 
-					// Draw immutable resources.
-					for (uint32_t u = 0; u < system_exec_info.mutable_resources.size(); u += 1) {
+					// Draw immutable databags.
+					for (uint32_t u = 0; u < system_exec_info.mutable_databags.size(); u += 1) {
 						info_box->add_system_element(
-								String(ECS::get_resource_name(system_exec_info.mutable_resources[u])) + " [res]",
+								String(ECS::get_databag_name(system_exec_info.mutable_databags[u])) + " [res]",
 								true);
 					}
 				}
@@ -885,10 +885,10 @@ void EditorWorldECS::add_script_do() {
 		err = System::validate_script(script);
 	} else if ("Component" == script->get_instance_base_type()) {
 		err = Component::validate_script(script);
-	} else if ("Resource" == script->get_instance_base_type()) {
-		err = resource_validate_script(script);
+	} else if ("Databag" == script->get_instance_base_type()) {
+		err = databag_validate_script(script);
 	} else {
-		err = TTR("The script must extend a `System` a `Component` or a `Resource`.");
+		err = TTR("The script must extend a `System` a `Component` or a `Databag`.");
 	}
 
 	if (err != "") {

@@ -68,8 +68,8 @@ public:
 };
 
 template <class T>
-T *unwrap_component(Object *p_access_resource) {
-	DataAccessorScriptInstance<Component> *comp = dynamic_cast<DataAccessorScriptInstance<Component> *>(p_access_resource->get_script_instance());
+T *unwrap_component(Object *p_access_databag) {
+	DataAccessorScriptInstance<Component> *comp = dynamic_cast<DataAccessorScriptInstance<Component> *>(p_access_databag->get_script_instance());
 	if (unlikely(comp == nullptr || comp->__target == nullptr)) {
 		return nullptr;
 	}
@@ -81,8 +81,8 @@ T *unwrap_component(Object *p_access_resource) {
 }
 
 template <class T>
-const T *unwrap_component(const Object *p_access_resource) {
-	const DataAccessorScriptInstance<Component> *comp = dynamic_cast<DataAccessorScriptInstance<Component> *>(p_access_resource->get_script_instance());
+const T *unwrap_component(const Object *p_access_databag) {
+	const DataAccessorScriptInstance<Component> *comp = dynamic_cast<DataAccessorScriptInstance<Component> *>(p_access_databag->get_script_instance());
 	if (unlikely(comp == nullptr || comp->__target == nullptr)) {
 		return nullptr;
 	}

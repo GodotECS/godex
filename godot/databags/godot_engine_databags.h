@@ -1,14 +1,14 @@
 #pragma once
 
-#include "../../resources/ecs_resource.h"
+#include "../../databags/databag.h"
 #include "main/main_timer_sync.h"
 
 class OS;
 class Engine;
 class MessageQueue;
 
-class FrameTimeResource : public godex::Resource {
-	RESOURCE(FrameTimeResource)
+class FrameTime : public godex::Databag {
+	DATABAG(FrameTime)
 
 	static void _bind_properties();
 
@@ -26,7 +26,7 @@ class FrameTimeResource : public godex::Resource {
 	real_t physics_delta = 1.0;
 
 public:
-	FrameTimeResource();
+	FrameTime();
 
 	void set_exit(bool p_exit);
 	bool get_exit() const;
@@ -41,43 +41,43 @@ public:
 	real_t get_physics_delta() const;
 };
 
-class OsResource : public godex::Resource {
-	RESOURCE(OsResource)
+class OsDatabag : public godex::Databag {
+	DATABAG(OsDatabag)
 
 	static void _bind_properties();
 
 	OS *os_singleton;
 
 public:
-	OsResource();
+	OsDatabag();
 
 	OS *get_os();
 	const OS *get_os() const;
 };
 
-class EngineResource : public godex::Resource {
-	RESOURCE(EngineResource)
+class EngineDatabag : public godex::Databag {
+	DATABAG(EngineDatabag)
 
 	static void _bind_properties();
 
 	Engine *engine_singleton;
 
 public:
-	EngineResource();
+	EngineDatabag();
 
 	Engine *get_engine();
 	const Engine *get_engine() const;
 };
 
-class MessageQueueResource : public godex::Resource {
-	RESOURCE(MessageQueueResource)
+class MessageQueueDatabag : public godex::Databag {
+	DATABAG(MessageQueueDatabag)
 
 	static void _bind_properties();
 
 	MessageQueue *message_queue;
 
 public:
-	MessageQueueResource();
+	MessageQueueDatabag();
 
 	MessageQueue *get_queue();
 	const MessageQueue *get_queue() const;

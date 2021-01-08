@@ -65,7 +65,7 @@ struct ScriptProperty {
 
 namespace godex {
 typedef uint32_t component_id;
-typedef uint32_t resource_id;
+typedef uint32_t databag_id;
 typedef uint32_t system_id;
 } // namespace godex
 

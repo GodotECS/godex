@@ -15,18 +15,18 @@ class TagTestComponent : public godex::Component {
 	COMPONENT(TagTestComponent, DenseVector)
 };
 
-class TestSystem1Resource : public godex::Resource {
-	RESOURCE(TestSystem1Resource)
+class TestSystem1Databag : public godex::Databag {
+	DATABAG(TestSystem1Databag)
 
 public:
 	int a = 10;
 };
 
-class TestSystemSubPipeResource : public godex::Resource {
-	RESOURCE(TestSystemSubPipeResource)
+class TestSystemSubPipeDatabag : public godex::Databag {
+	DATABAG(TestSystemSubPipeDatabag)
 
 	static void _bind_properties() {
-		ECS_BIND_PROPERTY(TestSystemSubPipeResource, PropertyInfo(Variant::INT, "exe_count"), exe_count);
+		ECS_BIND_PROPERTY(TestSystemSubPipeDatabag, PropertyInfo(Variant::INT, "exe_count"), exe_count);
 	}
 
 public:
@@ -51,11 +51,11 @@ void test_system_tag(Query<TransformComponent, const TagTestComponent> &p_query)
 	}
 }
 
-void test_system_with_resource(TestSystem1Resource *test_res, Query<TransformComponent, const TagTestComponent> &p_query) {
+void test_system_with_databag(TestSystem1Databag *test_res, Query<TransformComponent, const TagTestComponent> &p_query) {
 	test_res->a += 10;
 }
 
-void test_system_with_null_resource(TestSystem1Resource *test_res) {
+void test_system_with_null_databag(TestSystem1Databag *test_res) {
 	CRASH_COND(test_res != nullptr);
 }
 
@@ -203,10 +203,10 @@ void test_sub_pipeline_execute(World *p_world, Pipeline *p_pipeline) {
 	CRASH_COND_MSG(p_pipeline->is_ready() == false, "The pipeline is not supposed to be not ready at this point.");
 
 	uint32_t exe_count = 0;
-	// Extract the info and forget about the resource, so the pipeline can
+	// Extract the info and forget about the databag, so the pipeline can
 	// access it safely.
 	{
-		const TestSystemSubPipeResource *res = p_world->get_resource<TestSystemSubPipeResource>();
+		const TestSystemSubPipeDatabag *res = p_world->get_databag<TestSystemSubPipeDatabag>();
 		exe_count = res->exe_count;
 	}
 
@@ -224,7 +224,7 @@ void test_system_transform_add_x(Query<TransformComponent> &p_query) {
 }
 
 TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
-	ECS::register_resource<TestSystemSubPipeResource>();
+	ECS::register_databag<TestSystemSubPipeDatabag>();
 
 	// ~~ Sub pipeline ~~
 	Pipeline sub_pipeline;
@@ -235,7 +235,7 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 	godex::DynamicSystemInfo *sub_pipeline_system = ECS::get_dynamic_system_info(sub_pipeline_system_id);
 	sub_pipeline_system->set_target(test_sub_pipeline_execute);
 	// Used internally by the `test_sub_pipeline_execute`.
-	sub_pipeline_system->with_resource(TestSystemSubPipeResource::get_resource_id(), false);
+	sub_pipeline_system->with_databag(TestSystemSubPipeDatabag::get_databag_id(), false);
 	ECS::set_system_pipeline(sub_pipeline_system_id, &sub_pipeline);
 	sub_pipeline_system->build();
 
@@ -246,8 +246,8 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 
 	// ~~ Create world ~~
 	World world;
-	world.add_resource<TestSystemSubPipeResource>();
-	world.get_resource<TestSystemSubPipeResource>()->exe_count = 2;
+	world.add_databag<TestSystemSubPipeDatabag>();
+	world.get_databag<TestSystemSubPipeDatabag>()->exe_count = 2;
 
 	EntityID entity_1 = world
 								.create_entity()
@@ -267,7 +267,7 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 
 	{
 		// Now change the sub execution to 6
-		world.get_resource<TestSystemSubPipeResource>()->exe_count = 6;
+		world.get_databag<TestSystemSubPipeDatabag>()->exe_count = 6;
 
 		// Dispatch the main pipeline
 		main_pipeline.dispatch(&world);
@@ -278,22 +278,22 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 	}
 }
 
-TEST_CASE("[Modules][ECS] Test system and resource") {
-	ECS::register_resource<TestSystem1Resource>();
+TEST_CASE("[Modules][ECS] Test system and databag") {
+	ECS::register_databag<TestSystem1Databag>();
 
 	World world;
 
-	world.add_resource<TestSystem1Resource>();
+	world.add_databag<TestSystem1Databag>();
 
-	// Test with resource
+	// Test with databag
 	{
-		// Confirm the resource is initialized.
-		CHECK(world.get_resource<TestSystem1Resource>()->a == 10);
+		// Confirm the databag is initialized.
+		CHECK(world.get_databag<TestSystem1Databag>()->a == 10);
 
 		// Create the pipeline.
 		Pipeline pipeline;
 		// Add the system to the pipeline.
-		pipeline.add_system(test_system_with_resource);
+		pipeline.add_system(test_system_with_databag);
 		pipeline.build();
 
 		// Dispatch
@@ -301,20 +301,20 @@ TEST_CASE("[Modules][ECS] Test system and resource") {
 			pipeline.dispatch(&world);
 		}
 
-		CHECK(world.get_resource<TestSystem1Resource>()->a == 40);
+		CHECK(world.get_databag<TestSystem1Databag>()->a == 40);
 	}
 
-	// Test without resource
+	// Test without databag
 	{
-		world.remove_resource<TestSystem1Resource>();
+		world.remove_databag<TestSystem1Databag>();
 
-		// Confirm the resource doesn't exists.
-		CHECK(world.get_resource<TestSystem1Resource>() == nullptr);
+		// Confirm the databag doesn't exists.
+		CHECK(world.get_databag<TestSystem1Databag>() == nullptr);
 
 		// Create the pipeline.
 		Pipeline pipeline;
 		// Add the system to the pipeline.
-		pipeline.add_system(test_system_with_null_resource);
+		pipeline.add_system(test_system_with_null_databag);
 		pipeline.build();
 
 		// Dispatch
@@ -322,15 +322,15 @@ TEST_CASE("[Modules][ECS] Test system and resource") {
 			pipeline.dispatch(&world);
 		}
 
-		// Make sure the resource is still nullptr.
-		CHECK(world.get_resource<TestSystem1Resource>() == nullptr);
+		// Make sure the databag is still nullptr.
+		CHECK(world.get_databag<TestSystem1Databag>() == nullptr);
 	}
 }
 
-TEST_CASE("[Modules][ECS] Test system resource fetch with dynamic query.") {
+TEST_CASE("[Modules][ECS] Test system databag fetch with dynamic query.") {
 	World world;
-	world.add_resource<TestSystemSubPipeResource>();
-	world.get_resource<TestSystemSubPipeResource>()->exe_count = 20;
+	world.add_databag<TestSystemSubPipeDatabag>();
+	world.get_databag<TestSystemSubPipeDatabag>()->exe_count = 20;
 
 	world
 			.create_entity()
@@ -342,17 +342,17 @@ TEST_CASE("[Modules][ECS] Test system resource fetch with dynamic query.") {
 		String code;
 		code += "extends Object\n";
 		code += "\n";
-		code += "func _for_each(test_resource, transform_com):\n";
-		code += "	test_resource.exe_count = 10\n";
+		code += "func _for_each(test_databag, transform_com):\n";
+		code += "	test_databag.exe_count = 10\n";
 		code += "\n";
 
 		ERR_FAIL_COND(build_and_assign_script(&target_obj, code) == false);
 	}
 
 	// Build dynamic query.
-	const uint32_t system_id = ECS::register_dynamic_system("TestResourceDynamicSystem.gd");
+	const uint32_t system_id = ECS::register_dynamic_system("TestDatabagDynamicSystem.gd");
 	godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
-	dynamic_system_info->with_resource(TestSystemSubPipeResource::get_resource_id(), true);
+	dynamic_system_info->with_databag(TestSystemSubPipeDatabag::get_databag_id(), true);
 	dynamic_system_info->with_component(TransformComponent::get_component_id(), false);
 	dynamic_system_info->set_target(target_obj.get_script_instance());
 	dynamic_system_info->build();
@@ -367,7 +367,7 @@ TEST_CASE("[Modules][ECS] Test system resource fetch with dynamic query.") {
 	pipeline.dispatch(&world);
 
 	// Make sure the `exe_count` is changed to 10 by the script.
-	CHECK(world.get_resource<TestSystemSubPipeResource>()->exe_count == 10);
+	CHECK(world.get_databag<TestSystemSubPipeDatabag>()->exe_count == 10);
 }
 
 TEST_CASE("[Modules][ECS] Test WorldECSCommands from dynamic query.") {
@@ -394,7 +394,7 @@ TEST_CASE("[Modules][ECS] Test WorldECSCommands from dynamic query.") {
 	// Build dynamic query.
 	const uint32_t system_id = ECS::register_dynamic_system("TestSpawnDynamicSystem.gd");
 	godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
-	dynamic_system_info->with_resource(World::get_resource_id(), true);
+	dynamic_system_info->with_databag(World::get_databag_id(), true);
 	dynamic_system_info->with_component(TransformComponent::get_component_id(), false);
 	dynamic_system_info->set_target(target_obj.get_script_instance());
 	dynamic_system_info->build();

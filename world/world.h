@@ -4,8 +4,8 @@
 	@author AndreaCatania
 */
 
+#include "../databags/databag.h"
 #include "../ecs_types.h"
-#include "../resources/ecs_resource.h"
 #include "../storages/storage.h"
 #include "core/string/string_name.h"
 #include "core/templates/local_vector.h"
@@ -14,7 +14,7 @@ class Storage;
 class World;
 
 namespace godex {
-class Resource;
+class Databag;
 }
 
 /// Utility that can be used to create an entity with components.
@@ -52,14 +52,14 @@ public:
 // TODO make this under godex namespace.
 
 // TODO [!important!]
-// TODO when access this Resource mutably the system always have to run in
+// TODO when access this Databag mutably the system always have to run in
 // TODO single thread. This is a special condition.
 // TODO [!important!]
-class World : public godex::Resource {
-	RESOURCE(World)
+class World : public godex::Databag {
+	DATABAG(World)
 
 	LocalVector<Storage *> storages;
-	LocalVector<godex::Resource *> resources;
+	LocalVector<godex::Databag *> databags;
 	uint32_t entity_count = 0;
 	EntityBuilder entity_builder = EntityBuilder(this);
 
@@ -133,30 +133,30 @@ public:
 	template <class C>
 	TypedStorage<C> *get_storage();
 
-	/// Adds a new resource or does nothing.
+	/// Adds a new databag or does nothing.
 	template <class R>
-	R &add_resource();
+	R &add_databag();
 
-	void add_resource(godex::resource_id p_id);
+	void add_databag(godex::databag_id p_id);
 
 	template <class R>
-	void remove_resource();
+	void remove_databag();
 
-	void remove_resource(godex::resource_id p_id);
+	void remove_databag(godex::databag_id p_id);
 
-	/// Retuns a resource pointer.
+	/// Retuns a databag pointer.
 	template <class R>
-	R *get_resource();
+	R *get_databag();
 
-	/// Retuns a resource pointer.
+	/// Retuns a databag pointer.
 	template <class R>
-	const R *get_resource() const;
+	const R *get_databag() const;
 
-	/// Retuns a resource pointer.
-	godex::Resource *get_resource(godex::resource_id p_id);
+	/// Retuns a databag pointer.
+	godex::Databag *get_databag(godex::databag_id p_id);
 
-	/// Retuns a resource pointer.
-	const godex::Resource *get_resource(godex::resource_id p_id) const;
+	/// Retuns a databag pointer.
+	const godex::Databag *get_databag(godex::databag_id p_id) const;
 
 private:
 	/// Creates a new component storage into the world, if the storage
@@ -213,20 +213,20 @@ TypedStorage<C> *World::get_storage() {
 }
 
 template <class R>
-R &World::add_resource() {
-	const godex::resource_id id = R::get_resource_id();
+R &World::add_databag() {
+	const godex::databag_id id = R::get_databag_id();
 
-	add_resource(id);
+	add_databag(id);
 	// This function is never supposed to fail.
-	CRASH_COND_MSG(resources[id] == nullptr, "The function `add_resource` is not supposed to fail, is this resource registered?");
+	CRASH_COND_MSG(databags[id] == nullptr, "The function `add_databag` is not supposed to fail, is this databag registered?");
 
-	return *static_cast<R *>(resources[id]);
+	return *static_cast<R *>(databags[id]);
 }
 
 template <class R>
-void World::remove_resource() {
-	const godex::resource_id id = R::get_resource_id();
-	remove_resource(id);
+void World::remove_databag() {
+	const godex::databag_id id = R::get_databag_id();
+	remove_databag(id);
 }
 
 template <class C>
@@ -240,9 +240,9 @@ void World::destroy_storage() {
 }
 
 template <class R>
-R *World::get_resource() {
-	const godex::resource_id id = R::get_resource_id();
-	godex::Resource *r = get_resource(id);
+R *World::get_databag() {
+	const godex::databag_id id = R::get_databag_id();
+	godex::Databag *r = get_databag(id);
 
 	if (unlikely(r == nullptr)) {
 		return nullptr;
@@ -252,9 +252,9 @@ R *World::get_resource() {
 }
 
 template <class R>
-const R *World::get_resource() const {
-	const godex::resource_id id = R::get_resource_id();
-	const godex::Resource *r = get_resource(id);
+const R *World::get_databag() const {
+	const godex::databag_id id = R::get_databag_id();
+	const godex::Databag *r = get_databag(id);
 
 	if (unlikely(r == nullptr)) {
 		return nullptr;

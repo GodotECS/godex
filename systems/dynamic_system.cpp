@@ -19,18 +19,18 @@ void godex::DynamicSystemInfo::set_target(ScriptInstance *p_target) {
 	target_sub_pipeline = nullptr;
 }
 
-void godex::DynamicSystemInfo::with_resource(uint32_t p_resource_id, bool p_mutable) {
+void godex::DynamicSystemInfo::with_databag(uint32_t p_databag_id, bool p_mutable) {
 	CRASH_COND_MSG(compiled, "The query can't be composed, when the system is already been compiled.");
 
-	const uint32_t index = resource_element_map.size() + query_element_map.size();
-	resource_element_map.push_back(index);
-	resources.push_back({ p_resource_id, p_mutable });
+	const uint32_t index = databag_element_map.size() + query_element_map.size();
+	databag_element_map.push_back(index);
+	databags.push_back({ p_databag_id, p_mutable });
 }
 
 void godex::DynamicSystemInfo::with_component(uint32_t p_component_id, bool p_mutable) {
 	CRASH_COND_MSG(compiled, "The query can't be composed, when the system is already been compiled.");
 
-	const uint32_t index = resource_element_map.size() + query_element_map.size();
+	const uint32_t index = databag_element_map.size() + query_element_map.size();
 	query_element_map.push_back(index);
 	query.with_component(p_component_id, p_mutable);
 }
@@ -38,7 +38,7 @@ void godex::DynamicSystemInfo::with_component(uint32_t p_component_id, bool p_mu
 void godex::DynamicSystemInfo::maybe_component(uint32_t p_component_id, bool p_mutable) {
 	CRASH_COND_MSG(compiled, "The query can't be composed, when the system is already been compiled.");
 
-	const uint32_t index = resource_element_map.size() + query_element_map.size();
+	const uint32_t index = databag_element_map.size() + query_element_map.size();
 	query_element_map.push_back(index);
 	query.maybe_component(p_component_id, p_mutable);
 }
@@ -77,26 +77,26 @@ bool godex::DynamicSystemInfo::build() {
 
 	// ~~ Init the script accessors. ~~
 	{
-		access.resize(resource_element_map.size() + query_element_map.size());
+		access.resize(databag_element_map.size() + query_element_map.size());
 		access_ptr.resize(access.size());
 
-		// Init the resource accessors.
-		resource_accessors.resize(resources.size());
-		resource_accessors_obj.resize(resources.size());
+		// Init the databag accessors.
+		databag_accessors.resize(databags.size());
+		databag_accessors_obj.resize(databags.size());
 
-		// Set the resource accessors.
-		for (uint32_t i = 0; i < resources.size(); i += 1) {
+		// Set the databag accessors.
+		for (uint32_t i = 0; i < databags.size(); i += 1) {
 			// Set the mutability.
 			// Creating a new pointer because `set_script_instance` handles
 			// the pointer lifetime unfortunately so set an automatic memory
 			// pointer is not safe.
-			resource_accessors[i] = memnew(DataAccessorScriptInstance<Resource>);
-			resource_accessors[i]->__mut = resources[i].is_mutable;
-			resource_accessors_obj[i].set_script_instance(resource_accessors[i]);
+			databag_accessors[i] = memnew(DataAccessorScriptInstance<Databag>);
+			databag_accessors[i]->__mut = databags[i].is_mutable;
+			databag_accessors_obj[i].set_script_instance(databag_accessors[i]);
 
 			// Assign the accessor.
-			access[resource_element_map[i]] = &resource_accessors_obj[i];
-			access_ptr[resource_element_map[i]] = &access[resource_element_map[i]];
+			access[databag_element_map[i]] = &databag_accessors_obj[i];
+			access_ptr[databag_element_map[i]] = &access[databag_element_map[i]];
 		}
 
 		// Init the component storage accessors.
@@ -145,12 +145,12 @@ void godex::DynamicSystemInfo::get_info(DynamicSystemInfo &p_info, func_system_e
 		ERR_FAIL_COND(p_info.query.is_valid() == false);
 	}
 
-	// Set the resources dependencies.
-	for (uint32_t i = 0; i < p_info.resources.size(); i += 1) {
-		if (p_info.resources[i].is_mutable) {
-			r_out.mutable_resources.push_back(p_info.resources[i].resource_id);
+	// Set the databags dependencies.
+	for (uint32_t i = 0; i < p_info.databags.size(); i += 1) {
+		if (p_info.databags[i].is_mutable) {
+			r_out.mutable_databags.push_back(p_info.databags[i].databag_id);
 		} else {
-			r_out.immutable_resources.push_back(p_info.resources[i].resource_id);
+			r_out.immutable_databags.push_back(p_info.databags[i].databag_id);
 		}
 	}
 
@@ -179,10 +179,10 @@ void godex::DynamicSystemInfo::executor(World *p_world, DynamicSystemInfo &p_inf
 		ERR_FAIL_COND_MSG(p_info.target_script == nullptr, "[FATAL] This system doesn't have target assigned.");
 		ERR_FAIL_COND_MSG(p_info.query.is_valid() == false, "[FATAL] Please check the system " + ECS::get_system_name(p_info.system_id) + " _prepare because the generated query is invalid.");
 
-		// First extract the resources.
-		for (uint32_t i = 0; i < p_info.resources.size(); i += 1) {
+		// First extract the databags.
+		for (uint32_t i = 0; i < p_info.databags.size(); i += 1) {
 			// Set the accessors pointers.
-			p_info.resource_accessors[i]->__target = p_world->get_resource(p_info.resources[i].resource_id);
+			p_info.databag_accessors[i]->__target = p_world->get_databag(p_info.databags[i].databag_id);
 		}
 
 		p_info.query.begin(p_world);

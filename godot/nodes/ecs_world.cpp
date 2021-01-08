@@ -74,7 +74,7 @@ void PipelineECS::remove_system(const StringName &p_system_name) {
 	_change_notify("systems_name");
 }
 
-void PipelineECS::fetch_used_resources(Set<godex::component_id> &r_resources) const {
+void PipelineECS::fetch_used_databags(Set<godex::component_id> &r_databags) const {
 	for (int i = 0; i < systems_name.size(); i += 1) {
 		const StringName system_name = systems_name[i];
 		const godex::system_id id = ECS::get_system_id(system_name);
@@ -82,11 +82,11 @@ void PipelineECS::fetch_used_resources(Set<godex::component_id> &r_resources) co
 		SystemExeInfo info;
 		ECS::get_system_exe_info(id, info);
 
-		for (uint32_t r = 0; r < info.immutable_resources.size(); r += 1) {
-			r_resources.insert(info.immutable_resources[r]);
+		for (uint32_t r = 0; r < info.immutable_databags.size(); r += 1) {
+			r_databags.insert(info.immutable_databags[r]);
 		}
-		for (uint32_t r = 0; r < info.mutable_resources.size(); r += 1) {
-			r_resources.insert(info.mutable_resources[r]);
+		for (uint32_t r = 0; r < info.mutable_databags.size(); r += 1) {
+			r_databags.insert(info.mutable_databags[r]);
 		}
 	}
 }
@@ -190,7 +190,7 @@ void WorldECS::_get_property_list(List<PropertyInfo> *p_list) const {
 void WorldECS::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_READY:
-			// Make sure to register all scripted components/resources/systems
+			// Make sure to register all scripted components/databags/systems
 			// at this point.
 			ScriptECS::register_runtime_scripts();
 
@@ -324,19 +324,19 @@ void WorldECS::active_world() {
 		// Set as active world.
 		ECS::get_singleton()->set_active_world(world);
 
-		// Make sure all the resources are loaded.
+		// Make sure all the databags are loaded.
 		{
-			Set<godex::component_id> resource_ids;
+			Set<godex::component_id> databag_ids;
 
 			for (int i = 0; i < pipelines.size(); i += 1) {
 				if (pipelines[i].is_null()) {
 					continue;
 				}
-				pipelines[i]->fetch_used_resources(resource_ids);
+				pipelines[i]->fetch_used_databags(databag_ids);
 			}
 
-			for (Set<godex::component_id>::Element *e = resource_ids.front(); e != nullptr; e = e->next()) {
-				world->add_resource(e->get());
+			for (Set<godex::component_id>::Element *e = databag_ids.front(); e != nullptr; e = e->next()) {
+				world->add_databag(e->get());
 			}
 		}
 
@@ -401,34 +401,34 @@ void WorldECSCommands::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_entity_component", "world", "entity_id", "component_name"), &WorldECSCommands::get_entity_component);
 	ClassDB::bind_method(D_METHOD("get_entity_component_by_id", "world", "entity_id", "component_id"), &WorldECSCommands::get_entity_component_by_id);
 
-	ClassDB::bind_method(D_METHOD("get_resource", "world", "resource_name"), &WorldECSCommands::get_resource);
-	ClassDB::bind_method(D_METHOD("get_resource_by_id", "world", "resource_name"), &WorldECSCommands::get_resource_by_id);
+	ClassDB::bind_method(D_METHOD("get_databag", "world", "databag_name"), &WorldECSCommands::get_databag);
+	ClassDB::bind_method(D_METHOD("get_databag_by_id", "world", "databag_name"), &WorldECSCommands::get_databag_by_id);
 }
 
 WorldECSCommands::WorldECSCommands() {
 	component_accessor = memnew(DataAccessorScriptInstance<godex::Component>);
 	access_component_obj.set_script_instance(component_accessor);
-	resource_accessor = memnew(DataAccessorScriptInstance<godex::Resource>);
-	access_resource_obj.set_script_instance(resource_accessor);
+	databag_accessor = memnew(DataAccessorScriptInstance<godex::Databag>);
+	access_databag_obj.set_script_instance(databag_accessor);
 }
 
 uint32_t WorldECSCommands::create_entity(Object *p_world) {
-	World *world = godex::unwrap_resource<World>(p_world);
-	ERR_FAIL_COND_V_MSG(world == nullptr, UINT32_MAX, "The passed variable is not a `Resource` of type `World`.");
+	World *world = godex::unwrap_databag<World>(p_world);
+	ERR_FAIL_COND_V_MSG(world == nullptr, UINT32_MAX, "The passed variable is not a `Databag` of type `World`.");
 	return world->create_entity_index();
 }
 
 void WorldECSCommands::destroy_entity(Object *p_world, uint32_t p_entity_id) {
-	World *world = godex::unwrap_resource<World>(p_world);
-	ERR_FAIL_COND_MSG(world == nullptr, "The passed variable is not a `Resource` of type `World`.");
+	World *world = godex::unwrap_databag<World>(p_world);
+	ERR_FAIL_COND_MSG(world == nullptr, "The passed variable is not a `Databag` of type `World`.");
 	return world->destroy_entity(p_entity_id);
 }
 
 uint32_t WorldECSCommands::create_entity_from_prefab(Object *p_world, Object *p_entity) {
 	const Entity *entity = cast_to<Entity>(p_entity);
 	ERR_FAIL_COND_V_MSG(entity == nullptr, UINT32_MAX, "The passed object is not an `Entity` `Node`.");
-	World *world = godex::unwrap_resource<World>(p_world);
-	ERR_FAIL_COND_V_MSG(world == nullptr, UINT32_MAX, "The passed variable is not a `Resource` of type `World`.");
+	World *world = godex::unwrap_databag<World>(p_world);
+	ERR_FAIL_COND_V_MSG(world == nullptr, UINT32_MAX, "The passed variable is not a `Databag` of type `World`.");
 
 	return entity->_create_entity(world);
 }
@@ -438,8 +438,8 @@ void WorldECSCommands::add_component(Object *p_world, uint32_t entity_id, const 
 }
 
 void WorldECSCommands::add_component_by_id(Object *p_world, uint32_t entity_id, uint32_t p_component_id, const Dictionary &p_data) {
-	World *world = godex::unwrap_resource<World>(p_world);
-	ERR_FAIL_COND_MSG(world == nullptr, "The passed variable is not a `Resource` of type `World`.");
+	World *world = godex::unwrap_databag<World>(p_world);
+	ERR_FAIL_COND_MSG(world == nullptr, "The passed variable is not a `Databag` of type `World`.");
 	ERR_FAIL_COND_MSG(ECS::verify_component_id(p_component_id) == false, "The passed component is not valid.");
 	world->add_component(entity_id, p_component_id, p_data);
 }
@@ -449,8 +449,8 @@ void WorldECSCommands::remove_component(Object *p_world, uint32_t entity_id, con
 }
 
 void WorldECSCommands::remove_component_by_id(Object *p_world, uint32_t entity_id, uint32_t p_component_id) {
-	World *world = godex::unwrap_resource<World>(p_world);
-	ERR_FAIL_COND_MSG(world == nullptr, "The passed variable is not a `Resource` of type `World`.");
+	World *world = godex::unwrap_databag<World>(p_world);
+	ERR_FAIL_COND_MSG(world == nullptr, "The passed variable is not a `Databag` of type `World`.");
 	ERR_FAIL_COND_MSG(ECS::verify_component_id(p_component_id) == false, "The passed component is not valid.");
 	world->remove_component(entity_id, p_component_id);
 }
@@ -462,8 +462,8 @@ Object *WorldECSCommands::get_entity_component(Object *p_world, uint32_t entity_
 Object *WorldECSCommands::get_entity_component_by_id(Object *p_world, uint32_t entity_id, uint32_t p_component_id) {
 	component_accessor->__target = nullptr;
 
-	World *world = godex::unwrap_resource<World>(p_world);
-	ERR_FAIL_COND_V_MSG(world == nullptr, &access_component_obj, "The passed variable is not a `Resource` of type `World`.");
+	World *world = godex::unwrap_databag<World>(p_world);
+	ERR_FAIL_COND_V_MSG(world == nullptr, &access_component_obj, "The passed variable is not a `Databag` of type `World`.");
 	ERR_FAIL_COND_V_MSG(ECS::verify_component_id(p_component_id) == false, &access_component_obj, "The passed component_name is not valid.");
 
 	component_accessor->__target = world->get_storage(p_component_id)->get_ptr(entity_id);
@@ -472,19 +472,19 @@ Object *WorldECSCommands::get_entity_component_by_id(Object *p_world, uint32_t e
 	return &access_component_obj;
 }
 
-Object *WorldECSCommands::get_resource(Object *p_world, const StringName &p_resource_name) {
-	return get_resource_by_id(p_world, ECS::get_resource_id(p_resource_name));
+Object *WorldECSCommands::get_databag(Object *p_world, const StringName &p_databag_name) {
+	return get_databag_by_id(p_world, ECS::get_databag_id(p_databag_name));
 }
 
-Object *WorldECSCommands::get_resource_by_id(Object *p_world, uint32_t p_resource_id) {
-	resource_accessor->__target = nullptr;
+Object *WorldECSCommands::get_databag_by_id(Object *p_world, uint32_t p_databag_id) {
+	databag_accessor->__target = nullptr;
 
-	World *world = godex::unwrap_resource<World>(p_world);
-	ERR_FAIL_COND_V_MSG(world == nullptr, &access_resource_obj, "The passed variable is not a `Resource` of type `World`.");
-	ERR_FAIL_COND_V_MSG(ECS::verify_resource_id(p_resource_id) == false, &access_resource_obj, "The passed `resource_name` is not valid.");
+	World *world = godex::unwrap_databag<World>(p_world);
+	ERR_FAIL_COND_V_MSG(world == nullptr, &access_databag_obj, "The passed variable is not a `Databag` of type `World`.");
+	ERR_FAIL_COND_V_MSG(ECS::verify_databag_id(p_databag_id) == false, &access_databag_obj, "The passed `databag_name` is not valid.");
 
-	resource_accessor->__target = world->get_resource(p_resource_id);
-	resource_accessor->__mut = true;
+	databag_accessor->__target = world->get_databag(p_databag_id);
+	databag_accessor->__mut = true;
 
-	return &access_resource_obj;
+	return &access_databag_obj;
 }

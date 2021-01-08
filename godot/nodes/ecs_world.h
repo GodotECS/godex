@@ -58,7 +58,7 @@ public:
 
 	void remove_system(const StringName &p_system_name);
 
-	void fetch_used_resources(Set<godex::component_id> &r_resources) const;
+	void fetch_used_databags(Set<godex::component_id> &r_databags) const;
 
 	/// Builds the pipeline and returns it. The associated world is used to
 	/// fetch the pipeline in case a `SystemDispatcher` is used.
@@ -66,7 +66,7 @@ public:
 };
 
 /// The `WorldECS` class holds the `World` information that is where all the
-/// component storages and the resource storages are stored.
+/// component storages and the databag storages are stored.
 ///
 /// The `WorldECS` can have many `PipelineECS`, but only one can be active.
 /// Pipeline switch can be done only before the pipeline is dispatched TODO explain better how.
@@ -143,9 +143,9 @@ protected:
 	static void _bind_methods();
 
 	Object access_component_obj;
-	Object access_resource_obj;
+	Object access_databag_obj;
 	DataAccessorScriptInstance<godex::Component> *component_accessor;
-	DataAccessorScriptInstance<godex::Resource> *resource_accessor;
+	DataAccessorScriptInstance<godex::Databag> *databag_accessor;
 
 public:
 	WorldECSCommands();
@@ -167,8 +167,8 @@ public:
 	Object *get_entity_component(Object *p_world, uint32_t entity_id, const StringName &p_component_name);
 	Object *get_entity_component_by_id(Object *p_world, uint32_t entity_id, uint32_t p_component_id);
 
-	/// Returns the resource or null if not present in the world.
+	/// Returns the databag or null if not present in the world.
 	/// The returned object lifetime is short, never store it.
-	Object *get_resource(Object *p_world, const StringName &p_resource_name);
-	Object *get_resource_by_id(Object *p_world, uint32_t p_resource_id);
+	Object *get_databag(Object *p_world, const StringName &p_databag_name);
+	Object *get_databag_by_id(Object *p_world, uint32_t p_databag_id);
 };

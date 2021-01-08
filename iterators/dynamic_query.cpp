@@ -118,8 +118,8 @@ DataAccessorScriptInstance<godex::Component> *DynamicQuery::get_access(uint32_t 
 }
 
 void DynamicQuery::begin_script(Object *p_world) {
-	World *world = godex::unwrap_resource<World>(p_world);
-	ERR_FAIL_COND_MSG(world == nullptr, "The given object is not a `World` `Resource`.");
+	World *world = godex::unwrap_databag<World>(p_world);
+	ERR_FAIL_COND_MSG(world == nullptr, "The given object is not a `World` `Databag`.");
 	begin(world);
 }
 

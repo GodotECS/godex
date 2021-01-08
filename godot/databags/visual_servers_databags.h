@@ -1,23 +1,23 @@
 #pragma once
 
-#include "../../resources/ecs_resource.h"
+#include "../../databags/databag.h"
 
 #include "servers/rendering_server.h"
 
-class RenderingServerResource : public godex::Resource {
-	RESOURCE(RenderingServerResource)
+class RenderingServerDatabag : public godex::Databag {
+	DATABAG(RenderingServerDatabag)
 
 	RenderingServer *rs = nullptr;
 
 public:
-	RenderingServerResource();
+	RenderingServerDatabag();
 
 	const RenderingServer *get_rs() const;
 	RenderingServer *get_rs();
 };
 
-class RenderingScenarioResource : public godex::Resource {
-	RESOURCE(RenderingScenarioResource)
+class RenderingScenarioDatabag : public godex::Databag {
+	DATABAG(RenderingScenarioDatabag)
 
 	// TODO Probably this should be an array to support more scenarios.
 	RID scenario;

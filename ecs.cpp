@@ -11,8 +11,8 @@
 ECS *ECS::singleton = nullptr;
 LocalVector<StringName> ECS::components;
 LocalVector<ComponentInfo> ECS::components_info;
-LocalVector<StringName> ECS::resources;
-LocalVector<ResourceInfo> ECS::resources_info;
+LocalVector<StringName> ECS::databags;
+LocalVector<DatabagInfo> ECS::databags_info;
 LocalVector<StringName> ECS::systems;
 LocalVector<SystemInfo> ECS::systems_info;
 
@@ -22,8 +22,8 @@ void ECS::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_component_id", "name"), &ECS::get_component_id_obj);
 	ClassDB::bind_method(D_METHOD("verify_component_id", "name"), &ECS::verify_component_id_obj);
 
-	ClassDB::bind_method(D_METHOD("get_resource_id", "name"), &ECS::get_resource_id_obj);
-	ClassDB::bind_method(D_METHOD("verify_resource_id", "name"), &ECS::verify_resource_id_obj);
+	ClassDB::bind_method(D_METHOD("get_databag_id", "name"), &ECS::get_databag_id_obj);
+	ClassDB::bind_method(D_METHOD("verify_databag_id", "name"), &ECS::verify_databag_id_obj);
 
 	ClassDB::bind_method(D_METHOD("get_system_id", "name"), &ECS::get_system_id_obj);
 	ClassDB::bind_method(D_METHOD("verify_system_id", "name"), &ECS::verify_system_id_obj);
@@ -41,7 +41,7 @@ ECS::ECS() :
 	}
 
 	// Don't need to destroy this, the `Object` does it (unfortunately).
-	world_accessor = memnew(DataAccessorScriptInstance<godex::Resource>);
+	world_accessor = memnew(DataAccessorScriptInstance<godex::Databag>);
 	world_accessor->__mut = true;
 	world_access.set_script_instance(world_accessor);
 }
@@ -85,30 +85,30 @@ Variant ECS::get_component_property_default(uint32_t p_component_id, StringName 
 	}
 }
 
-bool ECS::verify_resource_id(godex::resource_id p_id) {
-	return p_id < resources.size();
+bool ECS::verify_databag_id(godex::databag_id p_id) {
+	return p_id < databags.size();
 }
 
-godex::Resource *ECS::create_resource(godex::resource_id p_id) {
+godex::Databag *ECS::create_databag(godex::databag_id p_id) {
 #ifdef DEBUG_ENABLED
 	// Crash cond because this function is not supposed to fail in any way.
-	CRASH_COND_MSG(ECS::verify_resource_id(p_id) == false, "This resource id " + itos(p_id) + " is not valid.");
+	CRASH_COND_MSG(ECS::verify_databag_id(p_id) == false, "This databag id " + itos(p_id) + " is not valid.");
 #endif
-	return resources_info[p_id].create_resource();
+	return databags_info[p_id].create_databag();
 }
 
-uint32_t ECS::get_resource_count() {
-	return resources.size();
+uint32_t ECS::get_databag_count() {
+	return databags.size();
 }
 
-uint32_t ECS::get_resource_id(const StringName &p_name) {
-	const int64_t id = resources.find(p_name);
-	return id >= 0 ? godex::resource_id(id) : UINT32_MAX;
+uint32_t ECS::get_databag_id(const StringName &p_name) {
+	const int64_t id = databags.find(p_name);
+	return id >= 0 ? godex::databag_id(id) : UINT32_MAX;
 }
 
-StringName ECS::get_resource_name(godex::resource_id p_resource_id) {
-	ERR_FAIL_INDEX_V_MSG(p_resource_id, resources.size(), "", "The `resource_id` is invalid: " + itos(p_resource_id));
-	return resources[p_resource_id];
+StringName ECS::get_databag_name(godex::databag_id p_databag_id) {
+	ERR_FAIL_INDEX_V_MSG(p_databag_id, databags.size(), "", "The `databag_id` is invalid: " + itos(p_databag_id));
+	return databags[p_databag_id];
 }
 
 // Undefine the macro defined into `ecs.h` so we can define the method properly.
@@ -317,7 +317,7 @@ uint32_t ECS::register_script_component(StringName p_name, const LocalVector<Scr
 			case Variant::CALLABLE:
 				// TODO what about dictionary and arrays?
 				memdelete(info);
-				ERR_PRINT("The script component " + p_name + " is using a pointer variable. This is unsafe, so not supported. Please use a resource.");
+				ERR_PRINT("The script component " + p_name + " is using a pointer variable. This is unsafe, so not supported. Please use a databag.");
 				return UINT32_MAX;
 			default:
 				// Valid!
