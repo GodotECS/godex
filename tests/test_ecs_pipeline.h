@@ -7,15 +7,15 @@
 #include "../godot/components/transform_component.h"
 #include "../pipeline/pipeline.h"
 
-class PipelineTestResource1 : public godex::Resource {
-	RESOURCE(PipelineTestResource1)
+class PipelineTestDatabag1 : public godex::Databag {
+	DATABAG(PipelineTestDatabag1)
 
 public:
 	int a = 10;
 };
 
-class PipelineTestResource2 : public godex::Resource {
-	RESOURCE(PipelineTestResource2)
+class PipelineTestDatabag2 : public godex::Databag {
+	DATABAG(PipelineTestDatabag2)
 
 public:
 	int a = 10;
@@ -27,10 +27,10 @@ class PipelineTestComponent1 : public godex::Component {
 
 namespace godex_tests_pipeline {
 
-void system_with_resource(PipelineTestResource1 *test_res) {
+void system_with_databag(PipelineTestDatabag1 *test_res) {
 }
 
-void system_with_immutable_resource(const PipelineTestResource2 *test_res) {
+void system_with_immutable_databag(const PipelineTestDatabag2 *test_res) {
 }
 
 void system_with_component(Query<PipelineTestComponent1> &p_query) {
@@ -40,8 +40,8 @@ void system_with_immutable_component(Query<const TransformComponent> &p_query) {
 }
 
 TEST_CASE("[Modules][ECS] Test pipeline build.") {
-	ECS::register_resource<PipelineTestResource1>();
-	ECS::register_resource<PipelineTestResource2>();
+	ECS::register_databag<PipelineTestDatabag1>();
+	ECS::register_databag<PipelineTestDatabag2>();
 	ECS::register_component<PipelineTestComponent1>();
 
 	Pipeline pipeline;
@@ -49,7 +49,7 @@ TEST_CASE("[Modules][ECS] Test pipeline build.") {
 	// Make sure the pipeline is not yet ready.
 	CHECK(pipeline.is_ready() == false);
 
-	pipeline.add_system(system_with_resource);
+	pipeline.add_system(system_with_databag);
 
 	// Make sure the pipeline is not yet ready.
 	CHECK(pipeline.is_ready() == false);
@@ -68,11 +68,11 @@ TEST_CASE("[Modules][ECS] Test pipeline build.") {
 TEST_CASE("[Modules][ECS] Test pipeline get_systems_dependencies") {
 	Pipeline pipeline;
 
-	// Add system with MUTABLE `PipelineTestResource1` resource.
-	pipeline.add_system(system_with_resource);
+	// Add system with MUTABLE `PipelineTestDatabag1` databag.
+	pipeline.add_system(system_with_databag);
 
-	// Add system with IMMUTABLE `PipelineTestResource2` resource.
-	pipeline.add_system(system_with_immutable_resource);
+	// Add system with IMMUTABLE `PipelineTestDatabag2` databag.
+	pipeline.add_system(system_with_immutable_databag);
 
 	// Add system with MUTABLE `PipelineTestComponent1` component.
 	pipeline.add_system(system_with_component);
@@ -85,11 +85,11 @@ TEST_CASE("[Modules][ECS] Test pipeline get_systems_dependencies") {
 	SystemExeInfo info;
 	pipeline.get_systems_dependencies(info);
 
-	// Make sure a MUTABLE `PipelineTestResource1` resource is found.
-	CHECK(info.mutable_resources.find(PipelineTestResource1::get_resource_id()) != -1);
+	// Make sure a MUTABLE `PipelineTestDatabag1` databag is found.
+	CHECK(info.mutable_databags.find(PipelineTestDatabag1::get_databag_id()) != -1);
 
-	// Make sure an IMMUTABLE `PipelineTestResource2` resource is found.
-	CHECK(info.immutable_resources.find(PipelineTestResource2::get_resource_id()) != -1);
+	// Make sure an IMMUTABLE `PipelineTestDatabag2` databag is found.
+	CHECK(info.immutable_databags.find(PipelineTestDatabag2::get_databag_id()) != -1);
 
 	// Make sure an MUTABLE `PipelineTestComponent1` component is found.
 	CHECK(info.mutable_components.find(PipelineTestComponent1::get_component_id()) != -1);

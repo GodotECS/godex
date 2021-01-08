@@ -31,8 +31,8 @@ DynamicSystemInfo *get_dynamic_system_info(uint32_t p_dynamic_system_id);
 //      and sub pipeline executor are not held by the same class at the same time.
 class DynamicSystemInfo {
 	// ~~ Script system ~~
-	struct DResource {
-		uint32_t resource_id;
+	struct DDatabag {
+		uint32_t databag_id;
 		bool is_mutable;
 	};
 
@@ -45,20 +45,20 @@ class DynamicSystemInfo {
 
 	uint32_t system_id = UINT32_MAX;
 
-	/// Map used to map the list of Resources to the script.
-	LocalVector<uint32_t> resource_element_map;
+	/// Map used to map the list of Databags to the script.
+	LocalVector<uint32_t> databag_element_map;
 	/// Map used to map the list of Components to the script.
 	LocalVector<uint32_t> query_element_map;
-	LocalVector<DResource> resources;
+	LocalVector<DDatabag> databags;
 	DynamicQuery query;
 
 	// Accessors.
 	LocalVector<Variant> access;
 	LocalVector<Variant *> access_ptr;
 
-	// Accessors resource.
-	LocalVector<DataAccessorScriptInstance<Resource> *> resource_accessors;
-	LocalVector<Object> resource_accessors_obj;
+	// Accessors databag.
+	LocalVector<DataAccessorScriptInstance<Databag> *> databag_accessors;
+	LocalVector<Object> databag_accessors_obj;
 
 	// ~~ Sub pipeline system ~~
 	func_system_execute_pipeline sub_pipeline_execute = nullptr;
@@ -70,7 +70,7 @@ public:
 	void set_system_id(uint32_t p_id);
 	void set_target(ScriptInstance *p_target);
 
-	void with_resource(uint32_t p_resource_id, bool p_mutable);
+	void with_databag(uint32_t p_databag_id, bool p_mutable);
 	void with_component(uint32_t p_component_id, bool p_mutable);
 	void maybe_component(uint32_t p_component_id, bool p_mutable);
 	void without_component(uint32_t p_component_id);

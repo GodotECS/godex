@@ -8,7 +8,7 @@
 #include "core/object/script_language.h"
 
 void System::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("with_resource", "resource_name", "mutability"), &System::with_resource);
+	ClassDB::bind_method(D_METHOD("with_databag", "databag_name", "mutability"), &System::with_databag);
 	ClassDB::bind_method(D_METHOD("with_component", "component_name", "mutability"), &System::with_component);
 	ClassDB::bind_method(D_METHOD("maybe_component", "component_name", "mutability"), &System::maybe_component);
 	ClassDB::bind_method(D_METHOD("without_component", "component_name"), &System::without_component);
@@ -28,7 +28,7 @@ void System::prepare(godex::DynamicSystemInfo *p_info, godex::system_id p_id) {
 	ERR_FAIL_COND_MSG(p_info == nullptr, "[FATAL] This is not supposed to happen.");
 	ERR_FAIL_COND_MSG(get_script_instance() == nullptr, "[FATAL] This is not supposed to happen.");
 
-	// Set the components and resources
+	// Set the components and databags
 	id = p_id;
 	info = p_info;
 	Callable::CallError err;
@@ -50,10 +50,10 @@ System::~System() {
 	}
 }
 
-void System::with_resource(const StringName &p_resource, Mutability p_mutability) {
+void System::with_databag(const StringName &p_databag, Mutability p_mutability) {
 	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
-	const godex::resource_id id = ECS::get_resource_id(p_resource);
-	info->with_resource(id, p_mutability == MUTABLE);
+	const godex::databag_id id = ECS::get_databag_id(p_databag);
+	info->with_databag(id, p_mutability == MUTABLE);
 }
 
 void System::with_component(const StringName &p_component, Mutability p_mutability) {
@@ -91,7 +91,7 @@ String System::validate_script(Ref<Script> p_script) {
 	List<PropertyInfo> properties;
 	p_script->get_script_property_list(&properties);
 	if (properties.size()) {
-		return TTR("The System script can't have any property in it. It possible to only access `Component`s and `Resource`s.");
+		return TTR("The System script can't have any property in it. It possible to only access `Component`s and `Databag`s.");
 	}
 
 	// This script is safe to use.
@@ -166,7 +166,7 @@ String Component::validate_script(Ref<Script> p_script) {
 				return "(" + e->get().name + ") " + TTR("Please make sure all variables are typed.");
 			case Variant::RID:
 			case Variant::OBJECT:
-				return "(" + e->get().name + ") " + TTR("The Component can't hold unsafe references. The same reference could be holded by multiple things into the engine, this invalidates the thread safety of the ECS model. Please use a Resource or report your use case so a safe native type will be provided instead.");
+				return "(" + e->get().name + ") " + TTR("The Component can't hold unsafe references. The same reference could be holded by multiple things into the engine, this invalidates the thread safety of the ECS model. Please use a Databag or report your use case so a safe native type will be provided instead.");
 			case Variant::SIGNAL:
 			case Variant::CALLABLE:
 				return "(" + e->get().name + ") " + TTR("The Component can't hold signals or callables. Please report your use case.");
@@ -180,12 +180,12 @@ String Component::validate_script(Ref<Script> p_script) {
 	return "";
 }
 
-String resource_validate_script(Ref<Script> p_script) {
+String databag_validate_script(Ref<Script> p_script) {
 	ERR_FAIL_COND_V(p_script.is_null(), "Script is null.");
 	ERR_FAIL_COND_V(p_script->is_valid() == false, "Script has some errors.");
-	ERR_FAIL_COND_V("Resource" != p_script->get_instance_base_type(), "This script is not extending `Resource`.");
+	ERR_FAIL_COND_V("Databag" != p_script->get_instance_base_type(), "This script is not extending `Databag`.");
 
-	// TODO the resource are special. Make sure we can use as resource Objects,
+	// TODO the databag are special. Make sure we can use as databag Objects,
 	//      loaded files, anything. So we can easily use static things loaded from the disk.
 
 	// This script is safe to use.
@@ -276,7 +276,7 @@ void ScriptECS::register_runtime_scripts() {
 	ecs_initialized = true;
 
 	register_dynamic_components();
-	// TODO resources
+	// TODO databags
 	register_dynamic_systems();
 }
 

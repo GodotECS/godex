@@ -3,8 +3,8 @@
 
 #pragma once
 
+#include "../databags/databag.h"
 #include "../iterators/query.h"
-#include "../resources/ecs_resource.h"
 #include <type_traits>
 
 // TODO put all this into a CPP or a namespace?
@@ -28,11 +28,11 @@ void extract_info(bool_type<true>, SystemExeInfo &r_info) {
 
 template <class R>
 void extract_info(bool_type<false>, SystemExeInfo &r_info) {
-	// This is a resource.
+	// This is a databag.
 	if (std::is_const<R>()) {
-		r_info.immutable_resources.push_back(R::get_resource_id());
+		r_info.immutable_databags.push_back(R::get_databag_id());
 	} else {
-		r_info.mutable_resources.push_back(R::get_resource_id());
+		r_info.mutable_databags.push_back(R::get_databag_id());
 	}
 }
 
@@ -75,16 +75,16 @@ struct Container {
 };
 
 template <class C>
-Container<C> obtain_query_or_resource(bool_type<true>, World *p_world) {
+Container<C> obtain_query_or_databag(bool_type<true>, World *p_world) {
 	return Container<C>(C(p_world));
 }
 
 template <class C>
-Container<C *> obtain_query_or_resource(bool_type<false>, World *p_world) {
-	return Container<C *>(p_world->get_resource<C>());
+Container<C *> obtain_query_or_databag(bool_type<false>, World *p_world) {
+	return Container<C *>(p_world->get_databag<C>());
 }
 
-#define OBTAIN(name, T, world) auto name = obtain_query_or_resource<std::remove_reference_t<std::remove_pointer_t<T>>>(is_specialization<std::remove_reference_t<std::remove_pointer_t<T>>, Query>(), world);
+#define OBTAIN(name, T, world) auto name = obtain_query_or_databag<std::remove_reference_t<std::remove_pointer_t<T>>>(is_specialization<std::remove_reference_t<std::remove_pointer_t<T>>, Query>(), world);
 
 // ~~~~ system_exec_func definition ~~~~ //
 

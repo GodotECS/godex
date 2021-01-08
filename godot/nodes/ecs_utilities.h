@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../ecs.h"
-#include "core/io/resource.h"
+#include "core/io/resource.h" // TODO remove this or the one on the cpp?
 #include "core/templates/local_vector.h"
 #include "core/templates/oa_hash_map.h"
 
@@ -33,7 +33,7 @@ public:
 	System();
 	~System();
 
-	void with_resource(const StringName &p_resource_name, Mutability p_mutability);
+	void with_databag(const StringName &p_databag_name, Mutability p_mutability);
 	void with_component(const StringName &p_component_name, Mutability p_mutability);
 	void maybe_component(const StringName &p_component_name, Mutability p_mutability);
 	void without_component(const StringName &p_component_name);
@@ -74,9 +74,9 @@ public:
 	static String validate_script(Ref<Script> p_script);
 };
 
-String resource_validate_script(Ref<Script> p_script);
+String databag_validate_script(Ref<Script> p_script);
 
-/// Utility that allow to handle the godot scripted Component, Resources, Systems.
+/// Utility that allow to handle the godot scripted Component, Databags, Systems.
 class ScriptECS {
 	static bool component_loaded;
 	static bool ecs_initialized;

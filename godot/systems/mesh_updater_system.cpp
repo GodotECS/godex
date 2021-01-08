@@ -1,15 +1,15 @@
 #include "mesh_updater_system.h"
 
-#include "../resources/visual_servers_resource.h"
+#include "../databags/visual_servers_databags.h"
 #include "scene/main/scene_tree.h"
 #include "scene/main/window.h"
 
 void scenario_manager_system(
-		RenderingScenarioResource *p_scenario,
+		RenderingScenarioDatabag *p_scenario,
 		// Taking this just to make sure this is always performed in single
 		// thread, so I can access the `SceneTree` safely.
 		World *p_world) {
-	ERR_FAIL_COND_MSG(p_scenario == nullptr, "The `RenderingScenarioResource` `Resource` is not part of this world. Add it please.");
+	ERR_FAIL_COND_MSG(p_scenario == nullptr, "The `RenderingScenarioDatabag` `Databag` is not part of this world. Add it please.");
 
 	// Assume everything is up to date.
 	p_scenario->set_changed(false);
@@ -27,11 +27,11 @@ void scenario_manager_system(
 // component of that mesh is different.
 
 void mesh_updater_system(
-		const RenderingScenarioResource *p_scenario,
-		RenderingServerResource *rs,
+		const RenderingScenarioDatabag *p_scenario,
+		RenderingServerDatabag *rs,
 		Query<MeshComponent> query) {
-	ERR_FAIL_COND_MSG(p_scenario == nullptr, "The `RenderingScenarioResource` `Resource` is not part of this world. Add it please.");
-	ERR_FAIL_COND_MSG(rs == nullptr, "The `RenderingServerResource` `Resource` is not part of this world. Add it please.");
+	ERR_FAIL_COND_MSG(p_scenario == nullptr, "The `RenderingScenarioDatabag` `Databag` is not part of this world. Add it please.");
+	ERR_FAIL_COND_MSG(rs == nullptr, "The `RenderingServerDatabag` `Databag` is not part of this world. Add it please.");
 
 	while (query.is_done() == false) {
 		MeshComponent *mesh_comp = std::get<MeshComponent *>(query.get());
@@ -72,8 +72,8 @@ void mesh_updater_system(
 	}
 }
 
-void mesh_transform_updater_system(RenderingServerResource *rs, Query<const MeshComponent, const TransformComponent> query) {
-	ERR_FAIL_COND_MSG(rs == nullptr, "The `RenderingServerResource` `Resource` is not part of this world. Add it please.");
+void mesh_transform_updater_system(RenderingServerDatabag *rs, Query<const MeshComponent, const TransformComponent> query) {
+	ERR_FAIL_COND_MSG(rs == nullptr, "The `RenderingServerDatabag` `Databag` is not part of this world. Add it please.");
 
 	while (query.is_done() == false) {
 		auto [mesh, transf] = query.get();

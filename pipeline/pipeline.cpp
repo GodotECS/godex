@@ -80,22 +80,22 @@ void Pipeline::get_systems_dependencies(SystemExeInfo &p_info) const {
 			}
 		}
 
-		// Handles the Resources.
-		for (uint32_t t = 0; t < other_info.immutable_resources.size(); t += 1) {
-			const godex::resource_id id = other_info.immutable_resources[t];
+		// Handles the Databags.
+		for (uint32_t t = 0; t < other_info.immutable_databags.size(); t += 1) {
+			const godex::databag_id id = other_info.immutable_databags[t];
 
-			const bool is_unique = p_info.immutable_resources.find(id) == -1;
+			const bool is_unique = p_info.immutable_databags.find(id) == -1;
 			if (is_unique) {
-				p_info.immutable_resources.push_back(id);
+				p_info.immutable_databags.push_back(id);
 			}
 		}
 
-		for (uint32_t t = 0; t < other_info.mutable_resources.size(); t += 1) {
-			const godex::resource_id id = other_info.mutable_resources[t];
+		for (uint32_t t = 0; t < other_info.mutable_databags.size(); t += 1) {
+			const godex::databag_id id = other_info.mutable_databags[t];
 
-			const bool is_unique = p_info.mutable_resources.find(id) == -1;
+			const bool is_unique = p_info.mutable_databags.find(id) == -1;
 			if (is_unique) {
-				p_info.mutable_resources.push_back(id);
+				p_info.mutable_databags.push_back(id);
 			}
 		}
 	}

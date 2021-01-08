@@ -9,8 +9,8 @@
 #include "../godot/nodes/entity.h"
 #include "../world/world.h"
 
-struct Test1Resource : public godex::Resource {
-	RESOURCE(Test1Resource)
+struct Test1Databag : public godex::Databag {
+	DATABAG(Test1Databag)
 
 public:
 	int a = 10;
@@ -18,11 +18,11 @@ public:
 
 namespace godex_tests_world {
 
-TEST_CASE("[Modules][ECS] Test world has self resource.") {
+TEST_CASE("[Modules][ECS] Test world has self databag.") {
 	World world;
-	godex::Resource *world_ptr = world.get_resource(World::get_resource_id());
+	godex::Databag *world_ptr = world.get_databag(World::get_databag_id());
 
-	// Make sure `World` contains a pointer of itself as resource.
+	// Make sure `World` contains a pointer of itself as databag.
 	CHECK(&world == world_ptr);
 }
 
@@ -166,35 +166,35 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 		CHECK(ABS(test_component->get("variable_3").operator Transform().origin.x - (-10.)) <= CMP_EPSILON);
 	}
 
-	// ~~ Test resource initialization ~~
+	// ~~ Test databag initialization ~~
 	{
-		ECS::register_resource<Test1Resource>();
+		ECS::register_databag<Test1Databag>();
 
-		// Make sure the resource is null.
-		CHECK(world.get_resource<Test1Resource>() == nullptr);
-		CHECK(world.get_resource(Test1Resource::get_resource_id()) == nullptr);
+		// Make sure the databag is null.
+		CHECK(world.get_databag<Test1Databag>() == nullptr);
+		CHECK(world.get_databag(Test1Databag::get_databag_id()) == nullptr);
 
-		// Add the resource
-		world.add_resource<Test1Resource>();
+		// Add the databag
+		world.add_databag<Test1Databag>();
 
-		// Make sure we can retrieve the resource.
-		CHECK(world.get_resource<Test1Resource>() != nullptr);
-		CHECK(world.get_resource(Test1Resource::get_resource_id()) != nullptr);
-		CHECK(world.get_resource<Test1Resource>() == world.get_resource(Test1Resource::get_resource_id()));
+		// Make sure we can retrieve the databag.
+		CHECK(world.get_databag<Test1Databag>() != nullptr);
+		CHECK(world.get_databag(Test1Databag::get_databag_id()) != nullptr);
+		CHECK(world.get_databag<Test1Databag>() == world.get_databag(Test1Databag::get_databag_id()));
 
 		// Now remove it.
-		world.remove_resource<Test1Resource>();
+		world.remove_databag<Test1Databag>();
 
-		// Make sure the resource is now nullptr.
-		CHECK(world.get_resource<Test1Resource>() == nullptr);
-		CHECK(world.get_resource(Test1Resource::get_resource_id()) == nullptr);
+		// Make sure the databag is now nullptr.
+		CHECK(world.get_databag<Test1Databag>() == nullptr);
+		CHECK(world.get_databag(Test1Databag::get_databag_id()) == nullptr);
 	}
 }
 
 TEST_CASE("[Modules][ECS] Test WorldECSCommands create entity from prefab.") {
 	World world;
 
-	DataAccessorScriptInstance<godex::Resource> *world_accessor = memnew(DataAccessorScriptInstance<godex::Resource>);
+	DataAccessorScriptInstance<godex::Databag> *world_accessor = memnew(DataAccessorScriptInstance<godex::Databag>);
 	world_accessor->__target = &world;
 	world_accessor->__mut = true;
 
@@ -229,23 +229,23 @@ TEST_CASE("[Modules][ECS] Test WorldECSCommands create entity from prefab.") {
 	CHECK(ABS(transf->get_transform().origin.x - 10) <= CMP_EPSILON);
 }
 
-TEST_CASE("[Modules][ECS] Test WorldECSCommands fetch resources.") {
+TEST_CASE("[Modules][ECS] Test WorldECSCommands fetch databags.") {
 	World world;
 
-	DataAccessorScriptInstance<godex::Resource> *world_accessor = memnew(DataAccessorScriptInstance<godex::Resource>);
+	DataAccessorScriptInstance<godex::Databag> *world_accessor = memnew(DataAccessorScriptInstance<godex::Databag>);
 	world_accessor->__target = &world;
 	world_accessor->__mut = true;
 
 	Object world_access;
 	world_access.set_script_instance(world_accessor);
 
-	Object *world_res_raw = WorldECSCommands::get_singleton()->get_resource(
+	Object *world_res_raw = WorldECSCommands::get_singleton()->get_databag(
 			&world_access,
 			"World");
 
 	CHECK(world_res_raw != nullptr);
 
-	World *world_ptr = godex::unwrap_resource<World>(world_res_raw);
+	World *world_ptr = godex::unwrap_databag<World>(world_res_raw);
 	CHECK(&world == world_ptr);
 }
 

@@ -33,7 +33,7 @@ public:
 	/// Returns `true` if the pipeline is ready.
 	bool is_ready() const;
 
-	/// get the systems dependencies. The same `Component` or `Resource` can
+	/// get the systems dependencies. The same `Component` or `Databag` can
 	/// be found as mutable and immutable.
 	void get_systems_dependencies(SystemExeInfo &p_info) const;
 

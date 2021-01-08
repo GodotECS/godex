@@ -13,16 +13,16 @@ struct SystemExeInfo {
 	bool valid = true;
 	LocalVector<uint32_t> mutable_components;
 	LocalVector<uint32_t> immutable_components;
-	LocalVector<uint32_t> mutable_resources;
-	LocalVector<uint32_t> immutable_resources;
+	LocalVector<uint32_t> mutable_databags;
+	LocalVector<uint32_t> immutable_databags;
 	func_system_execute system_func = nullptr;
 
 	void clear() {
 		valid = true;
 		mutable_components.clear();
 		immutable_components.clear();
-		mutable_resources.clear();
-		immutable_resources.clear();
+		mutable_databags.clear();
+		immutable_databags.clear();
 		system_func = nullptr;
 	}
 };

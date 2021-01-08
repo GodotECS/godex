@@ -13,12 +13,12 @@ const EntityBuilder &EntityBuilder::with(uint32_t p_component_id, const Dictiona
 }
 
 World::World() {
-	// Add self as resource, so that the `Systems` can obtain it.
-	resources.resize(World::get_resource_id() + 1);
-	for (uint32_t i = 0; i <= World::get_resource_id(); i += 1) {
-		resources[i] = nullptr;
+	// Add self as databag, so that the `Systems` can obtain it.
+	databags.resize(World::get_databag_id() + 1);
+	for (uint32_t i = 0; i <= World::get_databag_id(); i += 1) {
+		databags[i] = nullptr;
 	}
-	resources[World::get_resource_id()] = this;
+	databags[World::get_databag_id()] = this;
 }
 
 EntityID World::create_entity_index() {
@@ -121,52 +121,52 @@ void World::destroy_storage(uint32_t p_component_id) {
 	storages[p_component_id] = nullptr;
 }
 
-void World::add_resource(godex::resource_id p_id) {
-	ERR_FAIL_COND_MSG(ECS::verify_resource_id(p_id) == false, "The resource is not registered.");
-	ERR_FAIL_COND_MSG(p_id == World::get_resource_id(), "The resource `World` is an internal type automatically register by the `World` itself. You can't add it again.");
+void World::add_databag(godex::databag_id p_id) {
+	ERR_FAIL_COND_MSG(ECS::verify_databag_id(p_id) == false, "The databag is not registered.");
+	ERR_FAIL_COND_MSG(p_id == World::get_databag_id(), "The databag `World` is an internal type automatically register by the `World` itself. You can't add it again.");
 
-	if (p_id >= resources.size()) {
-		const uint32_t start = resources.size();
-		resources.resize(p_id + 1);
-		for (uint32_t i = start; i < resources.size(); i += 1) {
-			resources[i] = nullptr;
+	if (p_id >= databags.size()) {
+		const uint32_t start = databags.size();
+		databags.resize(p_id + 1);
+		for (uint32_t i = start; i < databags.size(); i += 1) {
+			databags[i] = nullptr;
 		}
 	}
 
-	if (resources[p_id] == nullptr) {
-		resources[p_id] = ECS::create_resource(p_id);
+	if (databags[p_id] == nullptr) {
+		databags[p_id] = ECS::create_databag(p_id);
 	}
 }
 
-void World::remove_resource(godex::resource_id p_id) {
-	ERR_FAIL_COND_MSG(ECS::verify_resource_id(p_id) == false, "The resource is not registered.");
-	ERR_FAIL_COND_MSG(p_id == World::get_resource_id(), "The resource `World` is an internal type automatically register by the `World` itself. You can't remove it.");
+void World::remove_databag(godex::databag_id p_id) {
+	ERR_FAIL_COND_MSG(ECS::verify_databag_id(p_id) == false, "The databag is not registered.");
+	ERR_FAIL_COND_MSG(p_id == World::get_databag_id(), "The databag `World` is an internal type automatically register by the `World` itself. You can't remove it.");
 
-	if (unlikely(p_id >= resources.size() || resources[p_id] == nullptr)) {
+	if (unlikely(p_id >= databags.size() || databags[p_id] == nullptr)) {
 		// Nothing to do.
 		return;
 	}
 
-	memdelete(resources[p_id]);
-	resources[p_id] = nullptr;
+	memdelete(databags[p_id]);
+	databags[p_id] = nullptr;
 }
 
-godex::Resource *World::get_resource(godex::resource_id p_id) {
-	CRASH_COND_MSG(p_id == UINT32_MAX, "The resource is not registered.");
+godex::Databag *World::get_databag(godex::databag_id p_id) {
+	CRASH_COND_MSG(p_id == UINT32_MAX, "The databag is not registered.");
 
-	if (unlikely(p_id >= resources.size())) {
+	if (unlikely(p_id >= databags.size())) {
 		return nullptr;
 	}
 
-	return resources[p_id];
+	return databags[p_id];
 }
 
-const godex::Resource *World::get_resource(godex::resource_id p_id) const {
-	CRASH_COND_MSG(p_id == UINT32_MAX, "The resource is not registered.");
+const godex::Databag *World::get_databag(godex::databag_id p_id) const {
+	CRASH_COND_MSG(p_id == UINT32_MAX, "The databag is not registered.");
 
-	if (unlikely(p_id >= resources.size())) {
+	if (unlikely(p_id >= databags.size())) {
 		return nullptr;
 	}
 
-	return resources[p_id];
+	return databags[p_id];
 }

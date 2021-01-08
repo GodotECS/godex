@@ -9,13 +9,13 @@
 
 #include "godot/components/mesh_component.h"
 #include "godot/components/transform_component.h"
+#include "godot/databags/godot_engine_databags.h"
+#include "godot/databags/visual_servers_databags.h"
 #include "godot/editor_plugins/editor_world_ecs.h"
 #include "godot/editor_plugins/entity_editor_plugin.h"
 #include "godot/nodes/ecs_utilities.h"
 #include "godot/nodes/ecs_world.h"
 #include "godot/nodes/entity.h"
-#include "godot/resources/godot_engine_resources.h"
-#include "godot/resources/visual_servers_resource.h"
 #include "godot/systems/mesh_updater_system.h"
 #include "godot/systems/physics_process_system.h"
 
@@ -32,7 +32,7 @@ public:
 				EditorNode::get_singleton()->add_editor_plugin(memnew(WorldECSEditorPlugin(EditorNode::get_singleton())));
 			}
 		} else {
-			// Load the Scripted Components/Resources/Systems
+			// Load the Scripted Components/Databags/Systems
 			ScriptECS::register_runtime_scripts();
 		}
 	}
@@ -63,21 +63,21 @@ void register_godex_types() {
 	ECS::register_component<MeshComponent>();
 	ECS::register_component<TransformComponent>();
 
-	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Register engine resources
-	ECS::register_resource<World>();
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Register engine databags
+	ECS::register_databag<World>();
 
 	// Engine
-	ECS::register_resource<FrameTimeResource>();
-	ECS::register_resource<OsResource>();
-	ECS::register_resource<EngineResource>();
-	ECS::register_resource<MessageQueueResource>();
+	ECS::register_databag<FrameTime>();
+	ECS::register_databag<OsDatabag>();
+	ECS::register_databag<EngineDatabag>();
+	ECS::register_databag<MessageQueueDatabag>();
 
 	// Rendering
-	ECS::register_resource<RenderingServerResource>();
-	ECS::register_resource<RenderingScenarioResource>();
+	ECS::register_databag<RenderingServerDatabag>();
+	ECS::register_databag<RenderingScenarioDatabag>();
 
 	// Physics
-	ECS::register_resource<Physics3DServerResource>();
+	ECS::register_databag<Physics3DServerDatabag>();
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Register engine systems
 	// Engine
