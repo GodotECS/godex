@@ -4,7 +4,6 @@
 
 #include "../../components/component.h"
 #include "../../ecs_types.h"
-#include "../../resources/ecs_resource.h"
 #include "scene/main/node.h"
 
 class Pipeline;
@@ -59,6 +58,8 @@ public:
 
 	void remove_system(const StringName &p_system_name);
 
+	void fetch_used_resources(Set<godex::component_id> &r_resources) const;
+
 	/// Builds the pipeline and returns it. The associated world is used to
 	/// fetch the pipeline in case a `SystemDispatcher` is used.
 	Pipeline *get_pipeline(WorldECS *p_associated_world);
@@ -88,7 +89,6 @@ class WorldECS : public Node {
 	/// {SystemDispatcherName: PipelineName}
 	Dictionary system_dispatchers_map;
 	StringName active_pipeline;
-	Vector<StringName> resources;
 
 protected:
 	static void _bind_methods();
@@ -128,11 +128,6 @@ public:
 
 	void set_active_pipeline(StringName p_name);
 	StringName get_active_pipeline() const;
-
-	void set_resources(Vector<StringName> p_resources);
-	Vector<StringName> get_resources() const;
-	void add_resource(const StringName &p_resource_name);
-	void remove_resource(const StringName &p_resource_name);
 
 private:
 	void active_world();
