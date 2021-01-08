@@ -74,8 +74,28 @@ void PipelineECS::remove_system(const StringName &p_system_name) {
 	_change_notify("systems_name");
 }
 
+void PipelineECS::fetch_used_resources(Set<godex::component_id> &r_resources) const {
+	for (int i = 0; i < systems_name.size(); i += 1) {
+		const StringName system_name = systems_name[i];
+		const godex::system_id id = ECS::get_system_id(system_name);
+
+		SystemExeInfo info;
+		ECS::get_system_exe_info(id, info);
+
+		for (uint32_t r = 0; r < info.immutable_resources.size(); r += 1) {
+			r_resources.insert(info.immutable_resources[r]);
+		}
+		for (uint32_t r = 0; r < info.mutable_resources.size(); r += 1) {
+			r_resources.insert(info.mutable_resources[r]);
+		}
+	}
+}
+
 Pipeline *PipelineECS::get_pipeline(WorldECS *p_associated_world) {
 	// Build the pipeline.
+
+	// TODO change this to `create_pipeline`? Because in this way, this pipeline
+	// can't be assigned to two different world, and this is a feature to support.
 
 	if (pipeline) {
 		return pipeline;
@@ -119,14 +139,8 @@ void WorldECS::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_active_pipeline", "name"), &WorldECS::set_active_pipeline);
 	ClassDB::bind_method(D_METHOD("get_active_pipeline"), &WorldECS::get_active_pipeline);
 
-	ClassDB::bind_method(D_METHOD("set_resources", "resources"), &WorldECS::set_resources);
-	ClassDB::bind_method(D_METHOD("get_resources"), &WorldECS::get_resources);
-	ClassDB::bind_method(D_METHOD("add_resource", "resource_name"), &WorldECS::add_resource);
-	ClassDB::bind_method(D_METHOD("remove_resource", "resource_name"), &WorldECS::remove_resource);
-
 	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "system_dispatchers_map"), "set_system_dispatchers_map", "get_system_dispatchers_map");
 	ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "active_pipeline"), "set_active_pipeline", "get_active_pipeline");
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "resources", PROPERTY_HINT_ARRAY_TYPE, "StringName"), "set_resources", "get_resources");
 }
 
 bool WorldECS::_set(const StringName &p_name, const Variant &p_value) {
@@ -303,26 +317,6 @@ StringName WorldECS::get_active_pipeline() const {
 	return active_pipeline;
 }
 
-void WorldECS::set_resources(Vector<StringName> p_resources) {
-	resources = p_resources;
-}
-
-Vector<StringName> WorldECS::get_resources() const {
-	return resources;
-}
-
-void WorldECS::add_resource(const StringName &p_resource_name) {
-	if (resources.find(p_resource_name) >= 0) {
-		// Nothing to do.
-		return;
-	}
-	resources.push_back(p_resource_name);
-}
-
-void WorldECS::remove_resource(const StringName &p_resource_name) {
-	resources.erase(p_resource_name);
-}
-
 void WorldECS::active_world() {
 	if (ECS::get_singleton()->has_active_world() == false) {
 		// ~~ World activation ~~
@@ -330,12 +324,19 @@ void WorldECS::active_world() {
 		// Set as active world.
 		ECS::get_singleton()->set_active_world(world);
 
-		// Make sure the resources are all loaded.
+		// Make sure all the resources are loaded.
 		{
-			const StringName *res_ptr = resources.ptr();
-			for (int i = 0; i < resources.size(); i += 1) {
-				const godex::resource_id id = ECS::get_resource_id(res_ptr[i]);
-				world->add_resource(id);
+			Set<godex::component_id> resource_ids;
+
+			for (int i = 0; i < pipelines.size(); i += 1) {
+				if (pipelines[i].is_null()) {
+					continue;
+				}
+				pipelines[i]->fetch_used_resources(resource_ids);
+			}
+
+			for (Set<godex::component_id>::Element *e = resource_ids.front(); e != nullptr; e = e->next()) {
+				world->add_resource(e->get());
 			}
 		}
 

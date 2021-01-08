@@ -4,6 +4,7 @@
 	@author AndreaCatania
 */
 
+#include "../ecs.h"
 #include "../systems/system.h"
 #include "core/templates/local_vector.h"
 
