@@ -19,3 +19,6 @@ The [wiki](https://github.com/AndreaCatania/godex/wiki/) is available; useful li
 
 ### Tests
 Check the [Unit tests](https://github.com/AndreaCatania/godex/tree/main/tests) to see some examples or the **Bench Test** https://github.com/AndreaCatania/godex_tests
+
+### Comminity
+If you want to chat about Godex, you can join the [discord server: https://discord.gg/EFmWpf869q](https://discord.gg/EFmWpf869q) 
