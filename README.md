@@ -17,7 +17,7 @@ Shortened as ECS, the Entity Component System is an architectural design pattern
 The [wiki](https://github.com/AndreaCatania/godex/wiki/) is available; useful links:
 - [Compiling](https://github.com/AndreaCatania/godex/wiki/Compiling).
 
-### Tests
+### Examples
 Check the [Unit tests](https://github.com/AndreaCatania/godex/tree/main/tests) to see some examples or the **Bench Test** https://github.com/AndreaCatania/godex_tests
 
 ### Community
