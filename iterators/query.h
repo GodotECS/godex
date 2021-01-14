@@ -6,15 +6,30 @@
 #include "../world/world.h"
 #include <tuple>
 
+template <class T, typename S>
+struct get_type {
+	typedef T type;
+};
+
+template <class T>
+struct get_type<T, bool_type<false>> {
+	typedef T type;
+};
+
+template <class T>
+struct get_type<T, bool_type<true>> {
+	typedef LocalVector<T> type;
+};
+
 // ~~ Utility to remove the filter from the query. ~~
 template <typename T>
 struct remove_filter {
-	typedef T type;
+	typedef typename get_type<T, typename T::is_event>::type type;
 };
 
 template <template <typename> class X, typename T>
 struct remove_filter<X<T>> {
-	typedef T type;
+	typedef typename get_type<T, typename T::is_event>::type type;
 };
 
 template <typename T>

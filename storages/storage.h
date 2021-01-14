@@ -20,6 +20,7 @@ class Storage {
 public:
 	virtual ~Storage() {}
 	virtual StorageType get_type() const { return StorageType::NONE; }
+	virtual bool is_event_storage() const { return false; }
 	virtual String get_type_name() const { return "Overload this function `get_type_name()` please."; }
 	virtual bool has(EntityID p_entity) const {
 		CRASH_NOW_MSG("Override this function.");
@@ -28,11 +29,11 @@ public:
 	virtual void insert_dynamic(EntityID p_entity, const Dictionary &p_data) {
 		CRASH_NOW_MSG("Override this function.");
 	}
-	virtual const godex::Component *get_ptr(EntityID p_entity) const {
+	virtual const void *get_ptr(EntityID p_entity) const {
 		CRASH_NOW_MSG("Override this function.");
 		return nullptr;
 	}
-	virtual godex::Component *get_ptr(EntityID p_entity) {
+	virtual void *get_ptr(EntityID p_entity) {
 		CRASH_NOW_MSG("Override this function.");
 		return nullptr;
 	}

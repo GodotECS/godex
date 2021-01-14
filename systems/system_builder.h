@@ -11,15 +11,6 @@
 
 namespace SystemBuilder {
 
-template <bool B>
-struct bool_type {};
-
-template <typename Test, template <typename...> class Ref>
-struct is_specialization : bool_type<false> {};
-
-template <template <typename...> class Ref, typename... Args>
-struct is_specialization<Ref<Args...>, Ref> : bool_type<true> {};
-
 template <class Q>
 void extract_info(bool_type<true>, SystemExeInfo &r_info) {
 	// This is a query.

@@ -15,6 +15,9 @@ namespace godex {
 	friend class World;                                                                               \
 	friend class Component;                                                                           \
 																									  \
+public:                                                                                               \
+	typedef bool_type<false> is_event;                                                                \
+																									  \
 private:                                                                                              \
 	/* Storages */                                                                                    \
 	static _FORCE_INLINE_ m_storage_class<m_class> *create_storage() {                                \

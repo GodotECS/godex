@@ -9,6 +9,15 @@
 #include "core/templates/local_vector.h"
 #include "modules/gdscript/gdscript.h"
 
+template <bool B>
+struct bool_type {};
+
+template <typename Test, template <typename...> class Ref>
+struct is_specialization : bool_type<false> {};
+
+template <template <typename...> class Ref, typename... Args>
+struct is_specialization<Ref<Args...>, Ref> : bool_type<true> {};
+
 #define ECSCLASS(m_class)                             \
 private:                                              \
 	friend class ECS;                                 \

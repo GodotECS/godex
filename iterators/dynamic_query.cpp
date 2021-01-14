@@ -133,6 +133,7 @@ void DynamicQuery::begin(World *p_world) {
 	storages.resize(component_ids.size());
 	for (uint32_t i = 0; i < component_ids.size(); i += 1) {
 		storages[i] = world->get_storage(component_ids[i]);
+		CRASH_COND_MSG(storages[i]->is_event_storage(), "Support event storage in dynamic query.");
 		if (unlikely(storages[i] == nullptr)) {
 			// The query can end now because there is an entire not used storage.
 			entity_id = UINT32_MAX;
