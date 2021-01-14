@@ -5,6 +5,7 @@
 
 #include "../components/dynamic_component.h"
 #include "../ecs.h"
+#include "../godot/components/test_event.h"
 #include "../godot/components/transform_component.h"
 #include "../iterators/dynamic_query.h"
 #include "../world/world.h"
@@ -373,6 +374,37 @@ TEST_CASE("[Modules][ECS] Test invalid dynamic query.") {
 	// Build it again but this time valid.
 	query.with_component(ECS::get_component_id("TransformComponent"));
 	CHECK(query.is_valid());
+}
+
+TEST_CASE("[Modules][ECS] Test query with event.") {
+	World world;
+
+	EntityID entity_1 = world
+								.create_entity()
+								.with(TransformComponent())
+								.with(TestEvent())
+								.with(TestEvent());
+
+	EntityID entity_2 = world
+								.create_entity()
+								.with(TransformComponent());
+
+	EntityID entity_3 = world
+								.create_entity()
+								.with(TransformComponent())
+								.with(TestEvent());
+
+	Query<TransformComponent, TestEvent> query(&world);
+
+	CHECK(query.is_done() == false);
+
+	auto [transform, tag] = query.get();
+
+	CHECK(query.get_current_entity() == entity_1);
+	CHECK(transform != nullptr);
+	CHECK(tag != nullptr);
+
+	query.next();
 }
 
 } // namespace godex_tests
