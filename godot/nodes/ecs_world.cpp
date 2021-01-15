@@ -406,10 +406,6 @@ void WorldECSCommands::_bind_methods() {
 }
 
 WorldECSCommands::WorldECSCommands() {
-	component_accessor = memnew(DataAccessorScriptInstance<godex::Component>);
-	access_component_obj.set_script_instance(component_accessor);
-	databag_accessor = memnew(DataAccessorScriptInstance<godex::Databag>);
-	access_databag_obj.set_script_instance(databag_accessor);
 }
 
 uint32_t WorldECSCommands::create_entity(Object *p_world) {
@@ -460,16 +456,16 @@ Object *WorldECSCommands::get_entity_component(Object *p_world, uint32_t entity_
 }
 
 Object *WorldECSCommands::get_entity_component_by_id(Object *p_world, uint32_t entity_id, uint32_t p_component_id) {
-	component_accessor->__target = nullptr;
+	component_accessor.__target = nullptr;
 
 	World *world = godex::unwrap_databag<World>(p_world);
-	ERR_FAIL_COND_V_MSG(world == nullptr, &access_component_obj, "The passed variable is not a `Databag` of type `World`.");
-	ERR_FAIL_COND_V_MSG(ECS::verify_component_id(p_component_id) == false, &access_component_obj, "The passed component_name is not valid.");
+	ERR_FAIL_COND_V_MSG(world == nullptr, &component_accessor, "The passed variable is not a `Databag` of type `World`.");
+	ERR_FAIL_COND_V_MSG(ECS::verify_component_id(p_component_id) == false, &component_accessor, "The passed component_name is not valid.");
 
-	component_accessor->__target = world->get_storage(p_component_id)->get_ptr(entity_id);
-	component_accessor->__mut = true;
+	component_accessor.__target = world->get_storage(p_component_id)->get_ptr(entity_id);
+	component_accessor.__mut = true;
 
-	return &access_component_obj;
+	return &component_accessor;
 }
 
 Object *WorldECSCommands::get_databag(Object *p_world, const StringName &p_databag_name) {
@@ -477,14 +473,14 @@ Object *WorldECSCommands::get_databag(Object *p_world, const StringName &p_datab
 }
 
 Object *WorldECSCommands::get_databag_by_id(Object *p_world, uint32_t p_databag_id) {
-	databag_accessor->__target = nullptr;
+	databag_accessor.__target = nullptr;
 
 	World *world = godex::unwrap_databag<World>(p_world);
-	ERR_FAIL_COND_V_MSG(world == nullptr, &access_databag_obj, "The passed variable is not a `Databag` of type `World`.");
-	ERR_FAIL_COND_V_MSG(ECS::verify_databag_id(p_databag_id) == false, &access_databag_obj, "The passed `databag_name` is not valid.");
+	ERR_FAIL_COND_V_MSG(world == nullptr, &databag_accessor, "The passed variable is not a `Databag` of type `World`.");
+	ERR_FAIL_COND_V_MSG(ECS::verify_databag_id(p_databag_id) == false, &databag_accessor, "The passed `databag_name` is not valid.");
 
-	databag_accessor->__target = world->get_databag(p_databag_id);
-	databag_accessor->__mut = true;
+	databag_accessor.__target = world->get_databag(p_databag_id);
+	databag_accessor.__mut = true;
 
-	return &access_databag_obj;
+	return &databag_accessor;
 }

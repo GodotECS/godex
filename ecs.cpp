@@ -40,14 +40,10 @@ ECS::ECS() :
 		MessageQueue::get_singleton()->push_callable(callable_mp(this, &ECS::ecs_init));
 	}
 
-	// Don't need to destroy this, the `Object` does it (unfortunately).
-	world_accessor = memnew(DataAccessorScriptInstance<godex::Databag>);
-	world_accessor->__mut = true;
-	world_access.set_script_instance(world_accessor);
+	world_access.__mut = true;
 }
 
 ECS::~ECS() {
-	world_access.set_script_instance(nullptr);
 }
 
 const LocalVector<StringName> &ECS::get_registered_components() {
@@ -257,7 +253,7 @@ World *ECS::get_active_world() const {
 
 Object *ECS::get_active_world_gds() {
 	ERR_FAIL_COND_V_MSG(active_world == nullptr, nullptr, "No active world at the moment.");
-	world_accessor->__target = active_world;
+	world_access.__target = active_world;
 	return &world_access;
 }
 

@@ -175,9 +175,8 @@ public:                                                                         
 /// the script. However, in future would be really nice make `Object::set` virtual
 /// so to override it and avoid all this useless extra work.
 template <class E>
-class DataAccessorScriptInstance : public ScriptInstance {
+class DataAccessorScriptInstance : public Object {
 public:
-	Object *owner = nullptr;
 	E *__target = nullptr;
 	bool __mut = false;
 
@@ -185,67 +184,15 @@ public:
 		return __mut;
 	}
 
-	virtual bool set(const StringName &p_name, const Variant &p_value) override {
+	virtual bool _setv(const StringName &p_name, const Variant &p_value) override {
 		ERR_FAIL_COND_V(__target == nullptr, false);
 		ERR_FAIL_COND_V_MSG(__mut == false, false, "This element was taken as not mutable.");
 		return __target->set(p_name, p_value);
 	}
 
-	// Slow version
-	Variant get(const StringName &p_name) const {
-		Variant ret;
-		get(p_name, ret);
-		return ret;
-	}
-
-	virtual bool get(const StringName &p_name, Variant &r_ret) const override {
+	virtual bool _getv(const StringName &p_name, Variant &r_ret) const override {
 		ERR_FAIL_COND_V(__target == nullptr, false);
 		return __target->get(p_name, r_ret);
-	}
-
-	virtual void get_property_list(List<PropertyInfo> *p_properties) const override {
-		ERR_FAIL_COND(__target == nullptr);
-		const LocalVector<PropertyInfo> *props = __target->get_properties();
-		for (uint32_t i = 0; i < props->size(); i += 1) {
-			p_properties->push_back((*props)[i]);
-		}
-	}
-
-	virtual Variant::Type get_property_type(const StringName &p_name, bool *r_is_valid = nullptr) const override {
-		ERR_FAIL_COND_V(__target == nullptr, Variant::NIL);
-		const LocalVector<PropertyInfo> *props = __target->get_properties();
-		for (uint32_t i = 0; i < props->size(); i += 1) {
-			if ((*props)[i].name == String(p_name)) {
-				return (*props)[i].type;
-				(*r_is_valid) = true;
-			}
-		}
-		(*r_is_valid) = false;
-		return Variant::NIL;
-	}
-
-	virtual Object *get_owner() override { return owner; }
-	virtual void get_property_state(List<Pair<StringName, Variant>> &state) override {
-		// This is used by the scene packer to store the script data.
-		// TODO Is this needed, implement this?
-	}
-
-	virtual void get_method_list(List<MethodInfo> *p_list) const {
-		p_list->push_back(MethodInfo(Variant::BOOL, "is_valid"));
-		p_list->push_back(MethodInfo(Variant::BOOL, "is_mutable"));
-	}
-
-	virtual bool has_method(const StringName &p_method) const {
-		return String(p_method) == "is_valid";
-	}
-
-	virtual Variant call(const StringName &p_method, VARIANT_ARG_LIST) override {
-		if (String(p_method) == "is_valid") {
-			return __target != nullptr;
-		} else if (String(p_method) == "is_mutable") {
-			return __mut;
-		}
-		return Variant();
 	}
 
 	virtual Variant call(const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) override {
@@ -259,49 +206,5 @@ public:
 			r_error.error = Callable::CallError::Error::CALL_ERROR_INVALID_METHOD;
 			return Variant();
 		}
-	}
-
-	virtual void notification(int p_notification) override {
-		// Nothing to do.
-	}
-
-	virtual Ref<Script> get_script() const override {
-		// Just to return something to make godot not crash.
-		Ref<GDScript> s;
-		s.instance();
-		return s;
-	}
-
-	virtual bool is_placeholder() const override {
-		return false;
-	}
-
-	virtual Vector<ScriptNetData> get_rpc_methods() const override {
-		return Vector<ScriptNetData>();
-	}
-	virtual uint16_t get_rpc_method_id(const StringName &p_method) const override {
-		return 0;
-	}
-	virtual StringName get_rpc_method(uint16_t p_id) const override {
-		return "";
-	}
-	virtual MultiplayerAPI::RPCMode get_rpc_mode_by_id(uint16_t p_id) const override {
-		return MultiplayerAPI::RPC_MODE_DISABLED;
-	}
-	virtual MultiplayerAPI::RPCMode get_rpc_mode(const StringName &p_method) const override {
-		return MultiplayerAPI::RPC_MODE_DISABLED;
-	}
-
-	virtual Vector<ScriptNetData> get_rset_properties() const override {
-		return Vector<ScriptNetData>();
-	}
-	virtual uint16_t get_rset_property_id(const StringName &p_variable) const override { return 0; }
-	virtual StringName get_rset_property(uint16_t p_id) const override { return ""; }
-	virtual MultiplayerAPI::RPCMode get_rset_mode_by_id(uint16_t p_id) const override { return MultiplayerAPI::RPC_MODE_DISABLED; }
-	virtual MultiplayerAPI::RPCMode get_rset_mode(const StringName &p_variable) const override { return MultiplayerAPI::RPC_MODE_DISABLED; }
-
-	virtual ScriptLanguage *get_language() override { return nullptr; }
-
-	virtual ~DataAccessorScriptInstance() {
 	}
 };

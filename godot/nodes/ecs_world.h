@@ -142,10 +142,8 @@ class WorldECSCommands : public Object {
 protected:
 	static void _bind_methods();
 
-	Object access_component_obj;
-	Object access_databag_obj;
-	DataAccessorScriptInstance<godex::Component> *component_accessor;
-	DataAccessorScriptInstance<godex::Databag> *databag_accessor;
+	DataAccessorScriptInstance<godex::Component> component_accessor;
+	DataAccessorScriptInstance<godex::Databag> databag_accessor;
 
 public:
 	WorldECSCommands();

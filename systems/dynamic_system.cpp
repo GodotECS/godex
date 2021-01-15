@@ -82,7 +82,6 @@ bool godex::DynamicSystemInfo::build() {
 
 		// Init the databag accessors.
 		databag_accessors.resize(databags.size());
-		databag_accessors_obj.resize(databags.size());
 
 		// Set the databag accessors.
 		for (uint32_t i = 0; i < databags.size(); i += 1) {
@@ -90,12 +89,10 @@ bool godex::DynamicSystemInfo::build() {
 			// Creating a new pointer because `set_script_instance` handles
 			// the pointer lifetime unfortunately so set an automatic memory
 			// pointer is not safe.
-			databag_accessors[i] = memnew(DataAccessorScriptInstance<Databag>);
-			databag_accessors[i]->__mut = databags[i].is_mutable;
-			databag_accessors_obj[i].set_script_instance(databag_accessors[i]);
+			databag_accessors[i].__mut = databags[i].is_mutable;
 
 			// Assign the accessor.
-			access[databag_element_map[i]] = &databag_accessors_obj[i];
+			access[databag_element_map[i]] = &databag_accessors[i];
 			access_ptr[databag_element_map[i]] = &access[databag_element_map[i]];
 		}
 
@@ -105,7 +102,7 @@ bool godex::DynamicSystemInfo::build() {
 		// It's fine store the accessor pointers here because the query is
 		// stored together with the `DynamicSystemInfo`.
 		for (uint32_t c = 0; c < query.access_count(); c += 1) {
-			Object *ac = query.get_access_gd(c);
+			Object *ac = query.get_access(c);
 			access[query_element_map[c]] = ac;
 			access_ptr[query_element_map[c]] = &access[query_element_map[c]];
 		}
@@ -182,7 +179,7 @@ void godex::DynamicSystemInfo::executor(World *p_world, DynamicSystemInfo &p_inf
 		// First extract the databags.
 		for (uint32_t i = 0; i < p_info.databags.size(); i += 1) {
 			// Set the accessors pointers.
-			p_info.databag_accessors[i]->__target = p_world->get_databag(p_info.databags[i].databag_id);
+			p_info.databag_accessors[i].__target = p_world->get_databag(p_info.databags[i].databag_id);
 		}
 
 		p_info.query.begin(p_world);

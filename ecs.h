@@ -58,8 +58,7 @@ class ECS : public Object {
 	World *active_world = nullptr;
 	Pipeline *active_world_pipeline = nullptr;
 	bool dispatching = false;
-	DataAccessorScriptInstance<godex::Databag> *world_accessor;
-	Object world_access;
+	DataAccessorScriptInstance<godex::Databag> world_access;
 
 public:
 	// ~~ Components ~~
