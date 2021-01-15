@@ -136,6 +136,8 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 		code += "extends Object\n";
 		code += "\n";
 		code += "func _for_each(transform_com, test_comp):\n";
+		code += "	assert(transform_com.is_valid())\n";
+		code += "	assert(transform_com.is_mutable())\n";
 		code += "	transform_com.transform.origin.x += 100.0\n";
 		code += "	if test_comp != null:\n";
 		code += "		test_comp.variable_1 += 1\n";
@@ -343,6 +345,8 @@ TEST_CASE("[Modules][ECS] Test system databag fetch with dynamic query.") {
 		code += "extends Object\n";
 		code += "\n";
 		code += "func _for_each(test_databag, transform_com):\n";
+		code += "	assert(test_databag.is_valid())\n";
+		code += "	assert(test_databag.is_mutable())\n";
 		code += "	test_databag.exe_count = 10\n";
 		code += "\n";
 
