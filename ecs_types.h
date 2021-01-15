@@ -32,6 +32,93 @@ public:                                               \
 													  \
 private:
 
+/// `BatchData` it's used by the queries to return multiple `Component`s for
+/// entity. Depending on the storage used, it's possible to store more
+/// components per entity; in all these cases a `BatchData` is returned.
+template <class C>
+class Batch {
+	C *data = nullptr;
+	uint32_t size = 0;
+
+public:
+	Batch() {}
+
+	Batch(C *p_data) :
+			data(p_data), size(1) {}
+
+	Batch(C *p_data, uint32_t p_size) :
+			data(p_data), size(p_size) {}
+
+	/// Cast the Batch type, must be used carefully.
+	template <class O>
+	Batch(const Batch<O> &p_other) {
+		data = static_cast<C *>(p_other.get_data());
+		size = p_other.get_size();
+	}
+
+	C *operator->() {
+		return data;
+	}
+
+	const std::remove_const_t<C> *operator->() const {
+		return data;
+	}
+
+	C *operator[](uint32_t p_index) {
+#ifdef DEBUG_ENABLED
+		CRASH_COND(p_index >= size);
+#endif
+		return data + p_index;
+	}
+
+	const std::remove_const_t<C> *operator[](uint32_t p_index) const {
+#ifdef DEBUG_ENABLED
+		CRASH_COND(p_index >= size);
+#endif
+		return data + p_index;
+	}
+
+	uint32_t get_size() const {
+		return size;
+	}
+
+	bool is_batch() const {
+		return size > 1;
+	}
+
+	bool is_empty() const {
+		return data == nullptr;
+	}
+
+	bool operator==(const Batch<C> &p_other) const {
+		return data == p_other.data && size == p_other.size;
+	}
+
+	bool operator!=(const Batch<C> &p_other) const {
+		return data != p_other.data && size != p_other.size;
+	}
+
+	bool operator==(const void *p_other) const {
+		return data == p_other;
+	}
+
+	bool operator!=(const void *p_other) const {
+		return data != p_other;
+	}
+
+	C *get_data() {
+		return data;
+	}
+
+	C *get_data() const {
+		return data;
+	}
+
+	operator C *() {
+		return data;
+	}
+};
+
 class ECSClass {
 public:
 	virtual ~ECSClass() {}

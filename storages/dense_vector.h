@@ -26,10 +26,10 @@ public:
 	virtual void insert(EntityID p_entity, T p_data) override;
 	virtual void insert_dynamic(EntityID p_entity, const Dictionary &p_data) override;
 	virtual bool has(EntityID p_entity) const override;
-	virtual const godex::Component *get_ptr(EntityID p_entity) const;
-	virtual godex::Component *get_ptr(EntityID p_entity);
-	virtual const T &get(EntityID p_entity) const override;
-	virtual T &get(EntityID p_entity) override;
+	virtual Batch<const godex::Component> get_ptr(EntityID p_entity) const override;
+	virtual Batch<godex::Component> get_ptr(EntityID p_entity) override;
+	virtual Batch<const std::remove_const_t<T>> get(EntityID p_entity) const override;
+	virtual Batch<std::remove_const_t<T>> get(EntityID p_entity) override;
 	virtual void remove(EntityID p_entity) override;
 
 protected:
@@ -103,13 +103,13 @@ bool DenseVector<T>::has(EntityID p_entity) const {
 }
 
 template <class T>
-const godex::Component *DenseVector<T>::get_ptr(EntityID p_entity) const {
+Batch<const godex::Component> DenseVector<T>::get_ptr(EntityID p_entity) const {
 	CRASH_COND_MSG(has(p_entity) == false, "This entity doesn't have anything stored into this storage.");
 	return &data[entity_to_data[p_entity]];
 }
 
 template <class T>
-godex::Component *DenseVector<T>::get_ptr(EntityID p_entity) {
+Batch<godex::Component> DenseVector<T>::get_ptr(EntityID p_entity) {
 #ifdef DEBUG_ENABLED
 	CRASH_COND_MSG(has(p_entity) == false, "This entity doesn't have anything stored into this storage.");
 #endif
@@ -117,19 +117,19 @@ godex::Component *DenseVector<T>::get_ptr(EntityID p_entity) {
 }
 
 template <class T>
-const T &DenseVector<T>::get(EntityID p_entity) const {
+Batch<const std::remove_const_t<T>> DenseVector<T>::get(EntityID p_entity) const {
 #ifdef DEBUG_ENABLED
 	CRASH_COND_MSG(has(p_entity) == false, "This entity doesn't have anything stored into this storage.");
 #endif
-	return data[entity_to_data[p_entity]];
+	return &data[entity_to_data[p_entity]];
 }
 
 template <class T>
-T &DenseVector<T>::get(EntityID p_entity) {
+Batch<std::remove_const_t<T>> DenseVector<T>::get(EntityID p_entity) {
 #ifdef DEBUG_ENABLED
 	CRASH_COND_MSG(has(p_entity) == false, "This entity doesn't have anything stored into this storage.");
 #endif
-	return data[entity_to_data[p_entity]];
+	return &data[entity_to_data[p_entity]];
 }
 
 template <class T>

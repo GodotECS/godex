@@ -40,41 +40,41 @@ TEST_CASE("[Modules][ECS] Test dense storage insert and remove.") {
 			storage.insert(2, 2);
 		}
 
-		CHECK(storage.get(0).number == 0);
-		CHECK(storage.get(1).number == 1);
-		CHECK(storage.get(2).number == 2);
-		CHECK(storage.get(3).number == 3);
-		CHECK(storage.get(4).number == 4);
+		CHECK(storage.get(0)->number == 0);
+		CHECK(storage.get(1)->number == 1);
+		CHECK(storage.get(2)->number == 2);
+		CHECK(storage.get(3)->number == 3);
+		CHECK(storage.get(4)->number == 4);
 
 		storage.remove(4);
 
-		CHECK(storage.get(0).number == 0);
-		CHECK(storage.get(1).number == 1);
-		CHECK(storage.get(2).number == 2);
-		CHECK(storage.get(3).number == 3);
+		CHECK(storage.get(0)->number == 0);
+		CHECK(storage.get(1)->number == 1);
+		CHECK(storage.get(2)->number == 2);
+		CHECK(storage.get(3)->number == 3);
 		CHECK(storage.has(4) == false);
 
 		storage.remove(0);
 
 		CHECK(storage.has(0) == false);
-		CHECK(storage.get(1).number == 1);
-		CHECK(storage.get(2).number == 2);
-		CHECK(storage.get(3).number == 3);
+		CHECK(storage.get(1)->number == 1);
+		CHECK(storage.get(2)->number == 2);
+		CHECK(storage.get(3)->number == 3);
 		CHECK(storage.has(4) == false);
 
 		storage.remove(1);
 
 		CHECK(storage.has(0) == false);
 		CHECK(storage.has(1) == false);
-		CHECK(storage.get(2).number == 2);
-		CHECK(storage.get(3).number == 3);
+		CHECK(storage.get(2)->number == 2);
+		CHECK(storage.get(3)->number == 3);
 		CHECK(storage.has(4) == false);
 
 		storage.remove(3);
 
 		CHECK(storage.has(0) == false);
 		CHECK(storage.has(1) == false);
-		CHECK(storage.get(2).number == 2);
+		CHECK(storage.get(2)->number == 2);
 		CHECK(storage.has(3) == false);
 		CHECK(storage.has(4) == false);
 
@@ -89,7 +89,7 @@ TEST_CASE("[Modules][ECS] Test dense storage insert and remove.") {
 		storage.insert(4, 10);
 
 		CHECK(storage.has(4));
-		CHECK(storage.get(4).number == 10);
+		CHECK(storage.get(4)->number == 10);
 	}
 }
 

@@ -34,7 +34,7 @@ void mesh_updater_system(
 	ERR_FAIL_COND_MSG(rs == nullptr, "The `RenderingServerDatabag` `Databag` is not part of this world. Add it please.");
 
 	while (query.is_done() == false) {
-		MeshComponent *mesh_comp = std::get<MeshComponent *>(query.get());
+		MeshComponent *mesh_comp = std::get<Batch<MeshComponent>>(query.get());
 
 		if (mesh_comp->get_instance() == RID()) {
 			// Instance the Mesh.

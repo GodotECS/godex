@@ -88,9 +88,9 @@ TEST_CASE("[Modules][ECS] Test system and query") {
 
 	const TypedStorage<const TransformComponent> *storage = world.get_storage<const TransformComponent>();
 
-	const Vector3 entity_1_origin = storage->get(entity_1).get_transform().origin;
-	const Vector3 entity_2_origin = storage->get(entity_2).get_transform().origin;
-	const Vector3 entity_3_origin = storage->get(entity_3).get_transform().origin;
+	const Vector3 entity_1_origin = storage->get(entity_1)->get_transform().origin;
+	const Vector3 entity_2_origin = storage->get(entity_2)->get_transform().origin;
+	const Vector3 entity_3_origin = storage->get(entity_3)->get_transform().origin;
 
 	// This entity is expected to change.
 	CHECK(ABS(entity_1_origin.x - 300.0) <= CMP_EPSILON);
@@ -170,9 +170,9 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 	{
 		const TypedStorage<const TransformComponent> *storage = world.get_storage<const TransformComponent>();
 
-		const Vector3 entity_1_origin = storage->get(entity_1).get_transform().origin;
-		const Vector3 entity_2_origin = storage->get(entity_2).get_transform().origin;
-		const Vector3 entity_3_origin = storage->get(entity_3).get_transform().origin;
+		const Vector3 entity_1_origin = storage->get(entity_1)->get_transform().origin;
+		const Vector3 entity_2_origin = storage->get(entity_2)->get_transform().origin;
+		const Vector3 entity_3_origin = storage->get(entity_3)->get_transform().origin;
 
 		// This entity is expected to change.
 		CHECK(ABS(entity_1_origin.x - 300.0) <= CMP_EPSILON);
@@ -263,8 +263,8 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 		// The subsystem is dispatched 2 times per main pipeline dispatch,
 		// since we are dispatching the main pipeline 2 times the
 		// `test_system_transform_add_x` add 100, four times.
-		const TransformComponent &comp = world.get_storage<TransformComponent>()->get(entity_1);
-		CHECK(ABS(comp.get_transform().origin.x - 400.0) <= CMP_EPSILON);
+		const TransformComponent *comp = world.get_storage<TransformComponent>()->get(entity_1);
+		CHECK(ABS(comp->get_transform().origin.x - 400.0) <= CMP_EPSILON);
 	}
 
 	{
@@ -275,8 +275,8 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 		main_pipeline.dispatch(&world);
 
 		// Verify the execution is properly done by making sure the value is 1000.
-		const TransformComponent &comp = world.get_storage<TransformComponent>()->get(entity_1);
-		CHECK(ABS(comp.get_transform().origin.x - 1000.0) <= CMP_EPSILON);
+		const TransformComponent *comp = world.get_storage<TransformComponent>()->get(entity_1);
+		CHECK(ABS(comp->get_transform().origin.x - 1000.0) <= CMP_EPSILON);
 	}
 }
 
@@ -417,7 +417,7 @@ TEST_CASE("[Modules][ECS] Test WorldECSCommands from dynamic query.") {
 	// but also the runtime created one (entity 1) has it.
 	CHECK(world.get_storage<TransformComponent>()->has(1));
 	// Make sure the default is also set.
-	CHECK(ABS(world.get_storage<TransformComponent>()->get(1).get_transform().origin.x - 10) <= CMP_EPSILON);
+	CHECK(ABS(world.get_storage<TransformComponent>()->get(1)->get_transform().origin.x - 10) <= CMP_EPSILON);
 }
 
 } // namespace godex_tests_system
