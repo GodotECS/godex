@@ -22,7 +22,7 @@ public:
 };
 
 class PipelineTestComponent1 : public godex::Component {
-	COMPONENT(PipelineTestComponent1, DenseVector)
+	COMPONENT(PipelineTestComponent1, DenseVector<PipelineTestComponent1>)
 };
 
 namespace godex_tests_pipeline {

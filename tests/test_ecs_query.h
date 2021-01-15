@@ -5,13 +5,20 @@
 
 #include "../components/dynamic_component.h"
 #include "../ecs.h"
-#include "../godot/components/test_event.h"
 #include "../godot/components/transform_component.h"
 #include "../iterators/dynamic_query.h"
+#include "../storages/dynamic_batch_storage.h"
 #include "../world/world.h"
 
 class TagQueryTestComponent : public godex::Component {
-	COMPONENT(TagQueryTestComponent, DenseVector)
+	COMPONENT(TagQueryTestComponent, DenseVector<TagQueryTestComponent>)
+};
+
+class TestEvent : public godex::Component {
+	COMPONENT(TestEvent, DynamicBatchStorage<DenseVector<TestEvent>>)
+
+public:
+	TestEvent() {}
 };
 
 namespace godex_tests {
@@ -377,7 +384,8 @@ TEST_CASE("[Modules][ECS] Test invalid dynamic query.") {
 }
 
 TEST_CASE("[Modules][ECS] Test query with event.") {
-	return;
+	ECS::register_component<TestEvent>();
+
 	World world;
 
 	EntityID entity_1 = world
@@ -403,7 +411,7 @@ TEST_CASE("[Modules][ECS] Test query with event.") {
 
 	CHECK(query.get_current_entity() == entity_1);
 	CHECK(transform != nullptr);
-	CHECK(tag != nullptr);
+	CHECK(tag.get_size() == 2);
 
 	query.next();
 }
