@@ -38,10 +38,10 @@ TEST_CASE("[Modules][ECS] Test world") {
 			entity_1_transform_component);
 
 	const TypedStorage<const TransformComponent> *storage = world.get_storage<const TransformComponent>();
-	const TransformComponent &transform_from_storage = storage->get(entity_1);
+	const TransformComponent *transform_from_storage = storage->get(entity_1);
 
 	// Check the add component has the exact same data as the stored one.
-	CHECK((entity_1_transform_component.get_transform().origin - transform_from_storage.get_transform().origin).length() < CMP_EPSILON);
+	CHECK((entity_1_transform_component.get_transform().origin - transform_from_storage->get_transform().origin).length() < CMP_EPSILON);
 }
 
 TEST_CASE("[Modules][ECS] Test storage script component") {

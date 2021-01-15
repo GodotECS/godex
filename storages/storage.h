@@ -20,7 +20,6 @@ class Storage {
 public:
 	virtual ~Storage() {}
 	virtual StorageType get_type() const { return StorageType::NONE; }
-	virtual bool is_event_storage() const { return false; }
 	virtual String get_type_name() const { return "Overload this function `get_type_name()` please."; }
 	virtual bool has(EntityID p_entity) const {
 		CRASH_NOW_MSG("Override this function.");
@@ -29,11 +28,11 @@ public:
 	virtual void insert_dynamic(EntityID p_entity, const Dictionary &p_data) {
 		CRASH_NOW_MSG("Override this function.");
 	}
-	virtual const void *get_ptr(EntityID p_entity) const {
+	virtual Batch<const godex::Component> get_ptr(EntityID p_entity) const {
 		CRASH_NOW_MSG("Override this function.");
 		return nullptr;
 	}
-	virtual void *get_ptr(EntityID p_entity) {
+	virtual Batch<godex::Component> get_ptr(EntityID p_entity) {
 		CRASH_NOW_MSG("Override this function.");
 		return nullptr;
 	}
@@ -42,21 +41,19 @@ public:
 
 template <class T>
 class TypedStorage : public Storage {
-	static inline T phantom_data;
-
 public:
 	virtual void insert(EntityID p_entity, T p_data) {
 		CRASH_NOW_MSG("Override this function.");
 	}
 
-	virtual const T &get(EntityID p_entity) const {
+	virtual Batch<const std::remove_const_t<T>> get(EntityID p_entity) const {
 		CRASH_NOW_MSG("Override this function.");
-		return phantom_data;
+		return Batch<const std::remove_const_t<T>>();
 	}
 
-	virtual T &get(EntityID p_entity) {
+	virtual Batch<std::remove_const_t<T>> get(EntityID p_entity) {
 		CRASH_NOW_MSG("Override this function.");
-		return phantom_data;
+		return Batch<std::remove_const_t<T>>();
 	}
 };
 
