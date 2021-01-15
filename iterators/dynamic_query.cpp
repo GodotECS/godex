@@ -67,10 +67,10 @@ bool DynamicQuery::is_valid() const {
 }
 
 bool DynamicQuery::build() {
-	ERR_FAIL_COND_V(is_valid() == false, false);
 	if (likely(can_change == false)) {
 		return false;
 	}
+	ERR_FAIL_COND_V(is_valid() == false, false);
 
 	can_change = false;
 
@@ -78,14 +78,8 @@ bool DynamicQuery::build() {
 	// complain for some reason, otherwise it needs to use pointers
 	// (AccessComponent is a parent of Object).
 	accessors.resize(component_ids.size());
-	accessors_obj.resize(component_ids.size());
 	for (uint32_t i = 0; i < component_ids.size(); i += 1) {
-		// Creating a new pointer because `set_script_instance` handles
-		// the pointer lifetime unfortunately so set an automatic memory
-		// pointer is not safe.
-		accessors[i] = memnew(DataAccessorScriptInstance<godex::Component>);
-		accessors[i]->__mut = mutability[i];
-		accessors_obj[i].set_script_instance(accessors[i]);
+		accessors[i].__mut = mutability[i];
 	}
 
 	return true;
@@ -97,7 +91,6 @@ void DynamicQuery::reset() {
 	component_ids.clear();
 	mutability.clear();
 	accessors.clear();
-	accessors_obj.clear();
 	world = nullptr;
 }
 
@@ -108,13 +101,13 @@ uint32_t DynamicQuery::access_count() const {
 Object *DynamicQuery::get_access_gd(uint32_t p_index) {
 	ERR_FAIL_COND_V_MSG(is_valid() == false, nullptr, "The query is invalid.");
 	build();
-	return accessors_obj.ptr() + p_index;
+	return accessors.ptr() + p_index;
 }
 
 DataAccessorScriptInstance<godex::Component> *DynamicQuery::get_access(uint32_t p_index) {
 	ERR_FAIL_COND_V_MSG(is_valid() == false, nullptr, "The query is invalid.");
 	build();
-	return accessors[p_index];
+	return accessors.ptr() + p_index;
 }
 
 void DynamicQuery::begin_script(Object *p_world) {
@@ -200,9 +193,6 @@ void DynamicQuery::next() {
 
 void DynamicQuery::end() {
 	// Clear any component reference.
-	for (uint32_t i = 0; i < component_ids.size(); i += 1) {
-		accessors[i]->__target = nullptr;
-	}
 
 	world = nullptr;
 	storages.clear();
@@ -245,10 +235,10 @@ void DynamicQuery::fetch() {
 
 	for (uint32_t i = 0; i < storages.size(); i += 1) {
 		if (required[i] || storages[i]->has(entity_id)) {
-			accessors[i]->__target = storages[i]->get_ptr(entity_id);
+			accessors[i].__target = storages[i]->get_ptr(entity_id);
 		} else {
 			// This data is not required and is not found.
-			accessors[i]->__target = nullptr;
+			accessors[i].__target = nullptr;
 		}
 	}
 }

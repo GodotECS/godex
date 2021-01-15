@@ -194,12 +194,9 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 TEST_CASE("[Modules][ECS] Test WorldECSCommands create entity from prefab.") {
 	World world;
 
-	DataAccessorScriptInstance<godex::Databag> *world_accessor = memnew(DataAccessorScriptInstance<godex::Databag>);
-	world_accessor->__target = &world;
-	world_accessor->__mut = true;
-
-	Object world_access;
-	world_access.set_script_instance(world_accessor);
+	DataAccessorScriptInstance<godex::Databag> world_access;
+	world_access.__target = &world;
+	world_access.__mut = true;
 
 	Entity entity_prefab;
 
@@ -232,12 +229,9 @@ TEST_CASE("[Modules][ECS] Test WorldECSCommands create entity from prefab.") {
 TEST_CASE("[Modules][ECS] Test WorldECSCommands fetch databags.") {
 	World world;
 
-	DataAccessorScriptInstance<godex::Databag> *world_accessor = memnew(DataAccessorScriptInstance<godex::Databag>);
-	world_accessor->__target = &world;
-	world_accessor->__mut = true;
-
-	Object world_access;
-	world_access.set_script_instance(world_accessor);
+	DataAccessorScriptInstance<godex::Databag> world_access;
+	world_access.__target = &world;
+	world_access.__mut = true;
 
 	Object *world_res_raw = WorldECSCommands::get_singleton()->get_databag(
 			&world_access,
