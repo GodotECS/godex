@@ -20,8 +20,8 @@ public:                                                                         
 																									  \
 private:                                                                                              \
 	/* Storages */                                                                                    \
-	static _FORCE_INLINE_ m_storage_class<m_class> *create_storage() {                                \
-		return memnew(m_storage_class<m_class>);                                                      \
+	static _FORCE_INLINE_ m_storage_class *create_storage() {                                         \
+		return memnew(m_storage_class);                                                               \
 	}                                                                                                 \
 	static _FORCE_INLINE_ Storage *create_storage_no_type() {                                         \
 		/* Creates a storage but returns a generic component. */                                      \

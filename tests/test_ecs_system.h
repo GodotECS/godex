@@ -12,7 +12,7 @@
 #include "test_utilities.h"
 
 class TagTestComponent : public godex::Component {
-	COMPONENT(TagTestComponent, DenseVector)
+	COMPONENT(TagTestComponent, DenseVector<TagTestComponent>)
 };
 
 class TestSystem1Databag : public godex::Databag {
