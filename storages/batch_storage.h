@@ -70,6 +70,10 @@ public:
 	virtual void remove(EntityID p_entity) override {
 		storage.remove(p_entity);
 	}
+
+	virtual void clear() override {
+		storage.clear();
+	}
 };
 
 /// The size can be chosen on the fly, but the components are stored in a
@@ -130,5 +134,9 @@ public:
 
 	virtual void remove(EntityID p_entity) override {
 		storage.remove(p_entity);
+	}
+
+	virtual void clear() override {
+		storage.clear();
 	}
 };

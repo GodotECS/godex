@@ -81,6 +81,12 @@ Variant ECS::get_component_property_default(uint32_t p_component_id, StringName 
 	}
 }
 
+bool ECS::is_component_events(godex::component_id p_component_id) {
+	ERR_FAIL_COND_V_MSG(verify_component_id(p_component_id) == false, false, "The component " + itos(p_component_id) + " is invalid.");
+
+	return components_info[p_component_id].is_event;
+}
+
 bool ECS::verify_databag_id(godex::databag_id p_id) {
 	return p_id < databags.size();
 }
@@ -290,7 +296,7 @@ void ECS::dispatch_active_world() {
 void ECS::ecs_init() {
 }
 
-uint32_t ECS::register_script_component(StringName p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type) {
+uint32_t ECS::register_script_component(const StringName &p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type) {
 	{
 		const uint32_t id = get_component_id(p_name);
 		ERR_FAIL_COND_V_MSG(id != UINT32_MAX, UINT32_MAX, "The script component " + p_name + " is already registered.");
@@ -344,6 +350,14 @@ uint32_t ECS::register_script_component(StringName p_name, const LocalVector<Scr
 					info });
 
 	return info->component_id;
+}
+
+uint32_t ECS::register_script_component_event(const StringName &p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type) {
+	const uint32_t cid = register_script_component(p_name, p_properties, p_storage_type);
+	ERR_FAIL_COND_V(cid == UINT32_MAX, UINT32_MAX);
+
+	components_info[cid].is_event = true;
+	return cid;
 }
 
 bool ECS::verify_component_id(uint32_t p_component_id) {

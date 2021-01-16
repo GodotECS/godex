@@ -22,6 +22,17 @@ public:
 	int a = 10;
 };
 
+struct Event1Component : public godex::Component {
+	COMPONENT_BATCH(Event1Component, DenseVector, 2)
+
+public:
+	int a = 0;
+
+	Event1Component() {}
+	Event1Component(int p_a) :
+			a(p_a) {}
+};
+
 class TestSystemSubPipeDatabag : public godex::Databag {
 	DATABAG(TestSystemSubPipeDatabag)
 
@@ -57,6 +68,15 @@ void test_system_with_databag(TestSystem1Databag *test_res, Query<TransformCompo
 
 void test_system_with_null_databag(TestSystem1Databag *test_res) {
 	CRASH_COND(test_res != nullptr);
+}
+
+void test_system_generate_events(Query<TransformComponent> &p_query) {
+	// TODO Add events.
+}
+
+void test_system_check_events(Query<const Event1Component> &p_query) {
+	// TODO count events.
+	// TODO check count.
 }
 
 TEST_CASE("[Modules][ECS] Test system and query") {
@@ -418,6 +438,35 @@ TEST_CASE("[Modules][ECS] Test WorldECSCommands from dynamic query.") {
 	CHECK(world.get_storage<TransformComponent>()->has(1));
 	// Make sure the default is also set.
 	CHECK(ABS(world.get_storage<TransformComponent>()->get(1)->get_transform().origin.x - 10) <= CMP_EPSILON);
+}
+
+TEST_CASE("[Modules][ECS] Test event mechanism.") {
+	ECS::register_component_event<Event1Component>();
+
+	World world;
+
+	EntityID entity = world
+							  .create_entity()
+							  .with(TransformComponent());
+
+	// Dispatch the pipeline.
+	Pipeline pipeline;
+	pipeline.add_system(test_system_generate_events);
+	pipeline.add_system(test_system_check_events);
+	pipeline.build();
+
+	// Make sure no component event is left at the end of each cycle.
+	for (uint32_t i = 0; i < 5; i += 1) {
+		if (world.get_storage(Event1Component::get_component_id())) {
+			// The first check the storages is `nullptr`, so this check.
+			CHECK(world.get_storage(Event1Component::get_component_id())->has(entity) == false);
+		}
+
+		pipeline.dispatch(&world);
+
+		// At the end of each dispatch the events are dropped.
+		CHECK(world.get_storage(Event1Component::get_component_id())->has(entity) == false);
+	}
 }
 
 } // namespace godex_tests_system
