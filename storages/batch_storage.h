@@ -15,13 +15,8 @@ protected:
 	STORAGE<StaticVector<T, SIZE>> storage;
 
 public:
-	virtual StorageType get_type() const override {
-		// TODO do this pelase.
-		return StorageType::NONE;
-	}
 	virtual String get_type_name() const override {
-		// TODO do this pelase.
-		return "";
+		return "FixedSizeBatchStorage<" + String(typeid(T).name()) + ", " + itos(SIZE) + ">";
 	}
 
 	virtual void insert(EntityID p_entity, const T &p_data) override {
@@ -85,13 +80,8 @@ protected:
 	STORAGE<LocalVector<T>> storage;
 
 public:
-	virtual StorageType get_type() const override {
-		// TODO do this pelase.
-		return StorageType::NONE;
-	}
 	virtual String get_type_name() const override {
-		// TODO do this pelase.
-		return "";
+		return "DynamicSizedBatchStorage<" + String(typeid(T).name()) + ">";
 	}
 
 	virtual void insert(EntityID p_entity, const T &p_data) override {

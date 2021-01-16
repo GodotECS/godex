@@ -32,6 +32,20 @@ public:                                               \
 													  \
 private:
 
+enum class StorageType {
+	/// No storage.
+	NONE,
+
+	/// Store the data in a condenzed form factor.
+	DENSE_VECTOR,
+
+	/// Dynamically sized batch dense vector.
+	/// Allow to store more components per entity. Since the batch is dynamically
+	/// allocated, the cache coherency may not be respected.
+	/// This is usually used by `events`.
+	BATCH_DENSE_VECTOR,
+};
+
 /// `BatchData` it's used by the queries to return multiple `Component`s for
 /// entity. Depending on the storage used, it's possible to store more
 /// components per entity; in all these cases a `BatchData` is returned.
