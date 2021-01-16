@@ -93,10 +93,6 @@ protected:
 	DenseVector<T> storage;
 
 public:
-	virtual StorageType get_type() const override {
-		return StorageType::DENSE_VECTOR;
-	}
-
 	virtual String get_type_name() const override {
 		return "DenseVector[" + String(typeid(T).name()) + "]";
 	}
