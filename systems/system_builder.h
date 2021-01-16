@@ -11,32 +11,53 @@
 
 namespace SystemBuilder {
 
-template <class Q>
-void extract_info(bool_type<true>, SystemExeInfo &r_info) {
-	// This is a query.
-	Q::get_components(r_info.mutable_components, r_info.immutable_components);
-}
-
-template <class R>
-void extract_info(bool_type<false>, SystemExeInfo &r_info) {
-	// This is a databag.
-	if (std::is_const<R>()) {
-		r_info.immutable_databags.push_back(R::get_databag_id());
-	} else {
-		r_info.mutable_databags.push_back(R::get_databag_id());
-	}
-}
-
+/// Used to fetch the system function arguments:
 template <class... Cs>
 struct InfoConstructor {
 	InfoConstructor(SystemExeInfo &r_info) {}
 };
 
+/// Fetches the component stoages: `TypedStorage`s.
+/// The component storage can be taken only as mutable (non const) pointer.
+/// ```
+/// void test_func(TypedStorage<Component> *p_component_storage){}
+/// ```
 template <class C, class... Cs>
-struct InfoConstructor<C, Cs...> : InfoConstructor<Cs...> {
+struct InfoConstructor<TypedStorage<C> *, Cs...> : InfoConstructor<Cs...> {
 	InfoConstructor(SystemExeInfo &r_info) :
 			InfoConstructor<Cs...>(r_info) {
-		extract_info<std::remove_reference_t<std::remove_pointer_t<C>>>(is_specialization<std::remove_reference_t<std::remove_pointer_t<C>>, Query>(), r_info);
+		r_info.mutable_components_storage.push_back(C::get_component_id());
+	}
+};
+
+/// Fetches the argument `Query`.
+/// The query is supposed to be a mutable query reference:
+/// ```
+/// void test_func(Query<const Component> &query){}
+/// ```
+template <class... Qcs, class... Cs>
+struct InfoConstructor<Query<Qcs...> &, Cs...> : InfoConstructor<Cs...> {
+	InfoConstructor(SystemExeInfo &r_info) :
+			InfoConstructor<Cs...>(r_info) {
+		Query<Qcs...>::get_components(r_info.mutable_components, r_info.immutable_components);
+	}
+};
+
+/// Fetches the `Databag`.
+/// The `Databag` can be taken as mutable or immutable pointer.
+/// ```
+/// void test_func(const FrameTimeDatabag *p_frame_time){}
+/// ```
+template <class D, class... Cs>
+struct InfoConstructor<D *, Cs...> : InfoConstructor<Cs...> {
+	InfoConstructor(SystemExeInfo &r_info) :
+			InfoConstructor<Cs...>(r_info) {
+		// Databag
+		if (std::is_const<D>()) {
+			r_info.immutable_databags.push_back(D::get_databag_id());
+		} else {
+			r_info.mutable_databags.push_back(D::get_databag_id());
+		}
 	}
 };
 

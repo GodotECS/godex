@@ -11,6 +11,7 @@ namespace godex {
 class Component;
 }
 
+/// Never override this directly. Always override the `TypedStorage`.
 class Storage {
 public:
 	virtual ~Storage() {}

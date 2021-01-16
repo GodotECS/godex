@@ -70,13 +70,32 @@ void test_system_with_null_databag(TestSystem1Databag *test_res) {
 	CRASH_COND(test_res != nullptr);
 }
 
-void test_system_generate_events(Query<TransformComponent> &p_query) {
-	// TODO Add events.
+void test_system_generate_events(Query<TransformComponent> &p_query, TypedStorage<Event1Component> *p_events) {
+	CRASH_COND_MSG(p_events == nullptr, "When taken mutable it's never supposed to be nullptr.");
+
+	while (p_query.is_done() == false) {
+		p_events->insert(p_query.get_current_entity(), Event1Component(123));
+		p_events->insert(p_query.get_current_entity(), Event1Component(456));
+		p_events->insert(p_query.get_current_entity(), Event1Component(12));
+		p_events->insert(p_query.get_current_entity(), Event1Component(33));
+		p_query.next();
+	}
 }
 
 void test_system_check_events(Query<const Event1Component> &p_query) {
-	// TODO count events.
-	// TODO check count.
+	uint32_t entities_with_events = 0;
+
+	while (p_query.is_done() == false) {
+		auto [event] = p_query.get();
+
+		CHECK(event.get_size() == 2);
+		CHECK(event[0]->a == 123);
+		CHECK(event[1]->a == 456);
+
+		entities_with_events += 1;
+	}
+
+	CHECK(entities_with_events == 1);
 }
 
 TEST_CASE("[Modules][ECS] Test system and query") {
