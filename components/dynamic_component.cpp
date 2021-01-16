@@ -9,47 +9,47 @@ Storage *DynamicComponentInfo::create_storage() {
 			// Creates DynamicDenseVector storage.
 			switch (properties.size()) {
 				case 0:
-					return memnew(DynamicDenseVector<ZeroVariantComponent>(this));
+					return memnew(DynamicDenseVectorStorage<ZeroVariantComponent>(this));
 				case 1:
-					return memnew(DynamicDenseVector<VariantComponent<1>>(this));
+					return memnew(DynamicDenseVectorStorage<VariantComponent<1>>(this));
 				case 2:
-					return memnew(DynamicDenseVector<VariantComponent<2>>(this));
+					return memnew(DynamicDenseVectorStorage<VariantComponent<2>>(this));
 				case 3:
-					return memnew(DynamicDenseVector<VariantComponent<3>>(this));
+					return memnew(DynamicDenseVectorStorage<VariantComponent<3>>(this));
 				case 4:
-					return memnew(DynamicDenseVector<VariantComponent<4>>(this));
+					return memnew(DynamicDenseVectorStorage<VariantComponent<4>>(this));
 				case 5:
-					return memnew(DynamicDenseVector<VariantComponent<5>>(this));
+					return memnew(DynamicDenseVectorStorage<VariantComponent<5>>(this));
 				case 6:
-					return memnew(DynamicDenseVector<VariantComponent<6>>(this));
+					return memnew(DynamicDenseVectorStorage<VariantComponent<6>>(this));
 				case 7:
-					return memnew(DynamicDenseVector<VariantComponent<7>>(this));
+					return memnew(DynamicDenseVectorStorage<VariantComponent<7>>(this));
 				case 8:
-					return memnew(DynamicDenseVector<VariantComponent<8>>(this));
+					return memnew(DynamicDenseVectorStorage<VariantComponent<8>>(this));
 				case 9:
-					return memnew(DynamicDenseVector<VariantComponent<9>>(this));
+					return memnew(DynamicDenseVectorStorage<VariantComponent<9>>(this));
 				case 10:
-					return memnew(DynamicDenseVector<VariantComponent<10>>(this));
+					return memnew(DynamicDenseVectorStorage<VariantComponent<10>>(this));
 				case 11:
-					return memnew(DynamicDenseVector<VariantComponent<11>>(this));
+					return memnew(DynamicDenseVectorStorage<VariantComponent<11>>(this));
 				case 12:
-					return memnew(DynamicDenseVector<VariantComponent<12>>(this));
+					return memnew(DynamicDenseVectorStorage<VariantComponent<12>>(this));
 				case 13:
-					return memnew(DynamicDenseVector<VariantComponent<13>>(this));
+					return memnew(DynamicDenseVectorStorage<VariantComponent<13>>(this));
 				case 14:
-					return memnew(DynamicDenseVector<VariantComponent<14>>(this));
+					return memnew(DynamicDenseVectorStorage<VariantComponent<14>>(this));
 				case 15:
-					return memnew(DynamicDenseVector<VariantComponent<15>>(this));
+					return memnew(DynamicDenseVectorStorage<VariantComponent<15>>(this));
 				case 16:
-					return memnew(DynamicDenseVector<VariantComponent<16>>(this));
+					return memnew(DynamicDenseVectorStorage<VariantComponent<16>>(this));
 				case 17:
-					return memnew(DynamicDenseVector<VariantComponent<17>>(this));
+					return memnew(DynamicDenseVectorStorage<VariantComponent<17>>(this));
 				case 18:
-					return memnew(DynamicDenseVector<VariantComponent<18>>(this));
+					return memnew(DynamicDenseVectorStorage<VariantComponent<18>>(this));
 				case 19:
-					return memnew(DynamicDenseVector<VariantComponent<19>>(this));
+					return memnew(DynamicDenseVectorStorage<VariantComponent<19>>(this));
 				case 20:
-					return memnew(DynamicDenseVector<VariantComponent<20>>(this));
+					return memnew(DynamicDenseVectorStorage<VariantComponent<20>>(this));
 			}
 		case StorageType::NONE:
 		default:

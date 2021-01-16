@@ -10,27 +10,10 @@
 
 namespace godex {
 
-#define COMPONENT(m_class, m_storage_class)                                                           \
-	ECSCLASS(m_class)                                                                                 \
-	friend class World;                                                                               \
-	friend class Component;                                                                           \
-																									  \
-public:                                                                                               \
-	typedef bool_type<false> is_event;                                                                \
-																									  \
-private:                                                                                              \
-	/* Storages */                                                                                    \
-	static _FORCE_INLINE_ m_storage_class *create_storage() {                                         \
-		return memnew(m_storage_class);                                                               \
-	}                                                                                                 \
-	static _FORCE_INLINE_ Storage *create_storage_no_type() {                                         \
-		/* Creates a storage but returns a generic component. */                                      \
-		return create_storage();                                                                      \
-	}                                                                                                 \
-																									  \
+#define COMPONENT_INTERNAL(m_class)                                                                   \
 	/* Components */                                                                                  \
 	static inline uint32_t component_id = UINT32_MAX;                                                 \
-																									  \
+												      \
 	static void add_component_by_name(World *p_world, EntityID entity_id, const Dictionary &p_data) { \
 		m_class component;                                                                            \
 		for (const Variant *key = p_data.next(nullptr); key != nullptr; key = p_data.next(key)) {     \
@@ -40,13 +23,51 @@ private:                                                                        
 				entity_id,                                                                            \
 				component);                                                                           \
 	}                                                                                                 \
-																									  \
+												      \
 public:                                                                                               \
 	static uint32_t get_component_id() { return component_id; }                                       \
 	virtual godex::component_id cid() const override { return component_id; }                         \
-																									  \
+												      \
 	ECS_PROPERTY_MAPPER(m_class)                                                                      \
 private:
+
+#define COMPONENT(m_class, m_storage_class)                            \
+	ECSCLASS(m_class)                                                  \
+	friend class World;                                                \
+	friend class Component;                                            \
+								       \
+public:                                                                \
+        typedef bool_type<false> is_event;                                 \
+                                                                       \
+private:                                                               \
+	/* Storages */                                                     \
+	static _FORCE_INLINE_ m_storage_class<m_class> *create_storage() { \
+		return memnew(m_storage_class<m_class>);                       \
+	}                                                                  \
+	static _FORCE_INLINE_ Storage *create_storage_no_type() {          \
+		/* Creates a storage but returns a generic component. */       \
+		return create_storage();                                       \
+	}                                                                  \
+	COMPONENT_INTERNAL(m_class)
+
+#define COMPONENT_BATCH(m_class, m_storage_class, m_batch)                                    \
+	ECSCLASS(m_class)                                                                         \
+	friend class World;                                                                       \
+	friend class Component;                                                                   \
+											      \
+public:                                                                                       \
+        typedef bool_type<false> is_event;                                                        \
+                                                                                              \
+private:                                                                                      \
+	/* Storages */                                                                            \
+	static _FORCE_INLINE_ BatchStorage<m_storage_class, m_batch, m_class> *create_storage() { \
+		return new BatchStorage<m_storage_class, m_batch, m_class>;                           \
+	}                                                                                         \
+	static _FORCE_INLINE_ Storage *create_storage_no_type() {                                 \
+		/* Creates a storage but returns a generic component. */                              \
+		return create_storage();                                                              \
+	}                                                                                         \
+	COMPONENT_INTERNAL(m_class)
 
 class Component : public ECSClass {
 	ECSCLASS(Component)

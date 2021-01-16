@@ -8,7 +8,7 @@
 // TODO the changed system, here, is really bad and should
 // be handled via storage.
 class TransformComponent : public godex::Component {
-	COMPONENT(TransformComponent, DenseVector<TransformComponent>)
+	COMPONENT(TransformComponent, DenseVectorStorage)
 
 	Transform transform;
 	bool changed = true;

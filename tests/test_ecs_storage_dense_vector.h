@@ -9,7 +9,7 @@
 namespace godex_storage_dense_vector_tests {
 
 class TestInt : public godex::Component {
-	COMPONENT(TestInt, DenseVector<TestInt>)
+	COMPONENT(TestInt, DenseVectorStorage)
 
 public:
 	int number;
@@ -20,7 +20,7 @@ public:
 };
 
 TEST_CASE("[Modules][ECS] Test dense storage insert and remove.") {
-	DenseVector<TestInt> storage;
+	DenseVectorStorage<TestInt> storage;
 
 	// Stress test the storage. Each time the element are removed the
 	// internal indices changes. Doing it 500 times should test all possible

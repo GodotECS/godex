@@ -42,15 +42,17 @@ public:
 template <class T>
 class TypedStorage : public Storage {
 public:
-	virtual void insert(EntityID p_entity, T p_data) {
+	virtual void insert(EntityID p_entity, const T &p_data) {
 		CRASH_NOW_MSG("Override this function.");
 	}
 
+	// TODO remove `std::remove_const_t` if useless, now.
 	virtual Batch<const std::remove_const_t<T>> get(EntityID p_entity) const {
 		CRASH_NOW_MSG("Override this function.");
 		return Batch<const std::remove_const_t<T>>();
 	}
 
+	// TODO remove `std::remove_const_t` if useless, now.
 	virtual Batch<std::remove_const_t<T>> get(EntityID p_entity) {
 		CRASH_NOW_MSG("Override this function.");
 		return Batch<std::remove_const_t<T>>();

@@ -7,7 +7,7 @@
 #include "scene/resources/mesh.h"
 
 class MeshComponent : public godex::Component {
-	COMPONENT(MeshComponent, DenseVector<MeshComponent>)
+	COMPONENT(MeshComponent, DenseVectorStorage)
 
 	Ref<Mesh> mesh;
 	Ref<Material> material_override;
