@@ -7,23 +7,25 @@
 #include "../ecs.h"
 #include "../godot/components/transform_component.h"
 #include "../iterators/dynamic_query.h"
-#include "../storages/dynamic_batch_storage.h"
+#include "../storages/batch_storage.h"
 #include "../world/world.h"
 
 class TagQueryTestComponent : public godex::Component {
 	COMPONENT(TagQueryTestComponent, DenseVectorStorage)
 };
 
-//class TestFixedSizeEvent : public godex::Component {
-//	COMPONENT_BATCH(TestFixedSizeEvent, DenseVector, 5)
-//
-//public:
-//	TestFixedSizeEvent() {
-//	}
-//};
+class TestFixedSizeEvent : public godex::Component {
+	COMPONENT_BATCH(TestFixedSizeEvent, DenseVector, 2)
+public:
+	int number = 0;
+
+	TestFixedSizeEvent() {}
+	TestFixedSizeEvent(int num) :
+			number(num) {}
+};
 
 class TestEvent : public godex::Component {
-	COMPONENT_BATCH(TestEvent, DenseVector, -1)
+	COMPONENT_BATCH(TestEvent, DenseVector, -1) // -1 make the storage dynamic.
 public:
 	int number = 0;
 
@@ -396,6 +398,7 @@ TEST_CASE("[Modules][ECS] Test invalid dynamic query.") {
 
 TEST_CASE("[Modules][ECS] Test query with event.") {
 	ECS::register_component<TestEvent>();
+	ECS::register_component<TestFixedSizeEvent>();
 
 	World world;
 
@@ -407,52 +410,80 @@ TEST_CASE("[Modules][ECS] Test query with event.") {
 
 	EntityID entity_2 = world
 								.create_entity()
-								.with(TransformComponent());
+								.with(TransformComponent())
+								.with(TestFixedSizeEvent(645))
+								.with(TestFixedSizeEvent(33))
+								.with(TestFixedSizeEvent(78))
+								.with(TestFixedSizeEvent(52));
 
 	EntityID entity_3 = world
 								.create_entity()
 								.with(TransformComponent())
 								.with(TestEvent());
 
-	Query<TransformComponent, TestEvent> query(&world);
-
+	// Try the first query with dynamic sized batch storage.
 	{
-		CHECK(query.is_done() == false);
+		Query<TransformComponent, TestEvent> query(&world);
 
-		auto [transform, tag] = query.get();
+		{
+			CHECK(query.is_done() == false);
 
-		CHECK(query.get_current_entity() == entity_1);
+			auto [transform, event] = query.get();
 
-		CHECK(transform.get_size() == 1);
-		CHECK(transform != nullptr);
+			CHECK(query.get_current_entity() == entity_1);
 
-		CHECK(tag.get_size() == 2);
-		CHECK(tag[0]->number == 50);
-		CHECK(tag[1]->number == 38);
+			CHECK(transform.get_size() == 1);
+			CHECK(transform != nullptr);
 
-		query.next();
+			CHECK(event.get_size() == 2);
+			CHECK(event[0]->number == 50);
+			CHECK(event[1]->number == 38);
+
+			query.next();
+		}
+
+		{
+			CHECK(query.is_done() == false);
+
+			auto [transform, event] = query.get();
+
+			CHECK(query.get_current_entity() == entity_3);
+
+			CHECK(transform.get_size() == 1);
+			CHECK(transform != nullptr);
+
+			CHECK(event.get_size() == 1);
+			CHECK(event[0]->number == 0);
+
+			query.next();
+		}
+
+		// Now it's done!
+		CHECK(query.is_done());
 	}
 
+	// Try the second query with fixed sized batch storage.
 	{
-		CHECK(query.is_done() == false);
+		Query<TransformComponent, TestFixedSizeEvent> query(&world);
 
-		auto [transform, tag] = query.get();
+		{
+			CHECK(query.is_done() == false);
 
-		CHECK(query.get_current_entity() == entity_3);
+			auto [transform, event] = query.get();
 
-		CHECK(transform.get_size() == 1);
-		CHECK(transform != nullptr);
+			CHECK(query.get_current_entity() == entity_2);
 
-		CHECK(tag.get_size() == 1);
-		CHECK(tag[0]->number == 0);
+			CHECK(transform.get_size() == 1);
+			CHECK(transform != nullptr);
 
-		query.next();
+			CHECK(event.get_size() == 2);
+			CHECK(event[0]->number == 645);
+			CHECK(event[1]->number == 33);
+
+			query.next();
+		}
 	}
-
-	// Now it's done!
-	CHECK(query.is_done());
 }
-
 } // namespace godex_tests
 
 #endif // TEST_ECS_QUERY_H
