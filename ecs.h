@@ -26,6 +26,7 @@ struct ComponentInfo {
 	Variant (*get_property_default)(StringName p_property_name);
 	Storage *(*create_storage)();
 	DynamicComponentInfo *dynamic_component_info = nullptr;
+	bool is_event = false;
 };
 
 /// These functions are implemented by the `DATABAG` macro and assigned during
@@ -65,8 +66,12 @@ public:
 	template <class C>
 	static void register_component();
 
+	template <class E>
+	static void register_component_event();
+
 	// TODO specify the storage here?
-	static uint32_t register_script_component(StringName p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type);
+	static uint32_t register_script_component(const StringName &p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type);
+	static uint32_t register_script_component_event(const StringName &p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type);
 
 	static bool verify_component_id(uint32_t p_component_id);
 
@@ -76,6 +81,7 @@ public:
 	static StringName get_component_name(godex::component_id p_component_id);
 	static const LocalVector<PropertyInfo> *get_component_properties(godex::component_id p_component_id);
 	static Variant get_component_property_default(godex::component_id p_component_id, StringName p_property_name);
+	static bool is_component_events(godex::component_id p_component_id);
 
 	// ~~ Databags ~~
 	template <class C>
@@ -199,6 +205,19 @@ void ECS::register_component() {
 					&C::get_property_default_static,
 					&C::create_storage_no_type,
 					nullptr });
+}
+
+template <class E>
+void ECS::register_component_event() {
+	ERR_FAIL_COND_MSG(E::get_component_id() != UINT32_MAX, "This component event is already registered.");
+	register_component<E>();
+
+#ifdef DEBUG_ENABLED
+	// `register_component` is not supposed to fail.
+	CRASH_COND(E::get_component_id() == UINT32_MAX);
+#endif
+
+	components_info[E::get_component_id()].is_event = true;
 }
 
 template <class R>

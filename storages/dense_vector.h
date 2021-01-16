@@ -67,6 +67,12 @@ public:
 		entity_to_data[p_entity] = UINT32_MAX;
 	}
 
+	void clear() {
+		data.clear();
+		data_to_entity.clear();
+		entity_to_data.clear();
+	}
+
 protected:
 	void insert_entity(EntityID p_entity, uint32_t p_index) {
 		if (entity_to_data.size() <= p_entity) {
@@ -134,6 +140,10 @@ public:
 
 	virtual void remove(EntityID p_entity) override {
 		storage.remove(p_entity);
+	}
+
+	virtual void clear() override {
+		storage.clear();
 	}
 };
 

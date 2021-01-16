@@ -30,7 +30,14 @@ public:
 		CRASH_NOW_MSG("Override this function.");
 		return nullptr;
 	}
-	virtual void remove(EntityID p_index) {}
+
+	virtual void remove(EntityID p_index) {
+		CRASH_NOW_MSG("Override this function.");
+	}
+
+	virtual void clear() {
+		CRASH_NOW_MSG("Override this function.");
+	}
 };
 
 template <class T>
