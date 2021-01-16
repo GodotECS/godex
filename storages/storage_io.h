@@ -22,7 +22,7 @@ void StorageIO::insert(Storage *p_storage, EntityID p_index, T p_data) {
 #ifdef DEBUG_ENABLED
 			ERR_FAIL_COND_MSG(dynamic_cast<DenseVector<T> *>(p_storage) == nullptr, "[FATAL] The data type (" + String(typeid(T).name()) + ") is not compatible with the storage type: (" + p_storage->get_type_name() + ")");
 #endif
-			static_cast<DenseVector<T> *>(p_storage)->insert(p_index, p_data);
+			static_cast<DenseVectorStorage<T> *>(p_storage)->insert(p_index, p_data);
 			break;
 		default:
 			ERR_FAIL_MSG("The current storage is not supported, please implement it.");

@@ -11,14 +11,25 @@
 #include "../world/world.h"
 
 class TagQueryTestComponent : public godex::Component {
-	COMPONENT(TagQueryTestComponent, DenseVector<TagQueryTestComponent>)
+	COMPONENT(TagQueryTestComponent, DenseVectorStorage)
 };
 
-class TestEvent : public godex::Component {
-	COMPONENT(TestEvent, DynamicBatchStorage<DenseVector<TestEvent>>)
+//class TestFixedSizeEvent : public godex::Component {
+//	COMPONENT_BATCH(TestFixedSizeEvent, DenseVector, 5)
+//
+//public:
+//	TestFixedSizeEvent() {
+//	}
+//};
 
+class TestEvent : public godex::Component {
+	COMPONENT_BATCH(TestEvent, DenseVector, -1)
 public:
+	int number = 0;
+
 	TestEvent() {}
+	TestEvent(int num) :
+			number(num) {}
 };
 
 namespace godex_tests {
@@ -391,8 +402,8 @@ TEST_CASE("[Modules][ECS] Test query with event.") {
 	EntityID entity_1 = world
 								.create_entity()
 								.with(TransformComponent())
-								.with(TestEvent())
-								.with(TestEvent());
+								.with(TestEvent(50))
+								.with(TestEvent(38));
 
 	EntityID entity_2 = world
 								.create_entity()
@@ -405,15 +416,41 @@ TEST_CASE("[Modules][ECS] Test query with event.") {
 
 	Query<TransformComponent, TestEvent> query(&world);
 
-	CHECK(query.is_done() == false);
+	{
+		CHECK(query.is_done() == false);
 
-	auto [transform, tag] = query.get();
+		auto [transform, tag] = query.get();
 
-	CHECK(query.get_current_entity() == entity_1);
-	CHECK(transform != nullptr);
-	CHECK(tag.get_size() == 2);
+		CHECK(query.get_current_entity() == entity_1);
 
-	query.next();
+		CHECK(transform.get_size() == 1);
+		CHECK(transform != nullptr);
+
+		CHECK(tag.get_size() == 2);
+		CHECK(tag[0]->number == 50);
+		CHECK(tag[1]->number == 38);
+
+		query.next();
+	}
+
+	{
+		CHECK(query.is_done() == false);
+
+		auto [transform, tag] = query.get();
+
+		CHECK(query.get_current_entity() == entity_3);
+
+		CHECK(transform.get_size() == 1);
+		CHECK(transform != nullptr);
+
+		CHECK(tag.get_size() == 1);
+		CHECK(tag[0]->number == 0);
+
+		query.next();
+	}
+
+	// Now it's done!
+	CHECK(query.is_done());
 }
 
 } // namespace godex_tests

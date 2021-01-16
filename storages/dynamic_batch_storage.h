@@ -5,79 +5,116 @@
 #include "../ecs.h"
 #include "storage.h"
 
-template <template <typename> class X, typename T>
-class DynamicBatchStorage : public TypedStorage<T> {
+/// Optimized version that allow to store a max size of components consecutivelly,
+/// the size must be known at compile time.
+template <template <class> class STORAGE, int SIZE, class T>
+class BatchStorage : public TypedStorage<T> {
 protected:
-	X<T> real_storage;
+	// TODO Here we have the size, can we use an old style array instead?
+	STORAGE<LocalVector<T>> storage;
 
 public:
-	virtual StorageType get_type() const override;
-	virtual String get_type_name() const override;
+	virtual StorageType get_type() const override {
+		// TODO do this pelase.
+		return StorageType::NONE;
+	}
+	virtual String get_type_name() const override {
+		// TODO do this pelase.
+		return "";
+	}
 
-	virtual void insert(EntityID p_entity, T p_data) override;
-	virtual void insert_dynamic(EntityID p_entity, const Dictionary &p_data) override;
-	virtual bool has(EntityID p_entity) const override;
-	virtual const godex::Component *get_ptr(EntityID p_entity) const;
-	virtual godex::Component *get_ptr(EntityID p_entity);
-	virtual const T &get(EntityID p_entity) const override;
-	virtual T &get(EntityID p_entity) override;
-	virtual void remove(EntityID p_entity) override;
+	virtual void insert(EntityID p_entity, const T &p_data) override {
+	}
 
-protected:
-	void insert_entity(EntityID p_entity, uint32_t p_index);
+	virtual void insert_dynamic(EntityID p_entity, const Dictionary &p_data) override {
+	}
+
+	virtual bool has(EntityID p_entity) const override {
+		return false;
+	}
+
+	virtual Batch<const godex::Component> get_ptr(EntityID p_entity) const {
+		return nullptr;
+	}
+
+	virtual Batch<godex::Component> get_ptr(EntityID p_entity) {
+		return nullptr;
+	}
+
+	virtual Batch<const T> get(EntityID p_entity) const override {
+		return nullptr;
+	}
+
+	virtual Batch<T> get(EntityID p_entity) override {
+		return nullptr;
+	}
+
+	virtual void remove(EntityID p_entity) override {
+	}
 };
 
-template <template <typename> class X, typename T>
-StorageType DynamicBatchStorage<X, T>::get_type() const {
-	return real_storage.get_type();
-}
+/// The size can be chosen on the fly, but the components are stored in a
+/// de-localized memory, which may invalidate cache coherency.
+template <template <class> class STORAGE, class T>
+class BatchStorage<STORAGE, -1, T> : public TypedStorage<T> {
+protected:
+	STORAGE<LocalVector<T>> storage;
 
-template <template <typename> class X, typename T>
-String DynamicBatchStorage<X, T>::get_type_name() const {
-	return real_storage.get_type_name();
-}
+public:
+	virtual StorageType get_type() const override {
+		// TODO do this pelase.
+		return StorageType::NONE;
+	}
+	virtual String get_type_name() const override {
+		// TODO do this pelase.
+		return "";
+	}
 
-template <template <typename> class X, typename T>
-void DynamicBatchStorage<X, T>::insert_entity(EntityID p_entity, uint32_t p_index) {
-	real_storage.insert_entity(p_entity, p_index);
-}
+	virtual void insert(EntityID p_entity, const T &p_data) override {
+		if (storage.has(p_entity)) {
+			storage.get(p_entity).push_back(p_data);
+		} else {
+			LocalVector<T> s;
+			s.resize(1);
+			s[0] = p_data;
+			storage.insert(p_entity, s);
+		}
+	}
 
-template <template <typename> class X, typename T>
-void DynamicBatchStorage<X, T>::insert(EntityID p_entity, T p_data) {
-	real_storage.insert(p_entity, p_data);
-}
+	virtual void insert_dynamic(EntityID p_entity, const Dictionary &p_data) override {
+		T insert_data;
 
-template <template <typename> class X, typename T>
-void DynamicBatchStorage<X, T>::insert_dynamic(EntityID p_entity, const Dictionary &p_data) {
-	real_storage.insert_dynamic(p_entity, p_data);
-}
+		// Set the custom data if any.
+		for (const Variant *key = p_data.next(); key; key = p_data.next(key)) {
+			insert_data.set(StringName(*key), *p_data.getptr(*key));
+		}
 
-template <template <typename> class X, typename T>
-bool DynamicBatchStorage<X, T>::has(EntityID p_entity) const {
-	return real_storage.has(p_entity);
-}
+		insert(p_entity, insert_data);
+	}
 
-template <template <typename> class X, typename T>
-const godex::Component *DynamicBatchStorage<X, T>::get_ptr(EntityID p_entity) const {
-	return real_storage.get_ptr(p_entity);
-}
+	virtual bool has(EntityID p_entity) const override {
+		return storage.has(p_entity);
+	}
 
-template <template <typename> class X, typename T>
-godex::Component *DynamicBatchStorage<X, T>::get_ptr(EntityID p_entity) {
-	return real_storage.get_ptr(p_entity);
-}
+	virtual Batch<const godex::Component> get_ptr(EntityID p_entity) const {
+		return get(p_entity);
+	}
 
-template <template <typename> class X, typename T>
-const T &DynamicBatchStorage<X, T>::get(EntityID p_entity) const {
-	return real_storage.get(p_entity);
-}
+	virtual Batch<godex::Component> get_ptr(EntityID p_entity) {
+		return get(p_entity);
+	}
 
-template <template <typename> class X, typename T>
-T &DynamicBatchStorage<X, T>::get(EntityID p_entity) {
-	return real_storage.get(p_entity);
-}
+	virtual Batch<const T> get(EntityID p_entity) const override {
+		const LocalVector<T> &data = storage.get(p_entity);
+		return Batch(data.ptr(), data.size());
+	}
 
-template <template <typename> class X, typename T>
-void DynamicBatchStorage<X, T>::remove(EntityID p_entity) {
-	return real_storage.remove(p_entity);
-}
+	virtual Batch<T> get(EntityID p_entity) override {
+		LocalVector<T> &data = storage.get(p_entity);
+		return Batch(data.ptr(), data.size());
+	}
+
+	virtual void remove(EntityID p_entity) override {
+		return storage.remove(p_entity);
+	}
+};
