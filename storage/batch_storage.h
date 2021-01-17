@@ -11,7 +11,6 @@
 template <template <class> class STORAGE, int SIZE, class T>
 class BatchStorage : public Storage<T> {
 protected:
-	// TODO Here we have the size, can we use an old style array instead?
 	STORAGE<StaticVector<T, SIZE>> storage;
 
 public:

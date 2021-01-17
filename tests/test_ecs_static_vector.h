@@ -1,7 +1,7 @@
 #ifndef TEST_STATIC_VECTOR_H
 #define TEST_STATIC_VECTOR_H
 
-#include "../storages/static_vector.h"
+#include "../storage/static_vector.h"
 
 #include "tests/test_macros.h"
 
