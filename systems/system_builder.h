@@ -67,36 +67,40 @@ void get_system_info_from_function(SystemExeInfo &r_info, void (*system_func)(RC
 	InfoConstructor<RCs...> a(r_info);
 }
 
-// This is an utility used to convert the type to a reference (`&`).
-// The keyword `auto` doesn't take into account the reference (`&`), so it's
-// necessary to wrap the type to preserve the reference.
+/// `DataFetcher` is used to fetch the data from the world and provide it to the
+/// `System`.
 template <class C>
-struct Container {
-	C inner;
+struct DataFetcher {};
 
-	template <class... Cs>
-	Container(Query<Cs...> p_query) :
-			inner(p_query) {}
+/// TypedStorage
+template <class C>
+struct DataFetcher<TypedStorage<C> *> {
+	TypedStorage<C> *inner;
 
-	Container(C p_inner) :
-			inner(p_inner) {}
+	DataFetcher(World *p_world) :
+			inner(p_world->get_storage<C>()) {}
+};
 
-	C &get_inner() {
-		return inner;
+/// Query
+template <class... Cs>
+struct DataFetcher<Query<Cs...> &> {
+	Query<Cs...> inner;
+
+	DataFetcher(World *p_world) :
+			inner(p_world) {}
+};
+
+/// Databag
+template <class D>
+struct DataFetcher<D *> {
+	D *inner;
+
+	DataFetcher(World *p_world) {
+		inner = p_world->get_databag<D>();
 	}
 };
 
-template <class C>
-Container<C> obtain_query_or_databag(bool_type<true>, World *p_world) {
-	return Container<C>(C(p_world));
-}
-
-template <class C>
-Container<C *> obtain_query_or_databag(bool_type<false>, World *p_world) {
-	return Container<C *>(p_world->get_databag<C>());
-}
-
-#define OBTAIN(name, T, world) auto name = obtain_query_or_databag<std::remove_reference_t<std::remove_pointer_t<T>>>(is_specialization<std::remove_reference_t<std::remove_pointer_t<T>>, Query>(), world);
+#define OBTAIN(name, T, world) auto name = DataFetcher<T>(world);
 
 // ~~~~ system_exec_func definition ~~~~ //
 
@@ -105,7 +109,7 @@ void system_exec_func(World *p_world, void (*p_system)(A)) {
 	OBTAIN(a, A, p_world);
 
 	p_system(
-			a.get_inner());
+			a.inner);
 }
 
 template <class A, class B>
@@ -114,8 +118,8 @@ void system_exec_func(World *p_world, void (*p_system)(A, B)) {
 	OBTAIN(b, B, p_world);
 
 	p_system(
-			a.get_inner(),
-			b.get_inner());
+			a.inner,
+			b.inner);
 }
 
 template <class A, class B, class C>
@@ -125,9 +129,9 @@ void system_exec_func(World *p_world, void (*p_system)(A, B, C)) {
 	OBTAIN(c, C, p_world);
 
 	p_system(
-			a.get_inner(),
-			b.get_inner(),
-			c.get_inner());
+			a.inner,
+			b.inner,
+			c.inner);
 }
 
 template <class A, class B, class C, class D>
@@ -138,10 +142,10 @@ void system_exec_func(World *p_world, void (*p_system)(A, B, C, D)) {
 	OBTAIN(d, D, p_world);
 
 	p_system(
-			a.get_inner(),
-			b.get_inner(),
-			c.get_inner(),
-			d.get_inner());
+			a.inner,
+			b.inner,
+			c.inner,
+			d.inner);
 }
 
 template <class A, class B, class C, class D, class E>
@@ -153,11 +157,11 @@ void system_exec_func(World *p_world, void (*p_system)(A, B, C, D, E)) {
 	OBTAIN(e, E, p_world);
 
 	p_system(
-			a.get_inner(),
-			b.get_inner(),
-			c.get_inner(),
-			d.get_inner(),
-			e.get_inner());
+			a.inner,
+			b.inner,
+			c.inner,
+			d.inner,
+			e.inner);
 }
 
 template <class A, class B, class C, class D, class E, class F>
@@ -170,12 +174,12 @@ void system_exec_func(World *p_world, void (*p_system)(A, B, C, D, E, F)) {
 	OBTAIN(f, F, p_world);
 
 	p_system(
-			a.get_inner(),
-			b.get_inner(),
-			c.get_inner(),
-			d.get_inner(),
-			e.get_inner(),
-			f.get_inner());
+			a.inner,
+			b.inner,
+			c.inner,
+			d.inner,
+			e.inner,
+			f.inner);
 }
 
 template <class A, class B, class C, class D, class E, class F, class G>
@@ -189,13 +193,13 @@ void system_exec_func(World *p_world, void (*p_system)(A, B, C, D, E, F, G)) {
 	OBTAIN(g, G, p_world);
 
 	p_system(
-			a.get_inner(),
-			b.get_inner(),
-			c.get_inner(),
-			d.get_inner(),
-			e.get_inner(),
-			f.get_inner(),
-			g.get_inner());
+			a.inner,
+			b.inner,
+			c.inner,
+			d.inner,
+			e.inner,
+			f.inner,
+			g.inner);
 }
 
 template <class A, class B, class C, class D, class E, class F, class G, class H>
@@ -210,14 +214,14 @@ void system_exec_func(World *p_world, void (*p_system)(A, B, C, D, E, F, G, H)) 
 	OBTAIN(h, H, p_world);
 
 	p_system(
-			a.get_inner(),
-			b.get_inner(),
-			c.get_inner(),
-			d.get_inner(),
-			e.get_inner(),
-			f.get_inner(),
-			g.get_inner(),
-			h.get_inner());
+			a.inner,
+			b.inner,
+			c.inner,
+			d.inner,
+			e.inner,
+			f.inner,
+			g.inner,
+			h.inner);
 }
 
 template <class A, class B, class C, class D, class E, class F, class G, class H, class I>
@@ -233,15 +237,15 @@ void system_exec_func(World *p_world, void (*p_system)(A, B, C, D, E, F, G, H, I
 	OBTAIN(i, I, p_world);
 
 	p_system(
-			a.get_inner(),
-			b.get_inner(),
-			c.get_inner(),
-			d.get_inner(),
-			e.get_inner(),
-			f.get_inner(),
-			g.get_inner(),
-			h.get_inner(),
-			i.get_inner());
+			a.inner,
+			b.inner,
+			c.inner,
+			d.inner,
+			e.inner,
+			f.inner,
+			g.inner,
+			h.inner,
+			i.inner);
 }
 
 template <class A, class B, class C, class D, class E, class F, class G, class H, class I, class J>
@@ -258,16 +262,16 @@ void system_exec_func(World *p_world, void (*p_system)(A, B, C, D, E, F, G, H, I
 	OBTAIN(j, J, p_world);
 
 	p_system(
-			a.get_inner(),
-			b.get_inner(),
-			c.get_inner(),
-			d.get_inner(),
-			e.get_inner(),
-			f.get_inner(),
-			g.get_inner(),
-			h.get_inner(),
-			i.get_inner(),
-			j.get_inner());
+			a.inner,
+			b.inner,
+			c.inner,
+			d.inner,
+			e.inner,
+			f.inner,
+			g.inner,
+			h.inner,
+			i.inner,
+			j.inner);
 }
 
 template <class A, class B, class C, class D, class E, class F, class G, class H, class I, class J, class K>
@@ -285,17 +289,17 @@ void system_exec_func(World *p_world, void (*p_system)(A, B, C, D, E, F, G, H, I
 	OBTAIN(k, K, p_world);
 
 	p_system(
-			a.get_inner(),
-			b.get_inner(),
-			c.get_inner(),
-			d.get_inner(),
-			e.get_inner(),
-			f.get_inner(),
-			g.get_inner(),
-			h.get_inner(),
-			i.get_inner(),
-			j.get_inner(),
-			k.get_inner());
+			a.inner,
+			b.inner,
+			c.inner,
+			d.inner,
+			e.inner,
+			f.inner,
+			g.inner,
+			h.inner,
+			i.inner,
+			j.inner,
+			k.inner);
 }
 
 template <class A, class B, class C, class D, class E, class F, class G, class H, class I, class J, class K, class L>
@@ -314,18 +318,18 @@ void system_exec_func(World *p_world, void (*p_system)(A, B, C, D, E, F, G, H, I
 	OBTAIN(l, L, p_world);
 
 	p_system(
-			a.get_inner(),
-			b.get_inner(),
-			c.get_inner(),
-			d.get_inner(),
-			e.get_inner(),
-			f.get_inner(),
-			g.get_inner(),
-			h.get_inner(),
-			i.get_inner(),
-			j.get_inner(),
-			k.get_inner(),
-			l.get_inner());
+			a.inner,
+			b.inner,
+			c.inner,
+			d.inner,
+			e.inner,
+			f.inner,
+			g.inner,
+			h.inner,
+			i.inner,
+			j.inner,
+			k.inner,
+			l.inner);
 }
 
 template <class A, class B, class C, class D, class E, class F, class G, class H, class I, class J, class K, class L, class M>
@@ -345,19 +349,19 @@ void system_exec_func(World *p_world, void (*p_system)(A, B, C, D, E, F, G, H, I
 	OBTAIN(m, M, p_world);
 
 	p_system(
-			a.get_inner(),
-			b.get_inner(),
-			c.get_inner(),
-			d.get_inner(),
-			e.get_inner(),
-			f.get_inner(),
-			g.get_inner(),
-			h.get_inner(),
-			i.get_inner(),
-			j.get_inner(),
-			k.get_inner(),
-			l.get_inner(),
-			m.get_inner());
+			a.inner,
+			b.inner,
+			c.inner,
+			d.inner,
+			e.inner,
+			f.inner,
+			g.inner,
+			h.inner,
+			i.inner,
+			j.inner,
+			k.inner,
+			l.inner,
+			m.inner);
 }
 
 template <class A, class B, class C, class D, class E, class F, class G, class H, class I, class J, class K, class L, class M, class N>
@@ -378,20 +382,20 @@ void system_exec_func(World *p_world, void (*p_system)(A, B, C, D, E, F, G, H, I
 	OBTAIN(n, N, p_world);
 
 	p_system(
-			a.get_inner(),
-			b.get_inner(),
-			c.get_inner(),
-			d.get_inner(),
-			e.get_inner(),
-			f.get_inner(),
-			g.get_inner(),
-			h.get_inner(),
-			i.get_inner(),
-			j.get_inner(),
-			k.get_inner(),
-			l.get_inner(),
-			m.get_inner(),
-			n.get_inner());
+			a.inner,
+			b.inner,
+			c.inner,
+			d.inner,
+			e.inner,
+			f.inner,
+			g.inner,
+			h.inner,
+			i.inner,
+			j.inner,
+			k.inner,
+			l.inner,
+			m.inner,
+			n.inner);
 }
 
 template <class A, class B, class C, class D, class E, class F, class G, class H, class I, class J, class K, class L, class M, class N, class O>
@@ -413,21 +417,21 @@ void system_exec_func(World *p_world, void (*p_system)(A, B, C, D, E, F, G, H, I
 	OBTAIN(o, O, p_world);
 
 	p_system(
-			a.get_inner(),
-			b.get_inner(),
-			c.get_inner(),
-			d.get_inner(),
-			e.get_inner(),
-			f.get_inner(),
-			g.get_inner(),
-			h.get_inner(),
-			i.get_inner(),
-			j.get_inner(),
-			k.get_inner(),
-			l.get_inner(),
-			m.get_inner(),
-			n.get_inner(),
-			o.get_inner());
+			a.inner,
+			b.inner,
+			c.inner,
+			d.inner,
+			e.inner,
+			f.inner,
+			g.inner,
+			h.inner,
+			i.inner,
+			j.inner,
+			k.inner,
+			l.inner,
+			m.inner,
+			n.inner,
+			o.inner);
 }
 
 template <class A, class B, class C, class D, class E, class F, class G, class H, class I, class J, class K, class L, class M, class N, class O, class P>
@@ -450,22 +454,22 @@ void system_exec_func(World *p_world, void (*p_system)(A, B, C, D, E, F, G, H, I
 	OBTAIN(p, P, p_world);
 
 	p_system(
-			a.get_inner(),
-			b.get_inner(),
-			c.get_inner(),
-			d.get_inner(),
-			e.get_inner(),
-			f.get_inner(),
-			g.get_inner(),
-			h.get_inner(),
-			i.get_inner(),
-			j.get_inner(),
-			k.get_inner(),
-			l.get_inner(),
-			m.get_inner(),
-			n.get_inner(),
-			o.get_inner(),
-			p.get_inner());
+			a.inner,
+			b.inner,
+			c.inner,
+			d.inner,
+			e.inner,
+			f.inner,
+			g.inner,
+			h.inner,
+			i.inner,
+			j.inner,
+			k.inner,
+			l.inner,
+			m.inner,
+			n.inner,
+			o.inner,
+			p.inner);
 }
 
 template <class A, class B, class C, class D, class E, class F, class G, class H, class I, class J, class K, class L, class M, class N, class O, class P, class Q>
@@ -489,23 +493,23 @@ void system_exec_func(World *p_world, void (*p_system)(A, B, C, D, E, F, G, H, I
 	OBTAIN(q, Q, p_world);
 
 	p_system(
-			a.get_inner(),
-			b.get_inner(),
-			c.get_inner(),
-			d.get_inner(),
-			e.get_inner(),
-			f.get_inner(),
-			g.get_inner(),
-			h.get_inner(),
-			i.get_inner(),
-			j.get_inner(),
-			k.get_inner(),
-			l.get_inner(),
-			m.get_inner(),
-			n.get_inner(),
-			o.get_inner(),
-			p.get_inner(),
-			q.get_inner());
+			a.inner,
+			b.inner,
+			c.inner,
+			d.inner,
+			e.inner,
+			f.inner,
+			g.inner,
+			h.inner,
+			i.inner,
+			j.inner,
+			k.inner,
+			l.inner,
+			m.inner,
+			n.inner,
+			o.inner,
+			p.inner,
+			q.inner);
 }
 
 template <class A, class B, class C, class D, class E, class F, class G, class H, class I, class J, class K, class L, class M, class N, class O, class P, class Q, class R>
@@ -530,24 +534,24 @@ void system_exec_func(World *p_world, void (*p_system)(A, B, C, D, E, F, G, H, I
 	OBTAIN(r, R, p_world);
 
 	p_system(
-			a.get_inner(),
-			b.get_inner(),
-			c.get_inner(),
-			d.get_inner(),
-			e.get_inner(),
-			f.get_inner(),
-			g.get_inner(),
-			h.get_inner(),
-			i.get_inner(),
-			j.get_inner(),
-			k.get_inner(),
-			l.get_inner(),
-			m.get_inner(),
-			n.get_inner(),
-			o.get_inner(),
-			p.get_inner(),
-			q.get_inner(),
-			r.get_inner());
+			a.inner,
+			b.inner,
+			c.inner,
+			d.inner,
+			e.inner,
+			f.inner,
+			g.inner,
+			h.inner,
+			i.inner,
+			j.inner,
+			k.inner,
+			l.inner,
+			m.inner,
+			n.inner,
+			o.inner,
+			p.inner,
+			q.inner,
+			r.inner);
 }
 
 template <class A, class B, class C, class D, class E, class F, class G, class H, class I, class J, class K, class L, class M, class N, class O, class P, class Q, class R, class S>
@@ -573,25 +577,25 @@ void system_exec_func(World *p_world, void (*p_system)(A, B, C, D, E, F, G, H, I
 	OBTAIN(s, S, p_world);
 
 	p_system(
-			a.get_inner(),
-			b.get_inner(),
-			c.get_inner(),
-			d.get_inner(),
-			e.get_inner(),
-			f.get_inner(),
-			g.get_inner(),
-			h.get_inner(),
-			i.get_inner(),
-			j.get_inner(),
-			k.get_inner(),
-			l.get_inner(),
-			m.get_inner(),
-			n.get_inner(),
-			o.get_inner(),
-			p.get_inner(),
-			q.get_inner(),
-			r.get_inner(),
-			s.get_inner());
+			a.inner,
+			b.inner,
+			c.inner,
+			d.inner,
+			e.inner,
+			f.inner,
+			g.inner,
+			h.inner,
+			i.inner,
+			j.inner,
+			k.inner,
+			l.inner,
+			m.inner,
+			n.inner,
+			o.inner,
+			p.inner,
+			q.inner,
+			r.inner,
+			s.inner);
 }
 
 template <class A, class B, class C, class D, class E, class F, class G, class H, class I, class J, class K, class L, class M, class N, class O, class P, class Q, class R, class S, class T>
@@ -618,26 +622,26 @@ void system_exec_func(World *p_world, void (*p_system)(A, B, C, D, E, F, G, H, I
 	OBTAIN(t, T, p_world);
 
 	p_system(
-			a.get_inner(),
-			b.get_inner(),
-			c.get_inner(),
-			d.get_inner(),
-			e.get_inner(),
-			f.get_inner(),
-			g.get_inner(),
-			h.get_inner(),
-			i.get_inner(),
-			j.get_inner(),
-			k.get_inner(),
-			l.get_inner(),
-			m.get_inner(),
-			n.get_inner(),
-			o.get_inner(),
-			p.get_inner(),
-			q.get_inner(),
-			r.get_inner(),
-			s.get_inner(),
-			t.get_inner());
+			a.inner,
+			b.inner,
+			c.inner,
+			d.inner,
+			e.inner,
+			f.inner,
+			g.inner,
+			h.inner,
+			i.inner,
+			j.inner,
+			k.inner,
+			l.inner,
+			m.inner,
+			n.inner,
+			o.inner,
+			p.inner,
+			q.inner,
+			r.inner,
+			s.inner,
+			t.inner);
 }
 
 template <class A, class B, class C, class D, class E, class F, class G, class H, class I, class J, class K, class L, class M, class N, class O, class P, class Q, class R, class S, class T, class U>
@@ -665,27 +669,27 @@ void system_exec_func(World *p_world, void (*p_system)(A, B, C, D, E, F, G, H, I
 	OBTAIN(u, U, p_world);
 
 	p_system(
-			a.get_inner(),
-			b.get_inner(),
-			c.get_inner(),
-			d.get_inner(),
-			e.get_inner(),
-			f.get_inner(),
-			g.get_inner(),
-			h.get_inner(),
-			i.get_inner(),
-			j.get_inner(),
-			k.get_inner(),
-			l.get_inner(),
-			m.get_inner(),
-			n.get_inner(),
-			o.get_inner(),
-			p.get_inner(),
-			q.get_inner(),
-			r.get_inner(),
-			s.get_inner(),
-			t.get_inner(),
-			u.get_inner());
+			a.inner,
+			b.inner,
+			c.inner,
+			d.inner,
+			e.inner,
+			f.inner,
+			g.inner,
+			h.inner,
+			i.inner,
+			j.inner,
+			k.inner,
+			l.inner,
+			m.inner,
+			n.inner,
+			o.inner,
+			p.inner,
+			q.inner,
+			r.inner,
+			s.inner,
+			t.inner,
+			u.inner);
 }
 
 template <class A, class B, class C, class D, class E, class F, class G, class H, class I, class J, class K, class L, class M, class N, class O, class P, class Q, class R, class S, class T, class U, class V>
@@ -714,28 +718,28 @@ void system_exec_func(World *p_world, void (*p_system)(A, B, C, D, E, F, G, H, I
 	OBTAIN(v, V, p_world);
 
 	p_system(
-			a.get_inner(),
-			b.get_inner(),
-			c.get_inner(),
-			d.get_inner(),
-			e.get_inner(),
-			f.get_inner(),
-			g.get_inner(),
-			h.get_inner(),
-			i.get_inner(),
-			j.get_inner(),
-			k.get_inner(),
-			l.get_inner(),
-			m.get_inner(),
-			n.get_inner(),
-			o.get_inner(),
-			p.get_inner(),
-			q.get_inner(),
-			r.get_inner(),
-			s.get_inner(),
-			t.get_inner(),
-			u.get_inner(),
-			v.get_inner());
+			a.inner,
+			b.inner,
+			c.inner,
+			d.inner,
+			e.inner,
+			f.inner,
+			g.inner,
+			h.inner,
+			i.inner,
+			j.inner,
+			k.inner,
+			l.inner,
+			m.inner,
+			n.inner,
+			o.inner,
+			p.inner,
+			q.inner,
+			r.inner,
+			s.inner,
+			t.inner,
+			u.inner,
+			v.inner);
 }
 
 template <class A, class B, class C, class D, class E, class F, class G, class H, class I, class J, class K, class L, class M, class N, class O, class P, class Q, class R, class S, class T, class U, class V, class W>
@@ -765,29 +769,29 @@ void system_exec_func(World *p_world, void (*p_system)(A, B, C, D, E, F, G, H, I
 	OBTAIN(w, W, p_world);
 
 	p_system(
-			a.get_inner(),
-			b.get_inner(),
-			c.get_inner(),
-			d.get_inner(),
-			e.get_inner(),
-			f.get_inner(),
-			g.get_inner(),
-			h.get_inner(),
-			i.get_inner(),
-			j.get_inner(),
-			k.get_inner(),
-			l.get_inner(),
-			m.get_inner(),
-			n.get_inner(),
-			o.get_inner(),
-			p.get_inner(),
-			q.get_inner(),
-			r.get_inner(),
-			s.get_inner(),
-			t.get_inner(),
-			u.get_inner(),
-			v.get_inner(),
-			w.get_inner());
+			a.inner,
+			b.inner,
+			c.inner,
+			d.inner,
+			e.inner,
+			f.inner,
+			g.inner,
+			h.inner,
+			i.inner,
+			j.inner,
+			k.inner,
+			l.inner,
+			m.inner,
+			n.inner,
+			o.inner,
+			p.inner,
+			q.inner,
+			r.inner,
+			s.inner,
+			t.inner,
+			u.inner,
+			v.inner,
+			w.inner);
 }
 
 template <class A, class B, class C, class D, class E, class F, class G, class H, class I, class J, class K, class L, class M, class N, class O, class P, class Q, class R, class S, class T, class U, class V, class W, class X>
@@ -818,30 +822,30 @@ void system_exec_func(World *p_world, void (*p_system)(A, B, C, D, E, F, G, H, I
 	OBTAIN(x, X, p_world);
 
 	p_system(
-			a.get_inner(),
-			b.get_inner(),
-			c.get_inner(),
-			d.get_inner(),
-			e.get_inner(),
-			f.get_inner(),
-			g.get_inner(),
-			h.get_inner(),
-			i.get_inner(),
-			j.get_inner(),
-			k.get_inner(),
-			l.get_inner(),
-			m.get_inner(),
-			n.get_inner(),
-			o.get_inner(),
-			p.get_inner(),
-			q.get_inner(),
-			r.get_inner(),
-			s.get_inner(),
-			t.get_inner(),
-			u.get_inner(),
-			v.get_inner(),
-			w.get_inner(),
-			x.get_inner());
+			a.inner,
+			b.inner,
+			c.inner,
+			d.inner,
+			e.inner,
+			f.inner,
+			g.inner,
+			h.inner,
+			i.inner,
+			j.inner,
+			k.inner,
+			l.inner,
+			m.inner,
+			n.inner,
+			o.inner,
+			p.inner,
+			q.inner,
+			r.inner,
+			s.inner,
+			t.inner,
+			u.inner,
+			v.inner,
+			w.inner,
+			x.inner);
 }
 
 template <class A, class B, class C, class D, class E, class F, class G, class H, class I, class J, class K, class L, class M, class N, class O, class P, class Q, class R, class S, class T, class U, class V, class W, class X, class Y>
@@ -873,31 +877,31 @@ void system_exec_func(World *p_world, void (*p_system)(A, B, C, D, E, F, G, H, I
 	OBTAIN(y, Y, p_world);
 
 	p_system(
-			a.get_inner(),
-			b.get_inner(),
-			c.get_inner(),
-			d.get_inner(),
-			e.get_inner(),
-			f.get_inner(),
-			g.get_inner(),
-			h.get_inner(),
-			i.get_inner(),
-			j.get_inner(),
-			k.get_inner(),
-			l.get_inner(),
-			m.get_inner(),
-			n.get_inner(),
-			o.get_inner(),
-			p.get_inner(),
-			q.get_inner(),
-			r.get_inner(),
-			s.get_inner(),
-			t.get_inner(),
-			u.get_inner(),
-			v.get_inner(),
-			w.get_inner(),
-			x.get_inner(),
-			y.get_inner());
+			a.inner,
+			b.inner,
+			c.inner,
+			d.inner,
+			e.inner,
+			f.inner,
+			g.inner,
+			h.inner,
+			i.inner,
+			j.inner,
+			k.inner,
+			l.inner,
+			m.inner,
+			n.inner,
+			o.inner,
+			p.inner,
+			q.inner,
+			r.inner,
+			s.inner,
+			t.inner,
+			u.inner,
+			v.inner,
+			w.inner,
+			x.inner,
+			y.inner);
 }
 
 template <class A, class B, class C, class D, class E, class F, class G, class H, class I, class J, class K, class L, class M, class N, class O, class P, class Q, class R, class S, class T, class U, class V, class W, class X, class Y, class Z>
@@ -930,32 +934,32 @@ void system_exec_func(World *p_world, void (*p_system)(A, B, C, D, E, F, G, H, I
 	OBTAIN(z, Z, p_world);
 
 	p_system(
-			a.get_inner(),
-			b.get_inner(),
-			c.get_inner(),
-			d.get_inner(),
-			e.get_inner(),
-			f.get_inner(),
-			g.get_inner(),
-			h.get_inner(),
-			i.get_inner(),
-			j.get_inner(),
-			k.get_inner(),
-			l.get_inner(),
-			m.get_inner(),
-			n.get_inner(),
-			o.get_inner(),
-			p.get_inner(),
-			q.get_inner(),
-			r.get_inner(),
-			s.get_inner(),
-			t.get_inner(),
-			u.get_inner(),
-			v.get_inner(),
-			w.get_inner(),
-			x.get_inner(),
-			y.get_inner(),
-			z.get_inner());
+			a.inner,
+			b.inner,
+			c.inner,
+			d.inner,
+			e.inner,
+			f.inner,
+			g.inner,
+			h.inner,
+			i.inner,
+			j.inner,
+			k.inner,
+			l.inner,
+			m.inner,
+			n.inner,
+			o.inner,
+			p.inner,
+			q.inner,
+			r.inner,
+			s.inner,
+			t.inner,
+			u.inner,
+			v.inner,
+			w.inner,
+			x.inner,
+			y.inner,
+			z.inner);
 }
 
 #undef OBTAIN

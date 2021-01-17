@@ -89,6 +89,9 @@ Storage *World::get_storage(uint32_t p_storage_id) {
 }
 
 void World::create_storage(uint32_t p_component_id) {
+	// TODO this is called often. Add a fast way out.
+	// Or do it at the start of each dispatching.
+
 	// Using crash because this function is not expected to fail.
 	ERR_FAIL_COND_MSG(ECS::verify_component_id(p_component_id) == false, "The component id " + itos(p_component_id) + " is not registered.");
 

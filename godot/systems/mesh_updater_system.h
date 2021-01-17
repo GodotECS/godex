@@ -25,9 +25,9 @@ void scenario_manager_system(
 void mesh_updater_system(
 		const RenderingScenarioDatabag *p_scenario,
 		RenderingServerDatabag *rs,
-		Query<MeshComponent> query);
+		Query<MeshComponent> &query);
 
 /// Updates the `VisualServer` mesh transform.
 void mesh_transform_updater_system(
 		RenderingServerDatabag *rs,
-		Query<const MeshComponent, const TransformComponent> query);
+		Query<const MeshComponent, const TransformComponent> &query);
