@@ -89,23 +89,18 @@ Storage *World::get_storage(uint32_t p_storage_id) {
 }
 
 void World::create_storage(uint32_t p_component_id) {
-	// TODO this is called often. Add a fast way out.
-	// Or do it at the start of each dispatching.
-
 	// Using crash because this function is not expected to fail.
 	ERR_FAIL_COND_MSG(ECS::verify_component_id(p_component_id) == false, "The component id " + itos(p_component_id) + " is not registered.");
 
-	if (p_component_id >= storages.size()) {
+	if (unlikely(p_component_id >= storages.size())) {
 		const uint32_t start = storages.size();
 		storages.resize(p_component_id + 1);
 		for (uint32_t i = start; i < storages.size(); i += 1) {
 			storages[i] = nullptr;
 		}
-	} else {
-		if (storages[p_component_id] != nullptr) {
-			// Nothing to do.
-			return;
-		}
+	} else if (likely(storages[p_component_id] != nullptr)) {
+		// The storage exists, nothing to do.
+		return;
 	}
 
 	storages[p_component_id] = ECS::create_storage(p_component_id);

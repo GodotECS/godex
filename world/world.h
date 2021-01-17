@@ -58,6 +58,8 @@ public:
 class World : public godex::Databag {
 	DATABAG(World)
 
+	friend class Pipeline;
+
 	LocalVector<Storage *> storages;
 	LocalVector<godex::Databag *> databags;
 	uint32_t entity_count = 0;

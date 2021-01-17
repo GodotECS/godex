@@ -93,6 +93,8 @@ void test_system_check_events(Query<const Event1Component> &p_query) {
 		CHECK(event[1]->a == 456);
 
 		entities_with_events += 1;
+
+		p_query.next();
 	}
 
 	CHECK(entities_with_events == 1);
@@ -120,6 +122,7 @@ TEST_CASE("[Modules][ECS] Test system and query") {
 	Pipeline pipeline;
 	pipeline.add_system(test_system_tag);
 	pipeline.build();
+	pipeline.prepare(&world);
 
 	for (uint32_t i = 0; i < 3; i += 1) {
 		pipeline.dispatch(&world);
@@ -199,6 +202,7 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 	// Add the system to the pipeline.
 	pipeline.add_registered_system(system_id);
 	pipeline.build();
+	pipeline.prepare(&world);
 
 	// Dispatch
 	for (uint32_t i = 0; i < 3; i += 1) {
@@ -280,13 +284,15 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 	ECS::set_system_pipeline(sub_pipeline_system_id, &sub_pipeline);
 	sub_pipeline_system->build();
 
+	World world;
+
 	// ~~ Main pipeline ~~
 	Pipeline main_pipeline;
 	main_pipeline.add_registered_system(sub_pipeline_system_id);
 	main_pipeline.build();
+	main_pipeline.prepare(&world);
 
 	// ~~ Create world ~~
-	World world;
 	world.add_databag<TestSystemSubPipeDatabag>();
 	world.get_databag<TestSystemSubPipeDatabag>()->exe_count = 2;
 
@@ -336,6 +342,7 @@ TEST_CASE("[Modules][ECS] Test system and databag") {
 		// Add the system to the pipeline.
 		pipeline.add_system(test_system_with_databag);
 		pipeline.build();
+		pipeline.prepare(&world);
 
 		// Dispatch
 		for (uint32_t i = 0; i < 3; i += 1) {
@@ -357,6 +364,7 @@ TEST_CASE("[Modules][ECS] Test system and databag") {
 		// Add the system to the pipeline.
 		pipeline.add_system(test_system_with_null_databag);
 		pipeline.build();
+		pipeline.prepare(&world);
 
 		// Dispatch
 		for (uint32_t i = 0; i < 3; i += 1) {
@@ -405,6 +413,7 @@ TEST_CASE("[Modules][ECS] Test system databag fetch with dynamic query.") {
 	// Add the system to the pipeline.
 	pipeline.add_registered_system(system_id);
 	pipeline.build();
+	pipeline.prepare(&world);
 
 	// Dispatch 1 time.
 	pipeline.dispatch(&world);
@@ -447,6 +456,7 @@ TEST_CASE("[Modules][ECS] Test WorldECSCommands from dynamic query.") {
 	// Add the system to the pipeline.
 	pipeline.add_registered_system(system_id);
 	pipeline.build();
+	pipeline.prepare(&world);
 
 	// Dispatch 1 time.
 	pipeline.dispatch(&world);
@@ -460,7 +470,6 @@ TEST_CASE("[Modules][ECS] Test WorldECSCommands from dynamic query.") {
 }
 
 TEST_CASE("[Modules][ECS] Test event mechanism.") {
-	return;
 	ECS::register_component_event<Event1Component>();
 
 	World world;
@@ -474,6 +483,7 @@ TEST_CASE("[Modules][ECS] Test event mechanism.") {
 	pipeline.add_system(test_system_generate_events);
 	pipeline.add_system(test_system_check_events);
 	pipeline.build();
+	pipeline.prepare(&world);
 
 	// Make sure no component event is left at the end of each cycle.
 	for (uint32_t i = 0; i < 5; i += 1) {
