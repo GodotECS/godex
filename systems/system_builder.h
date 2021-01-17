@@ -17,13 +17,13 @@ struct InfoConstructor {
 	InfoConstructor(SystemExeInfo &r_info) {}
 };
 
-/// Fetches the component stoages: `TypedStorage`s.
+/// Fetches the component stoages: `Storage`s.
 /// The component storage can be taken only as mutable (non const) pointer.
 /// ```
-/// void test_func(TypedStorage<Component> *p_component_storage){}
+/// void test_func(Storage<Component> *p_component_storage){}
 /// ```
 template <class C, class... Cs>
-struct InfoConstructor<TypedStorage<C> *, Cs...> : InfoConstructor<Cs...> {
+struct InfoConstructor<Storage<C> *, Cs...> : InfoConstructor<Cs...> {
 	InfoConstructor(SystemExeInfo &r_info) :
 			InfoConstructor<Cs...>(r_info) {
 		r_info.mutable_components_storage.push_back(C::get_component_id());
@@ -72,10 +72,10 @@ void get_system_info_from_function(SystemExeInfo &r_info, void (*system_func)(RC
 template <class C>
 struct DataFetcher {};
 
-/// TypedStorage
+/// Storage
 template <class C>
-struct DataFetcher<TypedStorage<C> *> {
-	TypedStorage<C> *inner;
+struct DataFetcher<Storage<C> *> {
+	Storage<C> *inner;
 
 	DataFetcher(World *p_world) :
 			inner(p_world->get_storage<C>()) {}

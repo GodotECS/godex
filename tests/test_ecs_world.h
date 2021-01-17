@@ -37,7 +37,7 @@ TEST_CASE("[Modules][ECS] Test world") {
 			entity_1,
 			entity_1_transform_component);
 
-	const TypedStorage<const TransformComponent> *storage = world.get_storage<const TransformComponent>();
+	const Storage<const TransformComponent> *storage = world.get_storage<const TransformComponent>();
 	const TransformComponent *transform_from_storage = storage->get(entity_1);
 
 	// Check the add component has the exact same data as the stored one.
@@ -65,7 +65,7 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 
 	// ~~ Test the component is initialized with defaults. ~~
 	{
-		const Storage *storage = world.get_storage(test_world_component_id);
+		const StorageBase *storage = world.get_storage(test_world_component_id);
 		const godex::Component *test_component = storage->get_ptr(entity_1);
 
 		CHECK(test_component->get("variable_1") == Variant(1));
@@ -75,7 +75,7 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 
 	// ~~ Test change component values ~~
 	{
-		Storage *storage = world.get_storage(test_world_component_id);
+		StorageBase *storage = world.get_storage(test_world_component_id);
 
 		godex::Component *test_component = storage->get_ptr(entity_1);
 		test_component->set("variable_1", 2);
@@ -91,7 +91,7 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 
 	// ~~ Test change value with a wrong type ~~
 	{
-		Storage *storage = world.get_storage(test_world_component_id);
+		StorageBase *storage = world.get_storage(test_world_component_id);
 
 		godex::Component *test_component = storage->get_ptr(entity_1);
 		// Set the `variable_1` with a floating point variable.
@@ -115,7 +115,7 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 				test_world_component_id,
 				entity_2_data);
 
-		const Storage *storage = world.get_storage(test_world_component_id);
+		const StorageBase *storage = world.get_storage(test_world_component_id);
 		const godex::Component *test_component = storage->get_ptr(entity_2);
 
 		CHECK(test_component->get("variable_1") == Variant(100));
@@ -135,7 +135,7 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 				test_world_component_id,
 				entity_3_data);
 
-		const Storage *storage = world.get_storage(test_world_component_id);
+		const StorageBase *storage = world.get_storage(test_world_component_id);
 		const godex::Component *test_component = storage->get_ptr(entity_3);
 
 		CHECK(test_component->get("variable_1") == Variant(100));
@@ -157,7 +157,7 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 				test_world_component_id,
 				entity_4_data);
 
-		const Storage *storage = world.get_storage(test_world_component_id);
+		const StorageBase *storage = world.get_storage(test_world_component_id);
 		const godex::Component *test_component = storage->get_ptr(entity_4);
 
 		CHECK(test_component->get("variable_1") == Variant(100));

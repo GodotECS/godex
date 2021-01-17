@@ -11,10 +11,10 @@ namespace godex {
 class Component;
 }
 
-/// Never override this directly. Always override the `TypedStorage`.
-class Storage {
+/// Never override this directly. Always override the `Storage`.
+class StorageBase {
 public:
-	virtual ~Storage() {}
+	virtual ~StorageBase() {}
 	virtual String get_type_name() const { return "Overload this function `get_type_name()` please."; }
 	virtual bool has(EntityID p_entity) const {
 		CRASH_NOW_MSG("Override this function.");
@@ -42,7 +42,7 @@ public:
 };
 
 template <class T>
-class TypedStorage : public Storage {
+class Storage : public StorageBase {
 public:
 	virtual void insert(EntityID p_entity, const T &p_data) {
 		CRASH_NOW_MSG("Override this function.");

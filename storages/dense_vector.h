@@ -94,7 +94,7 @@ protected:
 /// components (vice versa), allowing to leave no gaps within the data.
 /// The the entity indices are stored sparsely.
 template <class T>
-class DenseVectorStorage : public TypedStorage<T> {
+class DenseVectorStorage : public Storage<T> {
 protected:
 	DenseVector<T> storage;
 
