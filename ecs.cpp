@@ -368,7 +368,7 @@ bool ECS::verify_component_id(uint32_t p_component_id) {
 	return components.size() > p_component_id;
 }
 
-Storage *ECS::create_storage(uint32_t p_component_id) {
+StorageBase *ECS::create_storage(uint32_t p_component_id) {
 #ifdef DEBUG_ENABLED
 	// Crash cond because this function is not supposed to fail in any way.
 	CRASH_COND_MSG(ECS::verify_component_id(p_component_id) == false, "This component id " + itos(p_component_id) + " is not valid.");

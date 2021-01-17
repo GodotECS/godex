@@ -23,8 +23,8 @@ class DynamicQuery : public Object {
 	LocalVector<bool> required;
 	LocalVector<uint32_t> reject_component_ids;
 	LocalVector<DataAccessorScriptInstance<Component>> accessors;
-	LocalVector<Storage *> storages;
-	LocalVector<Storage *> reject_storages;
+	LocalVector<StorageBase *> storages;
+	LocalVector<StorageBase *> reject_storages;
 
 	World *world = nullptr;
 	uint32_t entity_id = UINT32_MAX;

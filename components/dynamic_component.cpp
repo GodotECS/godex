@@ -3,7 +3,7 @@
 DynamicComponentInfo::DynamicComponentInfo() {
 }
 
-Storage *DynamicComponentInfo::create_storage() {
+StorageBase *DynamicComponentInfo::create_storage() {
 	switch (storage_type) {
 		case StorageType::DENSE_VECTOR:
 			// Creates DynamicDenseVector storage.

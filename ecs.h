@@ -24,7 +24,7 @@ class DynamicSystemInfo;
 struct ComponentInfo {
 	LocalVector<PropertyInfo> *(*get_properties)();
 	Variant (*get_property_default)(StringName p_property_name);
-	Storage *(*create_storage)();
+	StorageBase *(*create_storage)();
 	DynamicComponentInfo *dynamic_component_info = nullptr;
 	bool is_event = false;
 };
@@ -75,7 +75,7 @@ public:
 
 	static bool verify_component_id(uint32_t p_component_id);
 
-	static Storage *create_storage(godex::component_id p_component_id);
+	static StorageBase *create_storage(godex::component_id p_component_id);
 	static const LocalVector<StringName> &get_registered_components();
 	static godex::component_id get_component_id(StringName p_component_name);
 	static StringName get_component_name(godex::component_id p_component_id);

@@ -70,7 +70,7 @@ void test_system_with_null_databag(TestSystem1Databag *test_res) {
 	CRASH_COND(test_res != nullptr);
 }
 
-void test_system_generate_events(Query<TransformComponent> &p_query, TypedStorage<Event1Component> *p_events) {
+void test_system_generate_events(Query<TransformComponent> &p_query, Storage<Event1Component> *p_events) {
 	CRASH_COND_MSG(p_events == nullptr, "When taken mutable it's never supposed to be nullptr.");
 
 	while (p_query.is_done() == false) {
@@ -128,7 +128,7 @@ TEST_CASE("[Modules][ECS] Test system and query") {
 		pipeline.dispatch(&world);
 	}
 
-	const TypedStorage<const TransformComponent> *storage = world.get_storage<const TransformComponent>();
+	const Storage<const TransformComponent> *storage = world.get_storage<const TransformComponent>();
 
 	const Vector3 entity_1_origin = storage->get(entity_1)->get_transform().origin;
 	const Vector3 entity_2_origin = storage->get(entity_2)->get_transform().origin;
@@ -211,7 +211,7 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 
 	// Validate the C++ component.
 	{
-		const TypedStorage<const TransformComponent> *storage = world.get_storage<const TransformComponent>();
+		const Storage<const TransformComponent> *storage = world.get_storage<const TransformComponent>();
 
 		const Vector3 entity_1_origin = storage->get(entity_1)->get_transform().origin;
 		const Vector3 entity_2_origin = storage->get(entity_2)->get_transform().origin;
@@ -229,7 +229,7 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 
 	// Validate the dynamic component.
 	{
-		const Storage *storage = world.get_storage(test_dyn_component_id);
+		const StorageBase *storage = world.get_storage(test_dyn_component_id);
 		CHECK(storage->get_ptr(entity_1)->get("variable_1") == Variant(4));
 		// Make sure this doesn't changed.
 		CHECK(storage->get_ptr(entity_1)->get("variable_2") == Variant(false));

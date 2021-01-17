@@ -10,7 +10,7 @@
 #include "core/string/string_name.h"
 #include "core/templates/local_vector.h"
 
-class Storage;
+class StorageBase;
 class World;
 
 namespace godex {
@@ -60,7 +60,7 @@ class World : public godex::Databag {
 
 	friend class Pipeline;
 
-	LocalVector<Storage *> storages;
+	LocalVector<StorageBase *> storages;
 	LocalVector<godex::Databag *> databags;
 	uint32_t entity_count = 0;
 	EntityBuilder entity_builder = EntityBuilder(this);
@@ -118,22 +118,22 @@ public:
 	bool has_component(EntityID p_entity, uint32_t p_component_id) const;
 
 	/// Returns the const storage pointed by the give ID.
-	const Storage *get_storage(uint32_t p_storage_id) const;
+	const StorageBase *get_storage(uint32_t p_storage_id) const;
 
 	/// Returns the storage pointed by the give ID.
-	Storage *get_storage(uint32_t p_storage_id);
+	StorageBase *get_storage(uint32_t p_storage_id);
 
 	/// Returns the constant storage pointer.
 	/// If the storage doesn't exist, returns null.
 	/// If the type is wrong, this function crashes.
 	template <class C>
-	const TypedStorage<const C> *get_storage() const;
+	const Storage<const C> *get_storage() const;
 
 	/// Returns the storage pointer.
 	/// If the storage doesn't exist, returns null.
 	/// If the type is wrong, this function crashes.
 	template <class C>
-	TypedStorage<C> *get_storage();
+	Storage<C> *get_storage();
 
 	/// Adds a new databag or does nothing.
 	template <class R>
@@ -183,7 +183,7 @@ const EntityBuilder &EntityBuilder::with(const C &p_data) const {
 template <class C>
 void World::add_component(EntityID p_entity, const C &p_data) {
 	create_storage<C>();
-	TypedStorage<C> *storage = get_storage<C>();
+	Storage<C> *storage = get_storage<C>();
 	ERR_FAIL_COND(storage == nullptr);
 	storage->insert(p_entity, p_data);
 }
@@ -199,19 +199,19 @@ bool World::has_component(EntityID p_entity) const {
 }
 
 template <class C>
-const TypedStorage<const C> *World::get_storage() const {
+const Storage<const C> *World::get_storage() const {
 	const uint32_t id = C::get_component_id();
 	if (id >= storages.size() || storages[id] == nullptr) {
 		return nullptr;
 	}
 
-	return static_cast<TypedStorage<const C> *>(storages[id]);
+	return static_cast<Storage<const C> *>(storages[id]);
 }
 
 template <class C>
-TypedStorage<C> *World::get_storage() {
+Storage<C> *World::get_storage() {
 	const uint32_t id = C::get_component_id();
-	return static_cast<TypedStorage<C> *>(get_storage(id));
+	return static_cast<Storage<C> *>(get_storage(id));
 }
 
 template <class R>

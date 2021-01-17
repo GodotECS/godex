@@ -135,7 +135,7 @@ bool Entity::set_component_value(StringName p_component_name, StringName p_prope
 		ERR_FAIL_COND_V_MSG(ECS::get_singleton()->has_active_world() == false, false, "The world is supposed to be active at this point.");
 		const godex::component_id id = ECS::get_component_id(p_component_name);
 		ERR_FAIL_COND_V_MSG(id == UINT32_MAX, false, "The component " + p_component_name + " doesn't exists.");
-		Storage *storage = ECS::get_singleton()->get_active_world()->get_storage(id);
+		StorageBase *storage = ECS::get_singleton()->get_active_world()->get_storage(id);
 		ERR_FAIL_COND_V_MSG(storage == nullptr, false, "The component " + p_component_name + " doesn't have a storage on the active world.");
 		godex::Component *component = storage->get_ptr(entity_id);
 		ERR_FAIL_COND_V_MSG(component == nullptr, false, "The entity " + itos(entity_id) + " doesn't have a component " + p_component_name);
@@ -190,7 +190,7 @@ bool Entity::_get_component_value(StringName p_component_name, StringName p_prop
 		ERR_FAIL_COND_V_MSG(ECS::get_singleton()->has_active_world() == false, false, "The world is supposed to be active at this point.");
 		const godex::component_id id = ECS::get_component_id(p_component_name);
 		ERR_FAIL_COND_V_MSG(id == UINT32_MAX, false, "The component " + p_component_name + " doesn't exists.");
-		const Storage *storage = ECS::get_singleton()->get_active_world()->get_storage(id);
+		const StorageBase *storage = ECS::get_singleton()->get_active_world()->get_storage(id);
 		ERR_FAIL_COND_V_MSG(storage == nullptr, false, "The component " + p_component_name + " doesn't have a storage on the active world.");
 		const godex::Component *component = storage->get_ptr(entity_id);
 		ERR_FAIL_COND_V_MSG(component == nullptr, false, "The entity " + itos(entity_id) + " doesn't have a component " + p_component_name);
@@ -217,7 +217,7 @@ bool Entity::set_component(StringName p_component_name, const Variant &d_data) {
 		ERR_FAIL_COND_V_MSG(ECS::get_singleton()->has_active_world() == false, false, "The world is supposed to be active at this point.");
 		const godex::component_id id = ECS::get_component_id(p_component_name);
 		ERR_FAIL_COND_V_MSG(id == UINT32_MAX, false, "The component " + p_component_name + " doesn't exists.");
-		Storage *storage = ECS::get_singleton()->get_active_world()->get_storage(id);
+		StorageBase *storage = ECS::get_singleton()->get_active_world()->get_storage(id);
 		ERR_FAIL_COND_V_MSG(storage == nullptr, false, "The component " + p_component_name + " doesn't have a storage on the active world.");
 		godex::Component *component = storage->get_ptr(entity_id);
 		ERR_FAIL_COND_V_MSG(component == nullptr, false, "The entity " + itos(entity_id) + " doesn't have a component " + p_component_name);
@@ -287,7 +287,7 @@ bool Entity::_get_component(StringName p_component_name, Variant &r_ret) const {
 		ERR_FAIL_COND_V_MSG(ECS::get_singleton()->has_active_world() == false, false, "The world is supposed to be active at this point.");
 		const godex::component_id id = ECS::get_component_id(p_component_name);
 		ERR_FAIL_COND_V_MSG(id == UINT32_MAX, false, "The component " + p_component_name + " doesn't exists.");
-		const Storage *storage = ECS::get_singleton()->get_active_world()->get_storage(id);
+		const StorageBase *storage = ECS::get_singleton()->get_active_world()->get_storage(id);
 		ERR_FAIL_COND_V_MSG(storage == nullptr, false, "The component " + p_component_name + " doesn't have a storage on the active world.");
 		const godex::Component *component = storage->get_ptr(entity_id);
 		ERR_FAIL_COND_V_MSG(component == nullptr, false, "The entity " + itos(entity_id) + " doesn't have a component " + p_component_name);

@@ -44,7 +44,7 @@ public:
 /// `QueryStorage` `Maybe` filter specialization.
 template <class C, class... Cs>
 class QueryStorage<Maybe<C>, Cs...> : QueryStorage<Cs...> {
-	TypedStorage<C> *storage = nullptr;
+	Storage<C> *storage = nullptr;
 
 public:
 	QueryStorage(World *p_world) :
@@ -78,7 +78,7 @@ public:
 /// `QueryStorage` `With` filter specialization.
 template <class C, class... Cs>
 class QueryStorage<Without<C>, Cs...> : QueryStorage<Cs...> {
-	TypedStorage<C> *storage = nullptr;
+	Storage<C> *storage = nullptr;
 
 public:
 	QueryStorage(World *p_world) :
@@ -110,7 +110,7 @@ public:
 /// `QueryStorage` no filter specialization.
 template <class C, class... Cs>
 class QueryStorage<C, Cs...> : QueryStorage<Cs...> {
-	TypedStorage<C> *storage = nullptr;
+	Storage<C> *storage = nullptr;
 
 public:
 	QueryStorage(World *p_world) :
@@ -128,7 +128,7 @@ public:
 	std::tuple<Batch<C>, Batch<remove_filter_t<Cs>>...> get(EntityID p_id) const {
 #ifdef DEBUG_ENABLED
 		// This can't happen because `is_done` returns true.
-		CRASH_COND_MSG(storage == nullptr, "The storage" + String(typeid(TypedStorage<C>).name()) + " is null.");
+		CRASH_COND_MSG(storage == nullptr, "The storage" + String(typeid(Storage<C>).name()) + " is null.");
 #endif
 
 		Batch<C> c(storage->get_ptr(p_id));

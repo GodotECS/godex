@@ -16,7 +16,7 @@ class DynamicComponentInfo {
 	DynamicComponentInfo();
 
 public:
-	Storage *create_storage();
+	StorageBase *create_storage();
 
 	const LocalVector<PropertyInfo> *get_properties() const {
 		return &properties;

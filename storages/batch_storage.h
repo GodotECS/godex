@@ -9,7 +9,7 @@
 /// Optimized version that allow to store a max size of components consecutivelly,
 /// the size must be known at compile time.
 template <template <class> class STORAGE, int SIZE, class T>
-class BatchStorage : public TypedStorage<T> {
+class BatchStorage : public Storage<T> {
 protected:
 	// TODO Here we have the size, can we use an old style array instead?
 	STORAGE<StaticVector<T, SIZE>> storage;
@@ -79,7 +79,7 @@ public:
 /// The size can be chosen on the fly, but the components are stored in a
 /// de-localized memory, which may invalidate cache coherency.
 template <template <class> class STORAGE, class T>
-class BatchStorage<STORAGE, -1, T> : public TypedStorage<T> {
+class BatchStorage<STORAGE, -1, T> : public Storage<T> {
 protected:
 	STORAGE<LocalVector<T>> storage;
 
