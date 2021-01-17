@@ -275,6 +275,10 @@ void ECS::set_active_world_pipeline(Pipeline *p_pipeline) {
 	}
 #endif
 	active_world_pipeline = p_pipeline;
+
+	if (active_world_pipeline && active_world) {
+		active_world_pipeline->prepare(active_world);
+	}
 }
 
 Pipeline *ECS::get_active_world_pipeline() const {
