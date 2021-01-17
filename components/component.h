@@ -3,7 +3,8 @@
 /* Author: AndreaCatania */
 
 #include "../ecs.h"
-#include "../storages/dense_vector.h"
+#include "../storage/batch_storage.h"
+#include "../storage/dense_vector.h"
 #include "core/object/class_db.h"
 #include "core/object/object.h"
 #include "core/templates/oa_hash_map.h"
@@ -13,7 +14,7 @@ namespace godex {
 #define COMPONENT_INTERNAL(m_class)                                                                   \
 	/* Components */                                                                                  \
 	static inline uint32_t component_id = UINT32_MAX;                                                 \
-												      \
+																									  \
 	static void add_component_by_name(World *p_world, EntityID entity_id, const Dictionary &p_data) { \
 		m_class component;                                                                            \
 		for (const Variant *key = p_data.next(nullptr); key != nullptr; key = p_data.next(key)) {     \
@@ -23,11 +24,11 @@ namespace godex {
 				entity_id,                                                                            \
 				component);                                                                           \
 	}                                                                                                 \
-												      \
+																									  \
 public:                                                                                               \
 	static uint32_t get_component_id() { return component_id; }                                       \
 	virtual godex::component_id cid() const override { return component_id; }                         \
-												      \
+																									  \
 	ECS_PROPERTY_MAPPER(m_class)                                                                      \
 private:
 
@@ -35,16 +36,16 @@ private:
 	ECSCLASS(m_class)                                                  \
 	friend class World;                                                \
 	friend class Component;                                            \
-								       \
+																	   \
 public:                                                                \
-        typedef bool_type<false> is_event;                                 \
-                                                                       \
+	typedef bool_type<false> is_event;                                 \
+																	   \
 private:                                                               \
 	/* Storages */                                                     \
 	static _FORCE_INLINE_ m_storage_class<m_class> *create_storage() { \
 		return memnew(m_storage_class<m_class>);                       \
 	}                                                                  \
-	static _FORCE_INLINE_ StorageBase *create_storage_no_type() {          \
+	static _FORCE_INLINE_ StorageBase *create_storage_no_type() {      \
 		/* Creates a storage but returns a generic component. */       \
 		return create_storage();                                       \
 	}                                                                  \
@@ -54,16 +55,16 @@ private:                                                               \
 	ECSCLASS(m_class)                                                                         \
 	friend class World;                                                                       \
 	friend class Component;                                                                   \
-											      \
+																							  \
 public:                                                                                       \
-        typedef bool_type<false> is_event;                                                        \
-                                                                                              \
+	typedef bool_type<false> is_event;                                                        \
+																							  \
 private:                                                                                      \
 	/* Storages */                                                                            \
 	static _FORCE_INLINE_ BatchStorage<m_storage_class, m_batch, m_class> *create_storage() { \
 		return new BatchStorage<m_storage_class, m_batch, m_class>;                           \
 	}                                                                                         \
-	static _FORCE_INLINE_ StorageBase *create_storage_no_type() {                                 \
+	static _FORCE_INLINE_ StorageBase *create_storage_no_type() {                             \
 		/* Creates a storage but returns a generic component. */                              \
 		return create_storage();                                                              \
 	}                                                                                         \

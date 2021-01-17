@@ -6,7 +6,7 @@
 
 #include "../databags/databag.h"
 #include "../ecs_types.h"
-#include "../storages/storage.h"
+#include "../storage/storage.h"
 #include "core/string/string_name.h"
 #include "core/templates/local_vector.h"
 

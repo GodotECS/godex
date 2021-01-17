@@ -1,5 +1,3 @@
-
-
 /* Author: AndreaCatania */
 
 #ifndef STORAGE_H

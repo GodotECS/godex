@@ -7,7 +7,7 @@
 #include "../ecs.h"
 #include "../godot/components/transform_component.h"
 #include "../iterators/dynamic_query.h"
-#include "../storages/batch_storage.h"
+#include "../storage/batch_storage.h"
 #include "../world/world.h"
 
 class TagQueryTestComponent : public godex::Component {
