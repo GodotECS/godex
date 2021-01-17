@@ -29,7 +29,7 @@ void scenario_manager_system(
 void mesh_updater_system(
 		const RenderingScenarioDatabag *p_scenario,
 		RenderingServerDatabag *rs,
-		Query<MeshComponent> query) {
+		Query<MeshComponent> &query) {
 	ERR_FAIL_COND_MSG(p_scenario == nullptr, "The `RenderingScenarioDatabag` `Databag` is not part of this world. Add it please.");
 	ERR_FAIL_COND_MSG(rs == nullptr, "The `RenderingServerDatabag` `Databag` is not part of this world. Add it please.");
 
@@ -72,7 +72,7 @@ void mesh_updater_system(
 	}
 }
 
-void mesh_transform_updater_system(RenderingServerDatabag *rs, Query<const MeshComponent, const TransformComponent> query) {
+void mesh_transform_updater_system(RenderingServerDatabag *rs, Query<const MeshComponent, const TransformComponent> &query) {
 	ERR_FAIL_COND_MSG(rs == nullptr, "The `RenderingServerDatabag` `Databag` is not part of this world. Add it please.");
 
 	while (query.is_done() == false) {
