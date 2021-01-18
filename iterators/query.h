@@ -186,7 +186,7 @@ public:
 	}
 
 	void next() {
-		const uint32_t last_id = world->get_last_entity_id();
+		const uint32_t last_id = world->get_biggest_entity_id();
 		if (unlikely(id == UINT32_MAX || last_id == UINT32_MAX)) {
 			id = UINT32_MAX;
 			return;

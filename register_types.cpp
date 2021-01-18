@@ -64,6 +64,7 @@ void register_godex_types() {
 	ECS::register_component<TransformComponent>();
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Register engine databags
+	ECS::register_databag<WorldCommands>();
 	ECS::register_databag<World>();
 
 	// Engine

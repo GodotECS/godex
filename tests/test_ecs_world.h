@@ -20,9 +20,11 @@ namespace godex_tests_world {
 
 TEST_CASE("[Modules][ECS] Test world has self databag.") {
 	World world;
+	godex::Databag *commands_ptr = world.get_databag(WorldCommands::get_databag_id());
 	godex::Databag *world_ptr = world.get_databag(World::get_databag_id());
 
-	// Make sure `World` contains a pointer of itself as databag.
+	// Make sure `World` contains a pointer of its commands as `Databag`.
+	CHECK(&world.get_commands() == commands_ptr);
 	CHECK(&world == world_ptr);
 }
 

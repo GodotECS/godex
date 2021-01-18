@@ -12,17 +12,37 @@ const EntityBuilder &EntityBuilder::with(uint32_t p_component_id, const Dictiona
 	return *this;
 }
 
+EntityID WorldCommands::create_entity_index() {
+	return entity_register++;
+}
+
+void WorldCommands::destroy_deferred(EntityID p_entity) {
+	garbage_list.push_back(p_entity);
+}
+
+EntityID WorldCommands::get_biggest_entity_id() const {
+	if (entity_register == 0) {
+		return EntityID();
+	} else {
+		return EntityID(entity_register - 1);
+	}
+}
+
 World::World() {
 	// Add self as databag, so that the `Systems` can obtain it.
-	databags.resize(World::get_databag_id() + 1);
-	for (uint32_t i = 0; i <= World::get_databag_id(); i += 1) {
+	const uint32_t size = MAX(WorldCommands::get_databag_id(), World::get_databag_id()) + 1;
+
+	databags.resize(size);
+	for (uint32_t i = 0; i < databags.size(); i += 1) {
 		databags[i] = nullptr;
 	}
+
+	databags[WorldCommands::get_databag_id()] = &commands;
 	databags[World::get_databag_id()] = this;
 }
 
 EntityID World::create_entity_index() {
-	return entity_count++;
+	return commands.create_entity_index();
 }
 
 const EntityBuilder &World::create_entity() {
@@ -41,12 +61,24 @@ void World::destroy_entity(EntityID p_entity) {
 	// TODO consider to reuse this ID.
 }
 
-EntityID World::get_last_entity_id() const {
-	if (entity_count == 0) {
-		return EntityID();
-	} else {
-		return EntityID(entity_count - 1);
+EntityID World::get_biggest_entity_id() const {
+	return commands.get_biggest_entity_id();
+}
+
+WorldCommands &World::get_commands() {
+	return commands;
+}
+
+const WorldCommands &World::get_commands() const {
+	return commands;
+}
+
+void World::flush() {
+	// Destroy the `Entities`.
+	for (uint32_t i = 0; i < commands.garbage_list.size(); i += 1) {
+		destroy_entity(commands.garbage_list[i]);
 	}
+	commands.garbage_list.clear();
 }
 
 void World::add_component(EntityID p_entity, uint32_t p_component_id, const Dictionary &p_data) {
@@ -121,7 +153,10 @@ void World::destroy_storage(uint32_t p_component_id) {
 
 void World::add_databag(godex::databag_id p_id) {
 	ERR_FAIL_COND_MSG(ECS::verify_databag_id(p_id) == false, "The databag is not registered.");
-	ERR_FAIL_COND_MSG(p_id == World::get_databag_id(), "The databag `World` is an internal type automatically register by the `World` itself. You can't add it again.");
+	if (unlikely(p_id == WorldCommands::get_databag_id() || p_id == World::get_databag_id())) {
+		// Nothing to do.
+		return;
+	}
 
 	if (p_id >= databags.size()) {
 		const uint32_t start = databags.size();
@@ -138,7 +173,10 @@ void World::add_databag(godex::databag_id p_id) {
 
 void World::remove_databag(godex::databag_id p_id) {
 	ERR_FAIL_COND_MSG(ECS::verify_databag_id(p_id) == false, "The databag is not registered.");
-	ERR_FAIL_COND_MSG(p_id == World::get_databag_id(), "The databag `World` is an internal type automatically register by the `World` itself. You can't remove it.");
+	if (unlikely(p_id == WorldCommands::get_databag_id() || p_id == World::get_databag_id())) {
+		// Nothing to do.
+		return;
+	}
 
 	if (unlikely(p_id >= databags.size() || databags[p_id] == nullptr)) {
 		// Nothing to do.
