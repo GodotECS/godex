@@ -293,6 +293,7 @@ void ECS::dispatch_active_world() {
 	if (likely(active_world && active_world_pipeline)) {
 		dispatching = true;
 		active_world_pipeline->dispatch(active_world);
+		active_world->flush();
 		dispatching = false;
 	}
 }

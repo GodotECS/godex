@@ -134,6 +134,7 @@ private:
 	void unactive_world();
 };
 
+// TODO remove this and handle directly via storages and WorldCommands.
 /// World Manipulatort
 class WorldECSCommands : public Object {
 	GDCLASS(WorldECSCommands, Object)

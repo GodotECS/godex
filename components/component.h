@@ -11,25 +11,15 @@
 
 namespace godex {
 
-#define COMPONENT_INTERNAL(m_class)                                                                   \
-	/* Components */                                                                                  \
-	static inline uint32_t component_id = UINT32_MAX;                                                 \
-																									  \
-	static void add_component_by_name(World *p_world, EntityID entity_id, const Dictionary &p_data) { \
-		m_class component;                                                                            \
-		for (const Variant *key = p_data.next(nullptr); key != nullptr; key = p_data.next(key)) {     \
-			component.set(StringName(*key), p_data.get_valid(*key));                                  \
-		}                                                                                             \
-		p_world->add_component(                                                                       \
-				entity_id,                                                                            \
-				component);                                                                           \
-	}                                                                                                 \
-																									  \
-public:                                                                                               \
-	static uint32_t get_component_id() { return component_id; }                                       \
-	virtual godex::component_id cid() const override { return component_id; }                         \
-																									  \
-	ECS_PROPERTY_MAPPER(m_class)                                                                      \
+#define COMPONENT_INTERNAL(m_class)                                           \
+	/* Components */                                                          \
+	static inline uint32_t component_id = UINT32_MAX;                         \
+																			  \
+public:                                                                       \
+	static uint32_t get_component_id() { return component_id; }               \
+	virtual godex::component_id cid() const override { return component_id; } \
+																			  \
+	ECS_PROPERTY_MAPPER(m_class)                                              \
 private:
 
 #define COMPONENT(m_class, m_storage_class)                            \

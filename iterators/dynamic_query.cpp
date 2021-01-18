@@ -172,7 +172,7 @@ EntityID DynamicQuery::get_current_entity_id() const {
 // TODO see how to improve this lookup mechanism so that no cache is miss and
 // it's fast.
 void DynamicQuery::next() {
-	const uint32_t last_id = world->get_last_entity_id();
+	const uint32_t last_id = world->get_biggest_entity_id();
 	if (unlikely(entity_id == UINT32_MAX || last_id == UINT32_MAX)) {
 		entity_id = UINT32_MAX;
 		return;

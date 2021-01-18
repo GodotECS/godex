@@ -51,18 +51,40 @@ public:
 
 // TODO make this under godex namespace.
 
-// TODO [!important!]
-// TODO when access this Databag mutably the system always have to run in
-// TODO single thread. This is a special condition.
-// TODO [!important!]
+// TODO consider to split this in multiple `Databag`, one for removal and the
+// other for creation. So two `Systems` can run in parallel.
+class WorldCommands : public godex::Databag {
+	DATABAG(WorldCommands)
+
+	friend class World;
+
+	/// Used to keep tracks of entity IDs.
+	uint32_t entity_register = 0;
+
+	/// List of `Entity` to destroy.
+	LocalVector<EntityID> garbage_list;
+
+public:
+	/// Immediately creates a new `Entity`.
+	EntityID create_entity_index();
+
+	/// Mark this `Entity` for disposal.
+	void destroy_deferred(EntityID p_entity);
+
+	/// Returns the ID of the last `Entity` created.
+	EntityID get_biggest_entity_id() const;
+};
+
+// IMPORTANT, when multithreading is implemented, all the `System`s asking for
+// the world must run in single thread.
 class World : public godex::Databag {
 	DATABAG(World)
 
 	friend class Pipeline;
 
+	WorldCommands commands;
 	LocalVector<StorageBase *> storages;
 	LocalVector<godex::Databag *> databags;
-	uint32_t entity_count = 0;
 	EntityBuilder entity_builder = EntityBuilder(this);
 
 public:
@@ -97,7 +119,13 @@ public:
 	void destroy_entity(EntityID p_entity);
 
 	/// Returns the last created EntityID or UINT32_MAX.
-	EntityID get_last_entity_id() const;
+	EntityID get_biggest_entity_id() const;
+
+	WorldCommands &get_commands();
+	const WorldCommands &get_commands() const;
+
+	/// Flushes every pending action.
+	void flush();
 
 	/// Adds a new component (or sets the default if already exists) to a
 	/// specific Entity.
