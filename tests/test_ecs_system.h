@@ -100,6 +100,27 @@ void test_system_check_events(Query<const Event1Component> &p_query) {
 	CHECK(entities_with_events == 1);
 }
 
+void test_add_entity_system(WorldCommands *p_commands, Storage<TransformComponent> *p_events) {
+	for (uint32_t i = 0; i < 3; i += 1) {
+		const EntityID id = p_commands->create_entity_index();
+		p_events->insert(id, TransformComponent());
+	}
+}
+
+void test_remove_entity_system(WorldCommands *p_command, Query<const TransformComponent> &p_query) {
+	uint32_t count = 0;
+
+	while (p_query.is_done() == false) {
+		count += 1;
+		p_command->destroy_deferred(p_query.get_current_entity());
+		p_query.next();
+	}
+
+	// Make sure the `test_add_entity_system` added exactly `3` `Entities` with
+	// `TransformComponent` component.
+	CHECK(count == 3);
+}
+
 TEST_CASE("[Modules][ECS] Test system and query") {
 	ECS::register_component<TagTestComponent>();
 
@@ -499,6 +520,52 @@ TEST_CASE("[Modules][ECS] Test event mechanism.") {
 	}
 }
 
+TEST_CASE("[Modules][ECS] Test create and remove Entity from Systems.") {
+	World world;
+
+	// Create the pipeline.
+	Pipeline pipeline;
+	// Add the system to the pipeline.
+	pipeline.add_system(test_add_entity_system);
+	pipeline.add_system(test_remove_entity_system);
+	pipeline.build();
+	pipeline.prepare(&world);
+
+	for (uint32_t i = 0; i < 5; i += 1) {
+		pipeline.dispatch(&world);
+
+		{
+			// Count the `Entities` at this point.
+			Query<const TransformComponent> query(&world);
+
+			uint32_t count = 0;
+			while (query.is_done() == false) {
+				count += 1;
+				query.next();
+			}
+
+			// The `System` removes the `Entities` defferred, so at this point
+			// the `Entities` still exists.
+			CHECK(count == 3);
+		}
+
+		world.flush();
+
+		{
+			// Count the `Entities` at this point.
+			Query<const TransformComponent> query(&world);
+
+			uint32_t count = 0;
+			while (query.is_done() == false) {
+				count += 1;
+				query.next();
+			}
+
+			// Now the `Entities` are removed.
+			CHECK(count == 0);
+		}
+	}
+}
 } // namespace godex_tests_system
 
 #endif // TEST_ECS_SYSTEM_H
