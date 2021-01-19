@@ -151,6 +151,9 @@ public:
 	EntityID(uint32_t p_index) :
 			id(p_index) {}
 
+	EntityID(Variant p_index) :
+			id(p_index.operator unsigned int()) {}
+
 	bool is_null() const {
 		return id == UINT32_MAX;
 	}
@@ -165,6 +168,10 @@ public:
 
 	operator uint32_t() const {
 		return id;
+	}
+
+	operator Variant() const {
+		return Variant(id);
 	}
 };
 
