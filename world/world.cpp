@@ -12,6 +12,13 @@ const EntityBuilder &EntityBuilder::with(uint32_t p_component_id, const Dictiona
 	return *this;
 }
 
+void WorldCommands::_bind_properties() {
+	add_method("ret_mutable", &WorldCommands::ret_mutable);
+	add_method("ret_immutable", &WorldCommands::ret_immutable);
+	add_method("void_mutable", &WorldCommands::void_mutable);
+	add_method("void_immutable", &WorldCommands::void_immutable);
+}
+
 EntityID WorldCommands::create_entity_index() {
 	return entity_register++;
 }
