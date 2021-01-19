@@ -15,11 +15,18 @@ Shortened as ECS, the Entity Component System is an architectural design pattern
 
 ### Wiki
 The [wiki](https://github.com/GodotECS/godex/wiki/) is available; useful links:
+- [Glossary](https://github.com/GodotECS/godex/wiki/Glossary)
 - [Setup](https://github.com/GodotECS/godex/wiki/Setup).
 - [Create a new Godex project](https://github.com/GodotECS/godex/wiki/Create-a-new-Godex-Project)
 
 ### Examples
-Check the [Unit tests](https://github.com/GodotECS/godex/tree/main/tests) to see some examples or the **Bench Test** https://github.com/GodotECS/godex_tests
+Check the [Unit tests](https://github.com/GodotECS/godex/tree/main/tests) to see some examples or the [Bench Test](https://github.com/GodotECS/godex_tests)
 
 ### Community
-If you want to chat about Godex, you can join the community on [discord: https://discord.gg/EFmWpf869q](https://discord.gg/EFmWpf869q) 
+If you want to chat about Godex, you can join the community on [Discord](https://discord.gg/EFmWpf869q).
+
+### Contributing
+Open an issue to give a feedback, propose a new feature, or signal a bug is really welcome and will help this project grow!
+If you want to help with coding instead, those two links may turn useful:
+- [Junior Job](https://github.com/GodotECS/godex/issues?q=is%3Aissue+is%3Aopen+label%3A%22Junior+Job%22)
+- [Hero Wanted!](https://github.com/GodotECS/godex/issues?q=is%3Aissue+is%3Aopen+label%3A%22hero+wanted%21%22)
