@@ -22,7 +22,7 @@ class DynamicQuery : public Object {
 	LocalVector<bool> mutability;
 	LocalVector<bool> required;
 	LocalVector<uint32_t> reject_component_ids;
-	LocalVector<DataAccessorScriptInstance<Component>> accessors;
+	LocalVector<DataAccessor<Component>> accessors;
 	LocalVector<StorageBase *> storages;
 	LocalVector<StorageBase *> reject_storages;
 
@@ -57,7 +57,7 @@ public:
 	/// The returned pointer is valid only for the execution of the query.
 	/// If you reset the query, copy it (move the object), this pointer is invalidated.
 	Object *get_access_gd(uint32_t p_index);
-	DataAccessorScriptInstance<Component> *get_access(uint32_t p_index);
+	DataAccessor<Component> *get_access(uint32_t p_index);
 
 	/// Start the execution of this query.
 	void begin(World *p_world);

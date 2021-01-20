@@ -196,7 +196,7 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 TEST_CASE("[Modules][ECS] Test WorldECSCommands create entity from prefab.") {
 	World world;
 
-	DataAccessorScriptInstance<godex::Databag> world_access;
+	DataAccessor<godex::Databag> world_access;
 	world_access.__target = &world;
 	world_access.__mut = true;
 
@@ -231,7 +231,7 @@ TEST_CASE("[Modules][ECS] Test WorldECSCommands create entity from prefab.") {
 TEST_CASE("[Modules][ECS] Test WorldECSCommands fetch databags.") {
 	World world;
 
-	DataAccessorScriptInstance<godex::Databag> world_access;
+	DataAccessor<godex::Databag> world_access;
 	world_access.__target = &world;
 	world_access.__mut = true;
 
