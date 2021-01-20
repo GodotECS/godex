@@ -6,7 +6,7 @@
 #include "core/object/message_queue.h"
 #include "core/os/os.h"
 
-void Physics3DServerDatabag::_bind_properties() {
+void Physics3DServerDatabag::_bind_methods() {
 }
 
 Physics3DServerDatabag::Physics3DServerDatabag() {

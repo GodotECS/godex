@@ -29,6 +29,6 @@ bool TransformComponent::is_changed() const {
 	return changed;
 }
 
-void TransformComponent::_bind_properties() {
+void TransformComponent::_bind_methods() {
 	ECS_BIND_PROPERTY(TransformComponent, PropertyInfo(Variant::TRANSFORM, "transform"), transform);
 }

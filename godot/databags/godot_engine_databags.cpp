@@ -4,7 +4,7 @@
 #include "core/object/message_queue.h"
 #include "core/os/os.h"
 
-void FrameTime::_bind_properties() {
+void FrameTime::_bind_methods() {
 	ECS_BIND_PROPERTY(FrameTime, PropertyInfo(Variant::FLOAT, "delta"), delta);
 	ECS_BIND_PROPERTY(FrameTime, PropertyInfo(Variant::FLOAT, "physics_delta"), physics_delta);
 }
@@ -44,7 +44,7 @@ real_t FrameTime::get_physics_delta() const {
 	return physics_delta;
 }
 
-void OsDatabag::_bind_properties() {}
+void OsDatabag::_bind_methods() {}
 
 OsDatabag::OsDatabag() {
 	os_singleton = OS::get_singleton();
@@ -58,7 +58,7 @@ const OS *OsDatabag::get_os() const {
 	return os_singleton;
 }
 
-void EngineDatabag::_bind_properties() {}
+void EngineDatabag::_bind_methods() {}
 
 EngineDatabag::EngineDatabag() {
 	engine_singleton = Engine::get_singleton();
@@ -72,7 +72,7 @@ const Engine *EngineDatabag::get_engine() const {
 	return engine_singleton;
 }
 
-void MessageQueueDatabag::_bind_properties() {}
+void MessageQueueDatabag::_bind_methods() {}
 
 MessageQueueDatabag::MessageQueueDatabag() {
 	message_queue = MessageQueue::get_singleton();

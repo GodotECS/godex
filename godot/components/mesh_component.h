@@ -19,7 +19,7 @@ class MeshComponent : public godex::Component {
 public:
 	MeshComponent();
 
-	static void _bind_properties();
+	static void _bind_methods();
 
 	void set_mesh(const Ref<Mesh> &p_mesh);
 	Ref<Mesh> get_mesh() const;

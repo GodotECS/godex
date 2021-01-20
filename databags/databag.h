@@ -31,6 +31,7 @@ public:                                                                   \
 	virtual godex::databag_id rid() const override { return databag_id; } \
 																		  \
 	ECS_PROPERTY_MAPPER(m_class)                                          \
+	ECS_METHOD_MAPPER()                                                   \
 private:
 
 class Databag : public ECSClass {
@@ -40,7 +41,7 @@ public:
 	Databag();
 
 public:
-	static void _bind_properties();
+	static void _bind_methods();
 
 	/// Returns the resouce ID.
 	virtual databag_id rid() const;
@@ -53,6 +54,8 @@ public:
 	virtual bool get(const uint32_t p_parameter_index, Variant &r_data) const;
 
 	Variant get(const StringName &p_name) const;
+
+	virtual void call(const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error);
 };
 
 template <class T>

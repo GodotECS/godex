@@ -51,90 +51,6 @@ public:
 
 // TODO make this under godex namespace.
 
-#include "core/variant/binder_common.h"
-
-struct MethodHelperBase {
-	virtual int get_argument_count() const {
-		return 0;
-	}
-
-	virtual void call(void *p_obj, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) {}
-};
-
-template <class R, class C, class... Args, size_t... Is>
-void call_return_mutable(C *p_obj, R (C::*method)(Args...), const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error, IndexSequence<Is...>) {
-	*r_ret = (p_obj->*method)(VariantCaster<Args>::cast(*p_args[Is])...);
-}
-
-template <class R, class C, class... Args>
-struct MethodHelperR : public MethodHelperBase {
-	R(C::*method)
-	(Args...);
-
-	virtual int get_argument_count() const override {
-		return int(sizeof...(Args));
-	}
-
-	virtual void call(void *p_obj, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) override {
-		call_return_mutable(static_cast<C *>(p_obj), method, p_args, p_argcount, r_ret, r_error, BuildIndexSequence<sizeof...(Args)>{});
-	}
-};
-
-template <class R, class C, class... Args, size_t... Is>
-void call_return_immutable(const C *p_obj, R (C::*method)(Args...) const, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error, IndexSequence<Is...>) {
-	*r_ret = (p_obj->*method)(VariantCaster<Args>::cast(*p_args[Is])...);
-}
-
-template <class R, class C, class... Args>
-struct MethodHelperRC : public MethodHelperBase {
-	R(C::*method)
-	(Args...) const;
-
-	virtual int get_argument_count() const override {
-		return int(sizeof...(Args));
-	}
-
-	virtual void call(void *p_obj, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) override {
-		call_return_immutable(static_cast<const C *>(p_obj), method, p_args, p_argcount, r_ret, r_error, BuildIndexSequence<sizeof...(Args)>{});
-	}
-};
-
-template <class C, class... Args, size_t... Is>
-void call_rvoid_mutable(C *p_obj, void (C::*method)(Args...), const Variant **p_args, int p_argcount, Callable::CallError &r_error, IndexSequence<Is...>) {
-	(p_obj->*method)(VariantCaster<Args>::cast(*p_args[Is])...);
-}
-
-template <class C, class... Args>
-struct MethodHelper : public MethodHelperBase {
-	void (C::*method)(Args...);
-
-	virtual int get_argument_count() const override {
-		return int(sizeof...(Args));
-	}
-
-	virtual void call(void *p_obj, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) override {
-		call_rvoid_mutable(static_cast<C *>(p_obj), method, p_args, p_argcount, r_error, BuildIndexSequence<sizeof...(Args)>{});
-	}
-};
-
-template <class C, class... Args, size_t... Is>
-void call_rvoid_immutable(const C *p_obj, void (C::*method)(Args...) const, const Variant **p_args, int p_argcount, Callable::CallError &r_error, IndexSequence<Is...>) {
-	(p_obj->*method)(VariantCaster<Args>::cast(*p_args[Is])...);
-}
-
-template <class C, class... Args>
-struct MethodHelperC : public MethodHelperBase {
-	void (C::*method)(Args...) const;
-
-	virtual int get_argument_count() const override {
-		return int(sizeof...(Args));
-	}
-
-	virtual void call(void *p_obj, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) override {
-		call_rvoid_immutable(static_cast<const C *>(p_obj), method, p_args, p_argcount, r_error, BuildIndexSequence<sizeof...(Args)>{});
-	}
-};
-
 // TODO consider to split this in multiple `Databag`, one for removal and the
 // other for creation. So two `Systems` can run in parallel.
 class WorldCommands : public godex::Databag {
@@ -149,71 +65,10 @@ class WorldCommands : public godex::Databag {
 	LocalVector<EntityID> garbage_list;
 
 public:
-	static void _bind_properties();
-
-	EntityID ret_mutable(int p_aa) { return EntityID(); }
-	EntityID ret_immutable(int p_aa) const { return EntityID(); }
-	void void_mutable(int p_aa) {}
-	void void_immutable(int p_aa) const {}
-
-	static inline LocalVector<StringName> methods_map;
-	static inline LocalVector<MethodHelperBase *> methods;
-
-	/// Adds methods with a return type.
-	template <class R, class C, class... Args>
-	static void add_method(const StringName &p_method, R (C::*method)(Args...)) {
-		ERR_FAIL_COND_MSG(methods_map.find(p_method) >= 0, "The method " + p_method + " is already registered: " + get_class_static());
-		methods_map.push_back(p_method);
-		methods.push_back(new MethodHelperR<R, C, Args...>());
-	}
-
-	/// Adds methods with a return type and constants.
-	template <class R, class C, class... Args>
-	static void add_method(const StringName &p_method, R (C::*method)(Args...) const) {
-		ERR_FAIL_COND_MSG(methods_map.find(p_method) >= 0, "The method " + p_method + " is already registered: " + get_class_static());
-		methods_map.push_back(p_method);
-		methods.push_back(new MethodHelperRC<R, C, Args...>());
-	}
-
-	/// Adds methods without a return type.
-	template <class C, class... Args>
-	static void add_method(const StringName &p_method, void (C::*method)(Args...)) {
-		ERR_FAIL_COND_MSG(methods_map.find(p_method) >= 0, "The method " + p_method + " is already registered: " + get_class_static());
-		methods_map.push_back(p_method);
-		methods.push_back(new MethodHelper<C, Args...>());
-	}
-
-	/// Adds methods without a return type and constants.
-	template <class C, class... Args>
-	static void add_method(const StringName &p_method, void (C::*method)(Args...) const) {
-		ERR_FAIL_COND_MSG(methods_map.find(p_method) >= 0, "The method " + p_method + " is already registered: " + get_class_static());
-		methods_map.push_back(p_method);
-		methods.push_back(new MethodHelperC<C, Args...>());
-	}
-
-	void call(const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) {
-		const uint32_t index = methods_map.find(p_method);
-		if (unlikely(index < 0)) {
-			ERR_PRINT("The method " + p_method + " is unknown " + get_class_static());
-			r_error.error = Callable::CallError::CALL_ERROR_INVALID_METHOD;
-			return;
-		}
-		if (unlikely(methods[index]->get_argument_count() != p_argcount)) {
-			ERR_PRINT("The method " + p_method + " is has " + itos(methods[index]->get_argument_count()) + " arguments; provided: " + itos(p_argcount) + " - " + get_class_static());
-			if (methods[index]->get_argument_count() > p_argcount) {
-				r_error.error = Callable::CallError::CALL_ERROR_TOO_FEW_ARGUMENTS;
-			} else {
-				r_error.error = Callable::CallError::CALL_ERROR_TOO_MANY_ARGUMENTS;
-			}
-			r_error.argument = p_argcount;
-			r_error.expected = methods[index]->get_argument_count();
-			return;
-		}
-		methods[index]->call(this, p_args, p_argcount, r_ret, r_error);
-	}
+	static void _bind_methods();
 
 	/// Immediately creates a new `Entity`.
-	EntityID create_entity_index();
+	EntityID create_entity();
 
 	/// Mark this `Entity` for disposal.
 	void destroy_deferred(EntityID p_entity);

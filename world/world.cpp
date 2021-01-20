@@ -12,14 +12,13 @@ const EntityBuilder &EntityBuilder::with(uint32_t p_component_id, const Dictiona
 	return *this;
 }
 
-void WorldCommands::_bind_properties() {
-	add_method("ret_mutable", &WorldCommands::ret_mutable);
-	add_method("ret_immutable", &WorldCommands::ret_immutable);
-	add_method("void_mutable", &WorldCommands::void_mutable);
-	add_method("void_immutable", &WorldCommands::void_immutable);
+void WorldCommands::_bind_methods() {
+	add_method("create_entity", &WorldCommands::create_entity);
+	add_method("destroy_deferred", &WorldCommands::destroy_deferred);
+	add_method("get_biggest_entity_id", &WorldCommands::get_biggest_entity_id);
 }
 
-EntityID WorldCommands::create_entity_index() {
+EntityID WorldCommands::create_entity() {
 	return entity_register++;
 }
 
@@ -49,7 +48,7 @@ World::World() {
 }
 
 EntityID World::create_entity_index() {
-	return commands.create_entity_index();
+	return commands.create_entity();
 }
 
 const EntityBuilder &World::create_entity() {

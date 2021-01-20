@@ -27,7 +27,7 @@ public:
 	bool is_changed() const;
 
 protected:
-	static void _bind_properties();
+	static void _bind_methods();
 };
 
 #endif

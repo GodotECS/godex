@@ -10,7 +10,7 @@ class MessageQueue;
 class FrameTime : public godex::Databag {
 	DATABAG(FrameTime)
 
-	static void _bind_properties();
+	static void _bind_methods();
 
 	// If set to true, the engine will shut down.
 	bool exit = false;
@@ -44,7 +44,7 @@ public:
 class OsDatabag : public godex::Databag {
 	DATABAG(OsDatabag)
 
-	static void _bind_properties();
+	static void _bind_methods();
 
 	OS *os_singleton;
 
@@ -58,7 +58,7 @@ public:
 class EngineDatabag : public godex::Databag {
 	DATABAG(EngineDatabag)
 
-	static void _bind_properties();
+	static void _bind_methods();
 
 	Engine *engine_singleton;
 
@@ -72,7 +72,7 @@ public:
 class MessageQueueDatabag : public godex::Databag {
 	DATABAG(MessageQueueDatabag)
 
-	static void _bind_properties();
+	static void _bind_methods();
 
 	MessageQueue *message_queue;
 
