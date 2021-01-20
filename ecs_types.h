@@ -451,6 +451,7 @@ public:                                                                         
 		return singleton;                                                                             \
 	}
 
+// TODO please rename this and re-document it. It's no more correct now.
 /// This is useful to access the storages fast. Since `Object::set` check fist
 /// the script. However, in future would be really nice make `Object::set` virtual
 /// so to override it and avoid all this useless extra work.

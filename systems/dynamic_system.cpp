@@ -22,7 +22,7 @@ void godex::DynamicSystemInfo::set_target(ScriptInstance *p_target) {
 void godex::DynamicSystemInfo::with_databag(uint32_t p_databag_id, bool p_mutable) {
 	CRASH_COND_MSG(compiled, "The query can't be composed, when the system is already been compiled.");
 
-	const uint32_t index = databag_element_map.size() + query_element_map.size();
+	const uint32_t index = databag_element_map.size() + storage_element_map.size() + query_element_map.size();
 	databag_element_map.push_back(index);
 	databags.push_back({ p_databag_id, p_mutable });
 }
@@ -30,7 +30,7 @@ void godex::DynamicSystemInfo::with_databag(uint32_t p_databag_id, bool p_mutabl
 void godex::DynamicSystemInfo::with_component(uint32_t p_component_id, bool p_mutable) {
 	CRASH_COND_MSG(compiled, "The query can't be composed, when the system is already been compiled.");
 
-	const uint32_t index = databag_element_map.size() + query_element_map.size();
+	const uint32_t index = databag_element_map.size() + storage_element_map.size() + query_element_map.size();
 	query_element_map.push_back(index);
 	query.with_component(p_component_id, p_mutable);
 }
@@ -38,7 +38,7 @@ void godex::DynamicSystemInfo::with_component(uint32_t p_component_id, bool p_mu
 void godex::DynamicSystemInfo::maybe_component(uint32_t p_component_id, bool p_mutable) {
 	CRASH_COND_MSG(compiled, "The query can't be composed, when the system is already been compiled.");
 
-	const uint32_t index = databag_element_map.size() + query_element_map.size();
+	const uint32_t index = databag_element_map.size() + storage_element_map.size() + query_element_map.size();
 	query_element_map.push_back(index);
 	query.maybe_component(p_component_id, p_mutable);
 }
@@ -47,6 +47,14 @@ void godex::DynamicSystemInfo::without_component(uint32_t p_component_id) {
 	CRASH_COND_MSG(compiled, "The query can't be composed, when the system is already been compiled.");
 
 	query.without_component(p_component_id);
+}
+
+void godex::DynamicSystemInfo::with_storage(uint32_t p_component_id) {
+	CRASH_COND_MSG(compiled, "The query can't be composed, when the system is already been compiled.");
+
+	const uint32_t index = databag_element_map.size() + storage_element_map.size() + query_element_map.size();
+	storage_element_map.push_back(index);
+	storages.push_back(p_component_id);
 }
 
 void godex::DynamicSystemInfo::set_target(func_system_execute_pipeline p_system_exe) {
@@ -77,10 +85,10 @@ bool godex::DynamicSystemInfo::build() {
 
 	// ~~ Init the script accessors. ~~
 	{
-		access.resize(databag_element_map.size() + query_element_map.size());
+		access.resize(databag_element_map.size() + storage_element_map.size() + query_element_map.size());
 		access_ptr.resize(access.size());
 
-		// Init the databag accessors.
+		// ~~ Databags
 		databag_accessors.resize(databags.size());
 
 		// Set the databag accessors.
@@ -96,7 +104,20 @@ bool godex::DynamicSystemInfo::build() {
 			access_ptr[databag_element_map[i]] = &access[databag_element_map[i]];
 		}
 
-		// Init the component storage accessors.
+		// ~~ Storages
+		storage_accessors.resize(storages.size());
+
+		// Set the storage accessors.
+		for (uint32_t i = 0; i < storages.size(); i += 1) {
+			// The storages are always mutable.
+			storage_accessors[i].__mut = true;
+
+			// Assign the accessor.
+			access[storage_element_map[i]] = &storage_accessors[i];
+			access_ptr[storage_element_map[i]] = &access[storage_element_map[i]];
+		}
+
+		// Init the query accessors.
 		// Map the query components, so the function can be called with the
 		// right parameter order.
 		// It's fine store the accessor pointers here because the query is
@@ -151,6 +172,11 @@ void godex::DynamicSystemInfo::get_info(DynamicSystemInfo &p_info, func_system_e
 		}
 	}
 
+	// Set the storages dependencies.
+	for (uint32_t i = 0; i < p_info.storages.size(); i += 1) {
+		r_out.mutable_components_storage.push_back(p_info.storages[i]);
+	}
+
 	// Set the components dependencies.
 	p_info.query.get_system_info(r_out);
 
@@ -181,6 +207,14 @@ void godex::DynamicSystemInfo::executor(World *p_world, DynamicSystemInfo &p_inf
 			// Set the accessors pointers.
 			p_info.databag_accessors[i].__target = p_world->get_databag(p_info.databags[i].databag_id);
 		}
+
+		// Then extract the storages.
+		for (uint32_t i = 0; i < p_info.storages.size(); i += 1) {
+			// Set the accessors pointers.
+			p_info.storage_accessors[i].__target = p_world->get_storage(p_info.storages[i]);
+		}
+
+		// Execute the query
 
 		p_info.query.begin(p_world);
 		for (; p_info.query.is_done() == false; p_info.query.next()) {
