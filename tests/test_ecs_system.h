@@ -23,7 +23,7 @@ public:
 		ECS_BIND_PROPERTY(Test1Component, PropertyInfo(Variant::INT, "a"), a);
 	}
 
-	int a = 0;
+	int a = 30;
 
 	Test1Component() {}
 	Test1Component(int p_a) :
@@ -548,53 +548,103 @@ TEST_CASE("[Modules][ECS] Test Add/remove from dynamic query.") {
 									  .create_entity()
 									  .with(TransformComponent());
 
-	Object target_obj;
-	{
-		// Create the script.
-		String code;
-		code += "extends Object\n";
-		code += "\n";
-		code += "func _for_each(world_commands, event_storage, transform_com):\n";
-		code += "	var id = world_commands.create_entity()\n";
-		code += "	event_storage.insert(id, {\"a\": 975})\n";
-		code += "\n";
-
-		CHECK(build_and_assign_script(&target_obj, code));
-	}
-
-	// Build dynamic query.
-	const uint32_t system_id = ECS::register_dynamic_system("TestSpawnDynamicSystem.gd");
-	godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
-	dynamic_system_info->with_databag(WorldCommands::get_databag_id(), true);
-	dynamic_system_info->with_storage(Test1Component::get_component_id());
-	dynamic_system_info->with_component(TransformComponent::get_component_id(), false);
-	dynamic_system_info->set_target(target_obj.get_script_instance());
-	dynamic_system_info->build();
-
-	// Create the pipeline.
-	Pipeline pipeline;
-	// Add the system to the pipeline.
-	pipeline.add_registered_system(system_id);
-	pipeline.build();
-	pipeline.prepare(&world);
-
-	// Dispatch 1 time.
-	pipeline.dispatch(&world);
-
 	// This entity got created by the script.
 	const EntityID entity_2(1);
+	const EntityID entity_3(2);
 
-	// Make sure a new entity got created.
-	CHECK(world.get_biggest_entity_id() == entity_2);
+	// Test add
+	{
+		Object target_obj;
+		{
+			// Create the script.
+			String code;
+			code += "extends Object\n";
+			code += "\n";
+			code += "func _for_each(world_commands, comp_storage, transform_com):\n";
+			code += "	var entity_2 = world_commands.create_entity()\n";
+			code += "	comp_storage.insert(entity_2, {\"a\": 975})\n";
+			code += "	var entity_3 = world_commands.create_entity()\n";
+			code += "	comp_storage.insert(entity_3)\n";
+			code += "\n";
 
-	// Make sure the entity 0 has the `TransformComponent`
-	CHECK(world.get_storage<TransformComponent>()->has(entity_1));
+			CHECK(build_and_assign_script(&target_obj, code));
+		}
 
-	// but also the runtime created one (entity 2) has the `Test1Component`.
-	CHECK(world.get_storage<Test1Component>()->has(entity_2));
+		// Build dynamic query.
+		const uint32_t system_id = ECS::register_dynamic_system("TestSpawnDynamicSystem.gd");
+		godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
+		dynamic_system_info->with_databag(WorldCommands::get_databag_id(), true);
+		dynamic_system_info->with_storage(Test1Component::get_component_id());
+		dynamic_system_info->with_component(TransformComponent::get_component_id(), false);
+		dynamic_system_info->set_target(target_obj.get_script_instance());
+		dynamic_system_info->build();
 
-	// Make sure the default is also set.
-	CHECK(world.get_storage<Test1Component>()->get(entity_2)->a == 975);
+		// Create the pipeline.
+		Pipeline pipeline;
+		// Add the system to the pipeline.
+		pipeline.add_registered_system(system_id);
+		pipeline.build();
+		pipeline.prepare(&world);
+
+		// Dispatch 1 time.
+		pipeline.dispatch(&world);
+
+		// Make sure a new entity got created.
+		CHECK(world.get_biggest_entity_id() == entity_3);
+
+		// Make sure the entity 0 has the `TransformComponent`
+		CHECK(world.get_storage<TransformComponent>()->has(entity_1));
+
+		// but also the runtime created one (entity 2) has the `Test1Component`.
+		CHECK(world.get_storage<Test1Component>()->has(entity_2));
+		CHECK(world.get_storage<Test1Component>()->has(entity_3));
+
+		// Make sure the value is correctly set.
+		CHECK(world.get_storage<Test1Component>()->get(entity_2)->a == 975);
+
+		// Make sure the default value is set.
+		CHECK(world.get_storage<Test1Component>()->get(entity_3)->a == Test1Component().a);
+	}
+
+	// Test remove
+	{
+		Object target_obj;
+		{
+			// Create the script.
+			String code;
+			code += "extends Object\n";
+			code += "\n";
+			code += "func _for_each(world_commands, comp_storage, transform_com):\n";
+			code += "	comp_storage.remove(2)\n";
+			code += "	comp_storage.remove(1)\n";
+			code += "\n";
+
+			CHECK(build_and_assign_script(&target_obj, code));
+		}
+
+		// Build dynamic query.
+		const uint32_t system_id = ECS::register_dynamic_system("TestRemoveDynamicSystem.gd");
+		godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
+		dynamic_system_info->with_databag(WorldCommands::get_databag_id(), true);
+		dynamic_system_info->with_storage(Test1Component::get_component_id());
+		dynamic_system_info->with_component(TransformComponent::get_component_id(), false);
+		dynamic_system_info->set_target(target_obj.get_script_instance());
+		dynamic_system_info->build();
+
+		// Create the pipeline.
+		Pipeline pipeline;
+		// Add the system to the pipeline.
+		pipeline.add_registered_system(system_id);
+		pipeline.build();
+		pipeline.prepare(&world);
+
+		// Dispatch 1 time.
+		pipeline.dispatch(&world);
+
+		// Make sure the Test1Component is correctly removed
+		CHECK(world.get_storage<Test1Component>()->has(entity_2) == false);
+		CHECK(world.get_storage<Test1Component>()->has(entity_3) == false);
+	}
 }
 } // namespace godex_tests_system
 

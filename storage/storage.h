@@ -64,8 +64,8 @@ public:
 						p_args[0] == nullptr ||
 						p_args[0]->get_type() != Variant::INT ||
 						(p_argcount == 2 &&
-								p_args[1] != nullptr &&
-								p_args[1]->get_type() != Variant::DICTIONARY))) {
+								(p_args[1] == nullptr ||
+										p_args[1]->get_type() != Variant::DICTIONARY)))) {
 				r_error.error = Callable::CallError::CALL_ERROR_INVALID_ARGUMENT;
 				ERR_FAIL_MSG("The `Storage::insert` arguments are: Entity ID (Int); (optional) component values (Dictionary).");
 			}
@@ -74,10 +74,33 @@ public:
 			insert_dynamic(
 					p_args[0]->operator unsigned int(),
 					(p_argcount == 2 && p_args[1] != nullptr) ? p_args[1]->operator Dictionary() : Dictionary());
+
+		} else if (String(p_method) == "remove") { // TODO make this a static StringName to improve the check.
+			// Check argument count.
+			if (unlikely(p_argcount != 1)) {
+				r_error.expected = 1;
+				r_error.argument = p_argcount;
+				r_error.error = p_argcount < 1 ? Callable::CallError::CALL_ERROR_TOO_FEW_ARGUMENTS : Callable::CallError::CALL_ERROR_TOO_MANY_ARGUMENTS;
+				ERR_FAIL_MSG("The function `Storage::remove` expects just the enity ID (int).");
+			}
+
+#ifdef DEBUG_ENABLED
+			// Check argument validity
+			if (unlikely(
+						p_args[0] == nullptr ||
+						p_args[0]->get_type() != Variant::INT)) {
+				r_error.error = Callable::CallError::CALL_ERROR_INVALID_ARGUMENT;
+				ERR_FAIL_MSG("The `Storage::remove` expects just the Entity ID (Int).");
+			}
+#endif
+
+			remove(p_args[0]->operator unsigned int());
+		} else {
+			r_error.error = Callable::CallError::CALL_ERROR_INVALID_METHOD;
+			ERR_FAIL_MSG("The `Storage` doesn't have the method: " + p_method);
 		}
 
-		r_error.error = Callable::CallError::CALL_ERROR_INVALID_METHOD;
-		ERR_FAIL_MSG("The `Storage` doesn't have the method: " + p_method);
+		r_error.error = Callable::CallError::CALL_OK;
 	}
 };
 
