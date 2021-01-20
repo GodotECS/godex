@@ -36,7 +36,7 @@ public:
 class TestSystemSubPipeDatabag : public godex::Databag {
 	DATABAG(TestSystemSubPipeDatabag)
 
-	static void _bind_properties() {
+	static void _bind_methods() {
 		ECS_BIND_PROPERTY(TestSystemSubPipeDatabag, PropertyInfo(Variant::INT, "exe_count"), exe_count);
 	}
 
@@ -102,7 +102,7 @@ void test_system_check_events(Query<const Event1Component> &p_query) {
 
 void test_add_entity_system(WorldCommands *p_commands, Storage<TransformComponent> *p_events) {
 	for (uint32_t i = 0; i < 3; i += 1) {
-		const EntityID id = p_commands->create_entity_index();
+		const EntityID id = p_commands->create_entity();
 		p_events->insert(id, TransformComponent());
 	}
 }
@@ -207,7 +207,7 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 		code += "		test_comp.variable_2 = Transform()\n";
 		code += "\n";
 
-		ERR_FAIL_COND(build_and_assign_script(&target_obj, code) == false);
+		CHECK(build_and_assign_script(&target_obj, code));
 	}
 
 	// Build dynamic query.
@@ -418,7 +418,7 @@ TEST_CASE("[Modules][ECS] Test system databag fetch with dynamic query.") {
 		code += "	test_databag.exe_count = 10\n";
 		code += "\n";
 
-		ERR_FAIL_COND(build_and_assign_script(&target_obj, code) == false);
+		CHECK(build_and_assign_script(&target_obj, code));
 	}
 
 	// Build dynamic query.
@@ -443,11 +443,11 @@ TEST_CASE("[Modules][ECS] Test system databag fetch with dynamic query.") {
 	CHECK(world.get_databag<TestSystemSubPipeDatabag>()->exe_count == 10);
 }
 
-TEST_CASE("[Modules][ECS] Test WorldECSCommands from dynamic query.") {
+TEST_CASE("[Modules][ECS] Test Add/remove from dynamic query.") {
 	World world;
-	world
-			.create_entity()
-			.with(TransformComponent());
+	const EntityID entity_1 = world
+									  .create_entity()
+									  .with(TransformComponent());
 
 	Object target_obj;
 	{
@@ -455,19 +455,19 @@ TEST_CASE("[Modules][ECS] Test WorldECSCommands from dynamic query.") {
 		String code;
 		code += "extends Object\n";
 		code += "\n";
-		code += "func _for_each(world, transform_com):\n";
-		code += "	var data := {\"transform\": Transform(Basis(), Vector3(10, 0, 0))}\n";
-		code += "	var id := WorldECSCommands.create_entity(world)\n";
-		code += "	WorldECSCommands.add_component(world, id, \"TransformComponent\", data)\n";
+		code += "func _for_each(world_commands, transform_com):\n";
+		code += "	var id = world_commands.create_entity()\n";
+		//code += "	var data := {\"transform\": Transform(Basis(), Vector3(10, 0, 0))}\n";
+		//code += "	WorldECSCommands.add_component(world, id, \"TransformComponent\", data)\n";
 		code += "\n";
 
-		ERR_FAIL_COND(build_and_assign_script(&target_obj, code) == false);
+		CHECK(build_and_assign_script(&target_obj, code));
 	}
 
 	// Build dynamic query.
 	const uint32_t system_id = ECS::register_dynamic_system("TestSpawnDynamicSystem.gd");
 	godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
-	dynamic_system_info->with_databag(World::get_databag_id(), true);
+	dynamic_system_info->with_databag(WorldCommands::get_databag_id(), true);
 	dynamic_system_info->with_component(TransformComponent::get_component_id(), false);
 	dynamic_system_info->set_target(target_obj.get_script_instance());
 	dynamic_system_info->build();
@@ -482,12 +482,20 @@ TEST_CASE("[Modules][ECS] Test WorldECSCommands from dynamic query.") {
 	// Dispatch 1 time.
 	pipeline.dispatch(&world);
 
+	// This entity got created by the script.
+	const EntityID entity_2(1);
+
+	// Make sure a new entity got created.
+	CHECK(world.get_biggest_entity_id() == entity_2);
+
 	// Make sure the entity 0 has the `TransformComponent`
-	CHECK(world.get_storage<TransformComponent>()->has(0));
+	CHECK(world.get_storage<TransformComponent>()->has(entity_1));
+
 	// but also the runtime created one (entity 1) has it.
-	CHECK(world.get_storage<TransformComponent>()->has(1));
+	CHECK(world.get_storage<TransformComponent>()->has(entity_2));
+
 	// Make sure the default is also set.
-	CHECK(ABS(world.get_storage<TransformComponent>()->get(1)->get_transform().origin.x - 10) <= CMP_EPSILON);
+	CHECK(ABS(world.get_storage<TransformComponent>()->get(entity_2)->get_transform().origin.x - 10) <= CMP_EPSILON);
 }
 
 TEST_CASE("[Modules][ECS] Test event mechanism.") {

@@ -7,6 +7,7 @@
 #include "core/string/ustring.h"
 #include "core/templates/list.h"
 #include "core/templates/local_vector.h"
+#include "core/variant/binder_common.h"
 #include "modules/gdscript/gdscript.h"
 
 template <bool B>
@@ -246,7 +247,7 @@ public:                                                                         
 		return getters[p_index](this, r_data);                                                                                         \
 	}
 
-/// Must be called in `_bind_property` and can be used to just bind a property.
+/// Must be called in `_bind_methods` and can be used to just bind a property.
 #define ECS_BIND_PROPERTY(clazz, prop_info, prop)                \
 	add_property(                                                \
 			prop_info,                                           \
@@ -259,7 +260,7 @@ public:                                                                         
 				return true;                                     \
 			});
 
-/// Must be called in `_bind_property` and can be used to bind set and get of a
+/// Must be called in `_bind_methods` and can be used to bind set and get of a
 /// property. Useful when you have to parse the set/get data.
 #define ECS_BIND_PROPERTY_FUNC(clazz, prop_info, set_func, get_func)   \
 	add_property(                                                      \
@@ -272,6 +273,168 @@ public:                                                                         
 				r_data = static_cast<const clazz *>(self)->get_func(); \
 				return true;                                           \
 			});
+
+} // namespace godex
+
+// ~~ METHOD MAPPER ~~
+
+namespace godex {
+
+struct MethodHelperBase {
+	virtual int get_argument_count() const {
+		return 0;
+	}
+
+	virtual void call(void *p_obj, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) {}
+};
+
+template <class R, class C, class... Args, size_t... Is>
+void call_return_mutable(C *p_obj, R (C::*method)(Args...), const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error, IndexSequence<Is...>) {
+	*r_ret = (p_obj->*method)(VariantCaster<Args>::cast(*p_args[Is])...);
+}
+
+template <class R, class C, class... Args>
+struct MethodHelperR : public MethodHelperBase {
+	R(C::*method)
+	(Args...);
+
+	MethodHelperR(R (C::*p_method)(Args...)) :
+			method(p_method) {}
+
+	virtual int get_argument_count() const override {
+		return int(sizeof...(Args));
+	}
+
+	virtual void call(void *p_obj, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) override {
+		call_return_mutable(static_cast<C *>(p_obj), method, p_args, p_argcount, r_ret, r_error, BuildIndexSequence<sizeof...(Args)>{});
+	}
+};
+
+template <class R, class C, class... Args, size_t... Is>
+void call_return_immutable(const C *p_obj, R (C::*method)(Args...) const, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error, IndexSequence<Is...>) {
+	*r_ret = (p_obj->*method)(VariantCaster<Args>::cast(*p_args[Is])...);
+}
+
+template <class R, class C, class... Args>
+struct MethodHelperRC : public MethodHelperBase {
+	R(C::*method)
+	(Args...) const;
+
+	MethodHelperRC(R (C::*p_method)(Args...) const) :
+			method(p_method) {}
+
+	virtual int get_argument_count() const override {
+		return int(sizeof...(Args));
+	}
+
+	virtual void call(void *p_obj, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) override {
+		call_return_immutable(static_cast<const C *>(p_obj), method, p_args, p_argcount, r_ret, r_error, BuildIndexSequence<sizeof...(Args)>{});
+	}
+};
+
+template <class C, class... Args, size_t... Is>
+void call_rvoid_mutable(C *p_obj, void (C::*method)(Args...), const Variant **p_args, int p_argcount, Callable::CallError &r_error, IndexSequence<Is...>) {
+	(p_obj->*method)(VariantCaster<Args>::cast(*p_args[Is])...);
+}
+
+template <class C, class... Args>
+struct MethodHelper : public MethodHelperBase {
+	void (C::*method)(Args...);
+
+	MethodHelper(void (C::*p_method)(Args...)) :
+			method(p_method) {}
+
+	virtual int get_argument_count() const override {
+		return int(sizeof...(Args));
+	}
+
+	virtual void call(void *p_obj, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) override {
+		call_rvoid_mutable(static_cast<C *>(p_obj), method, p_args, p_argcount, r_error, BuildIndexSequence<sizeof...(Args)>{});
+	}
+};
+
+template <class C, class... Args, size_t... Is>
+void call_rvoid_immutable(const C *p_obj, void (C::*method)(Args...) const, const Variant **p_args, int p_argcount, Callable::CallError &r_error, IndexSequence<Is...>) {
+	(p_obj->*method)(VariantCaster<Args>::cast(*p_args[Is])...);
+}
+
+template <class C, class... Args>
+struct MethodHelperC : public MethodHelperBase {
+	void (C::*method)(Args...) const;
+
+	MethodHelperC(void (C::*p_method)(Args...) const) :
+			method(p_method) {}
+
+	virtual int get_argument_count() const override {
+		return int(sizeof...(Args));
+	}
+
+	virtual void call(void *p_obj, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) override {
+		call_rvoid_immutable(static_cast<const C *>(p_obj), method, p_args, p_argcount, r_error, BuildIndexSequence<sizeof...(Args)>{});
+	}
+};
+
+#define ECS_METHOD_MAPPER()                                                                                                                                                           \
+private:                                                                                                                                                                              \
+	static inline LocalVector<StringName> methods_map;                                                                                                                                \
+	static inline LocalVector<godex::MethodHelperBase *> methods;                                                                                                                     \
+																																													  \
+public:                                                                                                                                                                               \
+	/* Adds methods with a return type. */                                                                                                                                            \
+	template <class R, class C, class... Args>                                                                                                                                        \
+	static void add_method(const StringName &p_method, R (C::*method)(Args...)) {                                                                                                     \
+		ERR_FAIL_COND_MSG(methods_map.find(p_method) >= 0, "The method " + p_method + " is already registered: " + get_class_static());                                               \
+		methods_map.push_back(p_method);                                                                                                                                              \
+		methods.push_back(new godex::MethodHelperR<R, C, Args...>(method));                                                                                                           \
+	};                                                                                                                                                                                \
+																																													  \
+	/* Adds methods with a return type and constants. */                                                                                                                              \
+	template <class R, class C, class... Args>                                                                                                                                        \
+	static void add_method(const StringName &p_method, R (C::*method)(Args...) const) {                                                                                               \
+		ERR_FAIL_COND_MSG(methods_map.find(p_method) >= 0, "The method " + p_method + " is already registered: " + get_class_static());                                               \
+		methods_map.push_back(p_method);                                                                                                                                              \
+		methods.push_back(new godex::MethodHelperRC<R, C, Args...>(method));                                                                                                          \
+	}                                                                                                                                                                                 \
+																																													  \
+	/* Adds methods without a return type. */                                                                                                                                         \
+	template <class C, class... Args>                                                                                                                                                 \
+	static void add_method(const StringName &p_method, void (C::*method)(Args...)) {                                                                                                  \
+		ERR_FAIL_COND_MSG(methods_map.find(p_method) >= 0, "The method " + p_method + " is already registered: " + get_class_static());                                               \
+		methods_map.push_back(p_method);                                                                                                                                              \
+		methods.push_back(new godex::MethodHelper<C, Args...>(method));                                                                                                               \
+	}                                                                                                                                                                                 \
+																																													  \
+	/* Adds methods without a return type and constants.*/                                                                                                                            \
+	template <class C, class... Args>                                                                                                                                                 \
+	static void add_method(const StringName &p_method, void (C::*method)(Args...) const) {                                                                                            \
+		ERR_FAIL_COND_MSG(methods_map.find(p_method) >= 0, "The method " + p_method + " is already registered: " + get_class_static());                                               \
+		methods_map.push_back(p_method);                                                                                                                                              \
+		methods.push_back(new godex::MethodHelperC<C, Args...>(method));                                                                                                              \
+	}                                                                                                                                                                                 \
+																																													  \
+	virtual void call(const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) override {                                    \
+		const int64_t _index = methods_map.find(p_method);                                                                                                                            \
+		if (unlikely(_index < 0)) {                                                                                                                                                   \
+			ERR_PRINT("The method " + p_method + " is unknown " + get_class_static());                                                                                                \
+			r_error.error = Callable::CallError::CALL_ERROR_INVALID_METHOD;                                                                                                           \
+			return;                                                                                                                                                                   \
+		}                                                                                                                                                                             \
+		const uint32_t index = _index;                                                                                                                                                \
+		if (unlikely(methods[index]->get_argument_count() != p_argcount)) {                                                                                                           \
+			ERR_PRINT("The method " + p_method + " is has " + itos(methods[index]->get_argument_count()) + " arguments; provided: " + itos(p_argcount) + " - " + get_class_static()); \
+			if (methods[index]->get_argument_count() > p_argcount) {                                                                                                                  \
+				r_error.error = Callable::CallError::CALL_ERROR_TOO_FEW_ARGUMENTS;                                                                                                    \
+			} else {                                                                                                                                                                  \
+				r_error.error = Callable::CallError::CALL_ERROR_TOO_MANY_ARGUMENTS;                                                                                                   \
+			}                                                                                                                                                                         \
+			r_error.argument = p_argcount;                                                                                                                                            \
+			r_error.expected = methods[index]->get_argument_count();                                                                                                                  \
+			return;                                                                                                                                                                   \
+		}                                                                                                                                                                             \
+		methods[index]->call(this, p_args, p_argcount, r_ret, r_error);                                                                                                               \
+	}                                                                                                                                                                                 \
+																																													  \
+private:
 
 } // namespace godex
 
@@ -313,15 +476,17 @@ public:
 	}
 
 	virtual Variant call(const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) override {
-		if (String(p_method) == "is_valid") {
+		if (String(p_method) == "is_valid") { // TODO convert to a static StringName??
 			r_error.error = Callable::CallError::Error::CALL_OK;
 			return __target != nullptr;
-		} else if (String(p_method) == "is_mutable") {
+		} else if (String(p_method) == "is_mutable") { // TODO convert to a static StringName??
 			r_error.error = Callable::CallError::Error::CALL_OK;
 			return __mut;
 		} else {
-			r_error.error = Callable::CallError::Error::CALL_ERROR_INVALID_METHOD;
-			return Variant();
+			Variant ret;
+			ERR_FAIL_COND_V(__target == nullptr, ret);
+			__target->call(p_method, p_args, p_argcount, &ret, r_error);
+			return ret;
 		}
 	}
 };

@@ -197,7 +197,7 @@ void ECS::register_component() {
 
 	StringName component_name = C::get_class_static();
 	C::component_id = components.size();
-	C::_bind_properties();
+	C::_bind_methods();
 	components.push_back(component_name);
 	components_info.push_back(
 			ComponentInfo{
@@ -226,7 +226,7 @@ void ECS::register_databag() {
 
 	StringName databag_name = R::get_class_static();
 	R::databag_id = databags.size();
-	R::_bind_properties();
+	R::_bind_methods();
 	databags.push_back(databag_name);
 	databags_info.push_back(DatabagInfo{
 			R::create_databag_no_type });

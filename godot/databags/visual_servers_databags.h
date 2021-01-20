@@ -23,7 +23,7 @@ class RenderingScenarioDatabag : public godex::Databag {
 	RID scenario;
 	bool changed = false;
 
-	static void _bind_properties();
+	static void _bind_methods();
 
 public:
 	void set_scenario(RID p_scenario_rid);

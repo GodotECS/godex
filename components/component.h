@@ -20,6 +20,7 @@ public:                                                                       \
 	virtual godex::component_id cid() const override { return component_id; } \
 																			  \
 	ECS_PROPERTY_MAPPER(m_class)                                              \
+	ECS_METHOD_MAPPER()                                                       \
 private:
 
 #define COMPONENT(m_class, m_storage_class)                            \
@@ -61,7 +62,7 @@ public:
 	Component();
 
 public:
-	static void _bind_properties();
+	static void _bind_methods();
 
 	/// Returns the component ID.
 	virtual component_id cid() const;
@@ -74,6 +75,8 @@ public:
 	virtual bool get(const uint32_t p_parameter_index, Variant &r_data) const;
 
 	Variant get(const StringName &p_name) const;
+
+	virtual void call(const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error);
 };
 
 template <class T>

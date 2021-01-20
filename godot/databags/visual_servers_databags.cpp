@@ -11,7 +11,7 @@ RenderingServer *RenderingServerDatabag::get_rs() {
 	return rs;
 }
 
-void RenderingScenarioDatabag::_bind_properties() {
+void RenderingScenarioDatabag::_bind_methods() {
 	ECS_BIND_PROPERTY(RenderingScenarioDatabag, PropertyInfo(Variant::OBJECT, "scenario"), scenario);
 }
 

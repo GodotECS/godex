@@ -14,7 +14,7 @@ class MessageQueueDatabag;
 class Physics3DServerDatabag : public godex::Databag {
 	DATABAG(Physics3DServerDatabag)
 
-	static void _bind_properties();
+	static void _bind_methods();
 
 	PhysicsServer3D *physics_singleton;
 
