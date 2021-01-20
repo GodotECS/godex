@@ -47,9 +47,11 @@ class DynamicSystemInfo {
 
 	/// Map used to map the list of Databags to the script.
 	LocalVector<uint32_t> databag_element_map;
+	LocalVector<uint32_t> storage_element_map;
 	/// Map used to map the list of Components to the script.
 	LocalVector<uint32_t> query_element_map;
 	LocalVector<DDatabag> databags;
+	LocalVector<uint32_t> storages;
 	DynamicQuery query;
 
 	// Accessors.
@@ -58,6 +60,9 @@ class DynamicSystemInfo {
 
 	// Accessors databag.
 	LocalVector<DataAccessorScriptInstance<Databag>> databag_accessors;
+
+	// Accessors databag.
+	LocalVector<DataAccessorScriptInstance<StorageBase>> storage_accessors;
 
 	// ~~ Sub pipeline system ~~
 	func_system_execute_pipeline sub_pipeline_execute = nullptr;
@@ -73,6 +78,7 @@ public:
 	void with_component(uint32_t p_component_id, bool p_mutable);
 	void maybe_component(uint32_t p_component_id, bool p_mutable);
 	void without_component(uint32_t p_component_id);
+	void with_storage(uint32_t p_component_id);
 
 	void set_target(func_system_execute_pipeline p_sub_pipeline_execite);
 	void set_pipeline(Pipeline *p_pipeline);
