@@ -104,7 +104,7 @@ Object *DynamicQuery::get_access_gd(uint32_t p_index) {
 	return accessors.ptr() + p_index;
 }
 
-DataAccessorScriptInstance<godex::Component> *DynamicQuery::get_access(uint32_t p_index) {
+DataAccessor<godex::Component> *DynamicQuery::get_access(uint32_t p_index) {
 	ERR_FAIL_COND_V_MSG(is_valid() == false, nullptr, "The query is invalid.");
 	build();
 	return accessors.ptr() + p_index;

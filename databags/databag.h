@@ -60,7 +60,7 @@ public:
 
 template <class T>
 T *unwrap_databag(Object *p_access_databag) {
-	DataAccessorScriptInstance<Databag> *bag = dynamic_cast<DataAccessorScriptInstance<Databag> *>(p_access_databag);
+	DataAccessor<Databag> *bag = dynamic_cast<DataAccessor<Databag> *>(p_access_databag);
 	if (unlikely(bag == nullptr || bag->__target == nullptr)) {
 		return nullptr;
 	}
@@ -73,7 +73,7 @@ T *unwrap_databag(Object *p_access_databag) {
 
 template <class T>
 const T *unwrap_databag(const Object *p_access_databag) {
-	const DataAccessorScriptInstance<Databag> *bag = dynamic_cast<const DataAccessorScriptInstance<Databag> *>(p_access_databag);
+	const DataAccessor<Databag> *bag = dynamic_cast<const DataAccessor<Databag> *>(p_access_databag);
 	if (unlikely(bag == nullptr || bag->__target == nullptr)) {
 		return nullptr;
 	}

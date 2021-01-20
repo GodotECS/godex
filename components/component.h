@@ -81,7 +81,7 @@ public:
 
 template <class T>
 T *unwrap_component(Object *p_access_databag) {
-	DataAccessorScriptInstance<Component> *comp = dynamic_cast<DataAccessorScriptInstance<Component> *>(p_access_databag);
+	DataAccessor<Component> *comp = dynamic_cast<DataAccessor<Component> *>(p_access_databag);
 	if (unlikely(comp == nullptr || comp->__target == nullptr)) {
 		return nullptr;
 	}
@@ -94,7 +94,7 @@ T *unwrap_component(Object *p_access_databag) {
 
 template <class T>
 const T *unwrap_component(const Object *p_access_databag) {
-	const DataAccessorScriptInstance<Component> *comp = dynamic_cast<const DataAccessorScriptInstance<Component> *>(p_access_databag);
+	const DataAccessor<Component> *comp = dynamic_cast<const DataAccessor<Component> *>(p_access_databag);
 	if (unlikely(comp == nullptr || comp->__target == nullptr)) {
 		return nullptr;
 	}

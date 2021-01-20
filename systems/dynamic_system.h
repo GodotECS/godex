@@ -59,10 +59,10 @@ class DynamicSystemInfo {
 	LocalVector<Variant *> access_ptr;
 
 	// Accessors databag.
-	LocalVector<DataAccessorScriptInstance<Databag>> databag_accessors;
+	LocalVector<DataAccessor<Databag>> databag_accessors;
 
 	// Accessors databag.
-	LocalVector<DataAccessorScriptInstance<StorageBase>> storage_accessors;
+	LocalVector<DataAccessor<StorageBase>> storage_accessors;
 
 	// ~~ Sub pipeline system ~~
 	func_system_execute_pipeline sub_pipeline_execute = nullptr;
