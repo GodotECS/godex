@@ -12,7 +12,7 @@ class World;
 class Entity : public Node {
 	GDCLASS(Entity, Node);
 
-	friend class WorldECSCommands;
+	friend class WorldECS;
 
 	EntityID entity_id;
 	Dictionary components_data;
@@ -42,6 +42,9 @@ public:
 
 	bool set_component(StringName p_component_name, const Variant &d_ret);
 	bool _get_component(StringName p_component_name, Variant &r_ret) const;
+
+	/// Duplicate this `Entity`.
+	uint32_t clone(Object *p_world) const;
 
 private:
 	void create_entity();

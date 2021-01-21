@@ -193,12 +193,8 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 	}
 }
 
-TEST_CASE("[Modules][ECS] Test WorldECSCommands create entity from prefab.") {
-	World world;
-
-	DataAccessor<godex::Databag> world_access;
-	world_access.__target = &world;
-	world_access.__mut = true;
+TEST_CASE("[Modules][ECS] Test WorldECS runtime API create entity from prefab.") {
+	WorldECS world;
 
 	Entity entity_prefab;
 
@@ -206,17 +202,14 @@ TEST_CASE("[Modules][ECS] Test WorldECSCommands create entity from prefab.") {
 	defaults["transform"] = Transform(Basis(), Vector3(10.0, 0.0, 0.0));
 	entity_prefab.add_component("TransformComponent", defaults);
 
-	const uint32_t entity_id = WorldECSCommands::get_singleton()->create_entity_from_prefab(
-			&world_access,
-			&entity_prefab);
+	const uint32_t entity_id = world.create_entity_from_prefab(&entity_prefab);
 
 	// Make sure something is created.
 	CHECK(entity_id != UINT32_MAX);
 
 	// Make sure the component is created
 
-	Object *comp = WorldECSCommands::get_singleton()->get_entity_component(
-			&world_access,
+	Object *comp = world.get_entity_component(
 			entity_id,
 			"TransformComponent");
 
@@ -228,21 +221,15 @@ TEST_CASE("[Modules][ECS] Test WorldECSCommands create entity from prefab.") {
 	CHECK(ABS(transf->get_transform().origin.x - 10) <= CMP_EPSILON);
 }
 
-TEST_CASE("[Modules][ECS] Test WorldECSCommands fetch databags.") {
-	World world;
+TEST_CASE("[Modules][ECS] Test WorldECS runtime API fetch databags.") {
+	WorldECS world;
 
-	DataAccessor<godex::Databag> world_access;
-	world_access.__target = &world;
-	world_access.__mut = true;
-
-	Object *world_res_raw = WorldECSCommands::get_singleton()->get_databag(
-			&world_access,
-			"World");
+	Object *world_res_raw = world.get_databag("World");
 
 	CHECK(world_res_raw != nullptr);
 
 	World *world_ptr = godex::unwrap_databag<World>(world_res_raw);
-	CHECK(&world == world_ptr);
+	CHECK(world.get_world() == world_ptr);
 }
 
 } // namespace godex_tests_world

@@ -17,6 +17,8 @@ void Entity::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_component_value", "component", "property", "value"), &Entity::set_component_value);
 	ClassDB::bind_method(D_METHOD("get_component_value", "component", "property"), &Entity::get_component_value);
 
+	ClassDB::bind_method(D_METHOD("clone", "world"), &Entity::clone);
+
 	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "__component_data", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "__set_components_data", "__get_components_data");
 }
 
@@ -305,6 +307,13 @@ bool Entity::_get_component(StringName p_component_name, Variant &r_ret) const {
 		r_ret = dic;
 		return true;
 	}
+}
+
+uint32_t Entity::clone(Object *p_world) const {
+	WorldECS *world = Object::cast_to<WorldECS>(p_world);
+	ERR_FAIL_COND_V_MSG(world == nullptr, EntityID(), "The passed object is not a `WorldECS`.");
+	ERR_FAIL_COND_V_MSG(world->get_world() == nullptr, EntityID(), "This world doesn't have the ECS world.");
+	return _create_entity(world->get_world());
 }
 
 void Entity::create_entity() {
