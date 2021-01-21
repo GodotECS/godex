@@ -34,6 +34,7 @@ public:
 	~System();
 
 	void with_databag(const StringName &p_databag_name, Mutability p_mutability);
+	void with_storage(const StringName &p_component_name);
 	void with_component(const StringName &p_component_name, Mutability p_mutability);
 	void maybe_component(const StringName &p_component_name, Mutability p_mutability);
 	void without_component(const StringName &p_component_name);

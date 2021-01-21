@@ -9,6 +9,7 @@
 
 void System::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("with_databag", "databag_name", "mutability"), &System::with_databag);
+	ClassDB::bind_method(D_METHOD("with_storage", "component_name"), &System::with_storage);
 	ClassDB::bind_method(D_METHOD("with_component", "component_name", "mutability"), &System::with_component);
 	ClassDB::bind_method(D_METHOD("maybe_component", "component_name", "mutability"), &System::maybe_component);
 	ClassDB::bind_method(D_METHOD("without_component", "component_name"), &System::without_component);
@@ -54,6 +55,12 @@ void System::with_databag(const StringName &p_databag, Mutability p_mutability) 
 	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
 	const godex::databag_id id = ECS::get_databag_id(p_databag);
 	info->with_databag(id, p_mutability == MUTABLE);
+}
+
+void System::with_storage(const StringName &p_component_name) {
+	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
+	const godex::component_id id = ECS::get_component_id(p_component_name);
+	info->with_storage(id);
 }
 
 void System::with_component(const StringName &p_component, Mutability p_mutability) {
