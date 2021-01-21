@@ -34,6 +34,9 @@ EntityID WorldCommands::get_biggest_entity_id() const {
 	}
 }
 
+void World::_bind_methods() {
+}
+
 World::World() {
 	// Add self as databag, so that the `Systems` can obtain it.
 	const uint32_t size = MAX(WorldCommands::get_databag_id(), World::get_databag_id()) + 1;

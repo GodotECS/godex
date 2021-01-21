@@ -141,6 +141,26 @@ void WorldECS::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "system_dispatchers_map"), "set_system_dispatchers_map", "get_system_dispatchers_map");
 	ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "active_pipeline"), "set_active_pipeline", "get_active_pipeline");
+
+	// ~~ Runtime API ~~
+
+	ClassDB::bind_method(D_METHOD("create_entity"), &WorldECS::create_entity);
+
+	ClassDB::bind_method(D_METHOD("destroy_entity", "entity_id"), &WorldECS::destroy_entity);
+
+	ClassDB::bind_method(D_METHOD("create_entity_from_prefab", "entity_node"), &WorldECS::create_entity_from_prefab);
+
+	ClassDB::bind_method(D_METHOD("add_component", "component_name", "data"), &WorldECS::add_component);
+	ClassDB::bind_method(D_METHOD("add_component_by_id", "component_id", "data"), &WorldECS::add_component_by_id);
+
+	ClassDB::bind_method(D_METHOD("remove_component", "component_name", "data"), &WorldECS::remove_component);
+	ClassDB::bind_method(D_METHOD("remove_component_by_id", "component_id", "data"), &WorldECS::remove_component_by_id);
+
+	ClassDB::bind_method(D_METHOD("get_entity_component", "entity_id", "component_name"), &WorldECS::get_entity_component);
+	ClassDB::bind_method(D_METHOD("get_entity_component_by_id", "entity_id", "component_id"), &WorldECS::get_entity_component_by_id);
+
+	ClassDB::bind_method(D_METHOD("get_databag", "databag_name"), &WorldECS::get_databag);
+	ClassDB::bind_method(D_METHOD("get_databag_by_id", "databag_name"), &WorldECS::get_databag_by_id);
 }
 
 bool WorldECS::_set(const StringName &p_name, const Variant &p_value) {
@@ -218,7 +238,7 @@ WorldECS::~WorldECS() {
 }
 
 World *WorldECS::get_world() const {
-	ERR_FAIL_COND_V_MSG(is_active, nullptr, "This World is active, so you can manipulate the world through `ECS::get_singleton()->get_commands()`.");
+	//ERR_FAIL_COND_V_MSG(is_active, nullptr, "This World is active, so you can manipulate the world through `ECS::get_singleton()->get_commands()`.");
 	return world;
 }
 
@@ -322,7 +342,7 @@ void WorldECS::active_world() {
 		// ~~ World activation ~~
 
 		// Set as active world.
-		ECS::get_singleton()->set_active_world(world);
+		ECS::get_singleton()->set_active_world(world, this);
 
 		// Make sure all the databags are loaded.
 		{
@@ -381,86 +401,60 @@ void WorldECS::unactive_world() {
 
 	if (is_active) {
 		is_active = false;
-		ECS::get_singleton()->set_active_world(nullptr);
+		ECS::get_singleton()->set_active_world(nullptr, nullptr);
 	}
 }
 
-void WorldECSCommands::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("create_entity", "world"), &WorldECSCommands::create_entity);
-
-	ClassDB::bind_method(D_METHOD("destroy_entity", "world", "entity_id"), &WorldECSCommands::destroy_entity);
-
-	ClassDB::bind_method(D_METHOD("create_entity_from_prefab", "world", "entity_node"), &WorldECSCommands::create_entity_from_prefab);
-
-	ClassDB::bind_method(D_METHOD("add_component", "world", "component_name", "data"), &WorldECSCommands::add_component);
-	ClassDB::bind_method(D_METHOD("add_component_by_id", "world", "component_id", "data"), &WorldECSCommands::add_component_by_id);
-
-	ClassDB::bind_method(D_METHOD("remove_component", "world", "component_name", "data"), &WorldECSCommands::remove_component);
-	ClassDB::bind_method(D_METHOD("remove_component_by_id", "world", "component_id", "data"), &WorldECSCommands::remove_component_by_id);
-
-	ClassDB::bind_method(D_METHOD("get_entity_component", "world", "entity_id", "component_name"), &WorldECSCommands::get_entity_component);
-	ClassDB::bind_method(D_METHOD("get_entity_component_by_id", "world", "entity_id", "component_id"), &WorldECSCommands::get_entity_component_by_id);
-
-	ClassDB::bind_method(D_METHOD("get_databag", "world", "databag_name"), &WorldECSCommands::get_databag);
-	ClassDB::bind_method(D_METHOD("get_databag_by_id", "world", "databag_name"), &WorldECSCommands::get_databag_by_id);
-}
-
-WorldECSCommands::WorldECSCommands() {
-}
-
-uint32_t WorldECSCommands::create_entity(Object *p_world) {
-	World *world = godex::unwrap_databag<World>(p_world);
-	ERR_FAIL_COND_V_MSG(world == nullptr, UINT32_MAX, "The passed variable is not a `Databag` of type `World`.");
+uint32_t WorldECS::create_entity() {
+	CRASH_COND_MSG(world == nullptr, "The world is never nullptr.");
 	return world->create_entity_index();
 }
 
-void WorldECSCommands::destroy_entity(Object *p_world, uint32_t p_entity_id) {
-	World *world = godex::unwrap_databag<World>(p_world);
-	ERR_FAIL_COND_MSG(world == nullptr, "The passed variable is not a `Databag` of type `World`.");
+void WorldECS::destroy_entity(uint32_t p_entity_id) {
+	CRASH_COND_MSG(world == nullptr, "The world is never nullptr.");
 	return world->destroy_entity(p_entity_id);
 }
 
-uint32_t WorldECSCommands::create_entity_from_prefab(Object *p_world, Object *p_entity) {
+uint32_t WorldECS::create_entity_from_prefab(Object *p_entity) {
+	CRASH_COND_MSG(world == nullptr, "The world is never nullptr.");
+
 	const Entity *entity = cast_to<Entity>(p_entity);
 	ERR_FAIL_COND_V_MSG(entity == nullptr, UINT32_MAX, "The passed object is not an `Entity` `Node`.");
-	World *world = godex::unwrap_databag<World>(p_world);
-	ERR_FAIL_COND_V_MSG(world == nullptr, UINT32_MAX, "The passed variable is not a `Databag` of type `World`.");
 
 	return entity->_create_entity(world);
 }
 
-void WorldECSCommands::add_component(Object *p_world, uint32_t entity_id, const StringName &p_component_name, const Dictionary &p_data) {
-	add_component_by_id(p_world, entity_id, ECS::get_component_id(p_component_name), p_data);
+void WorldECS::add_component(uint32_t entity_id, const StringName &p_component_name, const Dictionary &p_data) {
+	add_component_by_id(entity_id, ECS::get_component_id(p_component_name), p_data);
 }
 
-void WorldECSCommands::add_component_by_id(Object *p_world, uint32_t entity_id, uint32_t p_component_id, const Dictionary &p_data) {
-	World *world = godex::unwrap_databag<World>(p_world);
-	ERR_FAIL_COND_MSG(world == nullptr, "The passed variable is not a `Databag` of type `World`.");
+void WorldECS::add_component_by_id(uint32_t entity_id, uint32_t p_component_id, const Dictionary &p_data) {
+	CRASH_COND_MSG(world == nullptr, "The world is never nullptr.");
 	ERR_FAIL_COND_MSG(ECS::verify_component_id(p_component_id) == false, "The passed component is not valid.");
 	world->add_component(entity_id, p_component_id, p_data);
 }
 
-void WorldECSCommands::remove_component(Object *p_world, uint32_t entity_id, const StringName &p_component_name) {
-	remove_component_by_id(p_world, entity_id, ECS::get_component_id(p_component_name));
+void WorldECS::remove_component(uint32_t entity_id, const StringName &p_component_name) {
+	remove_component_by_id(entity_id, ECS::get_component_id(p_component_name));
 }
 
-void WorldECSCommands::remove_component_by_id(Object *p_world, uint32_t entity_id, uint32_t p_component_id) {
-	World *world = godex::unwrap_databag<World>(p_world);
-	ERR_FAIL_COND_MSG(world == nullptr, "The passed variable is not a `Databag` of type `World`.");
+void WorldECS::remove_component_by_id(uint32_t entity_id, uint32_t p_component_id) {
+	CRASH_COND_MSG(world == nullptr, "The world is never nullptr.");
 	ERR_FAIL_COND_MSG(ECS::verify_component_id(p_component_id) == false, "The passed component is not valid.");
 	world->remove_component(entity_id, p_component_id);
 }
 
-Object *WorldECSCommands::get_entity_component(Object *p_world, uint32_t entity_id, const StringName &p_component_name) {
-	return get_entity_component_by_id(p_world, entity_id, ECS::get_component_id(p_component_name));
+Object *WorldECS::get_entity_component(uint32_t entity_id, const StringName &p_component_name) {
+	return get_entity_component_by_id(entity_id, ECS::get_component_id(p_component_name));
 }
 
-Object *WorldECSCommands::get_entity_component_by_id(Object *p_world, uint32_t entity_id, uint32_t p_component_id) {
+Object *WorldECS::get_entity_component_by_id(uint32_t entity_id, uint32_t p_component_id) {
 	component_accessor.__target = nullptr;
 
-	World *world = godex::unwrap_databag<World>(p_world);
-	ERR_FAIL_COND_V_MSG(world == nullptr, &component_accessor, "The passed variable is not a `Databag` of type `World`.");
+	CRASH_COND_MSG(world == nullptr, "The world is never nullptr.");
 	ERR_FAIL_COND_V_MSG(ECS::verify_component_id(p_component_id) == false, &component_accessor, "The passed component_name is not valid.");
+	ERR_FAIL_COND_V_MSG(world->get_storage(p_component_id) == nullptr, &component_accessor, "The component storage doesn't exists.");
+	ERR_FAIL_COND_V_MSG(world->get_storage(p_component_id)->has(entity_id) == false, &component_accessor, "The entity doesn't have this component.");
 
 	component_accessor.__target = world->get_storage(p_component_id)->get_ptr(entity_id);
 	component_accessor.__mut = true;
@@ -468,15 +462,14 @@ Object *WorldECSCommands::get_entity_component_by_id(Object *p_world, uint32_t e
 	return &component_accessor;
 }
 
-Object *WorldECSCommands::get_databag(Object *p_world, const StringName &p_databag_name) {
-	return get_databag_by_id(p_world, ECS::get_databag_id(p_databag_name));
+Object *WorldECS::get_databag(const StringName &p_databag_name) {
+	return get_databag_by_id(ECS::get_databag_id(p_databag_name));
 }
 
-Object *WorldECSCommands::get_databag_by_id(Object *p_world, uint32_t p_databag_id) {
+Object *WorldECS::get_databag_by_id(uint32_t p_databag_id) {
 	databag_accessor.__target = nullptr;
 
-	World *world = godex::unwrap_databag<World>(p_world);
-	ERR_FAIL_COND_V_MSG(world == nullptr, &databag_accessor, "The passed variable is not a `Databag` of type `World`.");
+	CRASH_COND_MSG(world == nullptr, "The world is never nullptr.");
 	ERR_FAIL_COND_V_MSG(ECS::verify_databag_id(p_databag_id) == false, &databag_accessor, "The passed `databag_name` is not valid.");
 
 	databag_accessor.__target = world->get_databag(p_databag_id);

@@ -64,9 +64,9 @@ class WorldCommands : public godex::Databag {
 	/// List of `Entity` to destroy.
 	LocalVector<EntityID> garbage_list;
 
-public:
 	static void _bind_methods();
 
+public:
 	/// Immediately creates a new `Entity`.
 	EntityID create_entity();
 
@@ -88,6 +88,8 @@ class World : public godex::Databag {
 	LocalVector<StorageBase *> storages;
 	LocalVector<godex::Databag *> databags;
 	EntityBuilder entity_builder = EntityBuilder(this);
+
+	static void _bind_methods();
 
 public:
 	World();

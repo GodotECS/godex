@@ -3,6 +3,7 @@
 
 #include "components/dynamic_component.h"
 #include "core/object/message_queue.h"
+#include "godot/nodes/ecs_world.h"
 #include "pipeline/pipeline.h"
 #include "scene/main/scene_tree.h"
 #include "systems/dynamic_system.h"
@@ -17,7 +18,7 @@ LocalVector<StringName> ECS::systems;
 LocalVector<SystemInfo> ECS::systems_info;
 
 void ECS::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("get_active_world"), &ECS::get_active_world_gds);
+	ClassDB::bind_method(D_METHOD("get_active_world"), &ECS::get_active_world_node);
 
 	ClassDB::bind_method(D_METHOD("get_component_id", "name"), &ECS::get_component_id_obj);
 	ClassDB::bind_method(D_METHOD("verify_component_id", "name"), &ECS::verify_component_id_obj);
@@ -39,8 +40,6 @@ ECS::ECS() :
 		// TODO Do I need this? https://github.com/godotengine/godot-proposals/issues/1593
 		MessageQueue::get_singleton()->push_callable(callable_mp(this, &ECS::ecs_init));
 	}
-
-	world_access.__mut = true;
 }
 
 ECS::~ECS() {
@@ -232,7 +231,9 @@ void ECS::__set_singleton(ECS *p_singleton) {
 	}
 }
 
-void ECS::set_active_world(World *p_world) {
+void ECS::set_active_world(World *p_world, WorldECS *p_active_world_ecs) {
+	active_world_node = p_active_world_ecs;
+
 	if (active_world != nullptr) {
 		if (p_world == nullptr) {
 			emit_signal("world_pre_unload");
@@ -257,10 +258,8 @@ World *ECS::get_active_world() const {
 	return active_world;
 }
 
-Object *ECS::get_active_world_gds() {
-	ERR_FAIL_COND_V_MSG(active_world == nullptr, nullptr, "No active world at the moment.");
-	world_access.__target = active_world;
-	return &world_access;
+Node *ECS::get_active_world_node() {
+	return active_world_node;
 }
 
 bool ECS::has_active_world() const {

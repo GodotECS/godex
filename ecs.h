@@ -11,6 +11,7 @@
 #include "systems/system_builder.h"
 
 class World;
+class WorldECS;
 class Pipeline;
 class DynamicComponentInfo;
 
@@ -56,10 +57,11 @@ class ECS : public Object {
 	static LocalVector<StringName> systems;
 	static LocalVector<SystemInfo> systems_info;
 
+	// Node used by GDScript.
+	WorldECS *active_world_node = nullptr;
 	World *active_world = nullptr;
 	Pipeline *active_world_pipeline = nullptr;
 	bool dispatching = false;
-	DataAccessor<godex::Databag> world_access;
 
 public:
 	// ~~ Components ~~
@@ -151,9 +153,9 @@ public:
 
 	/// Set the active world. If there is already an active world an error
 	/// is generated.
-	void set_active_world(World *p_world);
+	void set_active_world(World *p_world, WorldECS *p_active_world_ecs);
 	World *get_active_world() const;
-	Object *get_active_world_gds();
+	Node *get_active_world_node();
 
 	bool has_active_world() const;
 

@@ -129,45 +129,35 @@ public:
 	void set_active_pipeline(StringName p_name);
 	StringName get_active_pipeline() const;
 
+	// ~~ Runtime API ~~
 private:
-	void active_world();
-	void unactive_world();
-};
-
-// TODO remove this and handle directly via storages and WorldCommands.
-/// World Manipulatort
-class WorldECSCommands : public Object {
-	GDCLASS(WorldECSCommands, Object)
-	SINGLETON_MAKER(WorldECSCommands)
-
-protected:
-	static void _bind_methods();
-
 	DataAccessor<godex::Component> component_accessor;
 	DataAccessor<godex::Databag> databag_accessor;
 
 public:
-	WorldECSCommands();
-
-	uint32_t create_entity(Object *p_world);
-	void destroy_entity(Object *p_world, uint32_t p_entity_id);
+	uint32_t create_entity();
+	void destroy_entity(uint32_t p_entity_id);
 
 	/// Creates an entity coping the components from the given `Entity`.
-	uint32_t create_entity_from_prefab(Object *p_world, Object *p_entity);
+	uint32_t create_entity_from_prefab(Object *p_entity);
 
-	void add_component(Object *p_world, uint32_t entity_id, const StringName &p_component_name, const Dictionary &p_data);
-	void add_component_by_id(Object *p_world, uint32_t entity_id, uint32_t p_component_id, const Dictionary &p_data);
+	void add_component(uint32_t entity_id, const StringName &p_component_name, const Dictionary &p_data);
+	void add_component_by_id(uint32_t entity_id, uint32_t p_component_id, const Dictionary &p_data);
 
-	void remove_component(Object *p_world, uint32_t entity_id, const StringName &p_component_name);
-	void remove_component_by_id(Object *p_world, uint32_t entity_id, uint32_t p_component_id);
+	void remove_component(uint32_t entity_id, const StringName &p_component_name);
+	void remove_component_by_id(uint32_t entity_id, uint32_t p_component_id);
 
 	/// Returns the component of the entity or null if not assigned.
 	/// The returned object lifetime is short, never store it.
-	Object *get_entity_component(Object *p_world, uint32_t entity_id, const StringName &p_component_name);
-	Object *get_entity_component_by_id(Object *p_world, uint32_t entity_id, uint32_t p_component_id);
+	Object *get_entity_component(uint32_t entity_id, const StringName &p_component_name);
+	Object *get_entity_component_by_id(uint32_t entity_id, uint32_t p_component_id);
 
 	/// Returns the databag or null if not present in the world.
 	/// The returned object lifetime is short, never store it.
-	Object *get_databag(Object *p_world, const StringName &p_databag_name);
-	Object *get_databag_by_id(Object *p_world, uint32_t p_databag_id);
+	Object *get_databag(const StringName &p_databag_name);
+	Object *get_databag_by_id(uint32_t p_databag_id);
+
+private:
+	void active_world();
+	void unactive_world();
 };
