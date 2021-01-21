@@ -1,6 +1,7 @@
 #include "dynamic_query.h"
 
 #include "../ecs.h"
+#include "../godot/nodes/ecs_world.h"
 
 using godex::DynamicQuery;
 
@@ -111,9 +112,9 @@ DataAccessor<godex::Component> *DynamicQuery::get_access(uint32_t p_index) {
 }
 
 void DynamicQuery::begin_script(Object *p_world) {
-	World *world = godex::unwrap_databag<World>(p_world);
-	ERR_FAIL_COND_MSG(world == nullptr, "The given object is not a `World` `Databag`.");
-	begin(world);
+	WorldECS *world = Object::cast_to<WorldECS>(p_world);
+	ERR_FAIL_COND_MSG(world == nullptr, "The given object is not a `WorldECS`.");
+	begin(world->get_world());
 }
 
 void DynamicQuery::begin(World *p_world) {
