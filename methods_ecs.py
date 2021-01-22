@@ -69,3 +69,82 @@ def generate_dynamic_system_funcs():
     f.write("}\n")
 
     f.close()
+
+
+def internal_generate_system_exe_funcs(is_startup, max_parameters, path):
+    """ Generates the functions needed to process the `System`s. """
+
+    if os.path.exists(path):
+        # The file already esists, do not generate it again so the compiler
+        # will skip this file if already compiled.
+        return
+
+    f = open(path, "w")
+    f.write("/* THIS FILE IS GENERATED DO NOT EDIT */\n")
+
+    for i in range(max_parameters + 1):
+        if i == 0:
+            continue
+
+        f.write("template <")
+        for p in range(i):
+            f.write("class P" + str(p))
+            if p < (i-1):
+                f.write(", ")
+        f.write(">\n")
+
+        if is_startup:
+            f.write("bool startup_system_exec_func(World *p_world, bool (*p_system)(")
+        else:
+            f.write("void system_exec_func(World *p_world, void (*p_system)(")
+
+        for p in range(i):
+            f.write("P" + str(p))
+            if p < (i-1):
+                f.write(", ")
+        f.write(")) {\n")
+
+        for p in range(i):
+            f.write("	OBTAIN(p" + str(p)+", P"+str(p)+", p_world);\n")
+
+        if is_startup:
+            f.write("	return p_system(\n")
+        else:
+            f.write("	p_system(\n")
+        for p in range(i):
+            f.write("		p"+str(p)+".inner")
+            if p < (i-1):
+                f.write(",\n")
+        f.write(");\n")
+
+        f.write("}\n")
+        f.write("\n")
+
+
+def generate_system_exe_funcs():
+    """ Generates the functions needed to process the `System`s. """
+
+    max_parameters = 30
+    path = "./systems/system_exe_funcs.gen.h"
+
+    internal_generate_system_exe_funcs(False, max_parameters, path)
+
+
+def generate_startup_system_exe_funcs():
+    max_parameters = 30
+    path = "./systems/startup_system_exe_funcs.gen.h"
+
+    internal_generate_system_exe_funcs(True, max_parameters, path)
+
+
+
+
+
+
+
+
+
+
+
+
+
