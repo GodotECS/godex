@@ -8,6 +8,17 @@ Pipeline::Pipeline() {
 
 // Unset the macro defined into the `pipeline.h` so to properly point the method
 // definition.
+#undef add_startup_system
+void Pipeline::add_startup_system(func_startup_system_execute p_func_get_exe_info) {
+	startup_systems_exe.push_back(p_func_get_exe_info);
+}
+
+void Pipeline::add_registered_startup_system(godex::startup_system_id p_id) {
+	add_startup_system(ECS::get_func_startup_system_exe(p_id));
+}
+
+// Unset the macro defined into the `pipeline.h` so to properly point the method
+// definition.
 #undef add_system
 uint32_t Pipeline::add_system(func_get_system_exe_info p_func_get_exe_info) {
 #ifdef DEBUG_ENABLED
@@ -145,6 +156,15 @@ void Pipeline::dispatch(World *p_world) {
 	CRASH_COND_MSG(ready == false, "You can't dispatch a pipeline which is not yet builded. Please call `build`.");
 #endif
 
+	// Process the `StartupSystem`, if any.
+	for (int i = 0; i < int(startup_systems_exe.size()); i += 1) {
+		if (startup_systems_exe[i](p_world)) {
+			startup_systems_exe.remove(i);
+			i -= 1;
+		}
+	}
+
+	// Dispatch the `System`s.
 	for (uint32_t i = 0; i < systems_exe.size(); i += 1) {
 		systems_exe[i](p_world);
 	}

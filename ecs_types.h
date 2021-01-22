@@ -185,6 +185,7 @@ namespace godex {
 typedef uint32_t component_id;
 typedef uint32_t databag_id;
 typedef uint32_t system_id;
+typedef uint32_t startup_system_id;
 } // namespace godex
 
 // ~~ PROPERTY MAPPER ~~

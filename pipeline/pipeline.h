@@ -12,6 +12,8 @@ class World;
 
 class Pipeline {
 	bool ready = false;
+	LocalVector<func_startup_system_execute> startup_systems_exe;
+
 	LocalVector<func_get_system_exe_info> systems_info;
 	LocalVector<func_system_execute> systems_exe;
 
@@ -29,6 +31,12 @@ class Pipeline {
 
 public:
 	Pipeline();
+
+	/// Add a `StartupSystem` which is executed untill `true` is returned.
+	/// The `StartupSystems` are always executed in single thread and before
+	/// any other `System`.
+	void add_startup_system(func_startup_system_execute p_func_get_exe_info);
+	void add_registered_startup_system(uint32_t p_id);
 
 	/// Add a system that is registered via `ECS`, usually this function is used
 	/// to construct the pipeline using the `ECS` class.
@@ -59,6 +67,16 @@ public:
 	/// Dispatch the pipeline on the following world.
 	void dispatch(World *p_world);
 };
+
+// This macro save the user the need to pass a `SystemExeInfo`, indeed it wraps
+// the passed function with a labda function that creates a `SystemExeInfo`.
+// By defining the same name of the method, the IDE autocomplete shows the method
+// name `add_system`, properly + it's impossible use the function directly
+// by mistake.
+#define add_startup_system(func)                                       \
+	add_startup_system([](World *p_world) -> bool {                    \
+		return SystemBuilder::startup_system_exec_func(p_world, func); \
+	})
 
 // This macro save the user the need to pass a `SystemExeInfo`, indeed it wraps
 // the passed function with a labda function that creates a `SystemExeInfo`.
