@@ -25,4 +25,4 @@ ecs.add_source_files(env.modules_sources, "godot/systems/*.cpp")
 
 methods_ecs.generate_dynamic_system_funcs()
 methods_ecs.generate_system_exe_funcs()
-methods_ecs.generate_startup_system_exe_funcs()
+methods_ecs.generate_temporary_system_exe_funcs()

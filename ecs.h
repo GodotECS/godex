@@ -42,7 +42,7 @@ struct SystemInfo {
 	// Only one of those is assigned (depending on the system type).
 	uint32_t dynamic_system_id = UINT32_MAX;
 	func_get_system_exe_info exec_info = nullptr;
-	func_startup_system_execute startup_exec = nullptr;
+	func_temporary_system_execute temporary_exec = nullptr;
 };
 
 class ECS : public Object {
@@ -140,22 +140,22 @@ public:
 	/// a `SystemDispatcher`.
 	static void set_system_pipeline(godex::system_id p_id, Pipeline *p_pipeline);
 
-	/// Register the startup system and returns the ID.
-	static void register_startup_system(func_startup_system_execute p_func_startup_systems_exe, StringName p_name, const String &p_description = String());
+	/// Register the temporary system and returns the ID.
+	static void register_temporary_system(func_temporary_system_execute p_func_temporary_systems_exe, StringName p_name, const String &p_description = String());
 
 // By defining the same name of the method, the IDE autocomplete shows the
-// method name `register_startup_system`, properly + it's impossible use the function
+// method name `register_temporary_system`, properly + it's impossible use the function
 // directly by mistake.
-#define register_startup_system(func, name, desc)                      \
-	register_startup_system([](World *p_world) -> bool {               \
-		return SystemBuilder::startup_system_exec_func(p_world, func); \
-	},                                                                 \
+#define register_temporary_system(func, name, desc)                      \
+	register_temporary_system([](World *p_world) -> bool {               \
+		return SystemBuilder::temporary_system_exec_func(p_world, func); \
+	},                                                                   \
 			name, desc)
 
-	/// Returns `true` when the system is a startup `System`.
-	static bool is_startup_system(godex::system_id p_id);
+	/// Returns `true` when the system is a temporary `System`.
+	static bool is_temporary_system(godex::system_id p_id);
 
-	static func_startup_system_execute get_func_startup_system_exe(godex::system_id p_id);
+	static func_temporary_system_execute get_func_temporary_system_exe(godex::system_id p_id);
 
 	static bool verify_system_id(godex::system_id p_id);
 

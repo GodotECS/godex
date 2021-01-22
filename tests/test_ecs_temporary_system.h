@@ -1,5 +1,5 @@
-#ifndef TEST_ECS_STARTUP_SYSTEM_H
-#define TEST_ECS_STARTUP_SYSTEM_H
+#ifndef TEST_ECS_TEMPORARY_SYSTEM_H
+#define TEST_ECS_TEMPORARY_SYSTEM_H
 
 #include "tests/test_macros.h"
 
@@ -15,21 +15,21 @@ public:
 	uint32_t count = 0;
 };
 
-namespace godex_tests_startup_system {
+namespace godex_tests_temporary_system {
 
-bool startup_system_1_test(ExecutionCounter *p_counter) {
+bool temporary_system_1_test(ExecutionCounter *p_counter) {
 	p_counter->count += 1;
 	return p_counter->count >= 2;
 }
 
-TEST_CASE("[Modules][ECS] Test startup system.") {
+TEST_CASE("[Modules][ECS] Test temporary system.") {
 	ECS::register_databag<ExecutionCounter>();
 
 	World world;
 	world.add_databag<ExecutionCounter>();
 
 	Pipeline pipeline;
-	pipeline.add_startup_system(startup_system_1_test);
+	pipeline.add_temporary_system(temporary_system_1_test);
 	pipeline.build();
 	pipeline.prepare(&world);
 
@@ -42,14 +42,14 @@ TEST_CASE("[Modules][ECS] Test startup system.") {
 	CHECK(counter->count == 2);
 }
 
-TEST_CASE("[Modules][ECS] Test registered startup system.") {
-	ECS::register_startup_system(startup_system_1_test, "StartupSystemTest", "");
+TEST_CASE("[Modules][ECS] Test registered temporary system.") {
+	ECS::register_temporary_system(temporary_system_1_test, "TemporarySystemTest", "");
 
 	World world;
 	world.add_databag<ExecutionCounter>();
 
 	Pipeline pipeline;
-	pipeline.add_registered_startup_system(ECS::get_system_id("StartupSystemTest"));
+	pipeline.add_registered_temporary_system(ECS::get_system_id("TemporarySystemTest"));
 	pipeline.build();
 	pipeline.prepare(&world);
 
@@ -62,7 +62,7 @@ TEST_CASE("[Modules][ECS] Test registered startup system.") {
 	CHECK(counter->count == 2);
 }
 
-bool startup_system_2_test(ExecutionCounter *p_counter) {
+bool temporary_system_2_test(ExecutionCounter *p_counter) {
 	p_counter->count += 1;
 
 	if (p_counter->count == 5) {
@@ -72,12 +72,12 @@ bool startup_system_2_test(ExecutionCounter *p_counter) {
 	return false;
 }
 
-bool startup_system_3_test(ExecutionCounter *p_counter) {
+bool temporary_system_3_test(ExecutionCounter *p_counter) {
 	p_counter->count += 1;
 	return true;
 }
 
-bool startup_system_4_test(ExecutionCounter *p_counter) {
+bool temporary_system_4_test(ExecutionCounter *p_counter) {
 	if (p_counter->count == 2) {
 		// Make sure this is executed after `system_2`.
 		CHECK(p_counter->prev == 0);
@@ -95,14 +95,14 @@ bool startup_system_4_test(ExecutionCounter *p_counter) {
 	return false;
 }
 
-TEST_CASE("[Modules][ECS] Test startup system order on removal.") {
+TEST_CASE("[Modules][ECS] Test temporary system order on removal.") {
 	World world;
 	world.add_databag<ExecutionCounter>();
 
 	Pipeline pipeline;
-	pipeline.add_startup_system(startup_system_2_test);
-	pipeline.add_startup_system(startup_system_3_test);
-	pipeline.add_startup_system(startup_system_4_test);
+	pipeline.add_temporary_system(temporary_system_2_test);
+	pipeline.add_temporary_system(temporary_system_3_test);
+	pipeline.add_temporary_system(temporary_system_4_test);
 	pipeline.build();
 	pipeline.prepare(&world);
 
@@ -114,6 +114,6 @@ TEST_CASE("[Modules][ECS] Test startup system order on removal.") {
 	// Make sure this run just twice.
 	CHECK(counter->count == 5);
 }
-} // namespace godex_tests_startup_system
+} // namespace godex_tests_temporary_system
 
 #endif // TEST_ECS_SYSTEM_H

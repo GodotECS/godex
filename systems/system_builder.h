@@ -105,8 +105,8 @@ struct DataFetcher<D *> {
 // ~~~~ system_exec_func definition ~~~~ //
 #include "system_exe_funcs.gen.h"
 
-// ~~~~ startup_system_exec_func definition ~~~~ //
-#include "startup_system_exe_funcs.gen.h"
+// ~~~~ temporary_system_exec_func definition ~~~~ //
+#include "temporary_system_exe_funcs.gen.h"
 
 #undef OBTAIN
 

@@ -7,7 +7,7 @@
 
 class World;
 
-typedef bool (*func_startup_system_execute)(World *p_world);
+typedef bool (*func_temporary_system_execute)(World *p_world);
 
 typedef void (*func_system_execute)(World *p_world);
 
