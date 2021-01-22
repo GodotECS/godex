@@ -215,8 +215,8 @@ void ECS::set_system_pipeline(godex::system_id p_id, Pipeline *p_pipeline) {
 }
 
 // Undefine the macro defined into `ecs.h` so we can define the method properly.
-#undef register_startup_system
-void ECS::register_startup_system(func_startup_system_execute p_func_startup_systems_exe, StringName p_name, const String &p_description) {
+#undef register_temporary_system
+void ECS::register_temporary_system(func_temporary_system_execute p_func_temporary_systems_exe, StringName p_name, const String &p_description) {
 	{
 		const uint32_t id = get_system_id(p_name);
 		ERR_FAIL_COND_MSG(id != UINT32_MAX, "The system is already registered.");
@@ -227,20 +227,20 @@ void ECS::register_startup_system(func_startup_system_execute p_func_startup_sys
 	systems_info.push_back({ p_description,
 			UINT32_MAX,
 			nullptr,
-			p_func_startup_systems_exe });
+			p_func_temporary_systems_exe });
 
-	print_line("StartupSystem: " + p_name + " registered with ID: " + itos(id));
+	print_line("TemporarySystem: " + p_name + " registered with ID: " + itos(id));
 }
 
-bool ECS::is_startup_system(godex::system_id p_id) {
-	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, false, "The StartupSystemID: " + itos(p_id) + " doesn't exists.");
-	return systems_info[p_id].startup_exec != nullptr;
+bool ECS::is_temporary_system(godex::system_id p_id) {
+	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, false, "The TemporarySystemID: " + itos(p_id) + " doesn't exists.");
+	return systems_info[p_id].temporary_exec != nullptr;
 }
 
-func_startup_system_execute ECS::get_func_startup_system_exe(godex::system_id p_id) {
-	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, nullptr, "The StartupSystemID: " + itos(p_id) + " doesn't exists.");
-	ERR_FAIL_COND_V_MSG(systems_info[p_id].startup_exec == nullptr, nullptr, "The System : " + systems[p_id] + " is not a StartupSystem.");
-	return systems_info[p_id].startup_exec;
+func_temporary_system_execute ECS::get_func_temporary_system_exe(godex::system_id p_id) {
+	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, nullptr, "The TemporarySystemID: " + itos(p_id) + " doesn't exists.");
+	ERR_FAIL_COND_V_MSG(systems_info[p_id].temporary_exec == nullptr, nullptr, "The System : " + systems[p_id] + " is not a TemporarySystem.");
+	return systems_info[p_id].temporary_exec;
 }
 
 bool ECS::verify_system_id(godex::system_id p_id) {

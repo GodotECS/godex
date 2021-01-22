@@ -71,7 +71,7 @@ def generate_dynamic_system_funcs():
     f.close()
 
 
-def internal_generate_system_exe_funcs(is_startup, max_parameters, path):
+def internal_generate_system_exe_funcs(is_temporary, max_parameters, path):
     """ Generates the functions needed to process the `System`s. """
 
     if os.path.exists(path):
@@ -93,8 +93,8 @@ def internal_generate_system_exe_funcs(is_startup, max_parameters, path):
                 f.write(", ")
         f.write(">\n")
 
-        if is_startup:
-            f.write("bool startup_system_exec_func(World *p_world, bool (*p_system)(")
+        if is_temporary:
+            f.write("bool temporary_system_exec_func(World *p_world, bool (*p_system)(")
         else:
             f.write("void system_exec_func(World *p_world, void (*p_system)(")
 
@@ -107,7 +107,7 @@ def internal_generate_system_exe_funcs(is_startup, max_parameters, path):
         for p in range(i):
             f.write("	OBTAIN(p" + str(p)+", P"+str(p)+", p_world);\n")
 
-        if is_startup:
+        if is_temporary:
             f.write("	return p_system(\n")
         else:
             f.write("	p_system(\n")
@@ -130,9 +130,9 @@ def generate_system_exe_funcs():
     internal_generate_system_exe_funcs(False, max_parameters, path)
 
 
-def generate_startup_system_exe_funcs():
+def generate_temporary_system_exe_funcs():
     max_parameters = 30
-    path = "./systems/startup_system_exe_funcs.gen.h"
+    path = "./systems/temporary_system_exe_funcs.gen.h"
 
     internal_generate_system_exe_funcs(True, max_parameters, path)
 

@@ -8,13 +8,13 @@ Pipeline::Pipeline() {
 
 // Unset the macro defined into the `pipeline.h` so to properly point the method
 // definition.
-#undef add_startup_system
-void Pipeline::add_startup_system(func_startup_system_execute p_func_get_exe_info) {
-	startup_systems_exe.push_back(p_func_get_exe_info);
+#undef add_temporary_system
+void Pipeline::add_temporary_system(func_temporary_system_execute p_func_get_exe_info) {
+	temporary_systems_exe.push_back(p_func_get_exe_info);
 }
 
-void Pipeline::add_registered_startup_system(godex::system_id p_id) {
-	add_startup_system(ECS::get_func_startup_system_exe(p_id));
+void Pipeline::add_registered_temporary_system(godex::system_id p_id) {
+	add_temporary_system(ECS::get_func_temporary_system_exe(p_id));
 }
 
 // Unset the macro defined into the `pipeline.h` so to properly point the method
@@ -156,10 +156,10 @@ void Pipeline::dispatch(World *p_world) {
 	CRASH_COND_MSG(ready == false, "You can't dispatch a pipeline which is not yet builded. Please call `build`.");
 #endif
 
-	// Process the `StartupSystem`, if any.
-	for (int i = 0; i < int(startup_systems_exe.size()); i += 1) {
-		if (startup_systems_exe[i](p_world)) {
-			startup_systems_exe.remove(i);
+	// Process the `TemporarySystem`, if any.
+	for (int i = 0; i < int(temporary_systems_exe.size()); i += 1) {
+		if (temporary_systems_exe[i](p_world)) {
+			temporary_systems_exe.remove(i);
 			i -= 1;
 		}
 	}

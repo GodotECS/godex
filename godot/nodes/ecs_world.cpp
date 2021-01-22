@@ -111,8 +111,8 @@ Pipeline *PipelineECS::get_pipeline(WorldECS *p_associated_world) {
 
 		ERR_CONTINUE_MSG(ECS::verify_system_id(id) == false, "[FATAL][FATAL][FATAL][PIPELINE-FATAL] The system " + system_name + " was not found.");
 
-		if (ECS::is_startup_system(id)) {
-			pipeline->add_registered_startup_system(id);
+		if (ECS::is_temporary_system(id)) {
+			pipeline->add_registered_temporary_system(id);
 		} else {
 			if (ECS::is_system_dispatcher(id)) {
 				// Special treatment for systems dispatchers: Init before set.
