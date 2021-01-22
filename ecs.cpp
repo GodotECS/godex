@@ -14,8 +14,6 @@ LocalVector<StringName> ECS::components;
 LocalVector<ComponentInfo> ECS::components_info;
 LocalVector<StringName> ECS::databags;
 LocalVector<DatabagInfo> ECS::databags_info;
-LocalVector<StringName> ECS::startup_systems;
-LocalVector<StartupSystemInfo> ECS::startup_systems_info;
 LocalVector<StringName> ECS::systems;
 LocalVector<SystemInfo> ECS::systems_info;
 
@@ -115,32 +113,6 @@ StringName ECS::get_databag_name(godex::databag_id p_databag_id) {
 }
 
 // Undefine the macro defined into `ecs.h` so we can define the method properly.
-#undef register_startup_system
-void ECS::register_startup_system(func_startup_system_execute p_func_startup_systems_exe, StringName p_name, const String &p_description) {
-	{
-		const uint32_t id = get_system_id(p_name);
-		ERR_FAIL_COND_MSG(id != UINT32_MAX, "The startup system is already registered.");
-	}
-
-	const godex::startup_system_id id = startup_systems.size();
-	startup_systems.push_back(p_name);
-	startup_systems_info.push_back({ p_description,
-			p_func_startup_systems_exe });
-
-	print_line("StartupSystem: " + p_name + " registered with ID: " + itos(id));
-}
-
-func_startup_system_execute ECS::get_func_startup_system_exe(godex::startup_system_id p_id) {
-	ERR_FAIL_INDEX_V_MSG(p_id, startup_systems_info.size(), nullptr, "The StartupSystemID: " + itos(p_id) + " doesn't exists.");
-	return startup_systems_info[p_id].exec;
-}
-
-godex::startup_system_id ECS::get_startup_system_id(const StringName &p_name) {
-	const int64_t index = startup_systems.find(p_name);
-	return index >= 0 ? godex::startup_system_id(index) : UINT32_MAX;
-}
-
-// Undefine the macro defined into `ecs.h` so we can define the method properly.
 #undef register_system
 void ECS::register_system(func_get_system_exe_info p_func_get_exe_info, StringName p_name, String p_description) {
 	{
@@ -197,6 +169,7 @@ func_get_system_exe_info ECS::get_func_system_exe_info(godex::system_id p_id) {
 
 void ECS::get_system_exe_info(godex::system_id p_id, SystemExeInfo &r_info) {
 	ERR_FAIL_INDEX_MSG(p_id, systems_info.size(), "The SystemID: " + itos(p_id) + " doesn't exists.");
+	ERR_FAIL_COND_MSG(systems_info[p_id].exec_info == nullptr, "The System " + systems[p_id] + " is not a standard `System`.");
 	return systems_info[p_id].exec_info(r_info);
 }
 
@@ -239,6 +212,35 @@ void ECS::set_system_pipeline(godex::system_id p_id, Pipeline *p_pipeline) {
 	godex::DynamicSystemInfo *info = godex::get_dynamic_system_info(systems_info[p_id].dynamic_system_id);
 	ERR_FAIL_COND_MSG(info->is_system_dispatcher() == false, "The system " + itos(p_id) + " is not a sub pipeline dispatcher.");
 	info->set_pipeline(p_pipeline);
+}
+
+// Undefine the macro defined into `ecs.h` so we can define the method properly.
+#undef register_startup_system
+void ECS::register_startup_system(func_startup_system_execute p_func_startup_systems_exe, StringName p_name, const String &p_description) {
+	{
+		const uint32_t id = get_system_id(p_name);
+		ERR_FAIL_COND_MSG(id != UINT32_MAX, "The system is already registered.");
+	}
+
+	const godex::system_id id = systems.size();
+	systems.push_back(p_name);
+	systems_info.push_back({ p_description,
+			UINT32_MAX,
+			nullptr,
+			p_func_startup_systems_exe });
+
+	print_line("StartupSystem: " + p_name + " registered with ID: " + itos(id));
+}
+
+bool ECS::is_startup_system(godex::system_id p_id) {
+	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, false, "The StartupSystemID: " + itos(p_id) + " doesn't exists.");
+	return systems_info[p_id].startup_exec != nullptr;
+}
+
+func_startup_system_execute ECS::get_func_startup_system_exe(godex::system_id p_id) {
+	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, nullptr, "The StartupSystemID: " + itos(p_id) + " doesn't exists.");
+	ERR_FAIL_COND_V_MSG(systems_info[p_id].startup_exec == nullptr, nullptr, "The System : " + systems[p_id] + " is not a StartupSystem.");
+	return systems_info[p_id].startup_exec;
 }
 
 bool ECS::verify_system_id(godex::system_id p_id) {

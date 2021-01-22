@@ -112,6 +112,9 @@ void SystemInfoBox::setup_system(const StringName &p_name, SystemMode p_mode) {
 			system_data_list->set_visible(false);
 			dispatcher_pipeline_name->set_visible(true);
 			break;
+		case SYSTEM_STARTUP:
+			icon_name = "Time";
+			break;
 		case SYSTEM_SCRIPT:
 			icon_name = "Script";
 			break;
@@ -631,7 +634,10 @@ void EditorWorldECS::pipeline_panel_update() {
 				info_box->setup_system(system_name, SystemInfoBox::SYSTEM_INVALID);
 			} else {
 				SystemExeInfo system_exec_info;
-				ECS::get_system_exe_info(system_id, system_exec_info);
+				if (ECS::is_startup_system(system_id) == false) {
+					ECS::get_system_exe_info(system_id, system_exec_info);
+				}
+
 				const StringName key_name = ECS::get_system_name(system_id);
 
 				const bool is_dispatcher = ECS::is_system_dispatcher(system_id);
@@ -640,8 +646,13 @@ void EditorWorldECS::pipeline_panel_update() {
 					info_box->set_pipeline_dispatcher(world_ecs->get_system_dispatchers_pipeline(key_name));
 					info_box->setup_system(key_name, SystemInfoBox::SYSTEM_DISPATCHER);
 				} else {
-					// Normal native system, add dependencies.
-					info_box->setup_system(key_name, SystemInfoBox::SYSTEM_NATIVE);
+					if (ECS::is_startup_system(system_id)) {
+						// StartupSystem
+						info_box->setup_system(key_name, SystemInfoBox::SYSTEM_STARTUP);
+					} else {
+						// Normal native system, add dependencies.
+						info_box->setup_system(key_name, SystemInfoBox::SYSTEM_NATIVE);
+					}
 
 					// Draw immutable components.
 					for (uint32_t u = 0; u < system_exec_info.immutable_components.size(); u += 1) {
@@ -764,6 +775,8 @@ void EditorWorldECS::add_sys_update(const String &p_search) {
 		TreeItem *item = add_sys_tree->create_item(native_root);
 		if (ECS::is_system_dispatcher(system_id)) {
 			item->set_icon(0, editor->get_theme_base()->get_theme_icon("ShaderMaterial", "EditorIcons"));
+		} else if (ECS::is_startup_system(system_id)) {
+			item->set_icon(0, editor->get_theme_base()->get_theme_icon("Time", "EditorIcons"));
 		} else {
 			item->set_icon(0, editor->get_theme_base()->get_theme_icon("ShaderGlobalsOverride", "EditorIcons"));
 		}
