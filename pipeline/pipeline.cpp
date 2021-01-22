@@ -13,7 +13,7 @@ void Pipeline::add_startup_system(func_startup_system_execute p_func_get_exe_inf
 	startup_systems_exe.push_back(p_func_get_exe_info);
 }
 
-void Pipeline::add_registered_startup_system(godex::startup_system_id p_id) {
+void Pipeline::add_registered_startup_system(godex::system_id p_id) {
 	add_startup_system(ECS::get_func_startup_system_exe(p_id));
 }
 

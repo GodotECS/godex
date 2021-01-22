@@ -49,7 +49,7 @@ TEST_CASE("[Modules][ECS] Test registered startup system.") {
 	world.add_databag<ExecutionCounter>();
 
 	Pipeline pipeline;
-	pipeline.add_registered_startup_system(ECS::get_startup_system_id("StartupSystemTest"));
+	pipeline.add_registered_startup_system(ECS::get_system_id("StartupSystemTest"));
 	pipeline.build();
 	pipeline.prepare(&world);
 

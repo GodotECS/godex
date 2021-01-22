@@ -36,15 +36,13 @@ struct DatabagInfo {
 	godex::Databag *(*create_databag)();
 };
 
-struct StartupSystemInfo {
-	String description;
-	func_startup_system_execute exec;
-};
-
 struct SystemInfo {
 	String description;
+
+	// Only one of those is assigned (depending on the system type).
 	uint32_t dynamic_system_id = UINT32_MAX;
-	func_get_system_exe_info exec_info;
+	func_get_system_exe_info exec_info = nullptr;
+	func_startup_system_execute startup_exec = nullptr;
 };
 
 class ECS : public Object {
@@ -58,9 +56,6 @@ class ECS : public Object {
 
 	static LocalVector<StringName> databags;
 	static LocalVector<DatabagInfo> databags_info;
-
-	static LocalVector<StringName> startup_systems;
-	static LocalVector<StartupSystemInfo> startup_systems_info;
 
 	static LocalVector<StringName> systems;
 	static LocalVector<SystemInfo> systems_info;
@@ -104,23 +99,6 @@ public:
 	static godex::databag_id get_databag_id(const StringName &p_name);
 	static StringName get_databag_name(godex::databag_id p_databag_id);
 
-	// ~~ Startupe Systems ~~
-	/// Register the startup system and returns the ID.
-	static void register_startup_system(func_startup_system_execute p_func_startup_systems_exe, StringName p_name, const String &p_description = String());
-
-// By defining the same name of the method, the IDE autocomplete shows the
-// method name `register_startup_system`, properly + it's impossible use the function
-// directly by mistake.
-#define register_startup_system(func, name, desc)                      \
-	register_startup_system([](World *p_world) -> bool {               \
-		return SystemBuilder::startup_system_exec_func(p_world, func); \
-	},                                                                 \
-			name, desc)
-
-	static func_startup_system_execute get_func_startup_system_exe(godex::startup_system_id p_id);
-
-	static godex::startup_system_id get_startup_system_id(const StringName &p_name);
-
 	// ~~ Systems ~~
 	static void register_system(func_get_system_exe_info p_func_get_exe_info, StringName p_name, String p_description = "");
 
@@ -161,6 +139,23 @@ public:
 	/// Set the `SystemDispatcher` pipeline, does nothing if this system is not
 	/// a `SystemDispatcher`.
 	static void set_system_pipeline(godex::system_id p_id, Pipeline *p_pipeline);
+
+	/// Register the startup system and returns the ID.
+	static void register_startup_system(func_startup_system_execute p_func_startup_systems_exe, StringName p_name, const String &p_description = String());
+
+// By defining the same name of the method, the IDE autocomplete shows the
+// method name `register_startup_system`, properly + it's impossible use the function
+// directly by mistake.
+#define register_startup_system(func, name, desc)                      \
+	register_startup_system([](World *p_world) -> bool {               \
+		return SystemBuilder::startup_system_exec_func(p_world, func); \
+	},                                                                 \
+			name, desc)
+
+	/// Returns `true` when the system is a startup `System`.
+	static bool is_startup_system(godex::system_id p_id);
+
+	static func_startup_system_execute get_func_startup_system_exe(godex::system_id p_id);
 
 	static bool verify_system_id(godex::system_id p_id);
 
