@@ -9,6 +9,7 @@
 class EntityEditorPlugin;
 class EditorInspectorPluginEntity;
 class Entity3D;
+class Entity2D;
 
 class EntityEditor : public VBoxContainer {
 	GDCLASS(EntityEditor, VBoxContainer);
@@ -16,7 +17,7 @@ class EntityEditor : public VBoxContainer {
 	EditorNode *editor;
 	EditorInspectorPluginEntity *editor_plugin;
 
-	Entity3D *entity;
+	Node *entity;
 	OAHashMap<StringName, OAHashMap<StringName, EditorProperty *>> components_properties;
 
 	// Add new component HUD objects.
@@ -27,6 +28,7 @@ class EntityEditor : public VBoxContainer {
 
 public:
 	EntityEditor(EditorInspectorPluginEntity *p_plugin, EditorNode *p_editor, Entity3D *p_entity);
+	EntityEditor(EditorInspectorPluginEntity *p_plugin, EditorNode *p_editor, Entity2D *p_entity);
 	~EntityEditor();
 
 	void _notification(int p_what);
@@ -38,7 +40,8 @@ public:
 	void _add_component_pressed(uint32_t p_index);
 	void _remove_component_pressed(StringName p_component_name);
 	void _property_changed(const String &p_path, const Variant &p_value, const String &p_name, bool p_changing);
-
+	void _for_components(const Dictionary &p_components);
+	
 	virtual void _changed_callback(Object *p_changed, const char *p_prop) override;
 };
 

@@ -23,6 +23,18 @@ EntityEditor::EntityEditor(
 	// Leaving commented for now.
 	//entity->add_change_receptor(this);
 }
+EntityEditor::EntityEditor(
+		EditorInspectorPluginEntity *p_plugin,
+		EditorNode *p_editor,
+		Entity2D *p_entity) :
+		editor(p_editor),
+		editor_plugin(p_plugin),
+		entity(p_entity) {
+	// TODO Activating this make the gizmo movement really laggy. It's not due
+	// to FPS because it remains stable (2000FPS) so something else is going on.
+	// Leaving commented for now.
+	//entity->add_change_receptor(this);
+}
 
 EntityEditor::~EntityEditor() {
 	//entity->remove_change_receptor(this);
@@ -53,14 +65,19 @@ void EntityEditor::create_editors() {
 	//add_child(category);
 
 	components_section = memnew(EditorInspectorSection);
-	components_section->setup("components", "Components", entity, section_color, false);
+	if (cast_to<Entity2D>(entity)) {
+		components_section->setup("components", "Components", cast_to<Entity2D>(entity), section_color, false);
+	} else if (cast_to<Entity3D>(entity)) {
+		components_section->setup("components", "Components", cast_to<Entity3D>(entity), section_color, false);
+	} else {
+		ERR_FAIL();
+	}
+
 	add_child(components_section);
 	components_section->unfold();
 }
 
 void EntityEditor::update_editors() {
-	const Color section_color = get_theme_color("prop_subsection", "Editor");
-
 	if (add_component_menu) {
 		// Remove all old components.
 		add_component_menu->get_popup()->clear();
@@ -84,26 +101,14 @@ void EntityEditor::update_editors() {
 		}
 		components_properties.clear();
 
-		const Dictionary &components = entity->get_components_data();
-		for (const Variant *key = components.next(nullptr); key != nullptr; key = components.next(key)) {
-			// Add the components of this Entity
-			EditorInspectorSection *component_section = memnew(EditorInspectorSection);
-			component_section->setup("component_" + String(*key), String(*key), entity, section_color, true);
-			component_section->unfold();
-
-			Button *del_btn = memnew(Button);
-			del_btn->set_text("Drop");
-			del_btn->set_icon(editor->get_theme_base()->get_theme_icon("Remove", "EditorIcons"));
-			del_btn->set_flat(false);
-			del_btn->set_text_align(Button::ALIGN_LEFT);
-			del_btn->connect("pressed", callable_mp(this, &EntityEditor::_remove_component_pressed), varray(key->operator StringName()));
-			component_section->get_vbox()->add_child(del_btn);
-
-			create_component_inspector(key->operator StringName(), component_section->get_vbox());
-
-			components_section->get_vbox()->add_child(component_section);
-
-			update_component_inspector(key->operator StringName());
+		if (cast_to<Entity2D>(entity)) {
+			const Dictionary components = cast_to<Entity2D>(entity)->get_components_data();
+			_for_components(components);
+		} else if (cast_to<Entity3D>(entity)) {
+			const Dictionary components = cast_to<Entity3D>(entity)->get_components_data();
+			_for_components(components);
+		} else {
+			ERR_FAIL();
 		}
 	}
 }
@@ -340,19 +345,19 @@ void EntityEditor::create_component_inspector(StringName p_component_name, VBoxC
 #define SETUP_MATH_RANGE(editor, prop_info, type)                                                   \
 	type min = -65535, max = 65535;                                                                 \
 	bool hide_slider = true;                                                                        \
-																									\
+                                                                                                    \
 	if (prop_info.hint == PROPERTY_HINT_RANGE && prop_info.hint_string.get_slice_count(",") >= 2) { \
 		min = e->get().hint_string.get_slice(",", 0).to_float();                                    \
 		max = e->get().hint_string.get_slice(",", 1).to_float();                                    \
 		hide_slider = false;                                                                        \
 	}                                                                                               \
-																									\
+                                                                                                    \
 	editor->setup(min, max, hide_slider);
 
 #define SETUP_MATH_RANGE_WITH_STEP(editor, prop_info, type)                                         \
 	type min = -65535, max = 65535, step = default_float_step;                                      \
 	bool hide_slider = true;                                                                        \
-																									\
+                                                                                                    \
 	if (prop_info.hint == PROPERTY_HINT_RANGE && prop_info.hint_string.get_slice_count(",") >= 2) { \
 		min = prop_info.hint_string.get_slice(",", 0).to_float();                                   \
 		max = prop_info.hint_string.get_slice(",", 1).to_float();                                   \
@@ -361,7 +366,7 @@ void EntityEditor::create_component_inspector(StringName p_component_name, VBoxC
 		}                                                                                           \
 		hide_slider = false;                                                                        \
 	}                                                                                               \
-																									\
+                                                                                                    \
 	editor->setup(min, max, step, hide_slider);
 			// math types
 			case Variant::VECTOR2: {
@@ -605,22 +610,36 @@ void EntityEditor::_remove_component_pressed(StringName p_component_name) {
 	editor->get_undo_redo()->create_action(TTR("Drop component"));
 	editor->get_undo_redo()->add_do_method(entity, "remove_component", p_component_name);
 	editor->get_undo_redo()->add_do_method(this, "update_editors");
-	// Undo by setting the old component data, so to not lost the parametes.
-	editor->get_undo_redo()->add_undo_method(entity, "__set_components_data", entity->get_components_data().duplicate(true));
+	// Undo by setting the old component data, so to not lose the parameters.
+	if (cast_to<Entity2D>(entity)) {
+		editor->get_undo_redo()->add_undo_method(entity, "__set_components_data", cast_to<Entity2D>(entity)->get_components_data().duplicate(true));
+	} else if (cast_to<Entity3D>(entity)) {
+		editor->get_undo_redo()->add_undo_method(entity, "__set_components_data", cast_to<Entity2D>(entity)->get_components_data().duplicate(true));
+	} else {
+		ERR_FAIL();
+	}
 	editor->get_undo_redo()->add_undo_method(this, "update_editors");
 	editor->get_undo_redo()->commit_action();
 }
 
 void EntityEditor::_property_changed(const String &p_path, const Variant &p_value, const String &p_name, bool p_changing) {
 	if (p_changing) {
-		// Nothing to do while chaning.
+		// Nothing to do while changing.
 		return;
 	}
 
 	editor->get_undo_redo()->create_action(TTR("Set component value"));
 	editor->get_undo_redo()->add_do_method(entity, "set", p_path, p_value);
-	// Undo by setting the old component data, so to properly reset to previous.
-	editor->get_undo_redo()->add_undo_method(entity, "__set_components_data", entity->get_components_data().duplicate(true));
+	// Undo by setting the old component data, so to properly reset to the previous data.
+
+	if (cast_to<Entity2D>(entity)) {
+		editor->get_undo_redo()->add_undo_method(entity, "__set_components_data", cast_to<Entity2D>(entity)->get_components_data().duplicate(true));
+	} else if (cast_to<Entity3D>(entity)) {
+		editor->get_undo_redo()->add_undo_method(entity, "__set_components_data", cast_to<Entity3D>(entity)->get_components_data().duplicate(true));
+	} else {
+		ERR_FAIL();
+	}
+
 	editor->get_undo_redo()->add_undo_method(this, "update_editors");
 	editor->get_undo_redo()->commit_action();
 }
@@ -632,15 +651,22 @@ void EntityEditor::_changed_callback(Object *p_changed, const char *p_prop) {
 }
 
 bool EditorInspectorPluginEntity::can_handle(Object *p_object) {
-	return Object::cast_to<Entity3D>(p_object) != nullptr;
+	return Object::cast_to<Entity3D>(p_object) ||  Object::cast_to<Entity2D>(p_object);
 }
 
 void EditorInspectorPluginEntity::parse_begin(Object *p_object) {
-	Entity3D *entity = Object::cast_to<Entity3D>(p_object);
-	ERR_FAIL_COND(!entity);
-
-	EntityEditor *entity_editor = memnew(EntityEditor(this, editor, entity));
-	add_custom_control(entity_editor);
+	Entity3D *entity_3d = Object::cast_to<Entity3D>(p_object);
+	Entity2D *entity_2d = Object::cast_to<Entity2D>(p_object);
+	ERR_FAIL_COND(!entity_3d && !entity_2d);
+	if (entity_3d) {
+		EntityEditor *entity_editor = memnew(EntityEditor(this, editor, entity_3d));
+		add_custom_control(entity_editor);
+	} else if (entity_2d) {
+		EntityEditor *entity_editor = memnew(EntityEditor(this, editor, entity_2d));
+		add_custom_control(entity_editor);
+	} else {
+		ERR_FAIL();
+	}
 }
 
 EntityEditorPlugin::EntityEditorPlugin(EditorNode *p_node) {
@@ -649,4 +675,34 @@ EntityEditorPlugin::EntityEditorPlugin(EditorNode *p_node) {
 	entity_plugin->editor = p_node;
 
 	EditorInspector::add_inspector_plugin(entity_plugin);
+}
+void EntityEditor::_for_components(const Dictionary &p_components) {
+	const Color section_color = get_theme_color("prop_subsection", "Editor");
+	for (const Variant *key = p_components.next(nullptr); key != nullptr; key = p_components.next(key)) {
+		// Add the components of this Entity
+		EditorInspectorSection *component_section = memnew(EditorInspectorSection);
+
+		if (cast_to<Entity3D>(entity)) {
+			component_section->setup("component_" + String(*key), String(*key), cast_to<Entity3D>(entity), section_color, true);
+		} else if (cast_to<Entity2D>(entity)) {
+			component_section->setup("component_" + String(*key), String(*key), cast_to<Entity2D>(entity), section_color, true);
+		} else {
+			ERR_FAIL();
+		}
+		component_section->unfold();
+
+		Button *del_btn = memnew(Button);
+		del_btn->set_text("Drop");
+		del_btn->set_icon(editor->get_theme_base()->get_theme_icon("Remove", "EditorIcons"));
+		del_btn->set_flat(false);
+		del_btn->set_text_align(Button::ALIGN_LEFT);
+		del_btn->connect("pressed", callable_mp(this, &EntityEditor::_remove_component_pressed), varray(key->operator StringName()));
+		component_section->get_vbox()->add_child(del_btn);
+
+		create_component_inspector(key->operator StringName(), component_section->get_vbox());
+
+		components_section->get_vbox()->add_child(component_section);
+
+		update_component_inspector(key->operator StringName());
+	}
 }
