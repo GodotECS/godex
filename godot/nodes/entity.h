@@ -206,6 +206,10 @@ public:
 	void update_components_data() {
 		entity.update_components_data();
 	}
+
+	void update_gizmo() {
+		// TODO no update gizmo for 2D?
+	}
 };
 
 template class EntityInternal<Entity3D>;
