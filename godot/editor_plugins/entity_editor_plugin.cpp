@@ -18,8 +18,9 @@ EntityEditor::EntityEditor(
 		editor(p_editor),
 		editor_plugin(p_plugin),
 		entity(p_entity) {
-	// TODO Activating this when the Transform gizmo is moved the UI is updated
-	// however, the editor crash :/ leaving commented for now.
+	// TODO Activating this make the gizmo movement really laggy. It's not due
+	// to FPS because it remains stable (2000FPS) so something else is going on.
+	// Leaving commented for now.
 	//entity->add_change_receptor(this);
 }
 

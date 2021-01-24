@@ -134,6 +134,7 @@ void TransformComponentGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 		segments.push_back(Vector3(0.2, 0, -0.05));
 
 		p_gizmo->add_lines(segments, material);
+		p_gizmo->add_collision_segments(segments);
 	}
 
 	{
@@ -153,6 +154,7 @@ void TransformComponentGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 		segments.push_back(Vector3(0, 0.2, -0.05));
 
 		p_gizmo->add_lines(segments, material);
+		p_gizmo->add_collision_segments(segments);
 	}
 
 	{
@@ -172,6 +174,7 @@ void TransformComponentGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 		segments.push_back(Vector3(-0.05, 0, 0.2));
 
 		p_gizmo->add_lines(segments, material);
+		p_gizmo->add_collision_segments(segments);
 	}
 }
 

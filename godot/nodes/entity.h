@@ -100,7 +100,10 @@ public:
 	void _notification(int p_what) {
 		// Handle the transformation
 		switch (p_what) {
-			case Node3D::NOTIFICATION_TRANSFORM_CHANGED:
+			case Node::NOTIFICATION_READY:
+				set_notify_local_transform(Engine::get_singleton()->is_editor_hint());
+				break;
+			case Node3D::NOTIFICATION_LOCAL_TRANSFORM_CHANGED:
 				if (Engine::get_singleton()->is_editor_hint()) {
 					// Handles transform update.
 					set_notify_local_transform(false);
