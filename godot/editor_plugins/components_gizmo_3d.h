@@ -59,8 +59,7 @@ public:
 	}
 };
 
-// TODO Remove this once the first gizmo is implemented.
-class ExampleComponentGizmo : public ComponentGizmo {
+class TransformComponentGizmo : public ComponentGizmo {
 	StringName transform_component_name = "TransformComponent";
 
 public:
@@ -75,6 +74,8 @@ public:
 
 class MeshComponentGizmo : public ComponentGizmo {
 	StringName mesh_component_name = "MeshComponent";
+	StringName transform_component_name = "TransformComponent";
+	StringName transform_name = "transform";
 
 	struct EditorMeshData : public ComponentGizmoData {
 		RID base;

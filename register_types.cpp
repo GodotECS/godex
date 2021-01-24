@@ -38,7 +38,7 @@ public:
 				Ref<Components3DGizmoPlugin> component_gizmo(memnew(Components3DGizmoPlugin));
 
 				// Add component gizmos:
-				component_gizmo->add_component_gizmo(memnew(ExampleComponentGizmo));
+				component_gizmo->add_component_gizmo(memnew(TransformComponentGizmo));
 				component_gizmo->add_component_gizmo(memnew(MeshComponentGizmo));
 
 				Node3DEditor::get_singleton()->add_gizmo_plugin(component_gizmo);

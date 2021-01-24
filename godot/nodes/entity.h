@@ -98,7 +98,26 @@ public:
 	}
 
 	void _notification(int p_what) {
-		entity._notification(p_what);
+		// Handle the transformation
+		switch (p_what) {
+			case Node3D::NOTIFICATION_TRANSFORM_CHANGED:
+				if (Engine::get_singleton()->is_editor_hint()) {
+					// Handles transform update.
+					set_notify_local_transform(false);
+					if (has_component("TransformComponent")) {
+						set_component_value("TransformComponent", "transform", get_transform());
+					} else {
+						// This `Entity` doesn't havea TransformComponent, lock
+						// the gizmo at center.
+						set_transform(Transform());
+						set_component_value("TransformComponent", "transform", Transform());
+					}
+					set_notify_local_transform(true);
+				}
+				break;
+			default:
+				entity._notification(p_what);
+		}
 	}
 
 	void set_components_data(Dictionary p_data) { entity.set_components_data(p_data); }
@@ -232,6 +251,9 @@ public:
 
 	void update_gizmo() {
 		// TODO no update gizmo for 2D?
+	}
+
+	void set_transform(const Transform &p_value) {
 	}
 };
 

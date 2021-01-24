@@ -18,9 +18,13 @@ EntityEditor::EntityEditor(
 		editor(p_editor),
 		editor_plugin(p_plugin),
 		entity(p_entity) {
+	// TODO Activating this when the Transform gizmo is moved the UI is updated
+	// however, the editor crash :/ leaving commented for now.
+	//entity->add_change_receptor(this);
 }
 
 EntityEditor::~EntityEditor() {
+	//entity->remove_change_receptor(this);
 }
 
 void EntityEditor::_notification(int p_what) {
@@ -609,8 +613,7 @@ void EntityEditor::_remove_component_pressed(StringName p_component_name) {
 void EntityEditor::_property_changed(const String &p_path, const Variant &p_value, const String &p_name, bool p_changing) {
 	if (p_changing) {
 		// Nothing to do while chaning.
-		// TODO activate this back when this PR is merged: https://github.com/godotengine/godot/pull/44326
-		//return;
+		return;
 	}
 
 	editor->get_undo_redo()->create_action(TTR("Set component value"));
@@ -619,6 +622,12 @@ void EntityEditor::_property_changed(const String &p_path, const Variant &p_valu
 	editor->get_undo_redo()->add_undo_method(entity, "__set_components_data", entity->get_components_data().duplicate(true));
 	editor->get_undo_redo()->add_undo_method(this, "update_editors");
 	editor->get_undo_redo()->commit_action();
+}
+
+void EntityEditor::_changed_callback(Object *p_changed, const char *p_prop) {
+	if (String(p_prop) == "components_data") {
+		update_editors();
+	}
 }
 
 bool EditorInspectorPluginEntity::can_handle(Object *p_object) {

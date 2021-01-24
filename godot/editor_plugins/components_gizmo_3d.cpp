@@ -98,12 +98,12 @@ RelativeHandle Components3DGizmoPlugin::find_gizmo_by_handle(int p_idx) const {
 	return {};
 }
 
-void ExampleComponentGizmo::init() {
+void TransformComponentGizmo::init() {
 	const Color gizmo_color = EDITOR_DEF("editors/3d_gizmos/gizmo_colors/shape", Color(1.0, 1.0, 0.05));
 	create_material("example_material", gizmo_color);
 }
 
-void ExampleComponentGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
+void TransformComponentGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 
 	if (entity->has_component(transform_component_name) == false) {
@@ -114,29 +114,33 @@ void ExampleComponentGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 	const Ref<Material> material = get_material("example_material", p_gizmo);
 
 	Vector<Vector3> segments;
-	segments.push_back(Vector3(0, 5, 0));
-	segments.push_back(Vector3(0, -5, 0));
+	segments.push_back(Vector3(0.25, 0, 0));
+	segments.push_back(Vector3(-0.25, 0, 0));
+	segments.push_back(Vector3(0, 0.25, 0));
+	segments.push_back(Vector3(0, -0.25, 0));
+	segments.push_back(Vector3(0, 0, 0.25));
+	segments.push_back(Vector3(0, 0, -0.25));
 
 	p_gizmo->add_lines(segments, material);
 }
 
-int ExampleComponentGizmo::get_handle_count() const {
+int TransformComponentGizmo::get_handle_count() const {
 	return 0;
 }
 
-String ExampleComponentGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
+String TransformComponentGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
 	return "";
 }
 
-Variant ExampleComponentGizmo::get_handle_value(EditorNode3DGizmo *p_gizmo, int p_idx) const {
+Variant TransformComponentGizmo::get_handle_value(EditorNode3DGizmo *p_gizmo, int p_idx) const {
 	return Variant();
 }
 
-void ExampleComponentGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
+void TransformComponentGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
 	return;
 }
 
-void ExampleComponentGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
+void TransformComponentGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
 	return;
 }
 
@@ -145,18 +149,17 @@ MeshComponentGizmo::EditorMeshData::EditorMeshData() {
 }
 
 MeshComponentGizmo::EditorMeshData::~EditorMeshData() {
-	RenderingServer::get_singleton()->free(instance);
 	set_mesh(Ref<Mesh>());
+	RenderingServer::get_singleton()->free(instance);
 }
 
 void MeshComponentGizmo::EditorMeshData::set_mesh(Ref<Mesh> p_mesh) {
 	if (p_mesh.is_valid()) {
-		RenderingServer::get_singleton()->instance_set_base(instance, p_mesh->get_rid());
 		base = p_mesh->get_rid();
 	} else {
-		RenderingServer::get_singleton()->instance_set_base(instance, RID());
 		base = RID();
 	}
+	RenderingServer::get_singleton()->instance_set_base(instance, base);
 }
 
 void MeshComponentGizmo::init() {}
@@ -190,7 +193,7 @@ void MeshComponentGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 			}
 		}
 
-		// Create or update the editor mesh.
+		// Update the mesh.
 		Ref<Mesh> m = entity->get_component_value(mesh_component_name, "mesh");
 		editor_mesh->set_mesh(m);
 
@@ -200,6 +203,16 @@ void MeshComponentGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 				p_gizmo->add_collision_triangles(tm);
 			}
 		}
+
+		// Update the transform.
+		if (entity->has_component(transform_component_name)) {
+			RenderingServer::get_singleton()->instance_set_transform(editor_mesh->instance, entity->get_component_value(transform_component_name, transform_name));
+		} else {
+			RenderingServer::get_singleton()->instance_set_transform(editor_mesh->instance, Transform());
+		}
+
+		// Update the material.
+		// TODO
 	}
 }
 
