@@ -38,6 +38,8 @@ public:
 	void _add_component_pressed(uint32_t p_index);
 	void _remove_component_pressed(StringName p_component_name);
 	void _property_changed(const String &p_path, const Variant &p_value, const String &p_name, bool p_changing);
+
+	virtual void _changed_callback(Object *p_changed, const char *p_prop) override;
 };
 
 class EditorInspectorPluginEntity : public EditorInspectorPlugin {

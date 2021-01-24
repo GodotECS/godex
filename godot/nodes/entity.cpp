@@ -121,6 +121,10 @@ bool EntityInternal<C>::set_component_value(const StringName &p_component_name, 
 		(components_data[p_component_name].operator Dictionary())[p_property_name] = p_value;
 		print_line("Component " + p_component_name + " property " + p_property_name + " changed to " + p_value);
 		owner->update_gizmo();
+		// Hack to propagate `Node3D` transform change.
+		if (p_component_name == "TransformComponent" && p_property_name == "transform") {
+			owner->set_transform(p_value);
+		}
 		update_components_data();
 		return true;
 	} else {
