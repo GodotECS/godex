@@ -6,23 +6,8 @@
 
 // TODO this file is full of `get_component_id`. Would be nice cache it.
 
-void Entity::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("__set_components_data", "data"), &Entity::set_components_data);
-	ClassDB::bind_method(D_METHOD("__get_components_data"), &Entity::get_components_data);
-
-	ClassDB::bind_method(D_METHOD("add_component", "component_name", "values"), &Entity::add_component, DEFVAL(Dictionary()));
-	ClassDB::bind_method(D_METHOD("remove_component", "component_name"), &Entity::remove_component);
-	ClassDB::bind_method(D_METHOD("has_component", "component_name"), &Entity::has_component);
-
-	ClassDB::bind_method(D_METHOD("set_component_value", "component", "property", "value"), &Entity::set_component_value);
-	ClassDB::bind_method(D_METHOD("get_component_value", "component", "property"), &Entity::get_component_value);
-
-	ClassDB::bind_method(D_METHOD("clone", "world"), &Entity::clone);
-
-	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "__component_data", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "__set_components_data", "__get_components_data");
-}
-
-bool Entity::_set(const StringName &p_name, const Variant &p_value) {
+template <class C>
+bool EntityInternal<C>::_set(const StringName &p_name, const Variant &p_value) {
 	const Vector<String> names = String(p_name).split("/");
 	if (names.size() == 1) {
 		return set_component(p_name, p_value);
@@ -35,7 +20,8 @@ bool Entity::_set(const StringName &p_name, const Variant &p_value) {
 	}
 }
 
-bool Entity::_get(const StringName &p_name, Variant &r_ret) const {
+template <class C>
+bool EntityInternal<C>::_get(const StringName &p_name, Variant &r_ret) const {
 	const Vector<String> names = String(p_name).split("/");
 	if (names.size() == 1) {
 		return _get_component(p_name, r_ret);
@@ -48,36 +34,32 @@ bool Entity::_get(const StringName &p_name, Variant &r_ret) const {
 	}
 }
 
-Entity::Entity() :
-		Node() {}
-
-Entity::~Entity() {
-}
-
-void Entity::_notification(int p_what) {
+template <class C>
+void EntityInternal<C>::_notification(int p_what) {
 	switch (p_what) {
-		case NOTIFICATION_READY:
+		case Node::NOTIFICATION_READY:
 			if (Engine::get_singleton()->is_editor_hint() == false) {
 #ifdef TOOLS_ENABLED
 				// At this point the entity is never created.
 				CRASH_COND(entity_id.is_null() == false);
 #endif
-				ECS::get_singleton()->connect("world_loaded", callable_mp(this, &Entity::create_entity));
-				ECS::get_singleton()->connect("world_pre_unload", callable_mp(this, &Entity::destroy_entity));
+				ECS::get_singleton()->connect("world_loaded", callable_mp(owner, &C::create_entity));
+				ECS::get_singleton()->connect("world_pre_unload", callable_mp(owner, &C::destroy_entity));
 				create_entity();
 			}
 			break;
-		case NOTIFICATION_EXIT_TREE:
+		case Node::NOTIFICATION_EXIT_TREE:
 			if (Engine::get_singleton()->is_editor_hint() == false) {
-				ECS::get_singleton()->disconnect("world_loaded", callable_mp(this, &Entity::create_entity));
-				ECS::get_singleton()->disconnect("world_pre_unload", callable_mp(this, &Entity::destroy_entity));
+				ECS::get_singleton()->disconnect("world_loaded", callable_mp(owner, &C::create_entity));
+				ECS::get_singleton()->disconnect("world_pre_unload", callable_mp(owner, &C::destroy_entity));
 				destroy_entity();
 			}
 			break;
 	}
 }
 
-void Entity::add_component(const StringName &p_component_name, const Dictionary &p_values) {
+template <class C>
+void EntityInternal<C>::add_component(const StringName &p_component_name, const Dictionary &p_values) {
 	if (entity_id.is_null()) {
 		components_data[p_component_name] = p_values;
 		update_components_data();
@@ -89,7 +71,8 @@ void Entity::add_component(const StringName &p_component_name, const Dictionary 
 	}
 }
 
-void Entity::remove_component(const StringName &p_component_name) {
+template <class C>
+void EntityInternal<C>::remove_component(const StringName &p_component_name) {
 	if (entity_id.is_null()) {
 		components_data.erase(p_component_name);
 		update_components_data();
@@ -101,7 +84,8 @@ void Entity::remove_component(const StringName &p_component_name) {
 	}
 }
 
-bool Entity::has_component(const StringName &p_component_name) const {
+template <class C>
+bool EntityInternal<C>::has_component(const StringName &p_component_name) const {
 	if (entity_id.is_null()) {
 		return components_data.has(p_component_name);
 	} else {
@@ -112,16 +96,19 @@ bool Entity::has_component(const StringName &p_component_name) const {
 	}
 }
 
-void Entity::set_components_data(Dictionary p_data) {
+template <class C>
+void EntityInternal<C>::set_components_data(Dictionary p_data) {
 	components_data = p_data;
 	update_components_data();
 }
 
-const Dictionary &Entity::get_components_data() const {
+template <class C>
+const Dictionary &EntityInternal<C>::get_components_data() const {
 	return components_data;
 }
 
-bool Entity::set_component_value(StringName p_component_name, StringName p_property_name, const Variant &p_value) {
+template <class C>
+bool EntityInternal<C>::set_component_value(const StringName &p_component_name, const StringName &p_property_name, const Variant &p_value) {
 	if (entity_id.is_null()) {
 		ERR_FAIL_COND_V(components_data.has(p_component_name) == false, false);
 		if (components_data[p_component_name].get_type() != Variant::DICTIONARY) {
@@ -146,21 +133,23 @@ bool Entity::set_component_value(StringName p_component_name, StringName p_prope
 	}
 }
 
-Variant Entity::get_component_value(StringName p_component_name, StringName p_property_name) const {
+template <class C>
+Variant EntityInternal<C>::get_component_value(const StringName &p_component_name, const StringName &p_property_name) const {
 	Variant ret;
 	// No need to test if success because the error is already logged.
 	_get_component_value(p_component_name, p_property_name, ret);
 	return ret;
 }
 
-bool Entity::_get_component_value(StringName p_component_name, StringName p_property_name, Variant &r_ret) const {
+template <class C>
+bool EntityInternal<C>::_get_component_value(const StringName &p_component_name, const StringName &p_property_name, Variant &r_ret) const {
 	// This function is always executed in single thread.
 
 	if (entity_id.is_null()) {
 		// Executed on editor or when the entity is not loaded.
 
 		const Variant *component_properties = components_data.getptr(p_component_name);
-		ERR_FAIL_COND_V_MSG(component_properties == nullptr, Variant(), "The component " + p_component_name + " doesn't exist on this entity: " + get_path());
+		ERR_FAIL_COND_V_MSG(component_properties == nullptr, false, "The component " + p_component_name + " doesn't exist on this entity: " + get_path());
 
 		if (component_properties->get_type() == Variant::DICTIONARY) {
 			const Variant *value = (component_properties->operator Dictionary()).getptr(p_property_name);
@@ -200,7 +189,8 @@ bool Entity::_get_component_value(StringName p_component_name, StringName p_prop
 	}
 }
 
-bool Entity::set_component(StringName p_component_name, const Variant &d_data) {
+template <class C>
+bool EntityInternal<C>::set_component(const StringName &p_component_name, const Variant &d_data) {
 	Dictionary data = d_data;
 
 	if (entity_id.is_null()) {
@@ -231,7 +221,8 @@ bool Entity::set_component(StringName p_component_name, const Variant &d_data) {
 	}
 }
 
-bool Entity::_get_component(StringName p_component_name, Variant &r_ret) const {
+template <class C>
+bool EntityInternal<C>::_get_component(const StringName &p_component_name, Variant &r_ret) const {
 	if (entity_id.is_null()) {
 		// Entity is null, so take default or set what we have in `component_data`.
 		Dictionary dic;
@@ -309,14 +300,16 @@ bool Entity::_get_component(StringName p_component_name, Variant &r_ret) const {
 	}
 }
 
-uint32_t Entity::clone(Object *p_world) const {
+template <class C>
+uint32_t EntityInternal<C>::clone(Object *p_world) const {
 	WorldECS *world = Object::cast_to<WorldECS>(p_world);
 	ERR_FAIL_COND_V_MSG(world == nullptr, EntityID(), "The passed object is not a `WorldECS`.");
 	ERR_FAIL_COND_V_MSG(world->get_world() == nullptr, EntityID(), "This world doesn't have the ECS world.");
 	return _create_entity(world->get_world());
 }
 
-void Entity::create_entity() {
+template <class C>
+void EntityInternal<C>::create_entity() {
 	if (entity_id.is_null() == false) {
 		// Nothing to do.
 		return;
@@ -329,7 +322,8 @@ void Entity::create_entity() {
 	}
 }
 
-EntityID Entity::_create_entity(World *p_world) const {
+template <class C>
+EntityID EntityInternal<C>::_create_entity(World *p_world) const {
 	EntityID id;
 	if (p_world) {
 		id = p_world->create_entity();
@@ -349,7 +343,8 @@ EntityID Entity::_create_entity(World *p_world) const {
 	return id;
 }
 
-void Entity::destroy_entity() {
+template <class C>
+void EntityInternal<C>::destroy_entity() {
 	if (entity_id.is_null()) {
 		// Nothing to do.
 		return;
@@ -364,6 +359,39 @@ void Entity::destroy_entity() {
 	entity_id = EntityID();
 }
 
-void Entity::update_components_data() {
-	_change_notify("components_data");
+template <class C>
+void EntityInternal<C>::update_components_data() {
+	owner->_change_notify("components_data");
+}
+
+void Entity3D::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("__set_components_data", "data"), &Entity3D::set_components_data);
+	ClassDB::bind_method(D_METHOD("__get_components_data"), &Entity3D::get_components_data);
+
+	ClassDB::bind_method(D_METHOD("add_component", "component_name", "values"), &Entity3D::add_component, DEFVAL(Dictionary()));
+	ClassDB::bind_method(D_METHOD("remove_component", "component_name"), &Entity3D::remove_component);
+	ClassDB::bind_method(D_METHOD("has_component", "component_name"), &Entity3D::has_component);
+
+	ClassDB::bind_method(D_METHOD("set_component_value", "component", "property", "value"), &Entity3D::set_component_value);
+	ClassDB::bind_method(D_METHOD("get_component_value", "component", "property"), &Entity3D::get_component_value);
+
+	ClassDB::bind_method(D_METHOD("clone", "world"), &Entity3D::clone);
+
+	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "__component_data", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "__set_components_data", "__get_components_data");
+}
+
+void Entity2D::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("__set_components_data", "data"), &Entity2D::set_components_data);
+	ClassDB::bind_method(D_METHOD("__get_components_data"), &Entity2D::get_components_data);
+
+	ClassDB::bind_method(D_METHOD("add_component", "component_name", "values"), &Entity2D::add_component, DEFVAL(Dictionary()));
+	ClassDB::bind_method(D_METHOD("remove_component", "component_name"), &Entity2D::remove_component);
+	ClassDB::bind_method(D_METHOD("has_component", "component_name"), &Entity2D::has_component);
+
+	ClassDB::bind_method(D_METHOD("set_component_value", "component", "property", "value"), &Entity2D::set_component_value);
+	ClassDB::bind_method(D_METHOD("get_component_value", "component", "property"), &Entity2D::get_component_value);
+
+	ClassDB::bind_method(D_METHOD("clone", "world"), &Entity2D::clone);
+
+	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "__component_data", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "__set_components_data", "__get_components_data");
 }

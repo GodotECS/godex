@@ -196,7 +196,7 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 TEST_CASE("[Modules][ECS] Test WorldECS runtime API create entity from prefab.") {
 	WorldECS world;
 
-	Entity entity_prefab;
+	Entity3D entity_prefab;
 
 	Dictionary defaults;
 	defaults["transform"] = Transform(Basis(), Vector3(10.0, 0.0, 0.0));

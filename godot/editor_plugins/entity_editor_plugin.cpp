@@ -14,7 +14,7 @@ void EntityEditor::_bind_methods() {
 EntityEditor::EntityEditor(
 		EditorInspectorPluginEntity *p_plugin,
 		EditorNode *p_editor,
-		Entity *p_entity) :
+		Entity3D *p_entity) :
 		editor(p_editor),
 		editor_plugin(p_plugin),
 		entity(p_entity) {
@@ -622,11 +622,11 @@ void EntityEditor::_property_changed(const String &p_path, const Variant &p_valu
 }
 
 bool EditorInspectorPluginEntity::can_handle(Object *p_object) {
-	return Object::cast_to<Entity>(p_object) != nullptr;
+	return Object::cast_to<Entity3D>(p_object) != nullptr;
 }
 
 void EditorInspectorPluginEntity::parse_begin(Object *p_object) {
-	Entity *entity = Object::cast_to<Entity>(p_object);
+	Entity3D *entity = Object::cast_to<Entity3D>(p_object);
 	ERR_FAIL_COND(!entity);
 
 	EntityEditor *entity_editor = memnew(EntityEditor(this, editor, entity));

@@ -9,7 +9,7 @@
 class Pipeline;
 class World;
 class WorldECS;
-class Entity;
+class Entity3D;
 
 /// The `PipelineECS` is a resource that holds the `Pipeline` object, and the
 /// info to build it.

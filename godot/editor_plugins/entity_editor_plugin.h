@@ -8,7 +8,7 @@
 
 class EntityEditorPlugin;
 class EditorInspectorPluginEntity;
-class Entity;
+class Entity3D;
 
 class EntityEditor : public VBoxContainer {
 	GDCLASS(EntityEditor, VBoxContainer);
@@ -16,7 +16,7 @@ class EntityEditor : public VBoxContainer {
 	EditorNode *editor;
 	EditorInspectorPluginEntity *editor_plugin;
 
-	Entity *entity;
+	Entity3D *entity;
 	OAHashMap<StringName, OAHashMap<StringName, EditorProperty *>> components_properties;
 
 	// Add new component HUD objects.
@@ -26,7 +26,7 @@ class EntityEditor : public VBoxContainer {
 	static void _bind_methods();
 
 public:
-	EntityEditor(EditorInspectorPluginEntity *p_plugin, EditorNode *p_editor, Entity *p_entity);
+	EntityEditor(EditorInspectorPluginEntity *p_plugin, EditorNode *p_editor, Entity3D *p_entity);
 	~EntityEditor();
 
 	void _notification(int p_what);
