@@ -45,10 +45,13 @@ void register_godex_types() {
 	ClassDB::register_class<ECS>();
 	ClassDB::register_class<WorldECS>();
 	ClassDB::register_class<PipelineECS>();
-	ClassDB::register_class<Entity>();
+	ClassDB::register_class<Entity3D>();
+	ClassDB::register_class<Entity2D>();
 	ClassDB::register_class<Component>();
 	ClassDB::register_class<System>();
 	ClassDB::register_class<godex::DynamicQuery>();
+	// One day this will be inverted.
+	ClassDB::add_compatibility_class("Entity", "Entity3D");
 
 	// Create and register singleton
 	ECS *ecs = memnew(ECS);

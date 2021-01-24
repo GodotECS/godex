@@ -422,7 +422,7 @@ void WorldECS::destroy_entity(uint32_t p_entity_id) {
 uint32_t WorldECS::create_entity_from_prefab(Object *p_entity) {
 	CRASH_COND_MSG(world == nullptr, "The world is never nullptr.");
 
-	const Entity *entity = cast_to<Entity>(p_entity);
+	const Entity3D *entity = cast_to<Entity3D>(p_entity);
 	ERR_FAIL_COND_V_MSG(entity == nullptr, UINT32_MAX, "The passed object is not an `Entity` `Node`.");
 
 	return entity->_create_entity(world);
