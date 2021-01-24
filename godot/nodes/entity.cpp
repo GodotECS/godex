@@ -63,6 +63,7 @@ void EntityInternal<C>::add_component(const StringName &p_component_name, const 
 	if (entity_id.is_null()) {
 		components_data[p_component_name] = p_values;
 		update_components_data();
+		owner->update_gizmo();
 	} else {
 		const godex::component_id id = ECS::get_component_id(p_component_name);
 		ERR_FAIL_COND_MSG(id == UINT32_MAX, "The component " + p_component_name + " doesn't exists.");
@@ -76,6 +77,7 @@ void EntityInternal<C>::remove_component(const StringName &p_component_name) {
 	if (entity_id.is_null()) {
 		components_data.erase(p_component_name);
 		update_components_data();
+		owner->update_gizmo();
 	} else {
 		const godex::component_id id = ECS::get_component_id(p_component_name);
 		ERR_FAIL_COND_MSG(id == UINT32_MAX, "The component " + p_component_name + " doesn't exists.");

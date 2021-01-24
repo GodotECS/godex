@@ -4,6 +4,7 @@
 #include "core/config/engine.h"
 #include "core/object/message_queue.h"
 #include "ecs.h"
+#include "editor/plugins/node_3d_editor_plugin.h"
 #include "iterators/dynamic_query.h"
 #include "systems/dynamic_system.h"
 
@@ -12,6 +13,7 @@
 #include "godot/components/transform_component.h"
 #include "godot/databags/godot_engine_databags.h"
 #include "godot/databags/visual_servers_databags.h"
+#include "godot/editor_plugins/components_gizmo_3d.h"
 #include "godot/editor_plugins/editor_world_ecs.h"
 #include "godot/editor_plugins/entity_editor_plugin.h"
 #include "godot/nodes/ecs_utilities.h"
@@ -31,6 +33,14 @@ public:
 				// Setup editor plugins
 				EditorNode::get_singleton()->add_editor_plugin(memnew(EntityEditorPlugin(EditorNode::get_singleton())));
 				EditorNode::get_singleton()->add_editor_plugin(memnew(WorldECSEditorPlugin(EditorNode::get_singleton())));
+			}
+			if (Node3DEditor::get_singleton() != nullptr) {
+				Ref<Components3DGizmoPlugin> component_gizmo(memnew(Components3DGizmoPlugin));
+
+				// Add component gizmos:
+				component_gizmo->add_component_gizmo(memnew(ExampleComponentGizmo));
+
+				Node3DEditor::get_singleton()->add_gizmo_plugin(component_gizmo);
 			}
 		} else {
 			// Load the Scripted Components/Databags/Systems
