@@ -6,21 +6,10 @@
 #include "core/object/message_queue.h"
 #include "core/os/os.h"
 
-void Physics3DServerDatabag::_bind_methods() {
-}
-
-Physics3DServerDatabag::Physics3DServerDatabag() {
-	physics_singleton = PhysicsServer3D::get_singleton();
-}
-
-PhysicsServer3D *Physics3DServerDatabag::get_physics() {
-	return physics_singleton;
-}
-
 void call_physics_process(
 		World *p_world,
 		FrameTime *p_iterator_info,
-		Physics3DServerDatabag *p_physics_3d,
+		Physics3D *p_physics_3d,
 		EngineDatabag *p_engine,
 		OsDatabag *p_os,
 		MessageQueueDatabag *p_message_queue) {
@@ -34,7 +23,7 @@ void call_physics_process(
 	const float physics_delta = p_iterator_info->get_physics_delta();
 
 	// Make sure to update Godot nodes Signals and Transforms.
-	p_physics_3d->get_physics()->flush_queries();
+	p_physics_3d->get_server()->flush_queries();
 
 	// TODO put 2D flush_query and sync here.
 
@@ -88,7 +77,7 @@ void create_physics_system_dispatcher(godex::DynamicSystemInfo *r_info) {
 
 void step_physics_server_3d(
 		const FrameTime *p_iterator_info,
-		Physics3DServerDatabag *p_physics,
+		Physics3D *p_physics,
 		EngineDatabag *p_engine) {
 	ERR_FAIL_COND_MSG(p_iterator_info == nullptr, "The FrameTimeDatabag is not part of this world. Add it to use the physics.");
 	ERR_FAIL_COND_MSG(p_physics == nullptr, "The Physics3DServerDatabag is not part of this world. Add it to use the physics.");
@@ -97,7 +86,7 @@ void step_physics_server_3d(
 	const float physics_delta = p_iterator_info->get_physics_delta();
 
 	// Step the physics server.
-	p_physics->get_physics()->step(physics_delta);
+	p_physics->get_server()->step(physics_delta);
 
 	p_engine->get_engine()->set_physics_frames(p_engine->get_engine()->get_physics_frames() + 1);
 }
