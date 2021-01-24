@@ -17,7 +17,9 @@ ecs.add_source_files(env.modules_sources, "world/*.cpp")
 ecs.add_source_files(env.modules_sources, "pipeline/*.cpp")
 ecs.add_source_files(env.modules_sources, "*.cpp")
 
+# TODO improve this by making less verbose.
 ecs.add_source_files(env.modules_sources, "godot/components/*.cpp")
+ecs.add_source_files(env.modules_sources, "godot/components/physics/*.cpp")
 ecs.add_source_files(env.modules_sources, "godot/editor_plugins/*.cpp")
 ecs.add_source_files(env.modules_sources, "godot/nodes/*.cpp")
 ecs.add_source_files(env.modules_sources, "godot/databags/*.cpp")
