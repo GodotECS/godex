@@ -46,6 +46,8 @@ void EntityInternal<C>::_notification(int p_what) {
 				ECS::get_singleton()->connect("world_loaded", callable_mp(owner, &C::create_entity));
 				ECS::get_singleton()->connect("world_pre_unload", callable_mp(owner, &C::destroy_entity));
 				create_entity();
+			} else {
+				owner->update_gizmo();
 			}
 			break;
 		case Node::NOTIFICATION_EXIT_TREE:
@@ -118,6 +120,7 @@ bool EntityInternal<C>::set_component_value(const StringName &p_component_name, 
 		}
 		(components_data[p_component_name].operator Dictionary())[p_property_name] = p_value;
 		print_line("Component " + p_component_name + " property " + p_property_name + " changed to " + p_value);
+		owner->update_gizmo();
 		update_components_data();
 		return true;
 	} else {

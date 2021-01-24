@@ -10,6 +10,9 @@
 class WorldECS;
 class World;
 
+/// Class used to store some extra information for the editor.
+class ComponentGizmoData : public Reference {};
+
 /// If you know ECS, this setup may sound strange to you, and indeed it's
 /// strange. The entities don't have type.
 ///
@@ -29,6 +32,11 @@ class World;
 template <class C>
 struct EntityInternal {
 	friend class WorldECS;
+
+#ifdef TOOLS_ENABLED
+	// Used by the editor to display meshes and similar.
+	OAHashMap<StringName, Ref<ComponentGizmoData>> gizmo_data;
+#endif
 
 	C *owner;
 
@@ -135,6 +143,13 @@ public:
 	void update_components_data() {
 		entity.update_components_data();
 	}
+
+	EntityInternal<Entity3D> &get_internal_entity() {
+		return entity;
+	}
+	const EntityInternal<Entity3D> &get_internal_entity() const {
+		return entity;
+	}
 };
 
 /// Check `EntityInternal`, above, for more info.
@@ -205,6 +220,14 @@ public:
 
 	void update_components_data() {
 		entity.update_components_data();
+	}
+
+	EntityInternal<Entity2D> &get_internal_entity() {
+		return entity;
+	}
+
+	const EntityInternal<Entity2D> &get_internal_entity() const {
+		return entity;
 	}
 
 	void update_gizmo() {
