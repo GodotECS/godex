@@ -99,8 +99,14 @@ RelativeHandle Components3DGizmoPlugin::find_gizmo_by_handle(int p_idx) const {
 }
 
 void TransformComponentGizmo::init() {
-	const Color gizmo_color = EDITOR_DEF("editors/3d_gizmos/gizmo_colors/shape", Color(1.0, 1.0, 0.05));
-	create_material("example_material", gizmo_color);
+	const Color gizmo_color_x = EDITOR_DEF("editors/3d_gizmos/gizmo_colors/x", Color(0.98, 0.1, 0.1));
+	create_material("transform_gizmo_x", gizmo_color_x);
+
+	const Color gizmo_color_y = EDITOR_DEF("editors/3d_gizmos/gizmo_colors/y", Color(0.1, 0.98, 0.1));
+	create_material("transform_gizmo_y", gizmo_color_y);
+
+	const Color gizmo_color_z = EDITOR_DEF("editors/3d_gizmos/gizmo_colors/z", Color(0.1, 0.1, 0.98));
+	create_material("transform_gizmo_z", gizmo_color_z);
 }
 
 void TransformComponentGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
@@ -111,17 +117,62 @@ void TransformComponentGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 		return;
 	}
 
-	const Ref<Material> material = get_material("example_material", p_gizmo);
+	{
+		const Ref<Material> material = get_material("transform_gizmo_x", p_gizmo);
+		Vector<Vector3> segments;
+		segments.push_back(Vector3(0.25, 0, 0));
+		segments.push_back(Vector3(-0.25, 0, 0));
 
-	Vector<Vector3> segments;
-	segments.push_back(Vector3(0.25, 0, 0));
-	segments.push_back(Vector3(-0.25, 0, 0));
-	segments.push_back(Vector3(0, 0.25, 0));
-	segments.push_back(Vector3(0, -0.25, 0));
-	segments.push_back(Vector3(0, 0, 0.25));
-	segments.push_back(Vector3(0, 0, -0.25));
+		segments.push_back(Vector3(0.25, 0, 0));
+		segments.push_back(Vector3(0.2, 0.05, 0));
+		segments.push_back(Vector3(0.25, 0, 0));
+		segments.push_back(Vector3(0.2, -0.05, 0));
 
-	p_gizmo->add_lines(segments, material);
+		segments.push_back(Vector3(0.25, 0, 0));
+		segments.push_back(Vector3(0.2, 0, 0.05));
+		segments.push_back(Vector3(0.25, 0, 0));
+		segments.push_back(Vector3(0.2, 0, -0.05));
+
+		p_gizmo->add_lines(segments, material);
+	}
+
+	{
+		const Ref<Material> material = get_material("transform_gizmo_y", p_gizmo);
+		Vector<Vector3> segments;
+		segments.push_back(Vector3(0, 0.25, 0));
+		segments.push_back(Vector3(0, -0.25, 0));
+
+		segments.push_back(Vector3(0, 0.25, 0));
+		segments.push_back(Vector3(0.05, 0.2, 0));
+		segments.push_back(Vector3(0, 0.25, 0));
+		segments.push_back(Vector3(-0.05, 0.2, 0));
+
+		segments.push_back(Vector3(0, 0.25, 0));
+		segments.push_back(Vector3(0, 0.2, 0.05));
+		segments.push_back(Vector3(0, 0.25, 0));
+		segments.push_back(Vector3(0, 0.2, -0.05));
+
+		p_gizmo->add_lines(segments, material);
+	}
+
+	{
+		const Ref<Material> material = get_material("transform_gizmo_z", p_gizmo);
+		Vector<Vector3> segments;
+		segments.push_back(Vector3(0, 0, 0.25));
+		segments.push_back(Vector3(0, 0, -0.25));
+
+		segments.push_back(Vector3(0, 0, 0.25));
+		segments.push_back(Vector3(0, 0.05, 0.2));
+		segments.push_back(Vector3(0, 0, 0.25));
+		segments.push_back(Vector3(0, -0.05, 0.2));
+
+		segments.push_back(Vector3(0, 0, 0.25));
+		segments.push_back(Vector3(0.05, 0, 0.2));
+		segments.push_back(Vector3(0, 0, 0.25));
+		segments.push_back(Vector3(-0.05, 0, 0.2));
+
+		p_gizmo->add_lines(segments, material);
+	}
 }
 
 int TransformComponentGizmo::get_handle_count() const {
