@@ -14,7 +14,7 @@ void EntityEditor::_bind_methods() {
 EntityEditor::EntityEditor(
 		EditorInspectorPluginEntity *p_plugin,
 		EditorNode *p_editor,
-		Entity3D *p_entity) :
+		Node *p_entity) :
 		editor(p_editor),
 		editor_plugin(p_plugin),
 		entity(p_entity) {
@@ -84,7 +84,7 @@ void EntityEditor::update_editors() {
 		}
 		components_properties.clear();
 
-		const Dictionary &components = entity->get_components_data();
+		const Dictionary &components = entity_get_components_data();
 		for (const Variant *key = components.next(nullptr); key != nullptr; key = components.next(key)) {
 			// Add the components of this Entity
 			EditorInspectorSection *component_section = memnew(EditorInspectorSection);
@@ -606,7 +606,7 @@ void EntityEditor::_remove_component_pressed(StringName p_component_name) {
 	editor->get_undo_redo()->add_do_method(entity, "remove_component", p_component_name);
 	editor->get_undo_redo()->add_do_method(this, "update_editors");
 	// Undo by setting the old component data, so to not lost the parametes.
-	editor->get_undo_redo()->add_undo_method(entity, "__set_components_data", entity->get_components_data().duplicate(true));
+	editor->get_undo_redo()->add_undo_method(entity, "__set_components_data", entity_get_components_data().duplicate(true));
 	editor->get_undo_redo()->add_undo_method(this, "update_editors");
 	editor->get_undo_redo()->commit_action();
 }
@@ -620,7 +620,7 @@ void EntityEditor::_property_changed(const String &p_path, const Variant &p_valu
 	editor->get_undo_redo()->create_action(TTR("Set component value"));
 	editor->get_undo_redo()->add_do_method(entity, "set", p_path, p_value);
 	// Undo by setting the old component data, so to properly reset to previous.
-	editor->get_undo_redo()->add_undo_method(entity, "__set_components_data", entity->get_components_data().duplicate(true));
+	editor->get_undo_redo()->add_undo_method(entity, "__set_components_data", entity_get_components_data().duplicate(true));
 	editor->get_undo_redo()->add_undo_method(this, "update_editors");
 	editor->get_undo_redo()->commit_action();
 }
@@ -631,12 +631,24 @@ void EntityEditor::_changed_callback(Object *p_changed, const char *p_prop) {
 	}
 }
 
+const Dictionary &EntityEditor::entity_get_components_data() const {
+	Entity3D *e = Object::cast_to<Entity3D>(entity);
+	if (e) {
+		return e->get_components_data();
+	} else {
+		Entity2D *ee = Object::cast_to<Entity2D>(entity);
+		CRASH_COND_MSG(ee == nullptr, "Entity2D and Entity3D are supposed to be assigned.");
+		return ee->get_components_data();
+	}
+}
+
 bool EditorInspectorPluginEntity::can_handle(Object *p_object) {
-	return Object::cast_to<Entity3D>(p_object) != nullptr;
+	return Object::cast_to<Entity3D>(p_object) != nullptr ||
+		   Object::cast_to<Entity2D>(p_object) != nullptr;
 }
 
 void EditorInspectorPluginEntity::parse_begin(Object *p_object) {
-	Entity3D *entity = Object::cast_to<Entity3D>(p_object);
+	Node *entity = can_handle(p_object) ? static_cast<Node *>(p_object) : nullptr;
 	ERR_FAIL_COND(!entity);
 
 	EntityEditor *entity_editor = memnew(EntityEditor(this, editor, entity));
