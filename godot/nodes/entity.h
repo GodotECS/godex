@@ -120,9 +120,9 @@ public:
 					set_notify_local_transform(true);
 				}
 				break;
-			default:
-				entity._notification(p_what);
 		}
+
+		entity._notification(p_what);
 	}
 
 	void set_components_data(Dictionary p_data) { entity.set_components_data(p_data); }
@@ -315,6 +315,14 @@ void EntityInternal<C>::_notification(int p_what) {
 				destroy_entity();
 			}
 			break;
+		case Node3D::NOTIFICATION_EXIT_WORLD:
+#ifdef TOOLS_ENABLED
+			gizmo_data.clear();
+#endif
+			break;
+		case Node3D::NOTIFICATION_VISIBILITY_CHANGED: {
+			owner->update_gizmo();
+		} break;
 	}
 }
 
