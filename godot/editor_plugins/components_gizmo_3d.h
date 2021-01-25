@@ -10,6 +10,10 @@ struct RelativeHandle {
 	int idx;
 };
 
+/// Only one `GizmoPlugin` at a time is allowed by Godot.
+/// Since the `Entity` may need more than 1 gizmo depending on the `Component`s
+/// it has, this `GizmoPlugin` has a mechanism to handle more gizmos at the same
+/// time.
 class Components3DGizmoPlugin : public EditorNode3DGizmoPlugin {
 	GDCLASS(Components3DGizmoPlugin, EditorNode3DGizmoPlugin);
 
