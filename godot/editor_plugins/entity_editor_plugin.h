@@ -16,7 +16,7 @@ class EntityEditor : public VBoxContainer {
 	EditorNode *editor;
 	EditorInspectorPluginEntity *editor_plugin;
 
-	Entity3D *entity;
+	Node *entity;
 	OAHashMap<StringName, OAHashMap<StringName, EditorProperty *>> components_properties;
 
 	// Add new component HUD objects.
@@ -26,7 +26,7 @@ class EntityEditor : public VBoxContainer {
 	static void _bind_methods();
 
 public:
-	EntityEditor(EditorInspectorPluginEntity *p_plugin, EditorNode *p_editor, Entity3D *p_entity);
+	EntityEditor(EditorInspectorPluginEntity *p_plugin, EditorNode *p_editor, Node *p_entity);
 	~EntityEditor();
 
 	void _notification(int p_what);
@@ -40,6 +40,9 @@ public:
 	void _property_changed(const String &p_path, const Variant &p_value, const String &p_name, bool p_changing);
 
 	virtual void _changed_callback(Object *p_changed, const char *p_prop) override;
+
+private:
+	const Dictionary &entity_get_components_data() const;
 };
 
 class EditorInspectorPluginEntity : public EditorInspectorPlugin {
