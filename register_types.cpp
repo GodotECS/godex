@@ -8,6 +8,7 @@
 #include "iterators/dynamic_query.h"
 #include "systems/dynamic_system.h"
 
+#include "godot/components/child.h"
 #include "godot/components/mesh_component.h"
 #include "godot/components/physics/shape_3d_component.h"
 #include "godot/components/transform_component.h"
@@ -74,12 +75,13 @@ void register_godex_types() {
 		MessageQueue::get_singleton()->push_callable(callable_mp(&rep, &REP::setup_ecs));
 	}
 
-	// ~ Register engine components ~
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Register engine components
+	ECS::register_component<Child>();
 	ECS::register_component<MeshComponent>();
 	ECS::register_component<TransformComponent>();
 	ECS::register_component<Shape3DComponent>();
 
-	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Register engine databags
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Register engine databags
 	ECS::register_databag<WorldCommands>();
 	ECS::register_databag<World>();
 
