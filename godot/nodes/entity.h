@@ -14,7 +14,10 @@ class WorldECS;
 class World;
 
 /// Class used to store some extra information for the editor.
-class ComponentGizmoData : public Reference {};
+class ComponentGizmoData : public Reference {
+public:
+	virtual void on_position_update(const Transform &p_new_transform) {}
+};
 
 /// If you know ECS, this setup may sound strange to you, and indeed it's
 /// strange. The entities don't have type.
@@ -33,6 +36,11 @@ class ComponentGizmoData : public Reference {};
 /// constraint (or forces) anything. So bear in mind that there is no difference
 /// between those, _and in future this will be improved_.
 struct EntityBase {
+#ifdef TOOLS_ENABLED
+	// Used by the editor to display meshes and similar.
+	OAHashMap<StringName, Ref<ComponentGizmoData>> gizmo_data;
+#endif
+
 	EntityID entity_id;
 	Dictionary components_data;
 
@@ -45,11 +53,6 @@ struct EntityBase {
 template <class C>
 struct EntityInternal : public EntityBase {
 	friend class WorldECS;
-
-#ifdef TOOLS_ENABLED
-	// Used by the editor to display meshes and similar.
-	OAHashMap<StringName, Ref<ComponentGizmoData>> gizmo_data;
-#endif
 
 	C *owner;
 
@@ -130,6 +133,16 @@ public:
 						set_component_value("TransformComponent", "transform", Transform());
 					}
 					set_notify_local_transform(true);
+				}
+				break;
+			case Node3D::NOTIFICATION_TRANSFORM_CHANGED:
+				for (
+						OAHashMap<StringName, Ref<ComponentGizmoData>>::Iterator it = entity.gizmo_data.iter();
+						it.valid;
+						it = entity.gizmo_data.next_iter(it)) {
+					if (it.value->is_valid()) {
+						(*it.value)->on_position_update(get_global_transform());
+					}
 				}
 				break;
 		}
