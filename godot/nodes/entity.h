@@ -386,7 +386,7 @@ void EntityInternal<C>::_notification(int p_what) {
 template <class C>
 void EntityInternal<C>::add_component(const StringName &p_component_name, const Dictionary &p_values) {
 	if (entity_id.is_null()) {
-		components_data[p_component_name] = p_values;
+		components_data[p_component_name] = p_values.duplicate();
 		update_components_data();
 		owner->update_gizmo();
 	} else {
@@ -425,7 +425,7 @@ bool EntityInternal<C>::has_component(const StringName &p_component_name) const 
 
 template <class C>
 void EntityInternal<C>::set_components_data(Dictionary p_data) {
-	components_data = p_data;
+	components_data = p_data.duplicate();
 	update_components_data();
 }
 
@@ -441,7 +441,7 @@ bool EntityInternal<C>::set_component_value(const StringName &p_component_name, 
 		if (components_data[p_component_name].get_type() != Variant::DICTIONARY) {
 			components_data[p_component_name] = Dictionary();
 		}
-		(components_data[p_component_name].operator Dictionary())[p_property_name] = p_value;
+		(components_data[p_component_name].operator Dictionary())[p_property_name] = p_value.duplicate();
 		print_line("Component " + p_component_name + " property " + p_property_name + " changed to " + p_value);
 		owner->update_gizmo();
 		// Hack to propagate `Node3D` transform change.
@@ -487,7 +487,7 @@ bool EntityInternal<C>::_get_component_value(const StringName &p_component_name,
 			const Variant *value = (component_properties->operator Dictionary()).getptr(p_property_name);
 			if (value != nullptr) {
 				// Property is stored, just return it.
-				r_ret = *value;
+				r_ret = value->duplicate();
 				return true;
 			}
 		}
@@ -532,7 +532,7 @@ bool EntityInternal<C>::set_component(const StringName &p_component_name, const 
 			component_properties = components_data.getptr(p_component_name);
 		}
 		for (const Variant *key = data.next(nullptr); key != nullptr; key = data.next(key)) {
-			(component_properties->operator Dictionary())[*key] = *data.getptr(*key);
+			(component_properties->operator Dictionary())[*key] = data.getptr(*key)->duplicate();
 		}
 		return true;
 	} else {
@@ -576,11 +576,11 @@ bool EntityInternal<C>::_get_component(const StringName &p_component_name, Varia
 				const Variant *value = (component_properties->operator Dictionary()).getptr(e->get().name);
 				if (value) {
 					// Just set the value in the data.
-					dic[e->get().name] = *value;
+					dic[e->get().name] = value->duplicate();
 				} else {
 					// TODO Instead this is extremely bad.
 					// Just take the default value.
-					dic[e->get().name] = c->get_property_default_value(e->get().name);
+					dic[e->get().name] = c->get_property_default_value(e->get().name).duplicate();
 				}
 			}
 
@@ -594,11 +594,11 @@ bool EntityInternal<C>::_get_component(const StringName &p_component_name, Varia
 				const Variant *value = (component_properties->operator Dictionary()).getptr((*properties)[i].name);
 				if (value) {
 					// Just set the value in the data.
-					dic[(*properties)[i].name] = *value;
+					dic[(*properties)[i].name] = value->duplicate();
 				} else {
 					// TODO Instead this is extremely bad.
 					// Just take the default value.
-					dic[(*properties)[i].name] = ECS::get_component_property_default(id, (*properties)[i].name);
+					dic[(*properties)[i].name] = ECS::get_component_property_default(id, (*properties)[i].name).duplicate();
 				}
 			}
 		}
