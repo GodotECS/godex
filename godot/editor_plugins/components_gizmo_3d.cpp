@@ -216,6 +216,10 @@ void MeshComponentGizmo::EditorMeshData::set_mesh(Ref<Mesh> p_mesh) {
 	RenderingServer::get_singleton()->instance_set_base(instance, base);
 }
 
+void MeshComponentGizmo::EditorMeshData::on_position_update(const Transform &p_new_transform) {
+	RenderingServer::get_singleton()->instance_set_transform(instance, p_new_transform);
+}
+
 void MeshComponentGizmo::init() {}
 
 void MeshComponentGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
@@ -259,11 +263,7 @@ void MeshComponentGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 		}
 
 		// Update the transform.
-		if (entity->has_component(transform_component_name)) {
-			RenderingServer::get_singleton()->instance_set_transform(editor_mesh->instance, entity->get_component_value(transform_component_name, transform_name));
-		} else {
-			RenderingServer::get_singleton()->instance_set_transform(editor_mesh->instance, Transform());
-		}
+		RenderingServer::get_singleton()->instance_set_transform(editor_mesh->instance, entity->get_global_transform());
 
 		// Update the material.
 		// TODO

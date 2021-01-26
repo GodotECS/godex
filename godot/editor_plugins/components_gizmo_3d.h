@@ -88,6 +88,8 @@ class MeshComponentGizmo : public ComponentGizmo {
 		EditorMeshData();
 		~EditorMeshData();
 		void set_mesh(Ref<Mesh> p_mesh);
+
+		virtual void on_position_update(const Transform &p_new_transform) override;
 	};
 
 public:
