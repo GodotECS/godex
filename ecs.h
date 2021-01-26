@@ -50,6 +50,15 @@ class ECS : public Object {
 
 	friend class Main;
 
+public:
+	enum {
+		NOTIFICATION_ECS_LOADED = -1,
+		NOTIFICATION_ECS_WORLD_PRE_UNLOAD = -2,
+		NOTIFICATION_ECS_UNLOADED = -3,
+		NOTIFICATION_ECS_WORDL_READY = -4
+	};
+
+private:
 	static ECS *singleton;
 	static LocalVector<StringName> components;
 	static LocalVector<ComponentInfo> components_info;
@@ -63,6 +72,7 @@ class ECS : public Object {
 	// Node used by GDScript.
 	WorldECS *active_world_node = nullptr;
 	World *active_world = nullptr;
+	bool ready = false;
 	Pipeline *active_world_pipeline = nullptr;
 	bool dispatching = false;
 
@@ -179,6 +189,7 @@ public:
 	Node *get_active_world_node();
 
 	bool has_active_world() const;
+	bool is_world_ready() const;
 
 	void set_active_world_pipeline(Pipeline *p_pipeline);
 	Pipeline *get_active_world_pipeline() const;

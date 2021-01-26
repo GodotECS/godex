@@ -329,33 +329,33 @@ bool EntityInternal<C>::_get(const StringName &p_name, Variant &r_ret) const {
 template <class C>
 void EntityInternal<C>::_notification(int p_what) {
 	switch (p_what) {
-		case Node::NOTIFICATION_READY:
-			if (Engine::get_singleton()->is_editor_hint() == false) {
+		case ECS::NOTIFICATION_ECS_WORLD_PRE_UNLOAD:
+			// Just reset the `EntityID`.
+			entity_id = EntityID();
+			break;
+		case ECS::NOTIFICATION_ECS_WORDL_READY:
+			// This happens always after `READY` and differently from
+			// `NOTIFICATION_READY` it's not propagated in reverse: so the
+			// parent at this point is always initialized.
 #ifdef TOOLS_ENABLED
-				// At this point the entity is never created.
-				CRASH_COND(entity_id.is_null() == false);
+			// At this point the entity is never created.
+			CRASH_COND(entity_id.is_null() == false);
 #endif
-				// TODO consider to convert this to an iterator instead.
-				// For each entity we have 3 bind, but if we add a new
-				// notification taken bu `_notification` we can avoid this.
-				ECS::get_singleton()->connect("world_loaded", callable_mp(owner, &C::create_entity));
-				ECS::get_singleton()->connect("world_ready", callable_mp(owner, &C::on_world_ready));
-				ECS::get_singleton()->connect("world_pre_unload", callable_mp(owner, &C::destroy_entity));
-				create_entity();
-				if (ECS::get_singleton()->has_active_world()) {
+			create_entity();
+			on_world_ready();
+			break;
+		case Node::NOTIFICATION_READY:
+			if (Engine::get_singleton()->is_editor_hint()) {
+				owner->update_gizmo();
+			} else {
+				if (ECS::get_singleton()->is_world_ready()) {
 					// There is already an active world, just call `ready`.
 					on_world_ready();
 				}
-
-			} else {
-				owner->update_gizmo();
 			}
 			break;
 		case Node::NOTIFICATION_EXIT_TREE:
 			if (Engine::get_singleton()->is_editor_hint() == false) {
-				ECS::get_singleton()->disconnect("world_loaded", callable_mp(owner, &C::create_entity));
-				ECS::get_singleton()->disconnect("world_ready", callable_mp(owner, &C::on_world_ready));
-				ECS::get_singleton()->disconnect("world_pre_unload", callable_mp(owner, &C::destroy_entity));
 				destroy_entity();
 			}
 			break;
