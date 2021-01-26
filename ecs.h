@@ -174,7 +174,8 @@ public:
 	/// Set the active world. If there is already an active world an error
 	/// is generated.
 	void set_active_world(World *p_world, WorldECS *p_active_world_ecs);
-	World *get_active_world() const;
+	World *get_active_world();
+	const World *get_active_world() const;
 	Node *get_active_world_node();
 
 	bool has_active_world() const;

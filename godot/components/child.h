@@ -9,4 +9,7 @@ class Child : public godex::Component {
 
 public:
 	EntityID parent;
+
+	Child();
+	Child(EntityID p_parent);
 };

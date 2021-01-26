@@ -30,6 +30,7 @@ void ECS::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("verify_system_id", "name"), &ECS::verify_system_id_obj);
 
 	ADD_SIGNAL(MethodInfo("world_loaded"));
+	ADD_SIGNAL(MethodInfo("world_ready"));
 	ADD_SIGNAL(MethodInfo("world_pre_unload"));
 	ADD_SIGNAL(MethodInfo("world_unloaded"));
 }
@@ -278,13 +279,19 @@ void ECS::set_active_world(World *p_world, WorldECS *p_active_world_ecs) {
 	if (active_world != nullptr) {
 		// The world is just loaded.
 		emit_signal("world_loaded");
+		// Ready.
+		emit_signal("world_ready");
 	} else {
 		// The world is just unloaded.
 		emit_signal("world_unloaded");
 	}
 }
 
-World *ECS::get_active_world() const {
+World *ECS::get_active_world() {
+	return active_world;
+}
+
+const World *ECS::get_active_world() const {
 	return active_world;
 }
 

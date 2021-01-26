@@ -3,6 +3,7 @@
 /* Author: AndreaCatania */
 
 #include "../../components/component.h"
+#include "../components/child.h"
 #include "core/templates/local_vector.h"
 #include "ecs_utilities.h"
 #include "ecs_world.h"
@@ -31,8 +32,18 @@ class ComponentGizmoData : public Reference {};
 /// While this solution is not conceptually correct, it works and doesn't
 /// constraint (or forces) anything. So bear in mind that there is no difference
 /// between those, _and in future this will be improved_.
+struct EntityBase {
+	EntityID entity_id;
+	Dictionary components_data;
+
+	EntityBase *get_node_entity_base(Node *p_node);
+
+	void add_child(EntityID p_entity_id);
+	void remove_child(EntityID p_entity_id);
+};
+
 template <class C>
-struct EntityInternal {
+struct EntityInternal : public EntityBase {
 	friend class WorldECS;
 
 #ifdef TOOLS_ENABLED
@@ -41,9 +52,6 @@ struct EntityInternal {
 #endif
 
 	C *owner;
-
-	EntityID entity_id;
-	Dictionary components_data;
 
 	bool _set(const StringName &p_name, const Variant &p_value);
 	bool _get(const StringName &p_name, Variant &r_ret) const;
@@ -66,6 +74,8 @@ struct EntityInternal {
 
 	/// Duplicate this `Entity`.
 	uint32_t clone(Object *p_world) const;
+
+	void on_world_ready();
 
 	void create_entity();
 	EntityID _create_entity(World *p_world) const;
@@ -103,7 +113,9 @@ public:
 		// Handle the transformation
 		switch (p_what) {
 			case Node::NOTIFICATION_READY:
+
 				set_notify_local_transform(Engine::get_singleton()->is_editor_hint());
+
 				break;
 			case Node3D::NOTIFICATION_LOCAL_TRANSFORM_CHANGED:
 				if (Engine::get_singleton()->is_editor_hint()) {
@@ -152,6 +164,10 @@ public:
 		return entity.clone(p_world);
 	}
 
+	void on_world_ready() {
+		entity.on_world_ready();
+	}
+
 	void create_entity() {
 		entity.create_entity();
 	}
@@ -172,6 +188,13 @@ public:
 		return entity;
 	}
 	const EntityInternal<Entity3D> &get_internal_entity() const {
+		return entity;
+	}
+
+	EntityBase &get_internal_entity_base() {
+		return entity;
+	}
+	const EntityBase &get_internal_entity_base() const {
 		return entity;
 	}
 };
@@ -230,6 +253,10 @@ public:
 		return entity.clone(p_world);
 	}
 
+	void on_world_ready() {
+		entity.on_world_ready();
+	}
+
 	void create_entity() {
 		entity.create_entity();
 	}
@@ -254,12 +281,19 @@ public:
 		return entity;
 	}
 
+	EntityBase &get_internal_entity_base() {
+		return entity;
+	}
+
+	const EntityBase &get_internal_entity_base() const {
+		return entity;
+	}
+
 	void update_gizmo() {
 		// TODO no update gizmo for 2D?
 	}
 
-	void set_transform(const Transform &p_value) {
-	}
+	void set_transform(const Transform &p_value) {}
 };
 
 // TODO this file is full of `get_component_id`. Would be nice cache it.
@@ -301,9 +335,18 @@ void EntityInternal<C>::_notification(int p_what) {
 				// At this point the entity is never created.
 				CRASH_COND(entity_id.is_null() == false);
 #endif
+				// TODO consider to convert this to an iterator instead.
+				// For each entity we have 3 bind, but if we add a new
+				// notification taken bu `_notification` we can avoid this.
 				ECS::get_singleton()->connect("world_loaded", callable_mp(owner, &C::create_entity));
+				ECS::get_singleton()->connect("world_ready", callable_mp(owner, &C::on_world_ready));
 				ECS::get_singleton()->connect("world_pre_unload", callable_mp(owner, &C::destroy_entity));
 				create_entity();
+				if (ECS::get_singleton()->has_active_world()) {
+					// There is already an active world, just call `ready`.
+					on_world_ready();
+				}
+
 			} else {
 				owner->update_gizmo();
 			}
@@ -311,6 +354,7 @@ void EntityInternal<C>::_notification(int p_what) {
 		case Node::NOTIFICATION_EXIT_TREE:
 			if (Engine::get_singleton()->is_editor_hint() == false) {
 				ECS::get_singleton()->disconnect("world_loaded", callable_mp(owner, &C::create_entity));
+				ECS::get_singleton()->disconnect("world_ready", callable_mp(owner, &C::on_world_ready));
 				ECS::get_singleton()->disconnect("world_pre_unload", callable_mp(owner, &C::destroy_entity));
 				destroy_entity();
 			}
@@ -584,6 +628,25 @@ uint32_t EntityInternal<C>::clone(Object *p_world) const {
 }
 
 template <class C>
+void EntityInternal<C>::on_world_ready() {
+	// At this point, the `entity_id` is already created.
+#ifdef DEBUG_ENABLED
+	CRASH_COND(entity_id.is_null());
+#endif
+
+	// Fetch the childs
+	if (has_component(ECS::get_component_name(Child::get_component_id()))) {
+		// If this is a child of another `Entity` mark this as
+		// child of that.
+		EntityBase *parent = get_node_entity_base(owner->get_parent());
+		if (parent) {
+			// It has an `Entity` parent.
+			parent->add_child(entity_id);
+		}
+	}
+}
+
+template <class C>
 void EntityInternal<C>::create_entity() {
 	if (entity_id.is_null() == false) {
 		// Nothing to do.
@@ -629,6 +692,16 @@ void EntityInternal<C>::destroy_entity() {
 		// It's safe dereference command because this function is always called
 		// when the world is not dispatching.
 		ECS::get_singleton()->get_active_world()->destroy_entity(entity_id);
+	}
+
+	// Fetch the childs
+	if (has_component(ECS::get_component_name(Child::get_component_id()))) {
+		// If this is a child of another `Entity` remove from parent.
+		EntityBase *parent = get_node_entity_base(owner->get_parent());
+		if (parent) {
+			// It has an `Entity` parent.
+			parent->remove_child(entity_id);
+		}
 	}
 
 	entity_id = EntityID();
