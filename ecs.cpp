@@ -6,6 +6,7 @@
 #include "godot/nodes/ecs_world.h"
 #include "pipeline/pipeline.h"
 #include "scene/main/scene_tree.h"
+#include "scene/main/window.h"
 #include "systems/dynamic_system.h"
 #include "world/world.h"
 
@@ -28,11 +29,6 @@ void ECS::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_system_id", "name"), &ECS::get_system_id_obj);
 	ClassDB::bind_method(D_METHOD("verify_system_id", "name"), &ECS::verify_system_id_obj);
-
-	ADD_SIGNAL(MethodInfo("world_loaded"));
-	ADD_SIGNAL(MethodInfo("world_ready"));
-	ADD_SIGNAL(MethodInfo("world_pre_unload"));
-	ADD_SIGNAL(MethodInfo("world_unloaded"));
 }
 
 ECS::ECS() :
@@ -267,23 +263,22 @@ void ECS::set_active_world(World *p_world, WorldECS *p_active_world_ecs) {
 
 	if (active_world != nullptr) {
 		if (p_world == nullptr) {
-			emit_signal("world_pre_unload");
+			active_world_node->get_tree()->get_root()->propagate_notification(NOTIFICATION_ECS_WORLD_PRE_UNLOAD);
 		} else {
 			ERR_FAIL_COND("Before adding a new world it's necessary remove the current one by calling `set_active_world(nullptr);`.");
 		}
 	}
 
 	active_world = p_world;
+	ready = false;
 	active_world_pipeline = nullptr;
 
 	if (active_world != nullptr) {
 		// The world is just loaded.
-		emit_signal("world_loaded");
-		// Ready.
-		emit_signal("world_ready");
+		active_world_node->get_tree()->get_root()->propagate_notification(NOTIFICATION_ECS_LOADED);
 	} else {
 		// The world is just unloaded.
-		emit_signal("world_unloaded");
+		active_world_node->get_tree()->get_root()->propagate_notification(NOTIFICATION_ECS_UNLOADED);
 	}
 }
 
@@ -301,6 +296,10 @@ Node *ECS::get_active_world_node() {
 
 bool ECS::has_active_world() const {
 	return active_world != nullptr;
+}
+
+bool ECS::is_world_ready() const {
+	return has_active_world() && ready;
 }
 
 void ECS::set_active_world_pipeline(Pipeline *p_pipeline) {
@@ -327,6 +326,12 @@ bool ECS::has_active_world_pipeline() const {
 
 void ECS::dispatch_active_world() {
 	if (likely(active_world && active_world_pipeline)) {
+		if (unlikely(ready == false)) {
+			// Ready.
+			active_world_node->get_tree()->get_root()->propagate_notification(NOTIFICATION_ECS_WORDL_READY);
+			ready = true;
+		}
+
 		dispatching = true;
 		active_world_pipeline->dispatch(active_world);
 		active_world->flush();
