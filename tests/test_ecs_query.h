@@ -116,6 +116,48 @@ TEST_CASE("[Modules][ECS] Test static query") {
 	}
 }
 
+TEST_CASE("[Modules][ECS] Test static query check query type fetch.") {
+	World world;
+
+	{
+		Query<const TransformComponent, Maybe<TagQueryTestComponent>> query(&world);
+
+		LocalVector<uint32_t> mutable_components;
+		LocalVector<uint32_t> immutable_components;
+		query.get_components(mutable_components, immutable_components);
+
+		CHECK(mutable_components.find(TagQueryTestComponent::get_component_id()) != -1);
+
+		CHECK(immutable_components.find(TransformComponent::get_component_id()) != -1);
+	}
+
+	{
+		Query<TransformComponent, Maybe<const TagQueryTestComponent>> query(&world);
+
+		LocalVector<uint32_t> mutable_components;
+		LocalVector<uint32_t> immutable_components;
+		query.get_components(mutable_components, immutable_components);
+
+		CHECK(mutable_components.find(TransformComponent::get_component_id()) != -1);
+
+		CHECK(immutable_components.find(TagQueryTestComponent::get_component_id()) != -1);
+	}
+
+	{
+		Query<Without<TransformComponent>, Maybe<const TagQueryTestComponent>> query(&world);
+
+		LocalVector<uint32_t> mutable_components;
+		LocalVector<uint32_t> immutable_components;
+		query.get_components(mutable_components, immutable_components);
+
+		CHECK(mutable_components.size() == 0);
+
+		// `Without` filter collects the data always immutable.
+		CHECK(immutable_components.find(TransformComponent::get_component_id()) != -1);
+		CHECK(immutable_components.find(TagQueryTestComponent::get_component_id()) != -1);
+	}
+}
+
 TEST_CASE("[Modules][ECS] Test dynamic query") {
 	World world;
 
