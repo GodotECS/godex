@@ -28,6 +28,8 @@ void EntityBase::remove_child(EntityID p_entity_id) {
 }
 
 void Entity3D::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_entity_id"), &Entity3D::get_entity_id);
+
 	ClassDB::bind_method(D_METHOD("__set_components_data", "data"), &Entity3D::set_components_data);
 	ClassDB::bind_method(D_METHOD("__get_components_data"), &Entity3D::get_components_data);
 
@@ -44,6 +46,8 @@ void Entity3D::_bind_methods() {
 }
 
 void Entity2D::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_entity_id"), &Entity2D::get_entity_id);
+
 	ClassDB::bind_method(D_METHOD("__set_components_data", "data"), &Entity2D::set_components_data);
 	ClassDB::bind_method(D_METHOD("__get_components_data"), &Entity2D::get_components_data);
 

@@ -29,6 +29,12 @@ void ECS::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_system_id", "name"), &ECS::get_system_id_obj);
 	ClassDB::bind_method(D_METHOD("verify_system_id", "name"), &ECS::verify_system_id_obj);
+
+	BIND_CONSTANT(NOTIFICATION_ECS_WORLD_LOADED)
+	BIND_CONSTANT(NOTIFICATION_ECS_WORLD_PRE_UNLOAD)
+	BIND_CONSTANT(NOTIFICATION_ECS_WORLD_UNLOADED)
+	BIND_CONSTANT(NOTIFICATION_ECS_WORDL_READY)
+	BIND_CONSTANT(NOTIFICATION_ECS_ENTITY_CREATED)
 }
 
 ECS::ECS() :
@@ -259,8 +265,6 @@ void ECS::__set_singleton(ECS *p_singleton) {
 }
 
 void ECS::set_active_world(World *p_world, WorldECS *p_active_world_ecs) {
-	active_world_node = p_active_world_ecs;
-
 	if (active_world != nullptr) {
 		if (p_world == nullptr) {
 			active_world_node->get_tree()->get_root()->propagate_notification(NOTIFICATION_ECS_WORLD_PRE_UNLOAD);
@@ -269,16 +273,21 @@ void ECS::set_active_world(World *p_world, WorldECS *p_active_world_ecs) {
 		}
 	}
 
+	WorldECS *prev_node = active_world_node;
+
 	active_world = p_world;
+	active_world_node = p_active_world_ecs;
 	ready = false;
 	active_world_pipeline = nullptr;
 
 	if (active_world != nullptr) {
 		// The world is just loaded.
-		active_world_node->get_tree()->get_root()->propagate_notification(NOTIFICATION_ECS_LOADED);
+		active_world_node->get_tree()->get_root()->propagate_notification(NOTIFICATION_ECS_WORLD_LOADED);
 	} else {
 		// The world is just unloaded.
-		active_world_node->get_tree()->get_root()->propagate_notification(NOTIFICATION_ECS_UNLOADED);
+		if (prev_node) {
+			prev_node->get_tree()->get_root()->propagate_notification(NOTIFICATION_ECS_WORLD_UNLOADED);
+		}
 	}
 }
 

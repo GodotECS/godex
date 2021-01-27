@@ -223,7 +223,7 @@ void WorldECS::_notification(int p_what) {
 				active_world();
 			}
 			break;
-		case ECS::NOTIFICATION_ECS_UNLOADED:
+		case ECS::NOTIFICATION_ECS_WORLD_UNLOADED:
 			if (want_to_activate) {
 				active_world();
 			}
