@@ -150,6 +150,8 @@ public:
 		entity._notification(p_what);
 	}
 
+	uint32_t get_entity_id() const { return entity.entity_id; }
+
 	void set_components_data(Dictionary p_data) { entity.set_components_data(p_data); }
 	const Dictionary &get_components_data() const { return entity.get_components_data(); }
 
@@ -238,6 +240,8 @@ public:
 	void _notification(int p_what) {
 		entity._notification(p_what);
 	}
+
+	uint32_t get_entity_id() const { return entity.entity_id; }
 
 	void set_components_data(Dictionary p_data) { entity.set_components_data(p_data); }
 	const Dictionary &get_components_data() const { return entity.get_components_data(); }
@@ -672,6 +676,8 @@ void EntityInternal<C>::create_entity() {
 		// when the world is not dispatching.
 		entity_id = _create_entity(ECS::get_singleton()->get_active_world());
 	}
+
+	owner->propagate_notification(ECS::NOTIFICATION_ECS_ENTITY_CREATED);
 }
 
 template <class C>
