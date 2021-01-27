@@ -91,8 +91,9 @@ public:
 
 	bool has_data(EntityID p_entity) const {
 		if (unlikely(storage == nullptr)) {
-			// When the storage is null the `Without` is always `true`.
-			return true;
+			// When the storage is null the `Without` is always `true` though
+			// we have to keep check the other storages.
+			return QueryStorage<Cs...>::has_data(p_entity);
 		}
 		return storage->has(p_entity) == false && QueryStorage<Cs...>::has_data(p_entity);
 	}
@@ -123,6 +124,8 @@ public:
 
 	bool has_data(EntityID p_entity) const {
 		if (unlikely(storage == nullptr)) {
+			// This is a required field, since there is no storage this can end
+			// immediately.
 			return false;
 		}
 		return storage->has(p_entity) && QueryStorage<Cs...>::has_data(p_entity);
