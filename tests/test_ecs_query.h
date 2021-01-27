@@ -158,6 +158,24 @@ TEST_CASE("[Modules][ECS] Test static query check query type fetch.") {
 	}
 }
 
+TEST_CASE("[Modules][ECS] Test static query filter no storage.") {
+	World world;
+
+	{
+		Query<Without<TagQueryTestComponent>, TransformComponent> query(&world);
+
+		// No storage, make sure this returns immediately.
+		CHECK(query.is_done());
+	}
+
+	{
+		Query<Maybe<TagQueryTestComponent>, TransformComponent> query(&world);
+
+		// No storage, make sure this returns immediately.
+		CHECK(query.is_done());
+	}
+}
+
 TEST_CASE("[Modules][ECS] Test dynamic query") {
 	World world;
 
