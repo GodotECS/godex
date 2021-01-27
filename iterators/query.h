@@ -68,8 +68,11 @@ public:
 	}
 
 	static void get_components(LocalVector<uint32_t> &r_mutable_components, LocalVector<uint32_t> &r_immutable_components) {
-		// The `WithoutFilter` collects the data always immutable.
-		r_immutable_components.push_back(C::get_component_id());
+		if (std::is_const<C>()) {
+			r_immutable_components.push_back(C::get_component_id());
+		} else {
+			r_mutable_components.push_back(C::get_component_id());
+		}
 
 		QueryStorage<Cs...>::get_components(r_mutable_components, r_immutable_components);
 	}
@@ -100,7 +103,7 @@ public:
 	}
 
 	static void get_components(LocalVector<uint32_t> &r_mutable_components, LocalVector<uint32_t> &r_immutable_components) {
-		// The `WithoutFilter` collects the data always immutable.
+		// The `Without` collects the data always immutable.
 		r_immutable_components.push_back(C::get_component_id());
 
 		QueryStorage<Cs...>::get_components(r_mutable_components, r_immutable_components);
