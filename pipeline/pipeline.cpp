@@ -117,6 +117,16 @@ void Pipeline::get_systems_dependencies(SystemExeInfo &p_info) const {
 			}
 		}
 
+		// Handles the Component storages.
+		for (uint32_t t = 0; t < other_info.mutable_components_storage.size(); t += 1) {
+			const godex::component_id id = other_info.mutable_components_storage[t];
+
+			const bool is_unique = p_info.mutable_components_storage.find(id) == -1;
+			if (is_unique) {
+				p_info.mutable_components_storage.push_back(id);
+			}
+		}
+
 		// Handles the Databags.
 		for (uint32_t t = 0; t < other_info.immutable_databags.size(); t += 1) {
 			const godex::databag_id id = other_info.immutable_databags[t];
