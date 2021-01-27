@@ -395,6 +395,8 @@ uint32_t ECS::register_script_component(const StringName &p_name, const LocalVec
 					nullptr,
 					info });
 
+	print_line("ComponentScript: " + p_name + " registered with ID: " + itos(info->component_id));
+
 	return info->component_id;
 }
 

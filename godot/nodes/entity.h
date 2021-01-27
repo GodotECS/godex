@@ -363,6 +363,7 @@ void EntityInternal<C>::_notification(int p_what) {
 			} else {
 				if (ECS::get_singleton()->is_world_ready()) {
 					// There is already an active world, just call `ready`.
+					create_entity();
 					on_world_ready();
 				}
 			}

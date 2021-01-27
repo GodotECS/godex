@@ -239,6 +239,8 @@ void ECS::register_component() {
 					&C::get_property_default_static,
 					&C::create_storage_no_type,
 					nullptr });
+
+	print_line("Component: " + component_name + " registered with ID: " + itos(C::component_id));
 }
 
 template <class E>

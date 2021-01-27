@@ -163,6 +163,14 @@ void godex::DynamicSystemInfo::get_info(DynamicSystemInfo &p_info, func_system_e
 		ERR_FAIL_COND(p_info.query.is_valid() == false);
 	}
 
+	// Set the components dependencies.
+	p_info.query.get_system_info(r_out);
+
+	// Set the storages dependencies.
+	for (uint32_t i = 0; i < p_info.storages.size(); i += 1) {
+		r_out.mutable_components_storage.push_back(p_info.storages[i]);
+	}
+
 	// Set the databags dependencies.
 	for (uint32_t i = 0; i < p_info.databags.size(); i += 1) {
 		if (p_info.databags[i].is_mutable) {
@@ -171,14 +179,6 @@ void godex::DynamicSystemInfo::get_info(DynamicSystemInfo &p_info, func_system_e
 			r_out.immutable_databags.push_back(p_info.databags[i].databag_id);
 		}
 	}
-
-	// Set the storages dependencies.
-	for (uint32_t i = 0; i < p_info.storages.size(); i += 1) {
-		r_out.mutable_components_storage.push_back(p_info.storages[i]);
-	}
-
-	// Set the components dependencies.
-	p_info.query.get_system_info(r_out);
 
 	if (p_info.sub_pipeline_execute) {
 		// Extract all the pipeline dependencies.
