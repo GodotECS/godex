@@ -81,6 +81,7 @@ class WorldECS : public Node {
 
 	bool world_build_in_progress = false;
 	World *world = nullptr;
+	bool want_to_activate = false;
 	bool is_active = false;
 
 	Vector<Ref<PipelineECS>> pipelines;

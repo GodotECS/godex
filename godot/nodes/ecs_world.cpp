@@ -223,6 +223,11 @@ void WorldECS::_notification(int p_what) {
 				active_world();
 			}
 			break;
+		case ECS::NOTIFICATION_ECS_UNLOADED:
+			if (want_to_activate) {
+				active_world();
+			}
+			break;
 		case NOTIFICATION_EXIT_TREE:
 			if (Engine::get_singleton()->is_editor_hint() == false) {
 				unactive_world();
@@ -372,39 +377,19 @@ void WorldECS::active_world() {
 
 		// Mark as active
 		is_active = true;
+		want_to_activate = false;
 
-		// Disconnects any previously connected functions.
-		if (ECS::get_singleton()->is_connected(
-					"world_unloaded",
-					callable_mp(this, &WorldECS::active_world))) {
-			// Disconnects to `world_unload`: previously connected because
-			// there was already another world connected.
-			ECS::get_singleton()->disconnect(
-					"world_unloaded",
-					callable_mp(this, &WorldECS::active_world));
-		}
 	} else {
-		// Connects to `world_unload`: so when the current one is unloaded
-		// this one can be loaded.
-		if (ECS::get_singleton()->is_connected(
-					"world_unloaded",
-					callable_mp(this, &WorldECS::active_world)) == false) {
-			ECS::get_singleton()->connect("world_unloaded", callable_mp(this, &WorldECS::active_world));
-		}
+		is_active = false;
+		want_to_activate = true;
 		ERR_FAIL_MSG("Only one WorldECS is allowed at a time.");
 	}
 }
 
 void WorldECS::unactive_world() {
-	// Disconnects to the eventual connected world_unload.
-	if (ECS::get_singleton()->is_connected(
-				"world_unloaded",
-				callable_mp(this, &WorldECS::active_world)) == false) {
-		ECS::get_singleton()->connect("world_unloaded", callable_mp(this, &WorldECS::active_world));
-	}
-
 	if (is_active) {
 		is_active = false;
+		want_to_activate = false;
 		ECS::get_singleton()->set_active_world(nullptr, nullptr);
 	}
 }
