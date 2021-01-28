@@ -9,14 +9,15 @@
 class MeshComponent : public godex::Component {
 	COMPONENT(MeshComponent, DenseVectorStorage)
 
-	Ref<Mesh> mesh;
-	Ref<Material> material_override;
-	uint32_t layers = 1;
-
 	RID instance;
 	RID mesh_rid;
 
 public:
+	Ref<Mesh> mesh;
+	Ref<Material> material_override;
+	uint32_t layers = 1;
+	bool visible = true;
+
 	MeshComponent();
 
 	static void _bind_methods();

@@ -62,6 +62,10 @@ void mesh_updater_system(
 			WARN_PRINT_ONCE("TODO please add the `changed` system so to never enter here.");
 		}
 
+		rs->get_rs()->instance_set_visible(mesh_comp->get_instance(), mesh_comp->visible);
+		rs->get_rs()->instance_set_layer_mask(mesh_comp->get_instance(), mesh_comp->layers);
+		// TODO add material override, once the `Changed<>` filter is integrated.
+
 		// TODO once the is changed system is created this should be done in
 		// a separate system.
 		if (p_scenario->is_changed()) {
