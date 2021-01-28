@@ -544,6 +544,42 @@ TEST_CASE("[Modules][ECS] Test query with event.") {
 		}
 	}
 }
+
+TEST_CASE("[Modules][ECS] Test query random Entity access.") {
+	World world;
+
+	EntityID entity_1 = world
+								.create_entity()
+								.with(TransformComponent())
+								.with(TestEvent(50));
+
+	EntityID entity_2 = world
+								.create_entity()
+								.with(TransformComponent());
+
+	EntityID entity_3 = world
+								.create_entity()
+								.with(TransformComponent())
+								.with(TestEvent());
+
+	Query<TransformComponent, TestEvent> query(&world);
+
+	CHECK(query.fetch_entity(entity_1));
+	CHECK(query.get_current_entity() == entity_1);
+	{
+		auto [transform, event] = query.get();
+		CHECK(event->number == 50);
+	}
+
+	CHECK(query.fetch_entity(entity_2) == false);
+
+	CHECK(query.fetch_entity(entity_3));
+	CHECK(query.get_current_entity() == entity_3);
+	{
+		auto [transform, event] = query.get();
+		CHECK(event->number == 0);
+	}
+}
 } // namespace godex_tests
 
 #endif // TEST_ECS_QUERY_H
