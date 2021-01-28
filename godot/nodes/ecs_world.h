@@ -153,6 +153,9 @@ public:
 	Object *get_entity_component(uint32_t entity_id, const StringName &p_component_name);
 	Object *get_entity_component_by_id(uint32_t entity_id, uint32_t p_component_id);
 
+	bool has_entity_component(uint32_t entity_id, const StringName &p_component_name);
+	bool has_entity_component_by_id(uint32_t entity_id, uint32_t p_component_id);
+
 	/// Returns the databag or null if not present in the world.
 	/// The returned object lifetime is short, never store it.
 	Object *get_databag(const StringName &p_databag_name);
