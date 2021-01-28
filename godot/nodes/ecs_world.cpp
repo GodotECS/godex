@@ -154,20 +154,20 @@ void WorldECS::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("create_entity_from_prefab", "entity_node"), &WorldECS::create_entity_from_prefab);
 
-	ClassDB::bind_method(D_METHOD("add_component", "component_name", "data"), &WorldECS::add_component);
-	ClassDB::bind_method(D_METHOD("add_component_by_id", "component_id", "data"), &WorldECS::add_component_by_id);
+	ClassDB::bind_method(D_METHOD("add_component_by_name", "component_name", "data"), &WorldECS::add_component_by_name);
+	ClassDB::bind_method(D_METHOD("add_component", "component_id", "data"), &WorldECS::add_component);
 
-	ClassDB::bind_method(D_METHOD("remove_component", "component_name", "data"), &WorldECS::remove_component);
-	ClassDB::bind_method(D_METHOD("remove_component_by_id", "component_id", "data"), &WorldECS::remove_component_by_id);
+	ClassDB::bind_method(D_METHOD("remove_component_by_name", "component_name", "data"), &WorldECS::remove_component_by_name);
+	ClassDB::bind_method(D_METHOD("remove_component", "component_id", "data"), &WorldECS::remove_component);
 
-	ClassDB::bind_method(D_METHOD("get_entity_component", "entity_id", "component_name"), &WorldECS::get_entity_component);
-	ClassDB::bind_method(D_METHOD("get_entity_component_by_id", "entity_id", "component_id"), &WorldECS::get_entity_component_by_id);
+	ClassDB::bind_method(D_METHOD("get_entity_component_by_name", "entity_id", "component_name"), &WorldECS::get_entity_component_by_name);
+	ClassDB::bind_method(D_METHOD("get_entity_component", "entity_id", "component_id"), &WorldECS::get_entity_component);
 
-	ClassDB::bind_method(D_METHOD("has_entity_component", "entity_id", "component_name"), &WorldECS::has_entity_component);
-	ClassDB::bind_method(D_METHOD("has_entity_component_by_id", "entity_id", "component_id"), &WorldECS::has_entity_component_by_id);
+	ClassDB::bind_method(D_METHOD("has_entity_component_by_name", "entity_id", "component_name"), &WorldECS::has_entity_component_by_name);
+	ClassDB::bind_method(D_METHOD("has_entity_component", "entity_id", "component_id"), &WorldECS::has_entity_component);
 
+	ClassDB::bind_method(D_METHOD("get_databag_by_name", "databag_name"), &WorldECS::get_databag_by_name);
 	ClassDB::bind_method(D_METHOD("get_databag", "databag_name"), &WorldECS::get_databag);
-	ClassDB::bind_method(D_METHOD("get_databag_by_id", "databag_name"), &WorldECS::get_databag_by_id);
 }
 
 bool WorldECS::_set(const StringName &p_name, const Variant &p_value) {
@@ -416,34 +416,34 @@ uint32_t WorldECS::create_entity_from_prefab(Object *p_entity) {
 	return entity->_create_entity(world);
 }
 
-void WorldECS::add_component(uint32_t entity_id, const StringName &p_component_name, const Dictionary &p_data) {
-	add_component_by_id(entity_id, ECS::get_component_id(p_component_name), p_data);
+void WorldECS::add_component_by_name(uint32_t entity_id, const StringName &p_component_name, const Dictionary &p_data) {
+	add_component(entity_id, ECS::get_component_id(p_component_name), p_data);
 }
 
-void WorldECS::add_component_by_id(uint32_t entity_id, uint32_t p_component_id, const Dictionary &p_data) {
+void WorldECS::add_component(uint32_t entity_id, uint32_t p_component_id, const Dictionary &p_data) {
 	CRASH_COND_MSG(world == nullptr, "The world is never nullptr.");
 	ERR_FAIL_COND_MSG(ECS::verify_component_id(p_component_id) == false, "The passed component is not valid.");
 	world->add_component(entity_id, p_component_id, p_data);
 }
 
-void WorldECS::remove_component(uint32_t entity_id, const StringName &p_component_name) {
-	remove_component_by_id(entity_id, ECS::get_component_id(p_component_name));
+void WorldECS::remove_component_by_name(uint32_t entity_id, const StringName &p_component_name) {
+	remove_component(entity_id, ECS::get_component_id(p_component_name));
 }
 
-void WorldECS::remove_component_by_id(uint32_t entity_id, uint32_t p_component_id) {
+void WorldECS::remove_component(uint32_t entity_id, uint32_t p_component_id) {
 	CRASH_COND_MSG(world == nullptr, "The world is never nullptr.");
 	ERR_FAIL_COND_MSG(ECS::verify_component_id(p_component_id) == false, "The passed component is not valid.");
 	world->remove_component(entity_id, p_component_id);
 }
 
-Object *WorldECS::get_entity_component(uint32_t entity_id, const StringName &p_component_name) {
-	return get_entity_component_by_id(entity_id, ECS::get_component_id(p_component_name));
+Object *WorldECS::get_entity_component_by_name(uint32_t entity_id, const StringName &p_component_name) {
+	return get_entity_component(entity_id, ECS::get_component_id(p_component_name));
 }
 
-Object *WorldECS::get_entity_component_by_id(uint32_t entity_id, uint32_t p_component_id) {
+Object *WorldECS::get_entity_component(uint32_t entity_id, uint32_t p_component_id) {
 	component_accessor.__target = nullptr;
 
-	if (has_entity_component_by_id(entity_id, p_component_id)) {
+	if (has_entity_component(entity_id, p_component_id)) {
 		component_accessor.__target = world->get_storage(p_component_id)->get_ptr(entity_id);
 		component_accessor.__mut = true;
 	}
@@ -451,11 +451,11 @@ Object *WorldECS::get_entity_component_by_id(uint32_t entity_id, uint32_t p_comp
 	return &component_accessor;
 }
 
-bool WorldECS::has_entity_component(uint32_t entity_id, const StringName &p_component_name) {
-	return has_entity_component_by_id(entity_id, ECS::get_component_id(p_component_name));
+bool WorldECS::has_entity_component_by_name(uint32_t entity_id, const StringName &p_component_name) {
+	return has_entity_component(entity_id, ECS::get_component_id(p_component_name));
 }
 
-bool WorldECS::has_entity_component_by_id(uint32_t entity_id, uint32_t p_component_id) {
+bool WorldECS::has_entity_component(uint32_t entity_id, uint32_t p_component_id) {
 	CRASH_COND_MSG(world == nullptr, "The world is never nullptr.");
 	ERR_FAIL_COND_V_MSG(ECS::verify_component_id(p_component_id) == false, &component_accessor, "The passed component_name is not valid.");
 	if (world->get_storage(p_component_id) == nullptr) {
@@ -464,11 +464,11 @@ bool WorldECS::has_entity_component_by_id(uint32_t entity_id, uint32_t p_compone
 	return world->get_storage(p_component_id)->has(entity_id);
 }
 
-Object *WorldECS::get_databag(const StringName &p_databag_name) {
-	return get_databag_by_id(ECS::get_databag_id(p_databag_name));
+Object *WorldECS::get_databag_by_name(const StringName &p_databag_name) {
+	return get_databag(ECS::get_databag_id(p_databag_name));
 }
 
-Object *WorldECS::get_databag_by_id(uint32_t p_databag_id) {
+Object *WorldECS::get_databag(uint32_t p_databag_id) {
 	databag_accessor.__target = nullptr;
 
 	CRASH_COND_MSG(world == nullptr, "The world is never nullptr.");

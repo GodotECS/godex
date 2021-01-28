@@ -209,7 +209,7 @@ TEST_CASE("[Modules][ECS] Test WorldECS runtime API create entity from prefab.")
 
 	// Make sure the component is created
 
-	Object *comp = world.get_entity_component(
+	Object *comp = world.get_entity_component_by_name(
 			entity_id,
 			"TransformComponent");
 
@@ -224,7 +224,7 @@ TEST_CASE("[Modules][ECS] Test WorldECS runtime API create entity from prefab.")
 TEST_CASE("[Modules][ECS] Test WorldECS runtime API fetch databags.") {
 	WorldECS world;
 
-	Object *world_res_raw = world.get_databag("World");
+	Object *world_res_raw = world.get_databag_by_name("World");
 
 	CHECK(world_res_raw != nullptr);
 
