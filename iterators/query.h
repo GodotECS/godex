@@ -168,12 +168,10 @@ public:
 	Query(World *p_world) :
 			world(p_world), q(p_world) {
 		// Prepare the query: advances to the first available entity.
-		id = 0;
-		if (q.has_data(0) == false) {
-			next();
-		}
+		begin_iterator();
 	}
 
+	/// Returns `true` if the iteration is done.
 	bool is_done() const {
 		return id == UINT32_MAX;
 	}
@@ -191,6 +189,18 @@ public:
 		}
 	}
 
+	/// This is automatically called when the `Query` is created, you don't need
+	/// to call this manually.
+	/// This is useful to reset the iterator, if you want to use the `Query`
+	/// again.
+	void begin_iterator() {
+		id = 0;
+		if (q.has_data(0) == false) {
+			next();
+		}
+	}
+
+	/// Advance to the next `Entity`.
 	void next() {
 		const uint32_t last_id = world->get_biggest_entity_id();
 		if (unlikely(id == UINT32_MAX || last_id == UINT32_MAX)) {
@@ -208,6 +218,18 @@ public:
 
 		// No more entity
 		id = UINT32_MAX;
+	}
+
+	/// Fetches a specific `EntityID`, returns `true` if the entity exists.
+	/// Use `get` to retrive the `Entity` data.
+	bool fetch_entity(EntityID p_entity) {
+		if (q.has_data(p_entity)) {
+			id = p_entity;
+			return true;
+		} else {
+			id = UINT32_MAX;
+			return false;
+		}
 	}
 
 	// TODO The lockup mechanism of this query must be improved to avoid any
