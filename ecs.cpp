@@ -404,6 +404,9 @@ uint32_t ECS::register_script_component(const StringName &p_name, const LocalVec
 					nullptr,
 					info });
 
+	// Add a new scripting constant, for fast and easy `component` access.
+	ClassDB::bind_integer_constant(get_class_static(), StringName(), String(p_name).replace(".", "_"), info->component_id);
+
 	print_line("ComponentScript: " + p_name + " registered with ID: " + itos(info->component_id));
 
 	return info->component_id;

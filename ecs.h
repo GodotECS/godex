@@ -241,6 +241,9 @@ void ECS::register_component() {
 					&C::create_storage_no_type,
 					nullptr });
 
+	// Add a new scripting constant, for fast and easy `component` access.
+	ClassDB::bind_integer_constant(get_class_static(), StringName(), component_name, C::component_id);
+
 	print_line("Component: " + component_name + " registered with ID: " + itos(C::component_id));
 }
 
@@ -267,4 +270,7 @@ void ECS::register_databag() {
 	databags.push_back(databag_name);
 	databags_info.push_back(DatabagInfo{
 			R::create_databag_no_type });
+
+	// Add a new scripting constant, for fast and easy `databag` access.
+	ClassDB::bind_integer_constant(get_class_static(), StringName(), databag_name, R::databag_id);
 }
