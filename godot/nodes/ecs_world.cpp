@@ -163,6 +163,9 @@ void WorldECS::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_entity_component", "entity_id", "component_name"), &WorldECS::get_entity_component);
 	ClassDB::bind_method(D_METHOD("get_entity_component_by_id", "entity_id", "component_id"), &WorldECS::get_entity_component_by_id);
 
+	ClassDB::bind_method(D_METHOD("has_entity_component", "entity_id", "component_name"), &WorldECS::has_entity_component);
+	ClassDB::bind_method(D_METHOD("has_entity_component_by_id", "entity_id", "component_id"), &WorldECS::has_entity_component_by_id);
+
 	ClassDB::bind_method(D_METHOD("get_databag", "databag_name"), &WorldECS::get_databag);
 	ClassDB::bind_method(D_METHOD("get_databag_by_id", "databag_name"), &WorldECS::get_databag_by_id);
 }
@@ -440,15 +443,25 @@ Object *WorldECS::get_entity_component(uint32_t entity_id, const StringName &p_c
 Object *WorldECS::get_entity_component_by_id(uint32_t entity_id, uint32_t p_component_id) {
 	component_accessor.__target = nullptr;
 
-	CRASH_COND_MSG(world == nullptr, "The world is never nullptr.");
-	ERR_FAIL_COND_V_MSG(ECS::verify_component_id(p_component_id) == false, &component_accessor, "The passed component_name is not valid.");
-	ERR_FAIL_COND_V_MSG(world->get_storage(p_component_id) == nullptr, &component_accessor, "The component storage doesn't exists.");
-	ERR_FAIL_COND_V_MSG(world->get_storage(p_component_id)->has(entity_id) == false, &component_accessor, "The entity doesn't have this component.");
-
-	component_accessor.__target = world->get_storage(p_component_id)->get_ptr(entity_id);
-	component_accessor.__mut = true;
+	if (has_entity_component_by_id(entity_id, p_component_id)) {
+		component_accessor.__target = world->get_storage(p_component_id)->get_ptr(entity_id);
+		component_accessor.__mut = true;
+	}
 
 	return &component_accessor;
+}
+
+bool WorldECS::has_entity_component(uint32_t entity_id, const StringName &p_component_name) {
+	return has_entity_component_by_id(entity_id, ECS::get_component_id(p_component_name));
+}
+
+bool WorldECS::has_entity_component_by_id(uint32_t entity_id, uint32_t p_component_id) {
+	CRASH_COND_MSG(world == nullptr, "The world is never nullptr.");
+	ERR_FAIL_COND_V_MSG(ECS::verify_component_id(p_component_id) == false, &component_accessor, "The passed component_name is not valid.");
+	if (world->get_storage(p_component_id) == nullptr) {
+		return false;
+	}
+	return world->get_storage(p_component_id)->has(entity_id);
 }
 
 Object *WorldECS::get_databag(const StringName &p_databag_name) {
