@@ -8,11 +8,11 @@
 #include "core/object/script_language.h"
 
 void System::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("with_databag", "databag_name", "mutability"), &System::with_databag);
-	ClassDB::bind_method(D_METHOD("with_storage", "component_name"), &System::with_storage);
-	ClassDB::bind_method(D_METHOD("with_component", "component_name", "mutability"), &System::with_component);
-	ClassDB::bind_method(D_METHOD("maybe_component", "component_name", "mutability"), &System::maybe_component);
-	ClassDB::bind_method(D_METHOD("without_component", "component_name"), &System::without_component);
+	ClassDB::bind_method(D_METHOD("with_databag", "databag_id", "mutability"), &System::with_databag);
+	ClassDB::bind_method(D_METHOD("with_storage", "component_id"), &System::with_storage);
+	ClassDB::bind_method(D_METHOD("with_component", "component_id", "mutability"), &System::with_component);
+	ClassDB::bind_method(D_METHOD("maybe_component", "component_id", "mutability"), &System::maybe_component);
+	ClassDB::bind_method(D_METHOD("without_component", "component_id"), &System::without_component);
 
 	ClassDB::bind_method(D_METHOD("get_current_entity_id"), &System::get_current_entity_id);
 
@@ -51,34 +51,29 @@ System::~System() {
 	}
 }
 
-void System::with_databag(const StringName &p_databag, Mutability p_mutability) {
+void System::with_databag(uint32_t p_databag_id, Mutability p_mutability) {
 	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
-	const godex::databag_id id = ECS::get_databag_id(p_databag);
-	info->with_databag(id, p_mutability == MUTABLE);
+	info->with_databag(p_databag_id, p_mutability == MUTABLE);
 }
 
-void System::with_storage(const StringName &p_component_name) {
+void System::with_storage(uint32_t p_component_id) {
 	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
-	const godex::component_id id = ECS::get_component_id(p_component_name);
-	info->with_storage(id);
+	info->with_storage(p_component_id);
 }
 
-void System::with_component(const StringName &p_component, Mutability p_mutability) {
+void System::with_component(uint32_t p_component_id, Mutability p_mutability) {
 	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
-	const godex::component_id id = ECS::get_component_id(p_component);
-	info->with_component(id, p_mutability == MUTABLE);
+	info->with_component(p_component_id, p_mutability == MUTABLE);
 }
 
-void System::maybe_component(const StringName &p_component, Mutability p_mutability) {
+void System::maybe_component(uint32_t p_component_id, Mutability p_mutability) {
 	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
-	const godex::component_id id = ECS::get_component_id(p_component);
-	info->maybe_component(id, p_mutability == MUTABLE);
+	info->maybe_component(p_component_id, p_mutability == MUTABLE);
 }
 
-void System::without_component(const StringName &p_component) {
+void System::without_component(uint32_t p_component_id) {
 	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
-	const godex::component_id id = ECS::get_component_id(p_component);
-	info->without_component(id);
+	info->without_component(p_component_id);
 }
 
 godex::system_id System::get_system_id() const {

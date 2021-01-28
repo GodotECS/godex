@@ -142,24 +142,24 @@ public:
 	/// Creates an entity coping the components from the given `Entity`.
 	uint32_t create_entity_from_prefab(Object *p_entity);
 
-	void add_component(uint32_t entity_id, const StringName &p_component_name, const Dictionary &p_data);
-	void add_component_by_id(uint32_t entity_id, uint32_t p_component_id, const Dictionary &p_data);
+	void add_component_by_name(uint32_t entity_id, const StringName &p_component_name, const Dictionary &p_data);
+	void add_component(uint32_t entity_id, uint32_t p_component_id, const Dictionary &p_data);
 
-	void remove_component(uint32_t entity_id, const StringName &p_component_name);
-	void remove_component_by_id(uint32_t entity_id, uint32_t p_component_id);
+	void remove_component_by_name(uint32_t entity_id, const StringName &p_component_name);
+	void remove_component(uint32_t entity_id, uint32_t p_component_id);
 
 	/// Returns the component of the entity or null if not assigned.
 	/// The returned object lifetime is short, never store it.
-	Object *get_entity_component(uint32_t entity_id, const StringName &p_component_name);
-	Object *get_entity_component_by_id(uint32_t entity_id, uint32_t p_component_id);
+	Object *get_entity_component_by_name(uint32_t entity_id, const StringName &p_component_name);
+	Object *get_entity_component(uint32_t entity_id, uint32_t p_component_id);
 
-	bool has_entity_component(uint32_t entity_id, const StringName &p_component_name);
-	bool has_entity_component_by_id(uint32_t entity_id, uint32_t p_component_id);
+	bool has_entity_component_by_name(uint32_t entity_id, const StringName &p_component_name);
+	bool has_entity_component(uint32_t entity_id, uint32_t p_component_id);
 
 	/// Returns the databag or null if not present in the world.
 	/// The returned object lifetime is short, never store it.
-	Object *get_databag(const StringName &p_databag_name);
-	Object *get_databag_by_id(uint32_t p_databag_id);
+	Object *get_databag_by_name(const StringName &p_databag_name);
+	Object *get_databag(uint32_t p_databag_id);
 
 private:
 	void active_world();
