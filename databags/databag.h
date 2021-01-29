@@ -8,6 +8,12 @@
 #include "core/templates/local_vector.h"
 #include "core/templates/oa_hash_map.h"
 
+// This is necessary to fix Windows build: the macro `ECSCLASS` has the following
+// line `friend class ECS`. Since the `Databag` is defined under the `godex`
+// namespace, it's necessary specify `class ECS;` to make sure the compiler
+// is able to properly resolve the `ECS` class.
+class ECS;
+
 namespace godex {
 
 #define DATABAG(m_class)                                                  \
