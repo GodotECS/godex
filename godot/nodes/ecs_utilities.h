@@ -89,6 +89,9 @@ class ScriptECS {
 	static LocalVector<Ref<System>> systems;
 
 public:
+	/// Clear the internal memory before the complete shutdown.
+	static void __static_destructor();
+
 	/// Loads components.
 	static void load_components();
 

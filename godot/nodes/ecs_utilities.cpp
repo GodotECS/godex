@@ -202,6 +202,13 @@ LocalVector<Ref<Component>> ScriptECS::components;
 LocalVector<StringName> ScriptECS::system_names;
 LocalVector<Ref<System>> ScriptECS::systems;
 
+void ScriptECS::__static_destructor() {
+	component_names.reset();
+	components.reset();
+	system_names.reset();
+	systems.reset();
+}
+
 void ScriptECS::load_components() {
 	if (component_loaded) {
 		return;

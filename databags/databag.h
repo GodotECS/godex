@@ -38,6 +38,16 @@ public:                                                                   \
 																		  \
 	ECS_PROPERTY_MAPPER(m_class)                                          \
 	ECS_METHOD_MAPPER()                                                   \
+																		  \
+	static void __static_destructor() {                                   \
+		property_map.reset();                                             \
+		properties.reset();                                               \
+		setters.reset();                                                  \
+		getters.reset();                                                  \
+		methods_map.reset();                                              \
+		methods.reset();                                                  \
+	}                                                                     \
+																		  \
 private:
 
 class Databag : public ECSClass {

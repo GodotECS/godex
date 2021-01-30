@@ -5,15 +5,13 @@
 #include "core/object/message_queue.h"
 #include "ecs.h"
 #include "editor/plugins/node_3d_editor_plugin.h"
-#include "iterators/dynamic_query.h"
-#include "systems/dynamic_system.h"
-
 #include "godot/components/child.h"
 #include "godot/components/disabled.h"
 #include "godot/components/mesh_component.h"
 #include "godot/components/physics/shape_3d_component.h"
 #include "godot/components/transform_component.h"
 #include "godot/databags/godot_engine_databags.h"
+#include "godot/databags/input_databag.h"
 #include "godot/databags/visual_servers_databags.h"
 #include "godot/editor_plugins/components_gizmo_3d.h"
 #include "godot/editor_plugins/editor_world_ecs.h"
@@ -23,6 +21,8 @@
 #include "godot/nodes/entity.h"
 #include "godot/systems/mesh_updater_system.h"
 #include "godot/systems/physics_process_system.h"
+#include "iterators/dynamic_query.h"
+#include "systems/dynamic_system.h"
 
 // TODO improve this workflow once the new pipeline is integrated.
 class REP : public Object {
@@ -100,6 +100,9 @@ void register_godex_types() {
 	// Physics
 	ECS::register_databag<Physics3D>();
 
+	// Input
+	ECS::register_databag<InputDatabag>();
+
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Register engine systems
 	// Engine
 	ECS::register_system(call_physics_process, "CallPhysicsProcess", "Updates the Godot Nodes (2D/3D) transform and fetches the events from the physics engine.");
@@ -118,6 +121,15 @@ void register_godex_types() {
 }
 
 void unregister_godex_types() {
+	// Clear dynamic system static memory.
+	godex::__dynamic_system_info_static_destructor();
+	godex::DynamicSystemInfo::for_each_name = StringName();
+
+	// Clear ScriptECS static memory.
+	ScriptECS::__static_destructor();
+
+	// Clear ECS static memory.
+	ECS::__static_destructor();
 	ECS *ecs = ECS::get_singleton();
 	ECS::__set_singleton(nullptr);
 	memdelete(ecs);
