@@ -6,6 +6,7 @@
 #include "../ecs.h"
 #include "../godot/components/transform_component.h"
 #include "../pipeline/pipeline.h"
+#include "../systems/dynamic_system.h"
 
 class PipelineTestDatabag1 : public godex::Databag {
 	DATABAG(PipelineTestDatabag1)
