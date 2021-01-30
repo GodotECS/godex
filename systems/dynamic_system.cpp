@@ -7,6 +7,13 @@
 // compile time system.
 #include "dynamic_system.gen.h"
 
+void godex::__dynamic_system_info_static_destructor() {
+	for (uint32_t i = 0; i < DYNAMIC_SYSTEMS_MAX; i += 1) {
+		dynamic_info[i].reset();
+	}
+	registered_dynamic_system_count = 0;
+}
+
 godex::DynamicSystemInfo::DynamicSystemInfo() {}
 
 void godex::DynamicSystemInfo::set_system_id(uint32_t p_id) {
@@ -138,6 +145,25 @@ bool godex::DynamicSystemInfo::is_system_dispatcher() const {
 
 EntityID godex::DynamicSystemInfo::get_current_entity_id() const {
 	return query.get_current_entity_id();
+}
+
+void godex::DynamicSystemInfo::reset() {
+	target_script = nullptr;
+	compiled = false;
+	gdscript_function = nullptr;
+	system_id = UINT32_MAX;
+	databag_element_map.reset();
+	storage_element_map.reset();
+	query_element_map.reset();
+	databags.reset();
+	storages.reset();
+	query.reset();
+	access.reset();
+	access_ptr.reset();
+	databag_accessors.reset();
+	storage_accessors.reset();
+	sub_pipeline_execute = nullptr;
+	target_sub_pipeline = nullptr;
 }
 
 StringName godex::DynamicSystemInfo::for_each_name;

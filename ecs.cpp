@@ -11,6 +11,7 @@
 #include "world/world.h"
 
 ECS *ECS::singleton = nullptr;
+LocalVector<func_notify_static_destructor> ECS::notify_static_destructor;
 LocalVector<StringName> ECS::components;
 LocalVector<ComponentInfo> ECS::components_info;
 LocalVector<StringName> ECS::databags;
@@ -35,6 +36,25 @@ void ECS::_bind_methods() {
 	BIND_CONSTANT(NOTIFICATION_ECS_WORLD_UNLOADED)
 	BIND_CONSTANT(NOTIFICATION_ECS_WORDL_READY)
 	BIND_CONSTANT(NOTIFICATION_ECS_ENTITY_CREATED)
+}
+
+void ECS::__static_destructor() {
+	// Call static destructors.
+	for (uint32_t i = 0; i < notify_static_destructor.size(); i += 1) {
+		notify_static_destructor[i]();
+	}
+
+	// Clear the components static data.
+	components.reset();
+	components_info.reset();
+
+	// Clear the databags static data.
+	databags.reset();
+	databags_info.reset();
+
+	// Clear the systems static data.
+	systems.reset();
+	systems_info.reset();
 }
 
 ECS::ECS() :

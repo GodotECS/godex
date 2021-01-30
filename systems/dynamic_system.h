@@ -22,6 +22,7 @@ typedef void (*func_system_execute_pipeline)(World *p_world, Pipeline *p_pipelin
 uint32_t register_dynamic_system();
 func_get_system_exe_info get_func_dynamic_system_exec_info(uint32_t p_dynamic_system_id);
 DynamicSystemInfo *get_dynamic_system_info(uint32_t p_dynamic_system_id);
+void __dynamic_system_info_static_destructor();
 
 /// `DynamicSystemInfo` is a class used to compose a system at runtime.
 /// It's able to execute script systems and sub pipeline systems, in both case
@@ -88,6 +89,8 @@ public:
 	bool is_system_dispatcher() const;
 
 	EntityID get_current_entity_id() const;
+
+	void reset();
 
 public:
 	static StringName for_each_name;

@@ -45,6 +45,8 @@ struct SystemInfo {
 	func_temporary_system_execute temporary_exec = nullptr;
 };
 
+typedef void (*func_notify_static_destructor)();
+
 class ECS : public Object {
 	GDCLASS(ECS, Object)
 
@@ -61,6 +63,7 @@ public:
 
 private:
 	static ECS *singleton;
+
 	static LocalVector<StringName> components;
 	static LocalVector<ComponentInfo> components_info;
 
@@ -70,6 +73,9 @@ private:
 	static LocalVector<StringName> systems;
 	static LocalVector<SystemInfo> systems_info;
 
+	// Used to keep track of types that need static memory destruction.
+	static LocalVector<func_notify_static_destructor> notify_static_destructor;
+
 	// Node used by GDScript.
 	WorldECS *active_world_node = nullptr;
 	World *active_world = nullptr;
@@ -78,6 +84,9 @@ private:
 	bool dispatching = false;
 
 public:
+	/// Clear the internal memory before the complete shutdown.
+	static void __static_destructor();
+
 	// ~~ Components ~~
 	template <class C>
 	static void register_component();
@@ -241,6 +250,9 @@ void ECS::register_component() {
 					&C::create_storage_no_type,
 					nullptr });
 
+	// Store the function pointer that clear the static memory.
+	notify_static_destructor.push_back(&C::__static_destructor);
+
 	// Add a new scripting constant, for fast and easy `component` access.
 	ClassDB::bind_integer_constant(get_class_static(), StringName(), component_name, C::component_id);
 
@@ -270,6 +282,9 @@ void ECS::register_databag() {
 	databags.push_back(databag_name);
 	databags_info.push_back(DatabagInfo{
 			R::create_databag_no_type });
+
+	// Store the function pointer that clear the static memory.
+	notify_static_destructor.push_back(&R::__static_destructor);
 
 	// Add a new scripting constant, for fast and easy `databag` access.
 	ClassDB::bind_integer_constant(get_class_static(), StringName(), databag_name, R::databag_id);
