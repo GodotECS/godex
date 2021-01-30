@@ -22,7 +22,7 @@ struct is_specialization<Ref<Args...>, Ref> : bool_type<true> {};
 #define ECSCLASS(m_class)                             \
 private:                                              \
 	friend class ECS;                                 \
-													  \
+                                                      \
 public:                                               \
 	virtual String get_class() const override {       \
 		return String(#m_class);                      \
@@ -30,7 +30,7 @@ public:                                               \
 	static _FORCE_INLINE_ String get_class_static() { \
 		return String(#m_class);                      \
 	}                                                 \
-													  \
+                                                      \
 private:
 
 enum class StorageType {
@@ -226,7 +226,7 @@ private:                                                                        
 		const int64_t i = property_map.find(p_name);                                                                                   \
 		return i == -1 ? UINT32_MAX : uint32_t(i);                                                                                     \
 	}                                                                                                                                  \
-																																	   \
+                                                                                                                                       \
 public:                                                                                                                                \
 	virtual bool set(const StringName &p_name, const Variant &p_data) override {                                                       \
 		const uint32_t i = get_property_index(p_name);                                                                                 \
@@ -284,6 +284,7 @@ struct MethodHelperBase {
 	virtual int get_argument_count() const {
 		return 0;
 	}
+	virtual ~MethodHelperBase() {}
 
 	virtual void call(void *p_obj, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) {}
 };
@@ -300,6 +301,8 @@ struct MethodHelperR : public MethodHelperBase {
 
 	MethodHelperR(R (C::*p_method)(Args...)) :
 			method(p_method) {}
+
+	virtual ~MethodHelperR() {}
 
 	virtual int get_argument_count() const override {
 		return int(sizeof...(Args));
@@ -378,7 +381,7 @@ struct MethodHelperC : public MethodHelperBase {
 private:                                                                                                                                                                              \
 	static inline LocalVector<StringName> methods_map;                                                                                                                                \
 	static inline LocalVector<godex::MethodHelperBase *> methods;                                                                                                                     \
-																																													  \
+                                                                                                                                                                                      \
 public:                                                                                                                                                                               \
 	/* Adds methods with a return type. */                                                                                                                                            \
 	template <class R, class C, class... Args>                                                                                                                                        \
@@ -387,7 +390,7 @@ public:                                                                         
 		methods_map.push_back(p_method);                                                                                                                                              \
 		methods.push_back(new godex::MethodHelperR<R, C, Args...>(method));                                                                                                           \
 	};                                                                                                                                                                                \
-																																													  \
+                                                                                                                                                                                      \
 	/* Adds methods with a return type and constants. */                                                                                                                              \
 	template <class R, class C, class... Args>                                                                                                                                        \
 	static void add_method(const StringName &p_method, R (C::*method)(Args...) const) {                                                                                               \
@@ -395,7 +398,7 @@ public:                                                                         
 		methods_map.push_back(p_method);                                                                                                                                              \
 		methods.push_back(new godex::MethodHelperRC<R, C, Args...>(method));                                                                                                          \
 	}                                                                                                                                                                                 \
-																																													  \
+                                                                                                                                                                                      \
 	/* Adds methods without a return type. */                                                                                                                                         \
 	template <class C, class... Args>                                                                                                                                                 \
 	static void add_method(const StringName &p_method, void (C::*method)(Args...)) {                                                                                                  \
@@ -403,7 +406,7 @@ public:                                                                         
 		methods_map.push_back(p_method);                                                                                                                                              \
 		methods.push_back(new godex::MethodHelper<C, Args...>(method));                                                                                                               \
 	}                                                                                                                                                                                 \
-																																													  \
+                                                                                                                                                                                      \
 	/* Adds methods without a return type and constants.*/                                                                                                                            \
 	template <class C, class... Args>                                                                                                                                                 \
 	static void add_method(const StringName &p_method, void (C::*method)(Args...) const) {                                                                                            \
@@ -411,7 +414,7 @@ public:                                                                         
 		methods_map.push_back(p_method);                                                                                                                                              \
 		methods.push_back(new godex::MethodHelperC<C, Args...>(method));                                                                                                              \
 	}                                                                                                                                                                                 \
-																																													  \
+                                                                                                                                                                                      \
 	virtual void call(const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) override {                                    \
 		const int64_t _index = methods_map.find(p_method);                                                                                                                            \
 		if (unlikely(_index < 0)) {                                                                                                                                                   \
@@ -433,7 +436,7 @@ public:                                                                         
 		}                                                                                                                                                                             \
 		methods[index]->call(this, p_args, p_argcount, r_ret, r_error);                                                                                                               \
 	}                                                                                                                                                                                 \
-																																													  \
+                                                                                                                                                                                      \
 private:
 
 } // namespace godex
@@ -441,7 +444,7 @@ private:
 #define SINGLETON_MAKER(m_class)                                                                      \
 private:                                                                                              \
 	static inline m_class *singleton = nullptr;                                                       \
-																									  \
+                                                                                                      \
 public:                                                                                               \
 	static m_class *get_singleton() {                                                                 \
 		if (unlikely(singleton == nullptr)) {                                                         \
