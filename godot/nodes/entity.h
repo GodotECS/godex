@@ -135,6 +135,7 @@ public:
 					set_notify_local_transform(true);
 				}
 				break;
+#ifdef TOOLS_ENABLED
 			case Node3D::NOTIFICATION_TRANSFORM_CHANGED:
 				for (
 						OAHashMap<StringName, Ref<ComponentGizmoData>>::Iterator it = entity.gizmo_data.iter();
@@ -145,6 +146,7 @@ public:
 					}
 				}
 				break;
+#endif
 		}
 
 		entity._notification(p_what);
