@@ -882,13 +882,13 @@ void EditorWorldECS::add_script_do() {
 	Ref<Script> script = ResourceLoader::load(script_path);
 	// Check the script path.
 	if (script.is_null()) {
-		add_script_error_lbl->set_text(TTR("The script path [") + script_path + TTR("] doesn't point to a script."));
+		add_script_error_lbl->set_text(String(TTR("The script path [")) + script_path + TTR("] doesn't point to a script."));
 		add_script_error_lbl->show();
 		return;
 	}
 
 	if (script->is_valid() == false) {
-		add_script_error_lbl->set_text(TTR("The script [") + script_path + TTR("] has some errors, fix these."));
+		add_script_error_lbl->set_text(String(TTR("The script [")) + script_path + String(TTR("] has some errors, fix these.")));
 		add_script_error_lbl->show();
 		return;
 	}
@@ -905,7 +905,7 @@ void EditorWorldECS::add_script_do() {
 	}
 
 	if (err != "") {
-		add_script_error_lbl->set_text(TTR("The script [") + script_path + TTR("] validation failed: ") + err);
+		add_script_error_lbl->set_text(String(TTR("The script [")) + script_path + String(TTR("] validation failed: ")) + err);
 		add_script_error_lbl->show();
 		return;
 	}
@@ -920,7 +920,7 @@ void EditorWorldECS::add_script_do() {
 	// Check if this system already exists.
 
 	if (scripts.find(script_path) >= 0) {
-		add_script_error_lbl->set_text(TTR("The") + " " + script->get_instance_base_type() + " [" + script_path + "] " + TTR("is already registered."));
+		add_script_error_lbl->set_text(String(TTR("The")) + " " + String(script->get_instance_base_type()) + " [" + script_path + "] " + TTR("is already registered."));
 		add_script_error_lbl->show();
 		return;
 	}

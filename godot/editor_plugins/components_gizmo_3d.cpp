@@ -223,6 +223,7 @@ void MeshComponentGizmo::EditorMeshData::on_position_update(const Transform &p_n
 void MeshComponentGizmo::init() {}
 
 void MeshComponentGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
+#ifdef TOOLS_ENABLED
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 
 	RID scenario = entity->get_world_3d()->get_scenario();
@@ -268,6 +269,7 @@ void MeshComponentGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 		// Update the material.
 		// TODO
 	}
+#endif
 }
 
 int MeshComponentGizmo::get_handle_count() const {
