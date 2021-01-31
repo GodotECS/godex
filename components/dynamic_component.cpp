@@ -51,11 +51,12 @@ StorageBase *DynamicComponentInfo::create_storage() {
 				case 20:
 					return memnew(DynamicDenseVectorStorage<VariantComponent<20>>(this));
 			}
-		case StorageType::NONE:
+			CRASH_NOW_MSG("Components with more than 20 variables are not suppported. Please open an issue https://github.com/GodotECS/godex/issues if you need to support more.");
+			break;
 		default:
 			CRASH_NOW_MSG("This storage type is not supported. This is not expected!");
-			return nullptr;
 	}
+	return nullptr;
 }
 
 void ZeroVariantComponent::__initialize(DynamicComponentInfo *p_info) {

@@ -78,12 +78,12 @@ uint32_t ECS::get_component_id(StringName p_component_name) {
 }
 
 StringName ECS::get_component_name(uint32_t p_component_id) {
-	ERR_FAIL_INDEX_V_MSG(p_component_id, components.size(), "", "The `component_id` is invalid: " + itos(p_component_id));
+	ERR_FAIL_COND_V_MSG(verify_component_id(p_component_id) == false, StringName(), "The `component_id` is invalid: " + itos(p_component_id));
 	return components[p_component_id];
 }
 
 const LocalVector<PropertyInfo> *ECS::get_component_properties(uint32_t p_component_id) {
-	ERR_FAIL_INDEX_V_MSG(p_component_id, components.size(), nullptr, "The `component_id` is invalid: " + itos(p_component_id));
+	ERR_FAIL_COND_V_MSG(verify_component_id(p_component_id) == false, nullptr, "The `component_id` is invalid: " + itos(p_component_id));
 	if (components_info[p_component_id].dynamic_component_info != nullptr) {
 		return components_info[p_component_id].dynamic_component_info->get_properties();
 	} else {
@@ -131,7 +131,7 @@ uint32_t ECS::get_databag_id(const StringName &p_name) {
 }
 
 StringName ECS::get_databag_name(godex::databag_id p_databag_id) {
-	ERR_FAIL_INDEX_V_MSG(p_databag_id, databags.size(), "", "The `databag_id` is invalid: " + itos(p_databag_id));
+	ERR_FAIL_COND_V_MSG(verify_databag_id(p_databag_id) == false, StringName(), "The `databag_id` is invalid: " + itos(p_databag_id));
 	return databags[p_databag_id];
 }
 
@@ -186,23 +186,23 @@ uint32_t ECS::get_systems_count() {
 }
 
 func_get_system_exe_info ECS::get_func_system_exe_info(godex::system_id p_id) {
-	ERR_FAIL_INDEX_V_MSG(p_id, systems_info.size(), nullptr, "The SystemID: " + itos(p_id) + " doesn't exists.");
+	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, nullptr, "The SystemID: " + itos(p_id) + " doesn't exists.");
 	return systems_info[p_id].exec_info;
 }
 
 void ECS::get_system_exe_info(godex::system_id p_id, SystemExeInfo &r_info) {
-	ERR_FAIL_INDEX_MSG(p_id, systems_info.size(), "The SystemID: " + itos(p_id) + " doesn't exists.");
+	ERR_FAIL_COND_MSG(verify_system_id(p_id) == false, "The SystemID: " + itos(p_id) + " doesn't exists.");
 	ERR_FAIL_COND_MSG(systems_info[p_id].exec_info == nullptr, "The System " + systems[p_id] + " is not a standard `System`.");
 	return systems_info[p_id].exec_info(r_info);
 }
 
 StringName ECS::get_system_name(godex::system_id p_id) {
-	ERR_FAIL_INDEX_V_MSG(p_id, systems_info.size(), "", "The SystemID: " + itos(p_id) + " doesn't exists.");
+	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, StringName(), "The SystemID: " + itos(p_id) + " doesn't exists.");
 	return systems[p_id];
 }
 
 String ECS::get_system_desc(godex::system_id p_id) {
-	ERR_FAIL_INDEX_V_MSG(p_id, systems_info.size(), "", "The SystemID: " + itos(p_id) + " doesn't exists.");
+	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, String(), "The SystemID: " + itos(p_id) + " doesn't exists.");
 	return systems_info[p_id].description;
 }
 
