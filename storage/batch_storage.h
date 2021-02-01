@@ -33,17 +33,6 @@ public:
 		}
 	}
 
-	virtual void insert_dynamic(EntityID p_entity, const Dictionary &p_data) override {
-		T insert_data;
-
-		// Set the custom data if any.
-		for (const Variant *key = p_data.next(); key; key = p_data.next(key)) {
-			insert_data.set(StringName(*key), *p_data.getptr(*key));
-		}
-
-		insert(p_entity, insert_data);
-	}
-
 	virtual bool has(EntityID p_entity) const override {
 		return storage.has(p_entity);
 	}
@@ -96,17 +85,6 @@ public:
 			s[0] = p_data;
 			storage.insert(p_entity, s);
 		}
-	}
-
-	virtual void insert_dynamic(EntityID p_entity, const Dictionary &p_data) override {
-		T insert_data;
-
-		// Set the custom data if any.
-		for (const Variant *key = p_data.next(); key; key = p_data.next(key)) {
-			insert_data.set(StringName(*key), *p_data.getptr(*key));
-		}
-
-		insert(p_entity, insert_data);
 	}
 
 	virtual bool has(EntityID p_entity) const override {

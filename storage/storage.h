@@ -30,6 +30,7 @@ public:
 		return nullptr;
 	}
 
+	/// Immediately removes the `Component` from this index.
 	virtual void remove(EntityID p_index) {
 		CRASH_NOW_MSG("Override this function.");
 	}
@@ -107,6 +108,17 @@ public:
 template <class T>
 class Storage : public StorageBase {
 public:
+	virtual void insert_dynamic(EntityID p_entity, const Dictionary &p_data) override {
+		T insert_data;
+
+		// Set the custom data if any.
+		for (const Variant *key = p_data.next(); key; key = p_data.next(key)) {
+			insert_data.set(StringName(*key), *p_data.getptr(*key));
+		}
+
+		insert(p_entity, insert_data);
+	}
+
 	virtual void insert(EntityID p_entity, const T &p_data) {
 		CRASH_NOW_MSG("Override this function.");
 	}
