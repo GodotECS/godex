@@ -2,8 +2,8 @@
 
 /* Author: AndreaCatania */
 
+#include "../../components/child.h"
 #include "../../components/component.h"
-#include "../components/child.h"
 #include "core/templates/local_vector.h"
 #include "ecs_utilities.h"
 #include "ecs_world.h"

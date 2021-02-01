@@ -1,11 +1,11 @@
 
 #include "./register_types.h"
 
+#include "components/child.h"
 #include "core/config/engine.h"
 #include "core/object/message_queue.h"
 #include "ecs.h"
 #include "editor/plugins/node_3d_editor_plugin.h"
-#include "godot/components/child.h"
 #include "godot/components/disabled.h"
 #include "godot/components/mesh_component.h"
 #include "godot/components/physics/shape_3d_component.h"

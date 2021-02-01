@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../components/component.h"
+#include "component.h"
 
 class Child : public godex::Component {
 	COMPONENT(Child, DenseVectorStorage)
