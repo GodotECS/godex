@@ -37,14 +37,6 @@ public:
 		return storage.has(p_entity);
 	}
 
-	virtual Batch<const godex::Component> get_ptr(EntityID p_entity) const override {
-		return get(p_entity);
-	}
-
-	virtual Batch<godex::Component> get_ptr(EntityID p_entity) override {
-		return get(p_entity);
-	}
-
 	virtual Batch<const T> get(EntityID p_entity) const override {
 		const StaticVector<T, SIZE> &data = storage.get(p_entity);
 		return Batch(data.ptr(), data.size());
@@ -89,14 +81,6 @@ public:
 
 	virtual bool has(EntityID p_entity) const override {
 		return storage.has(p_entity);
-	}
-
-	virtual Batch<const godex::Component> get_ptr(EntityID p_entity) const override {
-		return get(p_entity);
-	}
-
-	virtual Batch<godex::Component> get_ptr(EntityID p_entity) override {
-		return get(p_entity);
 	}
 
 	virtual Batch<const T> get(EntityID p_entity) const override {

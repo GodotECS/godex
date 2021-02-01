@@ -119,6 +119,15 @@ public:
 		insert(p_entity, insert_data);
 	}
 
+	virtual Batch<const godex::Component> get_ptr(EntityID p_entity) const override {
+		return get(p_entity);
+	}
+
+	virtual Batch<godex::Component> get_ptr(EntityID p_entity) override {
+		return get(p_entity);
+	}
+
+public:
 	virtual void insert(EntityID p_entity, const T &p_data) {
 		CRASH_NOW_MSG("Override this function.");
 	}

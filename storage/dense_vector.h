@@ -111,14 +111,6 @@ public:
 		return storage.has(p_entity);
 	}
 
-	virtual Batch<const godex::Component> get_ptr(EntityID p_entity) const override {
-		return &storage.get(p_entity);
-	}
-
-	virtual Batch<godex::Component> get_ptr(EntityID p_entity) override {
-		return &storage.get(p_entity);
-	}
-
 	virtual Batch<const std::remove_const_t<T>> get(EntityID p_entity) const override {
 		return &storage.get(p_entity);
 	}
