@@ -9,6 +9,66 @@ namespace godex {
 class Component;
 }
 
+class ChangeList {
+	LocalVector<EntityID> changed;
+	int iteration_index = -1;
+
+public:
+	void notify_changed(EntityID p_entity) {
+		if (changed.find(p_entity) == -1)
+			changed.push_back(p_entity);
+	}
+
+	void notify_updated(EntityID p_entity) {
+		const int64_t index = changed.find(p_entity);
+		if (index != -1) {
+			if (iteration_index != -1) {
+				// Iteration in progress.
+
+				if (iteration_index >= index) {
+					// The current iteration_index is bigger than the index
+					// to remove: meaning that we already iterated that.
+					// Basing on that, it's possible to perform three copy to
+					// kick the index out, in a way that the remainin non
+					// processed `EntityID` will be processed.
+					// *Note: this mechanism is here to avoid the copy done by
+					//        the element ordered removal.
+
+					// 1. Copy the current index (already processed) on the index to remove.
+					changed[index] = changed[iteration_index];
+					// 2. Copy the last element on the current index.
+					changed[iteration_index] = changed[changed.size() - 1];
+					// 3. Decrese the current index so to process again this index
+					//    since it has a new data now.
+					iteration_index -= 1;
+					// 4. Just resize the array by -1;
+					changed.resize(changed.size() - 1);
+				} else {
+					// This element is not yet fetched, just remove it.
+					changed.remove_unordered(index);
+					iteration_index -= 1;
+				}
+			} else {
+				// No iteration in progress, just remove it.
+				changed.remove_unordered(index);
+			}
+		}
+	}
+
+	template <typename F>
+	void for_each(F func) {
+		for (iteration_index = 0; iteration_index < int(changed.size()); iteration_index += 1) {
+			func(changed[iteration_index]);
+		}
+		iteration_index = UINT32_MAX;
+	}
+
+	void clear() {
+		CRASH_COND_MSG(iteration_index != -1, "It's not possible to clear while iterating.");
+		changed.clear();
+	}
+};
+
 /// Never override this directly. Always override the `Storage`.
 class StorageBase {
 public:
