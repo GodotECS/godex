@@ -8,7 +8,12 @@ class Child : public godex::Component {
 	static void _bind_methods();
 
 public:
+	// The parent `Entity`.
 	EntityID parent;
+	// First child of next level.
+	EntityID first_child;
+	// The next child in this level
+	EntityID next;
 
 	Child();
 	Child(EntityID p_parent);
