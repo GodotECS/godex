@@ -3,10 +3,41 @@
 #include "../components/child.h"
 #include "dense_vector.h"
 
-class Hierarchy : public Storage<Child> {
-	DenseVector<Child> storage;
+class Hierarchy;
+
+class HierarchyStorageBase {
+	friend class Hierarchy;
+
+protected:
+	const Hierarchy *hierarchy = nullptr;
 
 public:
+	virtual void flush_hierarchy_changes() = 0;
+};
+
+class Hierarchy : public Storage<Child> {
+	DenseVector<Child> storage;
+	ChangeList changed;
+	LocalVector<HierarchyStorageBase *> sub_storages;
+
+public:
+	void add_sub_storage(HierarchyStorageBase *p_storage) {
+		CRASH_COND_MSG(p_storage->hierarchy != nullptr, "This hierarchy storage is already added to another `Hierarchy`.");
+		sub_storages.push_back(p_storage);
+		p_storage->hierarchy = this;
+	}
+
+	const ChangeList &get_changed() const {
+		return changed;
+	}
+
+	void flush() {
+		for (uint32_t i = 0; i < sub_storages.size(); i += 1) {
+			sub_storages[i]->flush_hierarchy_changes();
+		}
+		changed.clear();
+	}
+
 	virtual String get_type_name() const override {
 		return "Hierarchy";
 	}
@@ -65,6 +96,8 @@ public:
 			child.first_child = EntityID();
 			child.next = EntityID();
 		}
+
+		changed.notify_changed(p_entity);
 
 		// Update the parent if any.
 		if (child.parent.is_null() == false) {
@@ -188,21 +221,18 @@ template <class T>
 struct LocalGlobal {
 	T local;
 	T global;
-	EntityID parent;
-	bool is_dirty;
+	bool is_root = true;
+	bool global_changed = false;
 };
 
 /// Stores the data
 template <class T>
-class HierarchicalStorage : public Storage<T> {
+class HierarchicalStorage : public Storage<T>, public HierarchyStorageBase {
 	DenseVector<LocalGlobal<T>> internal_storage;
-	ChangeList changed;
+	// List of `Entities` taken mutably, for which we need to flush.
+	ChangeList dirty_list;
 
 public:
-	// TODO make this private.
-	// TODO do I need this????
-	Hierarchy *hierarchy = nullptr;
-
 	virtual String get_type_name() const override {
 		return "HierarchicalStorage[" + String(typeid(T).name()) + "]";
 	}
@@ -222,66 +252,120 @@ public:
 	virtual void insert(EntityID p_entity, const T &p_data) override {
 		LocalGlobal<T> d;
 		d.local = p_data;
-		d.global = p_data;
 		internal_storage.insert(p_entity, d);
+		propagate_change(
+				p_entity,
+				internal_storage.get(p_entity));
 	}
 
 	virtual Batch<const T> get(EntityID p_entity) const override {
 		return &internal_storage.get(p_entity).local;
 	}
 
+	/// This function returns an internal piece of memory that is possible
+	/// to modify. From the outside, it's not possible to detect if the
+	/// variable is modified, so we have to assume that it will.
+	/// Use the const function suppress this logic.
+	/// The data is flushed at the end of each `system`, however you can flush it
+	/// manually via storage, if you need the data immediately back.
 	virtual Batch<T> get(EntityID p_entity) override {
-		return &internal_storage.get(p_entity).local;
-	}
-
-	const T *get_local(EntityID p_entity) const {
-		return &internal_storage.get(p_entity).local;
-	}
-
-	T *get_local(EntityID p_entity) {
-		changed.notify_changed(p_entity);
-		return &internal_storage.get(p_entity).local;
+		dirty_list.notify_changed(p_entity);
+		LocalGlobal<T> &data = internal_storage.get(p_entity);
+		data.global_changed = false;
+		return &data.local;
 	}
 
 	const T *get_global(EntityID p_entity) const {
 		const LocalGlobal<T> &data = internal_storage.get(p_entity);
-		return data.parent.is_null() ? &data.local : &data.global;
+		return data.is_root ? &data.local : &data.global;
 	}
 
+	/// This function returns an internal piece of memory that is possible
+	/// to modify. From the outside, it's not possible to detect if the
+	/// variable is modified, so we have to assume that it will.
+	/// Use the const function suppress this logic.
+	/// The data is flushed at the end of each `system`, however you can flush it
+	/// manually via storage, if you need the data immediately back.
 	T *get_global(EntityID p_entity) {
-		changed.notify_changed(p_entity);
+		dirty_list.notify_changed(p_entity);
 		LocalGlobal<T> &data = internal_storage.get(p_entity);
-		return data.parent.is_null() ? &data.local : &data.global;
+		data.global_changed = true;
+		return data.is_root ? &data.local : &data.global;
 	}
 
-	void update_entity_data(EntityID p_entity) {
-#ifdef DEBUG_ENABLED
-		CRASH_COND_MSG(hierarchy == nullptr, "Hierarchy is never supposed to be nullptr.");
-#endif
-		LocalGlobal<T> &data = internal_storage.get(p_entity);
-
-		if (data.is_dirty == false) {
-			// Nothing to do.
+	void propagate_change(EntityID p_entity) {
+		if (has(p_entity) == false) {
+			dirty_list.notify_updated(p_entity);
 			return;
 		}
 
-		if (data.parent.is_null() || has(data.parent) == false) {
-			// This is root, nothing to do.
-		} else {
-			update_entity_data(data.parent);
-			const T *global_parent_data = get_global(data.parent);
-			T::combine(data.local, *global_parent_data, data.global);
-		}
+		LocalGlobal<T> &data = internal_storage.get(p_entity);
+		data.is_root = true;
 
-		changed.notify_updated(p_entity);
+		propagate_change(p_entity, data);
 	}
 
-	void update_dirty() {
-		// TODO propagate changes.
-		changed.for_each([](EntityID p_entity) {
+	void propagate_change(EntityID p_entity, LocalGlobal<T> &p_data) {
+		if (hierarchy->has(p_entity) == false) {
+			// This is not parented, nothing to do.
+			dirty_list.notify_updated(p_entity);
+			return;
+		}
+		const Child *child = hierarchy->get(p_entity);
+		propagate_change(p_entity, p_data, *child);
+	}
 
+	void propagate_change(EntityID p_entity, LocalGlobal<T> &p_data, const Child &p_child) {
+#ifdef DEBUG_ENABLED
+		CRASH_COND_MSG(hierarchy == nullptr, "Hierarchy is never supposed to be nullptr.");
+#endif
+
+		// Update this global first.
+		if (p_child.parent.is_null() || has(p_child.parent) == false) {
+			// This is root.
+			// Nothing to do.
+		} else {
+			if (p_data.global_changed) {
+				// The global got modified.
+				// Take it non mutable so to not trigger the change list.
+				const T *global_parent_data = const_cast<const HierarchicalStorage<T> *>(this)->get_global(p_child.parent);
+				T::combine_inverse(p_data.global, *global_parent_data, p_data.local);
+			} else {
+				// The local was modified.
+				// Take it non mutable so to not trigger the change list.
+				const T *global_parent_data = const_cast<const HierarchicalStorage<T> *>(this)->get_global(p_child.parent);
+				T::combine(p_data.local, *global_parent_data, p_data.global);
+			}
+			p_data.is_root = false;
+			p_data.global_changed = false;
+		}
+		dirty_list.notify_updated(p_entity);
+
+		// Now propagate the change to the childs.
+		hierarchy->for_each_child(p_child, [&](EntityID p_child_entity, const Child &p_child_data) -> bool {
+			if (has(p_child_entity)) {
+				propagate_change(
+						p_child_entity,
+						internal_storage.get(p_child_entity),
+						p_child_data);
+			}
+			return true;
 		});
+	}
 
-		// TODO Update the dirty data.
+	void flush() {
+		dirty_list.for_each([&](EntityID entity) {
+			propagate_change(entity);
+		});
+#ifdef DEBUG_ENABLED
+		CRASH_COND_MSG(dirty_list.is_empty() == false, "At this point the flush list must be empty.");
+#endif
+	}
+
+	virtual void flush_hierarchy_changes() override {
+		hierarchy->get_changed().for_each([&](EntityID entity) {
+			dirty_list.notify_changed(entity);
+		});
+		flush();
 	}
 };

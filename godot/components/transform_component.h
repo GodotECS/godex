@@ -16,7 +16,8 @@ class TransformComponent : public godex::Component {
 	bool changed = true;
 
 public:
-	TransformComponent();
+	TransformComponent() = default;
+	TransformComponent(const TransformComponent &) = default;
 	TransformComponent(const Transform &p_transform);
 
 	// Transform relative to the parent coordinate system or global if root.
@@ -37,6 +38,13 @@ public:
 			const TransformComponent &p_local,
 			const TransformComponent &p_parent_global,
 			TransformComponent &r_global);
+
+	/// Used by the `HierarchyStorage` to obtain the local data from the current
+	/// global and the parent global.
+	static void combine_inverse(
+			const TransformComponent &p_global,
+			const TransformComponent &p_parent_global,
+			TransformComponent &r_local);
 
 protected:
 	static void _bind_methods();

@@ -97,9 +97,11 @@ TEST_CASE("[Modules][ECS] Test ECS ChangeList.") {
 			count += 1;
 		});
 		CHECK(count == 0);
+		CHECK(changed.is_empty());
 	}
 
 	changed.clear();
+	CHECK(changed.is_empty());
 
 	// Remove the `EntityID` 1 as soon as possible.
 	{
@@ -128,6 +130,7 @@ TEST_CASE("[Modules][ECS] Test ECS ChangeList.") {
 	}
 
 	changed.clear();
+	CHECK(changed.is_empty());
 
 	// Remove the `EntityID` 1, while processing.
 	{
@@ -157,6 +160,7 @@ TEST_CASE("[Modules][ECS] Test ECS ChangeList.") {
 	}
 
 	changed.clear();
+	CHECK(changed.is_empty());
 
 	// Remove the `EntityID` 1, when already processed.
 	{
@@ -186,6 +190,24 @@ TEST_CASE("[Modules][ECS] Test ECS ChangeList.") {
 		CHECK(checked[2]);
 		CHECK(checked[3]);
 		CHECK(checked[4]);
+	}
+
+	changed.clear();
+	CHECK(changed.is_empty());
+
+	// Test self consuming for_each.
+	{
+		changed.notify_changed(4);
+		changed.notify_changed(2);
+		changed.notify_changed(3);
+		changed.notify_changed(1);
+		changed.notify_changed(0);
+
+		changed.for_each([&](EntityID p_entity) {
+			changed.notify_updated(p_entity);
+		});
+
+		CHECK(changed.is_empty());
 	}
 }
 } // namespace godex_tests

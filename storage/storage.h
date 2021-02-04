@@ -31,8 +31,9 @@ public:
 					// Basing on that, it's possible to perform three copy to
 					// kick the index out, in a way that the remainin non
 					// processed `EntityID` will be processed.
-					// *Note: this mechanism is here to avoid the copy done by
-					//        the element ordered removal.
+					// *Note: this mechanism allow to correctly process all the
+					//        entities while avoiding copy the entire vector to
+					//        keep the vector sort.
 
 					// 1. Copy the current index (already processed) on the index to remove.
 					changed[index] = changed[iteration_index];
@@ -43,6 +44,7 @@ public:
 					iteration_index -= 1;
 					// 4. Just resize the array by -1;
 					changed.resize(changed.size() - 1);
+
 				} else {
 					// This element is not yet fetched, just remove it.
 					changed.remove_unordered(index);
@@ -60,7 +62,18 @@ public:
 		for (iteration_index = 0; iteration_index < int(changed.size()); iteration_index += 1) {
 			func(changed[iteration_index]);
 		}
-		iteration_index = UINT32_MAX;
+		iteration_index = -1;
+	}
+
+	template <typename F>
+	void for_each(F func) const {
+		for (uint32_t i = 0; i < changed.size(); i += 1) {
+			func(changed[i]);
+		}
+	}
+
+	bool is_empty() const {
+		return changed.size() == 0;
 	}
 
 	void clear() {

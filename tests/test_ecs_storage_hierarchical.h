@@ -179,10 +179,10 @@ TEST_CASE("[Modules][ECS] Test Hierarchy.") {
 
 TEST_CASE("[Modules][ECS] Test HierarchicalStorage.") {
 	Hierarchy hierarchy;
-	return; // TODO
 
 	HierarchicalStorage<TransformComponent> transform_storage;
-	transform_storage.hierarchy = &hierarchy;
+
+	hierarchy.add_sub_storage(&transform_storage);
 
 	// The hierarchy is as follows:
 	// Entity 0
@@ -197,9 +197,9 @@ TEST_CASE("[Modules][ECS] Test HierarchicalStorage.") {
 	transform_storage.insert(2, TransformComponent(Transform(Basis(), Vector3(1, 0, 0))));
 
 	{
-		const TransformComponent *tc_entity_0 = transform_storage.get_local(0);
-		const TransformComponent *tc_entity_1 = transform_storage.get_local(1);
-		const TransformComponent *tc_entity_2 = transform_storage.get_local(2);
+		const TransformComponent *tc_entity_0 = std::as_const(transform_storage).get(0);
+		const TransformComponent *tc_entity_1 = std::as_const(transform_storage).get(1);
+		const TransformComponent *tc_entity_2 = std::as_const(transform_storage).get(2);
 
 		// Test local world space.
 		CHECK(ABS(tc_entity_0->get_transform().origin[0] - 1.) <= CMP_EPSILON);
@@ -208,9 +208,9 @@ TEST_CASE("[Modules][ECS] Test HierarchicalStorage.") {
 	}
 
 	{
-		const TransformComponent *tc_entity_2 = transform_storage.get_global(2);
-		const TransformComponent *tc_entity_1 = transform_storage.get_global(1);
-		const TransformComponent *tc_entity_0 = transform_storage.get_global(0);
+		const TransformComponent *tc_entity_2 = std::as_const(transform_storage).get_global(2);
+		const TransformComponent *tc_entity_1 = std::as_const(transform_storage).get_global(1);
+		const TransformComponent *tc_entity_0 = std::as_const(transform_storage).get_global(0);
 
 		// Test global world space.
 		CHECK(ABS(tc_entity_0->get_transform().origin[0] - 1.) <= CMP_EPSILON);
@@ -218,21 +218,46 @@ TEST_CASE("[Modules][ECS] Test HierarchicalStorage.") {
 		CHECK(ABS(tc_entity_2->get_transform().origin[0] - 3.) <= CMP_EPSILON);
 	}
 
-	// Test update local transform
+	// Test update local transform bia `get`.
 	{
 		{
 			TransformComponent *tc_entity_0 = transform_storage.get(0);
 			tc_entity_0->set_transform(Transform(Basis(), Vector3(3.0, 0., 0.)));
 		}
 
-		const TransformComponent *tc_entity_2 = transform_storage.get_global(2);
-		const TransformComponent *tc_entity_1 = transform_storage.get_global(1);
-		const TransformComponent *tc_entity_0 = transform_storage.get_global(0);
+		// Flush the above change.
+		transform_storage.flush();
+
+		const TransformComponent *tc_entity_2 = std::as_const(transform_storage).get_global(2);
+		const TransformComponent *tc_entity_1 = std::as_const(transform_storage).get_global(1);
+		const TransformComponent *tc_entity_0 = std::as_const(transform_storage).get_global(0);
 
 		// Test global world space.
 		CHECK(ABS(tc_entity_0->get_transform().origin[0] - 3.) <= CMP_EPSILON);
 		CHECK(ABS(tc_entity_1->get_transform().origin[0] - 4.) <= CMP_EPSILON);
 		CHECK(ABS(tc_entity_2->get_transform().origin[0] - 5.) <= CMP_EPSILON);
+	}
+
+	// Test update global transform bia `get`.
+	{
+		{
+			TransformComponent *tc_entity_2 = transform_storage.get_global(2);
+			tc_entity_2->set_transform(Transform(Basis(), Vector3(7.0, 0., 0.)));
+		}
+
+		// Flush the above change.
+		transform_storage.flush();
+
+		const TransformComponent *tc_entity_2 = std::as_const(transform_storage).get_global(2);
+		const TransformComponent *tc_entity_2_local = std::as_const(transform_storage).get(2);
+		const TransformComponent *tc_entity_1 = std::as_const(transform_storage).get_global(1);
+		const TransformComponent *tc_entity_0 = std::as_const(transform_storage).get_global(0);
+
+		// Test global world space.
+		CHECK(ABS(tc_entity_0->get_transform().origin[0] - 3.) <= CMP_EPSILON);
+		CHECK(ABS(tc_entity_1->get_transform().origin[0] - 4.) <= CMP_EPSILON);
+		CHECK(ABS(tc_entity_2->get_transform().origin[0] - 7.) <= CMP_EPSILON);
+		CHECK(ABS(tc_entity_2_local->get_transform().origin[0] - 3.) <= CMP_EPSILON);
 	}
 
 	// Test change hierarchy
@@ -242,14 +267,17 @@ TEST_CASE("[Modules][ECS] Test HierarchicalStorage.") {
 			hierarchy.insert(2, Child(0)); // Make the `Entity2` parent of `Entity0`.
 		}
 
-		const TransformComponent *tc_entity_2 = transform_storage.get_global(2);
-		const TransformComponent *tc_entity_1 = transform_storage.get_global(1);
-		const TransformComponent *tc_entity_0 = transform_storage.get_global(0);
+		// Flush the above hierarchy change.
+		hierarchy.flush();
+
+		const TransformComponent *tc_entity_2 = std::as_const(transform_storage).get_global(2);
+		const TransformComponent *tc_entity_1 = std::as_const(transform_storage).get_global(1);
+		const TransformComponent *tc_entity_0 = std::as_const(transform_storage).get_global(0);
 
 		// Test global world space.
 		CHECK(ABS(tc_entity_0->get_transform().origin[0] - 3.) <= CMP_EPSILON); // Root
+		CHECK(ABS(tc_entity_2->get_transform().origin[0] - 6.) <= CMP_EPSILON); // Child of `Entity0`.
 		CHECK(ABS(tc_entity_1->get_transform().origin[0] - 1.) <= CMP_EPSILON); // Root
-		CHECK(ABS(tc_entity_2->get_transform().origin[0] - 4.) <= CMP_EPSILON); // Child of `Entity0`.
 	}
 }
 
