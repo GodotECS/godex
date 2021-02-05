@@ -130,6 +130,12 @@ StorageBase *World::get_storage(uint32_t p_storage_id) {
 }
 
 void World::create_storage(uint32_t p_component_id) {
+	if (is_dispatching_in_progress) {
+		// When dispatching is in progress, the storage is already created:
+		// so just skip this.
+		return;
+	}
+
 	// Using crash because this function is not expected to fail.
 	ERR_FAIL_COND_MSG(ECS::verify_component_id(p_component_id) == false, "The component id " + itos(p_component_id) + " is not registered.");
 
@@ -160,7 +166,7 @@ void World::destroy_storage(uint32_t p_component_id) {
 	storages[p_component_id] = nullptr;
 }
 
-void World::add_databag(godex::databag_id p_id) {
+void World::create_databag(godex::databag_id p_id) {
 	ERR_FAIL_COND_MSG(ECS::verify_databag_id(p_id) == false, "The databag is not registered.");
 	if (unlikely(p_id == WorldCommands::get_databag_id() || p_id == World::get_databag_id())) {
 		// Nothing to do.

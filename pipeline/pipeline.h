@@ -23,12 +23,6 @@ class Pipeline {
 	/// cleared at the end of the dispatch.
 	LocalVector<uint32_t> event_generator;
 
-	/// List of component storages that the systems of this pipeline require.
-	/// This is used to make sure the storages are all generated at the
-	/// begining of each process: Create the storage before the dispatching is a
-	/// safe precaution.
-	LocalVector<uint32_t> component_generator;
-
 public:
 	Pipeline();
 

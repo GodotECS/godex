@@ -88,6 +88,7 @@ class World : public godex::Databag {
 	LocalVector<StorageBase *> storages;
 	LocalVector<godex::Databag *> databags;
 	EntityBuilder entity_builder = EntityBuilder(this);
+	bool is_dispatching_in_progress = false;
 
 	static void _bind_methods();
 
@@ -169,9 +170,9 @@ public:
 
 	/// Adds a new databag or does nothing.
 	template <class R>
-	R &add_databag();
+	R &create_databag();
 
-	void add_databag(godex::databag_id p_id);
+	void create_databag(godex::databag_id p_id);
 
 	template <class R>
 	void remove_databag();
@@ -247,12 +248,12 @@ Storage<C> *World::get_storage() {
 }
 
 template <class R>
-R &World::add_databag() {
+R &World::create_databag() {
 	const godex::databag_id id = R::get_databag_id();
 
-	add_databag(id);
+	create_databag(id);
 	// This function is never supposed to fail.
-	CRASH_COND_MSG(databags[id] == nullptr, "The function `add_databag` is not supposed to fail, is this databag registered?");
+	CRASH_COND_MSG(databags[id] == nullptr, "The function `create_databag` is not supposed to fail, is this databag registered?");
 
 	return *static_cast<R *>(databags[id]);
 }

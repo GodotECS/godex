@@ -356,22 +356,6 @@ void WorldECS::active_world() {
 		// Set as active world.
 		ECS::get_singleton()->set_active_world(world, this);
 
-		// Make sure all the databags are loaded.
-		{
-			Set<godex::component_id> databag_ids;
-
-			for (int i = 0; i < pipelines.size(); i += 1) {
-				if (pipelines[i].is_null()) {
-					continue;
-				}
-				pipelines[i]->fetch_used_databags(databag_ids);
-			}
-
-			for (Set<godex::component_id>::Element *e = databag_ids.front(); e != nullptr; e = e->next()) {
-				world->add_databag(e->get());
-			}
-		}
-
 		// Set the pipeline.
 		Ref<PipelineECS> pip = find_pipeline(active_pipeline);
 		if (pip.is_valid()) {

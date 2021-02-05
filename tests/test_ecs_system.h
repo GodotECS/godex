@@ -85,8 +85,8 @@ void test_system_with_databag(TestSystem1Databag *test_res, Query<TransformCompo
 	test_res->a += 10;
 }
 
-void test_system_with_null_databag(TestSystem1Databag *test_res) {
-	CRASH_COND(test_res != nullptr);
+void test_system_check_databag(TestSystem1Databag *test_res) {
+	CHECK(test_res != nullptr);
 }
 
 void test_system_generate_events(Query<TransformComponent> &p_query, Storage<Event1Component> *p_events) {
@@ -333,7 +333,7 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 	main_pipeline.prepare(&world);
 
 	// ~~ Create world ~~
-	world.add_databag<TestSystemSubPipeDatabag>();
+	world.create_databag<TestSystemSubPipeDatabag>();
 	world.get_databag<TestSystemSubPipeDatabag>()->exe_count = 2;
 
 	EntityID entity_1 = world
@@ -370,7 +370,7 @@ TEST_CASE("[Modules][ECS] Test system and databag") {
 
 	World world;
 
-	world.add_databag<TestSystem1Databag>();
+	world.create_databag<TestSystem1Databag>();
 
 	// Test with databag
 	{
@@ -401,9 +401,10 @@ TEST_CASE("[Modules][ECS] Test system and databag") {
 
 		// Create the pipeline.
 		Pipeline pipeline;
-		// Add the system to the pipeline.
-		pipeline.add_system(test_system_with_null_databag);
+		pipeline.add_system(test_system_check_databag);
 		pipeline.build();
+
+		// This make sure to create the `Databag`
 		pipeline.prepare(&world);
 
 		// Dispatch
@@ -411,14 +412,14 @@ TEST_CASE("[Modules][ECS] Test system and databag") {
 			pipeline.dispatch(&world);
 		}
 
-		// Make sure the databag is still nullptr.
-		CHECK(world.get_databag<TestSystem1Databag>() == nullptr);
+		// Make sure the databag is not nullptr.
+		CHECK(world.get_databag<TestSystem1Databag>() != nullptr);
 	}
 }
 
 TEST_CASE("[Modules][ECS] Test system databag fetch with dynamic query.") {
 	World world;
-	world.add_databag<TestSystemSubPipeDatabag>();
+	world.create_databag<TestSystemSubPipeDatabag>();
 	world.get_databag<TestSystemSubPipeDatabag>()->exe_count = 20;
 
 	world
@@ -537,6 +538,15 @@ TEST_CASE("[Modules][ECS] Test create and remove Entity from Systems.") {
 			CHECK(count == 0);
 		}
 	}
+}
+
+TEST_CASE("[Modules][ECS] Test local and global.") {
+	World world;
+
+	// Create the pipeline.
+	Pipeline pipeline;
+	pipeline.build();
+	pipeline.prepare(&world);
 }
 
 TEST_CASE("[Modules][ECS] Test Add/remove from dynamic query.") {
