@@ -77,7 +77,7 @@ void register_godex_types() {
 	}
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Register engine components
-	ECS::register_component<Child>();
+	ECS::register_component<Child>([]() -> StorageBase * { return memnew(Hierarchy); });
 	ECS::register_component<Disabled>();
 	ECS::register_component<MeshComponent>();
 	ECS::register_component<TransformComponent>();

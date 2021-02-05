@@ -3,7 +3,7 @@
 #include "component.h"
 
 class Child : public godex::Component {
-	COMPONENT(Child, DenseVectorStorage)
+	COMPONENT_CUSTOM_STORAGE(Child)
 
 	static void _bind_methods();
 

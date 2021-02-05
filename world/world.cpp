@@ -2,6 +2,7 @@
 #include "world.h"
 
 #include "../ecs.h"
+#include "../storage/hierarchical_storage.h"
 
 EntityBuilder::EntityBuilder(World *p_world) :
 		world(p_world) {
@@ -48,6 +49,8 @@ World::World() {
 
 	databags[WorldCommands::get_databag_id()] = &commands;
 	databags[World::get_databag_id()] = this;
+
+	create_storage<Child>();
 }
 
 EntityID World::create_entity_index() {
@@ -151,6 +154,18 @@ void World::create_storage(uint32_t p_component_id) {
 	}
 
 	storages[p_component_id] = ECS::create_storage(p_component_id);
+
+	// Automatically set the hierarchy, if this is a HierarchicalStorage.
+	HierarchicalStorageBase *hs = dynamic_cast<HierarchicalStorageBase *>(storages[p_component_id]);
+	if (hs) {
+#ifdef DEBUG_ENABLED
+		Hierarchy *hierarchy = dynamic_cast<Hierarchy *>(get_storage<Child>());
+		CRASH_COND_MSG(hierarchy == nullptr, "The `Child` `Component` uses the `Hierarchy` storage, this can't be triggered.");
+#else
+		Hierarchy *hierarchy = static_cast<Hierarchy *>(p_world->get_storage<Child>());
+#endif
+		hs->hierarchy = hierarchy;
+	}
 }
 
 void World::destroy_storage(uint32_t p_component_id) {

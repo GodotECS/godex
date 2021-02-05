@@ -5,8 +5,9 @@
 
 class Hierarchy;
 
-class HierarchyStorageBase {
+class HierarchicalStorageBase {
 	friend class Hierarchy;
+	friend class World;
 
 protected:
 	const Hierarchy *hierarchy = nullptr;
@@ -18,10 +19,10 @@ public:
 class Hierarchy : public Storage<Child> {
 	DenseVector<Child> storage;
 	ChangeList changed;
-	LocalVector<HierarchyStorageBase *> sub_storages;
+	LocalVector<HierarchicalStorageBase *> sub_storages;
 
 public:
-	void add_sub_storage(HierarchyStorageBase *p_storage) {
+	void add_sub_storage(HierarchicalStorageBase *p_storage) {
 		CRASH_COND_MSG(p_storage->hierarchy != nullptr, "This hierarchy storage is already added to another `Hierarchy`.");
 		sub_storages.push_back(p_storage);
 		p_storage->hierarchy = this;
@@ -227,7 +228,7 @@ struct LocalGlobal {
 
 /// Stores the data
 template <class T>
-class HierarchicalStorage : public Storage<T>, public HierarchyStorageBase {
+class HierarchicalStorage : public Storage<T>, public HierarchicalStorageBase {
 	DenseVector<LocalGlobal<T>> internal_storage;
 	// List of `Entities` taken mutably, for which we need to flush.
 	ChangeList dirty_list;
@@ -300,12 +301,12 @@ public:
 		}
 
 		LocalGlobal<T> &data = internal_storage.get(p_entity);
-		data.is_root = true;
-
 		propagate_change(p_entity, data);
 	}
 
 	void propagate_change(EntityID p_entity, LocalGlobal<T> &p_data) {
+		p_data.is_root = true;
+
 		if (hierarchy->has(p_entity) == false) {
 			// This is not parented, nothing to do.
 			dirty_list.notify_updated(p_entity);

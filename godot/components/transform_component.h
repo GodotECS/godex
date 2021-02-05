@@ -6,10 +6,9 @@
 #include "../../components/component.h"
 #include "../../storage/hierarchical_storage.h"
 
-// TODO the changed system, here, is really bad and should
-// be handled via storage.
+// TODO the CHANGED mechanism is really bad, and MUST be handled via storage.
 class TransformComponent : public godex::Component {
-	COMPONENT(TransformComponent, DenseVectorStorage) // TODO change the storage
+	COMPONENT(TransformComponent, HierarchicalStorage)
 
 	Transform transform;
 	// TODO remove and use the storage to know if changed.

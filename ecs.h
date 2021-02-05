@@ -91,6 +91,9 @@ public:
 	template <class C>
 	static void register_component();
 
+	template <class C>
+	static void register_component(StorageBase *(*create_storage)());
+
 	template <class E>
 	static void register_component_event();
 
@@ -237,6 +240,11 @@ private:
 
 template <class C>
 void ECS::register_component() {
+	register_component<C>(C::create_storage_no_type);
+}
+
+template <class C>
+void ECS::register_component(StorageBase *(*create_storage)()) {
 	ERR_FAIL_COND_MSG(C::get_component_id() != UINT32_MAX, "This component is already registered.");
 
 	StringName component_name = C::get_class_static();
@@ -247,7 +255,7 @@ void ECS::register_component() {
 			ComponentInfo{
 					&C::get_properties_static,
 					&C::get_property_default_static,
-					&C::create_storage_no_type,
+					create_storage,
 					nullptr });
 
 	// Store the function pointer that clear the static memory.

@@ -151,7 +151,6 @@ void Pipeline::reset() {
 
 void Pipeline::prepare(World *p_world) {
 	// Crete components and databags storages.
-
 	SystemExeInfo info;
 	for (uint32_t i = 0; i < systems_info.size(); i += 1) {
 		info.clear();
