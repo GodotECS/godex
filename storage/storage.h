@@ -82,6 +82,13 @@ public:
 	}
 };
 
+/// Some stroages support `Entity` nesting, you can get local or global space
+/// data, by specifying one or the other.
+enum class Space {
+	LOCAL,
+	GLOBAL,
+};
+
 /// Never override this directly. Always override the `Storage`.
 class StorageBase {
 public:
@@ -91,14 +98,17 @@ public:
 		CRASH_NOW_MSG("Override this function.");
 		return false;
 	}
+
 	virtual void insert_dynamic(EntityID p_entity, const Dictionary &p_data) {
 		CRASH_NOW_MSG("Override this function.");
 	}
-	virtual Batch<const godex::Component> get_ptr(EntityID p_entity) const {
+
+	virtual Batch<const godex::Component> get_ptr(EntityID p_entity, Space p_mode = Space::LOCAL) const {
 		CRASH_NOW_MSG("Override this function.");
 		return nullptr;
 	}
-	virtual Batch<godex::Component> get_ptr(EntityID p_entity) {
+
+	virtual Batch<godex::Component> get_ptr(EntityID p_entity, Space p_mode = Space::LOCAL) {
 		CRASH_NOW_MSG("Override this function.");
 		return nullptr;
 	}
@@ -192,12 +202,12 @@ public:
 		insert(p_entity, insert_data);
 	}
 
-	virtual Batch<const godex::Component> get_ptr(EntityID p_entity) const override {
-		return get(p_entity);
+	virtual Batch<const godex::Component> get_ptr(EntityID p_entity, Space p_mode = Space::LOCAL) const override {
+		return get(p_entity, p_mode);
 	}
 
-	virtual Batch<godex::Component> get_ptr(EntityID p_entity) override {
-		return get(p_entity);
+	virtual Batch<godex::Component> get_ptr(EntityID p_entity, Space p_mode = Space::LOCAL) override {
+		return get(p_entity, p_mode);
 	}
 
 public:
@@ -206,13 +216,13 @@ public:
 	}
 
 	// TODO remove `std::remove_const_t` if useless, now.
-	virtual Batch<const std::remove_const_t<T>> get(EntityID p_entity) const {
+	virtual Batch<const std::remove_const_t<T>> get(EntityID p_entity, Space p_mode = Space::LOCAL) const {
 		CRASH_NOW_MSG("Override this function.");
 		return Batch<const std::remove_const_t<T>>();
 	}
 
 	// TODO remove `std::remove_const_t` if useless, now.
-	virtual Batch<std::remove_const_t<T>> get(EntityID p_entity) {
+	virtual Batch<std::remove_const_t<T>> get(EntityID p_entity, Space p_mode = Space::LOCAL) {
 		CRASH_NOW_MSG("Override this function.");
 		return Batch<std::remove_const_t<T>>();
 	}

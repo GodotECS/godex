@@ -37,12 +37,12 @@ public:
 		return storage.has(p_entity);
 	}
 
-	virtual Batch<const T> get(EntityID p_entity) const override {
+	virtual Batch<const T> get(EntityID p_entity, Space p_mode = Space::LOCAL) const override {
 		const StaticVector<T, SIZE> &data = storage.get(p_entity);
 		return Batch(data.ptr(), data.size());
 	}
 
-	virtual Batch<T> get(EntityID p_entity) override {
+	virtual Batch<T> get(EntityID p_entity, Space p_mode = Space::LOCAL) override {
 		StaticVector<T, SIZE> &data = storage.get(p_entity);
 		return Batch(data.ptr(), data.size());
 	}
@@ -83,12 +83,12 @@ public:
 		return storage.has(p_entity);
 	}
 
-	virtual Batch<const T> get(EntityID p_entity) const override {
+	virtual Batch<const T> get(EntityID p_entity, Space p_mode = Space::LOCAL) const override {
 		const LocalVector<T> &data = storage.get(p_entity);
 		return Batch(data.ptr(), data.size());
 	}
 
-	virtual Batch<T> get(EntityID p_entity) override {
+	virtual Batch<T> get(EntityID p_entity, Space p_mode = Space::LOCAL) override {
 		LocalVector<T> &data = storage.get(p_entity);
 		return Batch(data.ptr(), data.size());
 	}

@@ -308,6 +308,17 @@ void test_system_transform_add_x(Query<TransformComponent> &p_query) {
 	}
 }
 
+void test_move_root(Query<TransformComponent> &p_query) {
+	while (p_query.is_done() == false) {
+		if (p_query.get_current_entity() == EntityID(0)) {
+			auto [transform] = p_query.get();
+			transform->get_transform_mut().origin.x += 1.0;
+			return;
+		}
+		p_query.next();
+	}
+}
+
 TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 	ECS::register_databag<TestSystemSubPipeDatabag>();
 
@@ -540,13 +551,61 @@ TEST_CASE("[Modules][ECS] Test create and remove Entity from Systems.") {
 	}
 }
 
-TEST_CASE("[Modules][ECS] Test local and global.") {
+TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 	World world;
+
+	// Create a hierarchy like this:
+	// Entity 0
+	//  |- Entity 1
+	//  |   |- Entity 1
+	EntityID entity_0 = world
+								.create_entity()
+								.with(TransformComponent(Transform(Basis(), Vector3(1, 0, 0))));
+
+	EntityID entity_1 = world
+								.create_entity()
+								.with(Child(entity_0))
+								.with(TransformComponent(Transform(Basis(), Vector3(1, 0, 0))));
+
+	EntityID entity_2 = world
+								.create_entity()
+								.with(Child(entity_1))
+								.with(TransformComponent(Transform(Basis(), Vector3(1, 0, 0))));
 
 	// Create the pipeline.
 	Pipeline pipeline;
+	pipeline.add_system(test_move_root);
 	pipeline.build();
 	pipeline.prepare(&world);
+
+	// Check local transform.
+	{
+		const TransformComponent *entity_2_transform = world.get_storage<TransformComponent>()->get(entity_2);
+		CHECK(ABS(entity_2_transform->get_transform().origin.x - 1.0) <= CMP_EPSILON);
+	}
+
+	// Check global transform
+	{
+		const TransformComponent *entity_2_transform = world.get_storage<TransformComponent>()->get(entity_2, Space::GLOBAL);
+		CHECK(ABS(entity_2_transform->get_transform().origin.x - 3.0) <= CMP_EPSILON);
+	}
+
+	pipeline.dispatch(&world);
+
+	// Check local transform after root motion.
+	{
+		const TransformComponent *entity_2_transform = world.get_storage<TransformComponent>()->get(entity_2);
+		CHECK(ABS(entity_2_transform->get_transform().origin.x - 1.0) <= CMP_EPSILON);
+	}
+
+	// Check global transform after root motion.
+	{
+		const TransformComponent *entity_2_transform = world.get_storage<TransformComponent>()->get(entity_2, Space::GLOBAL);
+		CHECK(ABS(entity_2_transform->get_transform().origin.x - 4.0) <= CMP_EPSILON);
+	}
+
+	// Now move `Entity_1` but using `GLOBAL`.
+	// TODO
 }
 
 TEST_CASE("[Modules][ECS] Test Add/remove from dynamic query.") {

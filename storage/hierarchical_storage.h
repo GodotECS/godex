@@ -130,11 +130,11 @@ public:
 		}
 	}
 
-	virtual Batch<const Child> get(EntityID p_entity) const override {
+	virtual Batch<const Child> get(EntityID p_entity, Space p_mode = Space::LOCAL) const override {
 		return &storage.get(p_entity);
 	}
 
-	virtual Batch<Child> get(EntityID p_entity) override {
+	virtual Batch<Child> get(EntityID p_entity, Space p_mode = Space::LOCAL) override {
 		CRASH_NOW_MSG("You can't fetch the parenting as mutable. This storage is special and you have to use `insert` to update the structure.");
 		return nullptr;
 	}
@@ -291,28 +291,9 @@ public:
 				internal_storage.get(p_entity));
 	}
 
-	virtual Batch<const T> get(EntityID p_entity) const override {
-		return &internal_storage.get(p_entity).local;
-	}
-
-	/// This function returns an internal piece of memory that is possible
-	/// to modify. From the outside, it's not possible to detect if the
-	/// variable is modified, so we have to assume that it will.
-	/// Use the const function suppress this logic.
-	/// The data is flushed at the end of each `system`, however you can flush it
-	/// manually via storage, if you need the data immediately back.
-	virtual Batch<T> get(EntityID p_entity) override {
-		LocalGlobal<T> &data = internal_storage.get(p_entity);
-		if (data.has_relationship) {
-			relationshitp_dirty_list.notify_changed(p_entity);
-			data.global_changed = false;
-		}
-		return &data.local;
-	}
-
-	const T *get_global(EntityID p_entity) const {
+	virtual Batch<const T> get(EntityID p_entity, Space p_mode = Space::LOCAL) const override {
 		const LocalGlobal<T> &data = internal_storage.get(p_entity);
-		return data.is_root ? &data.local : &data.global;
+		return p_mode == Space::LOCAL || data.is_root ? &data.local : &data.global;
 	}
 
 	/// This function returns an internal piece of memory that is possible
@@ -321,13 +302,13 @@ public:
 	/// Use the const function suppress this logic.
 	/// The data is flushed at the end of each `system`, however you can flush it
 	/// manually via storage, if you need the data immediately back.
-	T *get_global(EntityID p_entity) {
+	virtual Batch<T> get(EntityID p_entity, Space p_mode = Space::LOCAL) override {
 		LocalGlobal<T> &data = internal_storage.get(p_entity);
 		if (data.has_relationship) {
 			relationshitp_dirty_list.notify_changed(p_entity);
-			data.global_changed = true;
+			data.global_changed = p_mode == Space::GLOBAL;
 		}
-		return data.is_root ? &data.local : &data.global;
+		return p_mode == Space::LOCAL || data.is_root ? &data.local : &data.global;
 	}
 
 	void propagate_change(EntityID p_entity) {
@@ -369,12 +350,12 @@ public:
 			if (p_data.global_changed) {
 				// The global got modified.
 				// Take it non mutable so to not trigger the change list.
-				const T *global_parent_data = const_cast<const HierarchicalStorage<T> *>(this)->get_global(p_child.parent);
+				const T *global_parent_data = const_cast<const HierarchicalStorage<T> *>(this)->get(p_child.parent, Space::GLOBAL);
 				T::combine_inverse(p_data.global, *global_parent_data, p_data.local);
 			} else {
 				// The local was modified.
 				// Take it non mutable so to not trigger the change list.
-				const T *global_parent_data = const_cast<const HierarchicalStorage<T> *>(this)->get_global(p_child.parent);
+				const T *global_parent_data = const_cast<const HierarchicalStorage<T> *>(this)->get(p_child.parent, Space::GLOBAL);
 				T::combine(p_data.local, *global_parent_data, p_data.global);
 			}
 			p_data.is_root = false;
