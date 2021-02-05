@@ -97,17 +97,19 @@ TEST_CASE("[Modules][ECS] Test Hierarchy.") {
 	// Entity 0
 	//  |- Entity 1
 	//  |   |- Entity 5
-	// Entity 2
 	// Entity 4
 	//  |- Entity 6
 	//
+	// `Entity3` is removed, but also `Entity2` disappear, because it doesn't
+	// have active relations.
 	// Now `Entity 4` is also root and has the `Entity 6` as child.
 	hierarchy.insert(6, Child(4));
 	hierarchy.remove(3);
 
+	CHECK(hierarchy_const.has(2) == false); // It's not parented.
+	CHECK(hierarchy_const.has(3) == false); // It's not parented.
 	CHECK(hierarchy_const.get(6)->parent == EntityID(4));
 	CHECK(hierarchy_const.get(4)->parent == EntityID()); // It's Root.
-	CHECK(hierarchy_const.get(2)->parent == EntityID()); // It's Root.
 	CHECK(hierarchy_const.get(5)->parent == EntityID(1));
 	CHECK(hierarchy_const.get(1)->parent == EntityID(0));
 	CHECK(hierarchy_const.get(0)->parent == EntityID()); // It's Root.
@@ -128,7 +130,7 @@ TEST_CASE("[Modules][ECS] Test Hierarchy.") {
 	CHECK(hierarchy_const.get(1)->parent == EntityID(0));
 	CHECK(hierarchy_const.get(0)->parent == EntityID()); // It's Root.
 
-	// Iterate over the root and validate the hierarchy.
+	// Check iteration from out to in (from parent to childs).
 	hierarchy.for_each_child(0, [](EntityID p_entity, const Child &p_child) -> bool {
 		CHECK(p_entity == EntityID(1));
 		return true;
@@ -146,7 +148,7 @@ TEST_CASE("[Modules][ECS] Test Hierarchy.") {
 		return true;
 	});
 
-	// Check inverse for_each.
+	// Check inverse iteration from in to out (from child to parent).
 	{
 		bool visited[] = { false, false, false, false, false, false, false };
 		hierarchy.for_each_parent(5, [&](EntityID p_entity, const Child &p_child) -> bool {
@@ -175,6 +177,30 @@ TEST_CASE("[Modules][ECS] Test Hierarchy.") {
 		CHECK(visited[5] == false);
 		CHECK(visited[6]);
 	}
+
+	// Check unparenting via insert.
+	// Entity 0
+	//  |- Entity 1
+	// Entity 4
+	//  |- Entity 6
+	//
+	hierarchy.insert(2, Child());
+	hierarchy.insert(5, Child());
+
+	CHECK(hierarchy_const.has(2) == false);
+	CHECK(hierarchy_const.has(5) == false);
+	CHECK(hierarchy_const.get(6)->parent == EntityID(4));
+	CHECK(hierarchy_const.get(4)->parent == EntityID()); // It's Root.
+	CHECK(hierarchy_const.get(1)->parent == EntityID(0));
+	CHECK(hierarchy_const.get(0)->parent == EntityID()); // It's Root.
+
+	// Check unparenting via remove.
+	hierarchy.remove(0);
+	hierarchy.remove(4);
+	CHECK(hierarchy_const.has(0) == false);
+	CHECK(hierarchy_const.has(1) == false);
+	CHECK(hierarchy_const.has(4) == false);
+	CHECK(hierarchy_const.has(6) == false);
 }
 
 TEST_CASE("[Modules][ECS] Test HierarchicalStorage.") {
