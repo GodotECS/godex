@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Entity" inherits="Node2D,Node3D" version="4.0">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_component">
+			<return type="void">
+			</return>
+			<argument index="0" name="component_name" type="StringName">
+			</argument>
+			<argument index="1" name="values" type="Dictionary" default="{
+}">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="clone" qualifiers="const">
+			<return type="int">
+			</return>
+			<argument index="0" name="world" type="Object">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_component_value" qualifiers="const">
+			<return type="Variant">
+			</return>
+			<argument index="0" name="component" type="StringName">
+			</argument>
+			<argument index="1" name="property" type="StringName">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_entity_id" qualifiers="const">
+			<return type="int">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="has_component" qualifiers="const">
+			<return type="bool">
+			</return>
+			<argument index="0" name="component_name" type="StringName">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="remove_component">
+			<return type="void">
+			</return>
+			<argument index="0" name="component_name" type="StringName">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="set_component_value">
+			<return type="bool">
+			</return>
+			<argument index="0" name="component" type="StringName">
+			</argument>
+			<argument index="1" name="property" type="StringName">
+			</argument>
+			<argument index="2" name="value" type="Variant">
+			</argument>
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="__component_data" type="Dictionary" setter="__set_components_data" getter="__get_components_data" default="{}">
+		</member>
+	</members>
+	<constants>
+	</constants>
+</class>

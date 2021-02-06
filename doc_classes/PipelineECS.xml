@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="PipelineECS" inherits="Resource" version="4.0">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="insert_system">
+			<return type="void">
+			</return>
+			<argument index="0" name="system_name" type="StringName">
+			</argument>
+			<argument index="1" name="position" type="int" default="-1">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="remove_system">
+			<return type="void">
+			</return>
+			<argument index="0" name="system_name" type="StringName">
+			</argument>
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="pipeline_name" type="StringName" setter="set_pipeline_name" getter="get_pipeline_name" default="@&quot;&quot;">
+		</member>
+		<member name="systems_name" type="Array" setter="set_systems_name" getter="get_systems_name" default="[  ]">
+		</member>
+	</members>
+	<constants>
+	</constants>
+</class>

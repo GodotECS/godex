@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="System" inherits="Resource" version="4.0">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_prepare" qualifiers="virtual">
+			<return type="void">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="get_current_entity_id" qualifiers="const">
+			<return type="int">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="get_system_id" qualifiers="const">
+			<return type="int">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="maybe_component">
+			<return type="void">
+			</return>
+			<argument index="0" name="component_id" type="int">
+			</argument>
+			<argument index="1" name="mutability" type="int" enum="System.Mutability">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="with_component">
+			<return type="void">
+			</return>
+			<argument index="0" name="component_id" type="int">
+			</argument>
+			<argument index="1" name="mutability" type="int" enum="System.Mutability">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="with_databag">
+			<return type="void">
+			</return>
+			<argument index="0" name="databag_id" type="int">
+			</argument>
+			<argument index="1" name="mutability" type="int" enum="System.Mutability">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="with_storage">
+			<return type="void">
+			</return>
+			<argument index="0" name="component_id" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="without_component">
+			<return type="void">
+			</return>
+			<argument index="0" name="component_id" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="IMMUTABLE" value="0" enum="Mutability">
+		</constant>
+		<constant name="MUTABLE" value="1" enum="Mutability">
+		</constant>
+	</constants>
+</class>
