@@ -27,6 +27,7 @@ struct ComponentInfo {
 	Variant (*get_property_default)(StringName p_property_name);
 	StorageBase *(*create_storage)();
 	DynamicComponentInfo *dynamic_component_info = nullptr;
+	bool notify_release_write = false;
 	bool is_event = false;
 };
 
@@ -110,6 +111,7 @@ public:
 	static const LocalVector<PropertyInfo> *get_component_properties(godex::component_id p_component_id);
 	static Variant get_component_property_default(godex::component_id p_component_id, StringName p_property_name);
 	static bool is_component_events(godex::component_id p_component_id);
+	static bool storage_notify_release_write(godex::component_id p_component_id);
 
 	// ~~ Databags ~~
 	template <class C>
@@ -247,6 +249,14 @@ template <class C>
 void ECS::register_component(StorageBase *(*create_storage)()) {
 	ERR_FAIL_COND_MSG(C::get_component_id() != UINT32_MAX, "This component is already registered.");
 
+	bool notify_release_write = false;
+	{
+		// This storage wants to be notified once the write object is released?
+		StorageBase *s = create_storage();
+		notify_release_write = s->notify_release_write();
+		memdelete(s);
+	}
+
 	StringName component_name = C::get_class_static();
 	C::component_id = components.size();
 	C::_bind_methods();
@@ -256,7 +266,9 @@ void ECS::register_component(StorageBase *(*create_storage)()) {
 					&C::get_properties_static,
 					&C::get_property_default_static,
 					create_storage,
-					nullptr });
+					nullptr,
+					notify_release_write,
+					false });
 
 	// Store the function pointer that clear the static memory.
 	notify_static_destructor.push_back(&C::__static_destructor);

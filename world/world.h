@@ -90,10 +90,13 @@ class World : public godex::Databag {
 	EntityBuilder entity_builder = EntityBuilder(this);
 	bool is_dispatching_in_progress = false;
 
+	LocalVector<StorageBase *> sub_flush;
+
 	static void _bind_methods();
 
 public:
 	World();
+	~World();
 
 	/// Creates a new Entity id. You can add the components using the function
 	/// `add_component`.
@@ -234,7 +237,8 @@ bool World::has_component(EntityID p_entity) const {
 template <class C>
 const Storage<const C> *World::get_storage() const {
 	const uint32_t id = C::get_component_id();
-	if (id >= storages.size() || storages[id] == nullptr) {
+
+	if (id >= storages.size()) {
 		return nullptr;
 	}
 
@@ -244,7 +248,12 @@ const Storage<const C> *World::get_storage() const {
 template <class C>
 Storage<C> *World::get_storage() {
 	const uint32_t id = C::get_component_id();
-	return static_cast<Storage<C> *>(get_storage(id));
+
+	if (id >= storages.size()) {
+		return nullptr;
+	}
+
+	return static_cast<Storage<C> *>(storages[id]);
 }
 
 template <class R>

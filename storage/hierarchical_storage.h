@@ -7,7 +7,6 @@ class Hierarchy;
 
 class HierarchicalStorageBase {
 	friend class Hierarchy;
-	friend class World;
 
 protected:
 	const Hierarchy *hierarchy = nullptr;
@@ -32,7 +31,11 @@ public:
 		return changed;
 	}
 
-	void flush() {
+	virtual void on_system_release() override {
+		flush_hierarchy_changes();
+	}
+
+	void flush_hierarchy_changes() {
 		for (uint32_t i = 0; i < sub_storages.size(); i += 1) {
 			sub_storages[i]->flush_hierarchy_changes();
 		}
@@ -270,6 +273,10 @@ public:
 		return "HierarchicalStorage[" + String(typeid(T).name()) + "]";
 	}
 
+	virtual bool notify_release_write() const override {
+		return true;
+	}
+
 	virtual bool has(EntityID p_entity) const override {
 		return internal_storage.has(p_entity);
 	}
@@ -308,7 +315,7 @@ public:
 			relationshitp_dirty_list.notify_changed(p_entity);
 			data.global_changed = p_mode == Space::GLOBAL;
 		}
-		return p_mode == Space::LOCAL || data.is_root ? &data.local : &data.global;
+		return data.is_root || p_mode == Space::LOCAL ? &data.local : &data.global;
 	}
 
 	void propagate_change(EntityID p_entity) {
@@ -376,7 +383,11 @@ public:
 		});
 	}
 
-	void flush() {
+	virtual void on_system_release() override {
+		flush_changes();
+	}
+
+	void flush_changes() {
 		relationshitp_dirty_list.for_each([&](EntityID entity) {
 			propagate_change(entity);
 		});
@@ -389,6 +400,6 @@ public:
 		hierarchy->get_changed().for_each([&](EntityID entity) {
 			relationshitp_dirty_list.notify_changed(entity);
 		});
-		flush();
+		flush_changes();
 	}
 };

@@ -557,7 +557,7 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 	// Create a hierarchy like this:
 	// Entity 0
 	//  |- Entity 1
-	//  |   |- Entity 1
+	//  |   |- Entity 2
 	EntityID entity_0 = world
 								.create_entity()
 								.with(TransformComponent(Transform(Basis(), Vector3(1, 0, 0))));
@@ -605,6 +605,12 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 	}
 
 	// Now move `Entity_1` but using `GLOBAL`.
+	// TODO
+
+	// Now change hierarchy
+	// TODO
+
+	// Now change hierarchy and then move the `Entity`
 	// TODO
 }
 

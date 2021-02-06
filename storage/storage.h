@@ -94,6 +94,11 @@ class StorageBase {
 public:
 	virtual ~StorageBase() {}
 	virtual String get_type_name() const { return "Overload this function `get_type_name()` please."; }
+
+	virtual bool notify_release_write() const {
+		return false;
+	}
+
 	virtual bool has(EntityID p_entity) const {
 		CRASH_NOW_MSG("Override this function.");
 		return false;
@@ -121,6 +126,8 @@ public:
 	virtual void clear() {
 		CRASH_NOW_MSG("Override this function.");
 	}
+
+	virtual void on_system_release() {}
 
 public:
 	// ~~ `DataAccessor` functions.

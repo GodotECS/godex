@@ -53,6 +53,23 @@ World::World() {
 	create_storage<Child>();
 }
 
+World::~World() {
+	for (uint32_t i = 0; i < storages.size(); i += 1) {
+		if (storages[i]) {
+			memdelete(storages[i]);
+		}
+	}
+	for (uint32_t i = 0; i < databags.size(); i += 1) {
+		if (i == World::get_databag_id() || i == WorldCommands::get_databag_id()) {
+			// This is automatic memory.
+			continue;
+		}
+		if (databags[i]) {
+			memdelete(databags[i]);
+		}
+	}
+}
+
 EntityID World::create_entity_index() {
 	return commands.create_entity();
 }
@@ -158,13 +175,9 @@ void World::create_storage(uint32_t p_component_id) {
 	// Automatically set the hierarchy, if this is a HierarchicalStorage.
 	HierarchicalStorageBase *hs = dynamic_cast<HierarchicalStorageBase *>(storages[p_component_id]);
 	if (hs) {
-#ifdef DEBUG_ENABLED
-		Hierarchy *hierarchy = dynamic_cast<Hierarchy *>(get_storage<Child>());
-		CRASH_COND_MSG(hierarchy == nullptr, "The `Child` `Component` uses the `Hierarchy` storage, this can't be triggered.");
-#else
-		Hierarchy *hierarchy = static_cast<Hierarchy *>(p_world->get_storage<Child>());
-#endif
-		hs->hierarchy = hierarchy;
+		// Trust this that `Child` is using the `Hierarchy` storage.
+		Hierarchy *hierarchy = static_cast<Hierarchy *>(get_storage<Child>());
+		hierarchy->add_sub_storage(hs);
 	}
 }
 

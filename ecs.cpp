@@ -105,8 +105,12 @@ Variant ECS::get_component_property_default(uint32_t p_component_id, StringName 
 
 bool ECS::is_component_events(godex::component_id p_component_id) {
 	ERR_FAIL_COND_V_MSG(verify_component_id(p_component_id) == false, false, "The component " + itos(p_component_id) + " is invalid.");
-
 	return components_info[p_component_id].is_event;
+}
+
+bool ECS::storage_notify_release_write(godex::component_id p_component_id) {
+	ERR_FAIL_COND_V_MSG(verify_component_id(p_component_id) == false, false, "The component " + itos(p_component_id) + " is invalid.");
+	return components_info[p_component_id].notify_release_write;
 }
 
 bool ECS::verify_databag_id(godex::databag_id p_id) {
@@ -422,7 +426,9 @@ uint32_t ECS::register_script_component(const StringName &p_name, const LocalVec
 					nullptr,
 					nullptr,
 					nullptr,
-					info });
+					info,
+					false,
+					false });
 
 	// Add a new scripting constant, for fast and easy `component` access.
 	ClassDB::bind_integer_constant(get_class_static(), StringName(), String(p_name).replace(".", "_"), info->component_id);
