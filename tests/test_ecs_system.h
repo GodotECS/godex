@@ -319,6 +319,17 @@ void test_move_root(Query<TransformComponent> &p_query) {
 	}
 }
 
+void test_move_1_global(Query<TransformComponent> &p_query) {
+	while (p_query.is_done() == false) {
+		if (p_query.get_current_entity() == EntityID(1)) {
+			auto [transform] = p_query.get(Space::GLOBAL);
+			transform->get_transform_mut().origin.x = 6.0;
+			return;
+		}
+		p_query.next();
+	}
+}
+
 TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 	ECS::register_databag<TestSystemSubPipeDatabag>();
 
@@ -555,9 +566,9 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 	World world;
 
 	// Create a hierarchy like this:
-	// Entity 0
-	//  |- Entity 1
-	//  |   |- Entity 2
+	// Entity 0           1 Local | 1 Global
+	//  |- Entity 1       1 Local | 2 Global
+	//  |   |- Entity 2   1 Local | 3 Global
 	EntityID entity_0 = world
 								.create_entity()
 								.with(TransformComponent(Transform(Basis(), Vector3(1, 0, 0))));
@@ -572,40 +583,92 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 								.with(Child(entity_1))
 								.with(TransformComponent(Transform(Basis(), Vector3(1, 0, 0))));
 
-	// Create the pipeline.
-	Pipeline pipeline;
-	pipeline.add_system(test_move_root);
-	pipeline.build();
-	pipeline.prepare(&world);
-
-	// Check local transform.
+	// Try move `Entity_0` using `LOCAL`.
 	{
-		const TransformComponent *entity_2_transform = world.get_storage<TransformComponent>()->get(entity_2);
-		CHECK(ABS(entity_2_transform->get_transform().origin.x - 1.0) <= CMP_EPSILON);
-	}
+		// Create the pipeline.
+		Pipeline pipeline;
+		pipeline.add_system(test_move_root);
+		pipeline.build();
+		pipeline.prepare(&world);
 
-	// Check global transform
-	{
-		const TransformComponent *entity_2_transform = world.get_storage<TransformComponent>()->get(entity_2, Space::GLOBAL);
-		CHECK(ABS(entity_2_transform->get_transform().origin.x - 3.0) <= CMP_EPSILON);
-	}
+		// Check local transform.
+		{
+			const TransformComponent *entity_2_transform = world.get_storage<TransformComponent>()->get(entity_2);
+			CHECK(ABS(entity_2_transform->get_transform().origin.x - 1.0) <= CMP_EPSILON);
+		}
 
-	pipeline.dispatch(&world);
+		// Check global transform
+		{
+			const TransformComponent *entity_2_transform = world.get_storage<TransformComponent>()->get(entity_2, Space::GLOBAL);
+			CHECK(ABS(entity_2_transform->get_transform().origin.x - 3.0) <= CMP_EPSILON);
+		}
 
-	// Check local transform after root motion.
-	{
-		const TransformComponent *entity_2_transform = world.get_storage<TransformComponent>()->get(entity_2);
-		CHECK(ABS(entity_2_transform->get_transform().origin.x - 1.0) <= CMP_EPSILON);
-	}
+		pipeline.dispatch(&world);
 
-	// Check global transform after root motion.
-	{
-		const TransformComponent *entity_2_transform = world.get_storage<TransformComponent>()->get(entity_2, Space::GLOBAL);
-		CHECK(ABS(entity_2_transform->get_transform().origin.x - 4.0) <= CMP_EPSILON);
+		// Check local transform after root motion.
+		{
+			const TransformComponent *entity_2_transform = world.get_storage<TransformComponent>()->get(entity_2);
+			CHECK(ABS(entity_2_transform->get_transform().origin.x - 1.0) <= CMP_EPSILON);
+		}
+
+		// Check global transform after root motion.
+		{
+			const TransformComponent *entity_2_transform = world.get_storage<TransformComponent>()->get(entity_2, Space::GLOBAL);
+			CHECK(ABS(entity_2_transform->get_transform().origin.x - 4.0) <= CMP_EPSILON);
+		}
 	}
 
 	// Now move `Entity_1` but using `GLOBAL`.
-	// TODO
+	{
+		// Create the pipeline.
+		Pipeline pipeline;
+		pipeline.add_system(test_move_1_global);
+		pipeline.build();
+		pipeline.prepare(&world);
+
+		// Hierarchy is:
+		// Entity 0           2 Local | 2 Global
+		//  |- Entity 1       1 Local | 3 Global
+		//  |   |- Entity 2   1 Local | 4 Global
+
+		// Check local transform before motion.
+		{
+			const TransformComponent *entity_1_transform = world.get_storage<TransformComponent>()->get(entity_1);
+			CHECK(ABS(entity_1_transform->get_transform().origin.x - 1.0) <= CMP_EPSILON);
+		}
+
+		// Dispatch the pipeline, so to move the `Entity_1` globally.
+		pipeline.dispatch(&world);
+
+		// Hierarchy is:
+		// Entity 0           2 Local | 2 Global
+		//  |- Entity 1       4 Local | 6 Global
+		//  |   |- Entity 2   1 Local | 7 Global
+
+		// `Entity 0` din't move.
+		{
+			const TransformComponent *entity_0_transform = world.get_storage<TransformComponent>()->get(entity_0);
+			CHECK(ABS(entity_0_transform->get_transform().origin.x - 2.0) <= CMP_EPSILON);
+		}
+
+		// `Entity 1` moved globally to 6, so check local and global position:
+		{
+			const TransformComponent *entity_1_transform_l = world.get_storage<TransformComponent>()->get(entity_1);
+			CHECK(ABS(entity_1_transform_l->get_transform().origin.x - 4.0) <= CMP_EPSILON);
+
+			const TransformComponent *entity_1_transform_g = world.get_storage<TransformComponent>()->get(entity_1, Space::GLOBAL);
+			CHECK(ABS(entity_1_transform_g->get_transform().origin.x - 6.0) <= CMP_EPSILON);
+		}
+
+		// `Entity 2` moved cause of the parent motion.
+		{
+			const TransformComponent *entity_2_transform_l = world.get_storage<TransformComponent>()->get(entity_2);
+			CHECK(ABS(entity_2_transform_l->get_transform().origin.x - 1.0) <= CMP_EPSILON);
+
+			const TransformComponent *entity_2_transform_g = world.get_storage<TransformComponent>()->get(entity_2, Space::GLOBAL);
+			CHECK(ABS(entity_2_transform_g->get_transform().origin.x - 7.0) <= CMP_EPSILON);
+		}
+	}
 
 	// Now change hierarchy
 	// TODO
