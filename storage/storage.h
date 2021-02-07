@@ -210,11 +210,13 @@ public:
 	}
 
 	virtual Batch<const godex::Component> get_ptr(EntityID p_entity, Space p_mode = Space::LOCAL) const override {
-		return get(p_entity, p_mode);
+		const Batch<const std::remove_const_t<T>> b = get(p_entity, p_mode);
+		return Batch<const godex::Component>(b.get_data(), b.get_size());
 	}
 
 	virtual Batch<godex::Component> get_ptr(EntityID p_entity, Space p_mode = Space::LOCAL) override {
-		return get(p_entity, p_mode);
+		const Batch<std::remove_const_t<T>> b = get(p_entity, p_mode);
+		return Batch<godex::Component>(b.get_data(), b.get_size());
 	}
 
 public:

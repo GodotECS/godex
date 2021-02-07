@@ -104,7 +104,7 @@ public:
 	}
 
 	virtual void insert(EntityID p_entity, const T &p_data) override {
-		return storage.insert(p_entity, p_data);
+		storage.insert(p_entity, p_data);
 	}
 
 	virtual bool has(EntityID p_entity) const override {

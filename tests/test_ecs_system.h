@@ -759,6 +759,8 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 			CHECK(ABS(entity_1_transform->get_transform().origin.x - 4.0) <= CMP_EPSILON);
 		}
 	}
+
+	// TODO move globally using GDscript.
 }
 
 TEST_CASE("[Modules][ECS] Test Add/remove from dynamic query.") {
