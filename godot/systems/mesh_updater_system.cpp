@@ -80,7 +80,7 @@ void mesh_transform_updater_system(RenderingServerDatabag *rs, Query<const MeshC
 	ERR_FAIL_COND_MSG(rs == nullptr, "The `RenderingServerDatabag` `Databag` is not part of this world. Add it please.");
 
 	while (query.is_done() == false) {
-		auto [mesh, transf] = query.get();
+		auto [mesh, transf] = query.get(Space::GLOBAL);
 
 		// TODO Please make sure to use the `is_changed`.
 		if (mesh->get_instance() != RID() /*&& transf->is_changed()*/) {

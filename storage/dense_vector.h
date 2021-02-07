@@ -104,37 +104,18 @@ public:
 	}
 
 	virtual void insert(EntityID p_entity, const T &p_data) override {
-		return storage.insert(p_entity, p_data);
-	}
-
-	virtual void insert_dynamic(EntityID p_entity, const Dictionary &p_data) override {
-		T insert_data;
-
-		// Set the custom data if any.
-		for (const Variant *key = p_data.next(); key; key = p_data.next(key)) {
-			insert_data.set(StringName(*key), *p_data.getptr(*key));
-		}
-
-		storage.insert(p_entity, insert_data);
+		storage.insert(p_entity, p_data);
 	}
 
 	virtual bool has(EntityID p_entity) const override {
 		return storage.has(p_entity);
 	}
 
-	virtual Batch<const godex::Component> get_ptr(EntityID p_entity) const override {
+	virtual Batch<const std::remove_const_t<T>> get(EntityID p_entity, Space p_mode = Space::LOCAL) const override {
 		return &storage.get(p_entity);
 	}
 
-	virtual Batch<godex::Component> get_ptr(EntityID p_entity) override {
-		return &storage.get(p_entity);
-	}
-
-	virtual Batch<const std::remove_const_t<T>> get(EntityID p_entity) const override {
-		return &storage.get(p_entity);
-	}
-
-	virtual Batch<std::remove_const_t<T>> get(EntityID p_entity) override {
+	virtual Batch<std::remove_const_t<T>> get(EntityID p_entity, Space p_mode = Space::LOCAL) override {
 		return &storage.get(p_entity);
 	}
 

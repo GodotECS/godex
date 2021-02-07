@@ -1,11 +1,11 @@
 
 #include "./register_types.h"
 
+#include "components/child.h"
 #include "core/config/engine.h"
 #include "core/object/message_queue.h"
 #include "ecs.h"
 #include "editor/plugins/node_3d_editor_plugin.h"
-#include "godot/components/child.h"
 #include "godot/components/disabled.h"
 #include "godot/components/mesh_component.h"
 #include "godot/components/physics/shape_3d_component.h"
@@ -77,7 +77,7 @@ void register_godex_types() {
 	}
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Register engine components
-	ECS::register_component<Child>();
+	ECS::register_component<Child>([]() -> StorageBase * { return memnew(Hierarchy); });
 	ECS::register_component<Disabled>();
 	ECS::register_component<MeshComponent>();
 	ECS::register_component<TransformComponent>();

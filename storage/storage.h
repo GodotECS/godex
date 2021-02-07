@@ -9,27 +9,116 @@ namespace godex {
 class Component;
 }
 
+class ChangeList {
+	LocalVector<EntityID> changed;
+	int iteration_index = -1;
+
+public:
+	void notify_changed(EntityID p_entity) {
+		if (changed.find(p_entity) == -1)
+			changed.push_back(p_entity);
+	}
+
+	void notify_updated(EntityID p_entity) {
+		const int64_t index = changed.find(p_entity);
+		if (index != -1) {
+			if (iteration_index != -1) {
+				// Iteration in progress.
+
+				if (iteration_index >= index) {
+					// The current iteration_index is bigger than the index
+					// to remove: meaning that we already iterated that.
+					// Basing on that, it's possible to perform three copy to
+					// kick the index out, in a way that the remainin non
+					// processed `EntityID` will be processed.
+					// *Note: this mechanism allow to correctly process all the
+					//        entities while avoiding copy the entire vector to
+					//        keep the vector sort.
+
+					// 1. Copy the current index (already processed) on the index to remove.
+					changed[index] = changed[iteration_index];
+					// 2. Copy the last element on the current index.
+					changed[iteration_index] = changed[changed.size() - 1];
+					// 3. Decrese the current index so to process again this index
+					//    since it has a new data now.
+					iteration_index -= 1;
+					// 4. Just resize the array by -1;
+					changed.resize(changed.size() - 1);
+
+				} else {
+					// This element is not yet fetched, just remove it.
+					changed.remove_unordered(index);
+					iteration_index -= 1;
+				}
+			} else {
+				// No iteration in progress, just remove it.
+				changed.remove_unordered(index);
+			}
+		}
+	}
+
+	template <typename F>
+	void for_each(F func) {
+		for (iteration_index = 0; iteration_index < int(changed.size()); iteration_index += 1) {
+			func(changed[iteration_index]);
+		}
+		iteration_index = -1;
+	}
+
+	template <typename F>
+	void for_each(F func) const {
+		for (uint32_t i = 0; i < changed.size(); i += 1) {
+			func(changed[i]);
+		}
+	}
+
+	bool is_empty() const {
+		return changed.size() == 0;
+	}
+
+	void clear() {
+		CRASH_COND_MSG(iteration_index != -1, "It's not possible to clear while iterating.");
+		changed.clear();
+	}
+};
+
+/// Some stroages support `Entity` nesting, you can get local or global space
+/// data, by specifying one or the other.
+enum Space {
+	LOCAL,
+	GLOBAL,
+};
+
 /// Never override this directly. Always override the `Storage`.
 class StorageBase {
 public:
 	virtual ~StorageBase() {}
 	virtual String get_type_name() const { return "Overload this function `get_type_name()` please."; }
+
+	virtual bool notify_release_write() const {
+		return false;
+	}
+
 	virtual bool has(EntityID p_entity) const {
 		CRASH_NOW_MSG("Override this function.");
 		return false;
 	}
+
 	virtual void insert_dynamic(EntityID p_entity, const Dictionary &p_data) {
 		CRASH_NOW_MSG("Override this function.");
 	}
-	virtual Batch<const godex::Component> get_ptr(EntityID p_entity) const {
-		CRASH_NOW_MSG("Override this function.");
-		return nullptr;
-	}
-	virtual Batch<godex::Component> get_ptr(EntityID p_entity) {
+
+	virtual Batch<const godex::Component> get_ptr(EntityID p_entity, Space p_mode = Space::LOCAL) const {
 		CRASH_NOW_MSG("Override this function.");
 		return nullptr;
 	}
 
+	virtual Batch<godex::Component> get_ptr(EntityID p_entity, Space p_mode = Space::LOCAL) {
+		CRASH_NOW_MSG("Override this function.");
+		return nullptr;
+	}
+
+	/// Immediately removes the `Component` from this index.
 	virtual void remove(EntityID p_index) {
 		CRASH_NOW_MSG("Override this function.");
 	}
@@ -37,6 +126,8 @@ public:
 	virtual void clear() {
 		CRASH_NOW_MSG("Override this function.");
 	}
+
+	virtual void on_system_release() {}
 
 public:
 	// ~~ `DataAccessor` functions.
@@ -107,18 +198,40 @@ public:
 template <class T>
 class Storage : public StorageBase {
 public:
+	virtual void insert_dynamic(EntityID p_entity, const Dictionary &p_data) override {
+		T insert_data;
+
+		// Set the custom data if any.
+		for (const Variant *key = p_data.next(); key; key = p_data.next(key)) {
+			insert_data.set(StringName(*key), *p_data.getptr(*key));
+		}
+
+		insert(p_entity, insert_data);
+	}
+
+	virtual Batch<const godex::Component> get_ptr(EntityID p_entity, Space p_mode = Space::LOCAL) const override {
+		const Batch<const std::remove_const_t<T>> b = get(p_entity, p_mode);
+		return Batch<const godex::Component>(b.get_data(), b.get_size());
+	}
+
+	virtual Batch<godex::Component> get_ptr(EntityID p_entity, Space p_mode = Space::LOCAL) override {
+		const Batch<std::remove_const_t<T>> b = get(p_entity, p_mode);
+		return Batch<godex::Component>(b.get_data(), b.get_size());
+	}
+
+public:
 	virtual void insert(EntityID p_entity, const T &p_data) {
 		CRASH_NOW_MSG("Override this function.");
 	}
 
 	// TODO remove `std::remove_const_t` if useless, now.
-	virtual Batch<const std::remove_const_t<T>> get(EntityID p_entity) const {
+	virtual Batch<const std::remove_const_t<T>> get(EntityID p_entity, Space p_mode = Space::LOCAL) const {
 		CRASH_NOW_MSG("Override this function.");
 		return Batch<const std::remove_const_t<T>>();
 	}
 
 	// TODO remove `std::remove_const_t` if useless, now.
-	virtual Batch<std::remove_const_t<T>> get(EntityID p_entity) {
+	virtual Batch<std::remove_const_t<T>> get(EntityID p_entity, Space p_mode = Space::LOCAL) {
 		CRASH_NOW_MSG("Override this function.");
 		return Batch<std::remove_const_t<T>>();
 	}

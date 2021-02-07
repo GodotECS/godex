@@ -36,12 +36,12 @@ public:
 	QueryStorage(World *p_world) {}
 
 	bool has_data(EntityID p_entity) const { return true; }
-	std::tuple<Batch<remove_filter_t<Cs>>...> get(EntityID p_id) const { return std::tuple(); }
+	std::tuple<Batch<remove_filter_t<Cs>>...> get(EntityID p_id, Space p_mode) const { return std::tuple(); }
 
 	static void get_components(LocalVector<uint32_t> &r_mutable_components, LocalVector<uint32_t> &r_immutable_components) {}
 };
 
-/// `QueryStorage` `Maybe` filter specialization.
+/// `QueryStorage` `Maybe` mutable filter specialization.
 template <class C, class... Cs>
 class QueryStorage<Maybe<C>, Cs...> : QueryStorage<Cs...> {
 	Storage<C> *storage = nullptr;
@@ -57,23 +57,56 @@ public:
 		return QueryStorage<Cs...>::has_data(p_entity);
 	}
 
-	std::tuple<Batch<C>, Batch<remove_filter_t<Cs>>...> get(EntityID p_id) const {
+	std::tuple<Batch<C>, Batch<remove_filter_t<Cs>>...> get(EntityID p_id, Space p_mode) const {
 		if (likely(storage != nullptr) && storage->has(p_id)) {
-			Batch<C> c = Batch<C>(storage->get_ptr(p_id));
-			return std::tuple_cat(std::tuple<Batch<C>>(c), QueryStorage<Cs...>::get(p_id));
+			return std::tuple_cat(
+					std::tuple<Batch<C>>(storage->get(p_id, p_mode)),
+					QueryStorage<Cs...>::get(p_id, p_mode));
 		} else {
 			// Nothing to fetch, just set nullptr.
-			return std::tuple_cat(std::tuple<Batch<C>>(Batch<C>()), QueryStorage<Cs...>::get(p_id));
+			return std::tuple_cat(
+					std::tuple<Batch<C>>(Batch<C>()),
+					QueryStorage<Cs...>::get(p_id, p_mode));
 		}
 	}
 
 	static void get_components(LocalVector<uint32_t> &r_mutable_components, LocalVector<uint32_t> &r_immutable_components) {
-		if (std::is_const<C>()) {
-			r_immutable_components.push_back(C::get_component_id());
-		} else {
-			r_mutable_components.push_back(C::get_component_id());
-		}
+		r_mutable_components.push_back(C::get_component_id());
+		QueryStorage<Cs...>::get_components(r_mutable_components, r_immutable_components);
+	}
+};
 
+/// `QueryStorage` `Maybe` immutable filter specialization.
+template <class C, class... Cs>
+class QueryStorage<Maybe<const C>, Cs...> : QueryStorage<Cs...> {
+	const Storage<const C> *storage = nullptr;
+
+public:
+	QueryStorage(World *p_world) :
+			QueryStorage<Cs...>(p_world),
+			storage(std::as_const(p_world)->get_storage<const C>()) {
+	}
+
+	bool has_data(EntityID p_entity) const {
+		// The `Maybe` filter never stops the execution.
+		return QueryStorage<Cs...>::has_data(p_entity);
+	}
+
+	std::tuple<Batch<const C>, Batch<remove_filter_t<Cs>>...> get(EntityID p_id, Space p_mode) const {
+		if (likely(storage != nullptr) && storage->has(p_id)) {
+			return std::tuple_cat(
+					std::tuple<Batch<const C>>(storage->get(p_id, p_mode)),
+					QueryStorage<Cs...>::get(p_id, p_mode));
+		} else {
+			// Nothing to fetch, just set nullptr.
+			return std::tuple_cat(
+					std::tuple<Batch<const C>>(Batch<const C>()),
+					QueryStorage<Cs...>::get(p_id, p_mode));
+		}
+	}
+
+	static void get_components(LocalVector<uint32_t> &r_mutable_components, LocalVector<uint32_t> &r_immutable_components) {
+		r_immutable_components.push_back(C::get_component_id());
 		QueryStorage<Cs...>::get_components(r_mutable_components, r_immutable_components);
 	}
 };
@@ -98,9 +131,9 @@ public:
 		return storage->has(p_entity) == false && QueryStorage<Cs...>::has_data(p_entity);
 	}
 
-	std::tuple<Batch<C>, Batch<remove_filter_t<Cs>>...> get(EntityID p_id) const {
+	std::tuple<Batch<C>, Batch<remove_filter_t<Cs>>...> get(EntityID p_id, Space p_mode) const {
 		// Just keep going, the `Without` filter doesn't collect data.
-		return std::tuple_cat(std::tuple<C *>(nullptr), QueryStorage<Cs...>::get(p_id));
+		return std::tuple_cat(std::tuple<C *>(nullptr), QueryStorage<Cs...>::get(p_id, p_mode));
 	}
 
 	static void get_components(LocalVector<uint32_t> &r_mutable_components, LocalVector<uint32_t> &r_immutable_components) {
@@ -131,24 +164,56 @@ public:
 		return storage->has(p_entity) && QueryStorage<Cs...>::has_data(p_entity);
 	}
 
-	std::tuple<Batch<C>, Batch<remove_filter_t<Cs>>...> get(EntityID p_id) const {
+	std::tuple<Batch<C>, Batch<remove_filter_t<Cs>>...> get(EntityID p_id, Space p_mode) const {
 #ifdef DEBUG_ENABLED
 		// This can't happen because `is_done` returns true.
 		CRASH_COND_MSG(storage == nullptr, "The storage" + String(typeid(Storage<C>).name()) + " is null.");
 #endif
 
-		Batch<C> c(storage->get_ptr(p_id));
-
-		return std::tuple_cat(std::tuple<Batch<C>>(c), QueryStorage<Cs...>::get(p_id));
+		return std::tuple_cat(
+				std::tuple<Batch<C>>(storage->get(p_id, p_mode)),
+				QueryStorage<Cs...>::get(p_id, p_mode));
 	}
 
 	static void get_components(LocalVector<uint32_t> &r_mutable_components, LocalVector<uint32_t> &r_immutable_components) {
-		if (std::is_const<C>()) {
-			r_immutable_components.push_back(C::get_component_id());
-		} else {
-			r_mutable_components.push_back(C::get_component_id());
-		}
+		r_mutable_components.push_back(C::get_component_id());
+		QueryStorage<Cs...>::get_components(r_mutable_components, r_immutable_components);
+	}
+};
 
+/// `QueryStorage` const no filter specialization.
+template <class C, class... Cs>
+class QueryStorage<const C, Cs...> : QueryStorage<Cs...> {
+	const Storage<const C> *storage = nullptr;
+
+public:
+	QueryStorage(World *p_world) :
+			QueryStorage<Cs...>(p_world),
+			storage(std::as_const(p_world)->get_storage<const C>()) {
+	}
+
+	bool has_data(EntityID p_entity) const {
+		if (unlikely(storage == nullptr)) {
+			// This is a required field, since there is no storage this can end
+			// immediately.
+			return false;
+		}
+		return storage->has(p_entity) && QueryStorage<Cs...>::has_data(p_entity);
+	}
+
+	std::tuple<Batch<const C>, Batch<remove_filter_t<Cs>>...> get(EntityID p_id, Space p_mode) const {
+#ifdef DEBUG_ENABLED
+		// This can't happen because `is_done` returns true.
+		CRASH_COND_MSG(storage == nullptr, "The storage" + String(typeid(Storage<C>).name()) + " is null.");
+#endif
+
+		return std::tuple_cat(
+				std::tuple<Batch<const C>>(storage->get(p_id, p_mode)),
+				QueryStorage<Cs...>::get(p_id, p_mode));
+	}
+
+	static void get_components(LocalVector<uint32_t> &r_mutable_components, LocalVector<uint32_t> &r_immutable_components) {
+		r_immutable_components.push_back(C::get_component_id());
 		QueryStorage<Cs...>::get_components(r_mutable_components, r_immutable_components);
 	}
 };
@@ -234,9 +299,9 @@ public:
 
 	// TODO The lockup mechanism of this query must be improved to avoid any
 	// useless operation.
-	std::tuple<Batch<remove_filter_t<Cs>>...> get() const {
+	std::tuple<Batch<remove_filter_t<Cs>>...> get(Space p_mode = Space::LOCAL) const {
 		CRASH_COND_MSG(id == UINT32_MAX, "No entities! Please use `is_done` to correctly stop the system execution.");
-		return q.get(id);
+		return q.get(id, p_mode);
 	}
 
 	static void get_components(LocalVector<uint32_t> &r_mutable_components, LocalVector<uint32_t> &r_immutable_components) {

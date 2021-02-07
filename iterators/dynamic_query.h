@@ -18,6 +18,7 @@ class DynamicQuery : public Object {
 
 	bool valid = true;
 	bool can_change = true;
+	Space space = Space::LOCAL;
 	LocalVector<uint32_t> component_ids;
 	LocalVector<bool> mutability;
 	LocalVector<bool> required;
@@ -33,6 +34,9 @@ class DynamicQuery : public Object {
 
 public:
 	DynamicQuery();
+
+	/// Set the fetch mode of this query.
+	void set_space(Space p_space);
 
 	/// Add component.
 	void with_component(uint32_t p_component_id, bool p_mutable = false);

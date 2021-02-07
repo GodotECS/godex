@@ -2,8 +2,8 @@
 
 /* Author: AndreaCatania */
 
+#include "../../components/child.h"
 #include "../../components/component.h"
-#include "../components/child.h"
 #include "core/templates/local_vector.h"
 #include "ecs_utilities.h"
 #include "ecs_world.h"
@@ -79,6 +79,7 @@ struct EntityInternal : public EntityBase {
 	uint32_t clone(Object *p_world) const;
 
 	void on_world_ready();
+	void solve_parenting();
 
 	void create_entity();
 	EntityID _create_entity(World *p_world) const;
@@ -654,8 +655,18 @@ void EntityInternal<C>::on_world_ready() {
 	CRASH_COND(entity_id.is_null());
 #endif
 
+	solve_parenting();
+}
+
+template <class C>
+void EntityInternal<C>::solve_parenting() {
+	if (entity_id.is_null()) {
+		// The `Entity` is not created yet.
+		return;
+	}
+
 	// Fetch the childs
-	if (has_component(ECS::get_component_name(Child::get_component_id()))) {
+	if (components_data.has(ECS::get_component_name(Child::get_component_id()))) {
 		// If this is a child of another `Entity` mark this as
 		// child of that.
 		EntityBase *parent = get_node_entity_base(owner->get_parent());

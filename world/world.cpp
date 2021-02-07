@@ -2,6 +2,7 @@
 #include "world.h"
 
 #include "../ecs.h"
+#include "../storage/hierarchical_storage.h"
 
 EntityBuilder::EntityBuilder(World *p_world) :
 		world(p_world) {
@@ -48,6 +49,25 @@ World::World() {
 
 	databags[WorldCommands::get_databag_id()] = &commands;
 	databags[World::get_databag_id()] = this;
+
+	create_storage<Child>();
+}
+
+World::~World() {
+	for (uint32_t i = 0; i < storages.size(); i += 1) {
+		if (storages[i]) {
+			memdelete(storages[i]);
+		}
+	}
+	for (uint32_t i = 0; i < databags.size(); i += 1) {
+		if (i == World::get_databag_id() || i == WorldCommands::get_databag_id()) {
+			// This is automatic memory.
+			continue;
+		}
+		if (databags[i]) {
+			memdelete(databags[i]);
+		}
+	}
 }
 
 EntityID World::create_entity_index() {
@@ -130,6 +150,12 @@ StorageBase *World::get_storage(uint32_t p_storage_id) {
 }
 
 void World::create_storage(uint32_t p_component_id) {
+	if (is_dispatching_in_progress) {
+		// When dispatching is in progress, the storage is already created:
+		// so just skip this.
+		return;
+	}
+
 	// Using crash because this function is not expected to fail.
 	ERR_FAIL_COND_MSG(ECS::verify_component_id(p_component_id) == false, "The component id " + itos(p_component_id) + " is not registered.");
 
@@ -145,6 +171,14 @@ void World::create_storage(uint32_t p_component_id) {
 	}
 
 	storages[p_component_id] = ECS::create_storage(p_component_id);
+
+	// Automatically set the hierarchy, if this is a HierarchicalStorage.
+	HierarchicalStorageBase *hs = dynamic_cast<HierarchicalStorageBase *>(storages[p_component_id]);
+	if (hs) {
+		// Trust this that `Child` is using the `Hierarchy` storage.
+		Hierarchy *hierarchy = static_cast<Hierarchy *>(get_storage<Child>());
+		hierarchy->add_sub_storage(hs);
+	}
 }
 
 void World::destroy_storage(uint32_t p_component_id) {
@@ -160,7 +194,7 @@ void World::destroy_storage(uint32_t p_component_id) {
 	storages[p_component_id] = nullptr;
 }
 
-void World::add_databag(godex::databag_id p_id) {
+void World::create_databag(godex::databag_id p_id) {
 	ERR_FAIL_COND_MSG(ECS::verify_databag_id(p_id) == false, "The databag is not registered.");
 	if (unlikely(p_id == WorldCommands::get_databag_id() || p_id == World::get_databag_id())) {
 		// Nothing to do.

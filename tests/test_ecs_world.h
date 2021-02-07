@@ -177,7 +177,7 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 		CHECK(world.get_databag(Test1Databag::get_databag_id()) == nullptr);
 
 		// Add the databag
-		world.add_databag<Test1Databag>();
+		world.create_databag<Test1Databag>();
 
 		// Make sure we can retrieve the databag.
 		CHECK(world.get_databag<Test1Databag>() != nullptr);

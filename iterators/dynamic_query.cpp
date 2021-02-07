@@ -6,6 +6,7 @@
 using godex::DynamicQuery;
 
 void DynamicQuery::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_space", "space"), &DynamicQuery::set_space);
 	ClassDB::bind_method(D_METHOD("with_component", "component_id", "mutable"), &DynamicQuery::with_component);
 	ClassDB::bind_method(D_METHOD("maybe_component", "component_id", "mutable"), &DynamicQuery::maybe_component);
 	ClassDB::bind_method(D_METHOD("without_component", "component_id"), &DynamicQuery::without_component);
@@ -21,6 +22,10 @@ void DynamicQuery::_bind_methods() {
 }
 
 DynamicQuery::DynamicQuery() {
+}
+
+void DynamicQuery::set_space(Space p_space) {
+	space = p_space;
 }
 
 void DynamicQuery::with_component(uint32_t p_component_id, bool p_mutable) {
@@ -234,9 +239,25 @@ bool DynamicQuery::has_entity(EntityID p_id) const {
 void DynamicQuery::fetch() {
 	ERR_FAIL_COND_MSG(entity_id == UINT32_MAX, "There is nothing to fetch.");
 
+	// TODO support batch
+
 	for (uint32_t i = 0; i < storages.size(); i += 1) {
 		if (required[i] || storages[i]->has(entity_id)) {
-			accessors[i].__target = static_cast<godex::Component *>(storages[i]->get_ptr(entity_id));
+			if (accessors[i].is_mutable()) {
+				accessors[i].__target = storages[i]->get_ptr(entity_id, space).get_data();
+			} else {
+				// Taken using the **CONST** `get_ptr` function, but casted back
+				// to mutable. The `Accessor` already guards its accessibility
+				// so it's safe do so.
+				// Note: this is used by GDScript, we don't need that this is
+				// const at compile time.
+				// Note: since we have to storage mutable, it's safe cast this
+				// data back to mutable.
+				// Note: `std::as_const` doesn't work here. The compile is
+				// optimizing it? Well, I'm just using `const_cast`.
+				const Batch<const godex::Component> c(const_cast<const StorageBase *>(storages[i])->get_ptr(entity_id, space));
+				accessors[i].__target = const_cast<godex::Component *>(c.get_data());
+			}
 		} else {
 			// This data is not required and is not found.
 			accessors[i].__target = nullptr;

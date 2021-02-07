@@ -26,7 +26,7 @@ TEST_CASE("[Modules][ECS] Test temporary system.") {
 	ECS::register_databag<ExecutionCounter>();
 
 	World world;
-	world.add_databag<ExecutionCounter>();
+	world.create_databag<ExecutionCounter>();
 
 	Pipeline pipeline;
 	pipeline.add_temporary_system(temporary_system_1_test);
@@ -46,7 +46,7 @@ TEST_CASE("[Modules][ECS] Test registered temporary system.") {
 	ECS::register_temporary_system(temporary_system_1_test, "TemporarySystemTest", "");
 
 	World world;
-	world.add_databag<ExecutionCounter>();
+	world.create_databag<ExecutionCounter>();
 
 	Pipeline pipeline;
 	pipeline.add_registered_temporary_system(ECS::get_system_id("TemporarySystemTest"));
@@ -97,7 +97,7 @@ bool temporary_system_4_test(ExecutionCounter *p_counter) {
 
 TEST_CASE("[Modules][ECS] Test temporary system order on removal.") {
 	World world;
-	world.add_databag<ExecutionCounter>();
+	world.create_databag<ExecutionCounter>();
 
 	Pipeline pipeline;
 	pipeline.add_temporary_system(temporary_system_2_test);

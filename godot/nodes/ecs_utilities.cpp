@@ -8,6 +8,7 @@
 #include "core/object/script_language.h"
 
 void System::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_space", "space"), &System::set_space);
 	ClassDB::bind_method(D_METHOD("with_databag", "databag_id", "mutability"), &System::with_databag);
 	ClassDB::bind_method(D_METHOD("with_storage", "component_id"), &System::with_storage);
 	ClassDB::bind_method(D_METHOD("with_component", "component_id", "mutability"), &System::with_component);
@@ -42,6 +43,11 @@ void System::prepare(godex::DynamicSystemInfo *p_info, godex::system_id p_id) {
 	info->build();
 }
 
+void System::__force_set_system_info(godex::DynamicSystemInfo *p_info, godex::system_id p_id) {
+	id = p_id;
+	info = p_info;
+}
+
 System::System() {
 }
 
@@ -49,6 +55,11 @@ System::~System() {
 	if (id != UINT32_MAX) {
 		ECS::set_dynamic_system_target(id, nullptr);
 	}
+}
+
+void System::set_space(Space p_space) {
+	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
+	info->set_space(p_space);
 }
 
 void System::with_databag(uint32_t p_databag_id, Mutability p_mutability) {

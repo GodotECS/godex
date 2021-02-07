@@ -26,6 +26,12 @@ void godex::DynamicSystemInfo::set_target(ScriptInstance *p_target) {
 	target_sub_pipeline = nullptr;
 }
 
+void godex::DynamicSystemInfo::set_space(Space p_space) {
+	CRASH_COND_MSG(compiled, "The query can't be composed, when the system is already been compiled.");
+
+	query.set_space(p_space);
+}
+
 void godex::DynamicSystemInfo::with_databag(uint32_t p_databag_id, bool p_mutable) {
 	CRASH_COND_MSG(compiled, "The query can't be composed, when the system is already been compiled.");
 

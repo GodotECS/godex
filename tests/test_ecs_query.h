@@ -115,6 +115,204 @@ TEST_CASE("[Modules][ECS] Test static query") {
 		CHECK(query.is_done());
 	}
 }
+} // namespace godex_tests
+
+/// Used to trace the query mutability access the storage.
+template <class T>
+class AccessTracerStorage : public Storage<T> {
+	DenseVector<T> storage;
+
+public:
+	uint32_t count_insert = 0;
+	uint32_t count_has = 0;
+	uint32_t count_remove = 0;
+	uint32_t count_get_mut = 0;
+	uint32_t count_get_immut = 0;
+	uint32_t count_clear = 0;
+
+	virtual String get_type_name() const override {
+		return "AccessTranceStorage";
+	}
+
+	virtual void insert(EntityID p_entity, const T &p_data) override {
+		count_insert += 1;
+		storage.insert(p_entity, p_data);
+	}
+
+	virtual bool has(EntityID p_entity) const override {
+		const_cast<AccessTracerStorage<T> *>(this)->count_has += 1;
+		return storage.has(p_entity);
+	}
+
+	virtual Batch<const std::remove_const_t<T>> get(EntityID p_entity, Space p_mode = Space::LOCAL) const override {
+		const_cast<AccessTracerStorage<T> *>(this)->count_get_immut += 1;
+		return &storage.get(p_entity);
+	}
+
+	virtual Batch<std::remove_const_t<T>> get(EntityID p_entity, Space p_mode = Space::LOCAL) override {
+		count_get_mut += 1;
+		return &storage.get(p_entity);
+	}
+
+	virtual void remove(EntityID p_entity) override {
+		count_remove += 1;
+		storage.remove(p_entity);
+	}
+
+	virtual void clear() override {
+		count_clear += 1;
+		storage.clear();
+	}
+};
+
+class TestAccessMutabilityComponent1 : public godex::Component {
+	COMPONENT(TestAccessMutabilityComponent1, AccessTracerStorage)
+};
+
+class TestAccessMutabilityComponent2 : public godex::Component {
+	COMPONENT(TestAccessMutabilityComponent2, AccessTracerStorage)
+};
+
+namespace godex_tests {
+TEST_CASE("[Modules][ECS] Test query mutability.") {
+	ECS::register_component<TestAccessMutabilityComponent1>();
+	ECS::register_component<TestAccessMutabilityComponent2>();
+
+	World world;
+
+	world
+			.create_entity()
+			.with(TestAccessMutabilityComponent1());
+
+	world
+			.create_entity()
+			.with(TestAccessMutabilityComponent2());
+
+	// Make sure the query access to the storage with the correct mutability.
+
+	AccessTracerStorage<TestAccessMutabilityComponent1> *storage1 = static_cast<AccessTracerStorage<TestAccessMutabilityComponent1> *>(world.get_storage<TestAccessMutabilityComponent1>());
+	AccessTracerStorage<TestAccessMutabilityComponent2> *storage2 = static_cast<AccessTracerStorage<TestAccessMutabilityComponent2> *>(world.get_storage<TestAccessMutabilityComponent2>());
+
+	// Just two insert.
+	CHECK(storage1->count_insert == 1);
+	CHECK(storage2->count_insert == 1);
+
+	// Test mutable
+	CHECK(storage1->count_get_mut == 0);
+
+	Query<TestAccessMutabilityComponent1> query_test_mut(&world);
+	query_test_mut.get();
+
+	CHECK(storage1->count_get_mut == 1);
+	CHECK(storage2->count_get_mut == 0);
+
+	Query<Without<TestAccessMutabilityComponent1>, TestAccessMutabilityComponent2> query_test_without_mut(&world);
+	query_test_without_mut.get();
+
+	CHECK(storage1->count_get_mut == 1);
+	CHECK(storage2->count_get_mut == 1);
+
+	Query<Maybe<TestAccessMutabilityComponent1>> query_test_maybe_mut(&world);
+	query_test_maybe_mut.get();
+
+	CHECK(storage1->count_get_mut == 2);
+
+	// Test immutables
+
+	CHECK(storage1->count_get_immut == 0);
+
+	Query<const TestAccessMutabilityComponent1> query_test_immut(&world);
+	query_test_immut.get();
+
+	CHECK(storage1->count_get_mut == 2);
+	CHECK(storage1->count_get_immut == 1);
+	CHECK(storage2->count_get_immut == 0);
+
+	Query<Without<const TestAccessMutabilityComponent1>, const TestAccessMutabilityComponent2> query_test_without_immut(&world);
+	query_test_without_immut.get();
+
+	CHECK(storage1->count_get_mut == 2);
+	CHECK(storage1->count_get_immut == 1);
+	CHECK(storage2->count_get_immut == 1);
+
+	Query<Maybe<const TestAccessMutabilityComponent1>> query_test_maybe_immut(&world);
+	query_test_maybe_immut.get();
+
+	CHECK(storage1->count_get_mut == 2);
+	CHECK(storage1->count_get_immut == 2);
+}
+
+TEST_CASE("[Modules][ECS] Test DynamicQuery fetch mutability.") {
+	World world;
+
+	world
+			.create_entity()
+			.with(TestAccessMutabilityComponent1());
+
+	world
+			.create_entity()
+			.with(TestAccessMutabilityComponent2());
+
+	// Make sure the query access to the storage with the correct mutability.
+
+	AccessTracerStorage<TestAccessMutabilityComponent1> *storage1 = static_cast<AccessTracerStorage<TestAccessMutabilityComponent1> *>(world.get_storage<TestAccessMutabilityComponent1>());
+	AccessTracerStorage<TestAccessMutabilityComponent2> *storage2 = static_cast<AccessTracerStorage<TestAccessMutabilityComponent2> *>(world.get_storage<TestAccessMutabilityComponent2>());
+
+	// Just two insert.
+	CHECK(storage1->count_insert == 1);
+	CHECK(storage2->count_insert == 1);
+
+	// Test mutable
+	CHECK(storage1->count_get_mut == 0);
+
+	godex::DynamicQuery query_test_mut;
+	query_test_mut.with_component(TestAccessMutabilityComponent1::get_component_id(), true);
+	query_test_mut.begin(&world);
+
+	CHECK(storage1->count_get_mut == 1);
+	CHECK(storage2->count_get_mut == 0);
+
+	godex::DynamicQuery query_test_without_mut;
+	query_test_without_mut.without_component(TestAccessMutabilityComponent1::get_component_id());
+	query_test_without_mut.with_component(TestAccessMutabilityComponent2::get_component_id(), true);
+	query_test_without_mut.begin(&world);
+
+	CHECK(storage1->count_get_mut == 1);
+	CHECK(storage2->count_get_mut == 1);
+
+	godex::DynamicQuery query_test_maybe_mut;
+	query_test_maybe_mut.maybe_component(TestAccessMutabilityComponent1::get_component_id(), true);
+	query_test_maybe_mut.begin(&world);
+
+	CHECK(storage1->count_get_mut == 2);
+
+	// Test immutables
+
+	CHECK(storage1->count_get_immut == 0);
+
+	godex::DynamicQuery query_test_immut;
+	query_test_immut.with_component(TestAccessMutabilityComponent1::get_component_id(), false);
+	query_test_immut.begin(&world);
+	CHECK(storage1->count_get_mut == 2);
+	CHECK(storage1->count_get_immut == 1);
+
+	CHECK(storage2->count_get_immut == 0);
+	godex::DynamicQuery query_test_without_immut;
+	query_test_without_immut.without_component(TestAccessMutabilityComponent1::get_component_id());
+	query_test_without_immut.with_component(TestAccessMutabilityComponent2::get_component_id(), false);
+	query_test_without_immut.begin(&world);
+
+	CHECK(storage1->count_get_mut == 2);
+	CHECK(storage1->count_get_immut == 1);
+	CHECK(storage2->count_get_immut == 1);
+
+	godex::DynamicQuery query_test_maybe_immut;
+	query_test_maybe_immut.maybe_component(TestAccessMutabilityComponent1::get_component_id(), false);
+	query_test_maybe_immut.begin(&world);
+
+	CHECK(storage1->count_get_mut == 2);
+	CHECK(storage1->count_get_immut == 2);
+}
 
 TEST_CASE("[Modules][ECS] Test static query check query type fetch.") {
 	World world;

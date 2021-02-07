@@ -33,6 +33,7 @@ public:                                                                       \
 																			  \
 private:
 
+/// Register a component.
 #define COMPONENT(m_class, m_storage_class)                            \
 	ECSCLASS(m_class)                                                  \
 	friend class World;                                                \
@@ -49,6 +50,17 @@ private:                                                               \
 	}                                                                  \
 	COMPONENT_INTERNAL(m_class)
 
+/// Register a component using custom create storage function. The function is
+/// specified on `ECS::register_component<Component>([]() -> StorageBase * { /* Create the storage and return it. */ });`.
+#define COMPONENT_CUSTOM_STORAGE(m_class) \
+	ECSCLASS(m_class)                     \
+	friend class World;                   \
+	friend class Component;               \
+										  \
+private:                                  \
+	COMPONENT_INTERNAL(m_class)
+
+/// Register a component that can store batched data.
 #define COMPONENT_BATCH(m_class, m_storage_class, m_batch)                                    \
 	ECSCLASS(m_class)                                                                         \
 	friend class World;                                                                       \
@@ -57,7 +69,8 @@ private:                                                               \
 private:                                                                                      \
 	/* Storages */                                                                            \
 	static _FORCE_INLINE_ BatchStorage<m_storage_class, m_batch, m_class> *create_storage() { \
-		return new BatchStorage<m_storage_class, m_batch, m_class>;                           \
+		/* mimics `memnew` that can't be used due to compile error with `memnew` macro.*/     \
+		return _post_initialize(new ("") BatchStorage<m_storage_class, m_batch, m_class>);    \
 	}                                                                                         \
 	static _FORCE_INLINE_ StorageBase *create_storage_no_type() {                             \
 		/* Creates a storage but returns a generic component. */                              \
