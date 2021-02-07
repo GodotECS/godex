@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="Entity" inherits="Node2D,Node3D" version="4.0">
 	<brief_description>
+	Scripting API: Please edit XML with descriptions.
 	</brief_description>
 	<description>
 	</description>
