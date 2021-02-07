@@ -744,6 +744,10 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 
 		pipeline.dispatch(&world);
 
+		// Hierarchy is:
+		// Entity 1       4 Local | 4 Global
+		//  |- Entity 2   1 Local | 5 Global
+
 		// Make sure `Entity 0` moved.
 		{
 			const TransformComponent *entity_0_transform_l = world.get_storage<TransformComponent>()->get(entity_0);
@@ -760,7 +764,72 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 		}
 	}
 
-	// TODO move globally using GDscript.
+	// Try move `Entity_2` using a GDScript system.
+	{
+		Ref<System> target_obj;
+		target_obj.instance();
+		{
+			// Create the script.
+			String code;
+			code += "extends System\n";
+			code += "\n";
+			code += "func _for_each(transform_com):\n";
+			code += "	if get_current_entity_id() == 2:\n";
+			code += "		transform_com.transform.origin.x = 10.0\n";
+			code += "\n";
+
+			CHECK(build_and_assign_script(target_obj.ptr(), code));
+		}
+
+		// Build dynamic query.
+		const uint32_t system_id = ECS::register_dynamic_system("TestMoveHierarchySystem.gd");
+		godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
+		dynamic_system_info->set_space(Space::GLOBAL);
+		dynamic_system_info->with_component(TransformComponent::get_component_id(), true);
+		target_obj->__force_set_system_info(dynamic_system_info, system_id);
+		dynamic_system_info->set_target(target_obj->get_script_instance());
+		dynamic_system_info->build();
+
+		// Create the pipeline.
+		Pipeline pipeline;
+		pipeline.add_registered_system(system_id);
+		pipeline.build();
+		pipeline.prepare(&world);
+
+		// Hierarchy is:
+		// Entity 1       4 Local | 4 Global
+		//  |- Entity 2   1 Local | 5 Global
+
+		// Make sure `Entity 2` initial position.
+		{
+			const TransformComponent *entity_2_transform_l = world.get_storage<TransformComponent>()->get(entity_2);
+			CHECK(ABS(entity_2_transform_l->get_transform().origin.x - 1.0) <= CMP_EPSILON);
+
+			const TransformComponent *entity_2_transform_g = world.get_storage<TransformComponent>()->get(entity_2, Space::GLOBAL);
+			CHECK(ABS(entity_2_transform_g->get_transform().origin.x - 5.0) <= CMP_EPSILON);
+		}
+
+		pipeline.dispatch(&world);
+
+		// Hierarchy is:
+		// Entity 1       4 Local | 4 Global
+		//  |- Entity 2   6 Local | 10 Global
+
+		// Make sure `Entity 1` didn't move.
+		{
+			const TransformComponent *entity_1_transform_l = world.get_storage<TransformComponent>()->get(entity_1);
+			CHECK(ABS(entity_1_transform_l->get_transform().origin.x - 4.0) <= CMP_EPSILON);
+		}
+
+		// Make sure `Entity 2` moved.
+		{
+			const TransformComponent *entity_2_transform_l = world.get_storage<TransformComponent>()->get(entity_2);
+			CHECK(ABS(entity_2_transform_l->get_transform().origin.x - 6.0) <= CMP_EPSILON);
+
+			const TransformComponent *entity_2_transform_g = world.get_storage<TransformComponent>()->get(entity_2, Space::GLOBAL);
+			CHECK(ABS(entity_2_transform_g->get_transform().origin.x - 10.0) <= CMP_EPSILON);
+		}
+	}
 }
 
 TEST_CASE("[Modules][ECS] Test Add/remove from dynamic query.") {

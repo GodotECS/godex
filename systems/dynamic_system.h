@@ -75,6 +75,7 @@ public:
 	void set_system_id(uint32_t p_id);
 	void set_target(ScriptInstance *p_target);
 
+	void set_space(Space p_space);
 	void with_databag(uint32_t p_databag_id, bool p_mutable);
 	void with_component(uint32_t p_component_id, bool p_mutable);
 	void maybe_component(uint32_t p_component_id, bool p_mutable);

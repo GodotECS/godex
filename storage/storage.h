@@ -84,7 +84,7 @@ public:
 
 /// Some stroages support `Entity` nesting, you can get local or global space
 /// data, by specifying one or the other.
-enum class Space {
+enum Space {
 	LOCAL,
 	GLOBAL,
 };

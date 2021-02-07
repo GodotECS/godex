@@ -29,10 +29,13 @@ public:
 		MUTABLE
 	};
 
+	void __force_set_system_info(godex::DynamicSystemInfo *p_info, godex::system_id p_id);
+
 public:
 	System();
 	~System();
 
+	void set_space(Space p_space);
 	void with_databag(uint32_t p_databag_id, Mutability p_mutability);
 	void with_storage(uint32_t p_component_id);
 	void with_component(uint32_t p_component_id, Mutability p_mutability);

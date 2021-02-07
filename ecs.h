@@ -309,3 +309,5 @@ void ECS::register_databag() {
 	// Add a new scripting constant, for fast and easy `databag` access.
 	ClassDB::bind_integer_constant(get_class_static(), StringName(), databag_name, R::databag_id);
 }
+
+VARIANT_ENUM_CAST(Space);
