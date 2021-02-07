@@ -46,6 +46,10 @@ public:
 		return "Hierarchy";
 	}
 
+	virtual bool notify_release_write() const override {
+		return true;
+	}
+
 	virtual bool has(EntityID p_entity) const override {
 		return storage.has(p_entity);
 	}
