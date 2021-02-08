@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="ECS" inherits="Object" version="4.0">
 	<brief_description>
-		Scripting API: Please edit XML with descriptions.
+		Singleton to access Godex utilities.
 	</brief_description>
 	<description>
 	</description>
