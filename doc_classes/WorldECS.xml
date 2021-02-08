@@ -18,6 +18,11 @@
 			<argument index="2" name="arg2" type="Dictionary">
 			</argument>
 			<description>
+				Add a component to an `Entity` of this world.
+				```gdscript
+				func _ready():
+					add_component(ECS.TransformComponent, 0)
+				```
 			</description>
 		</method>
 		<method name="add_component_by_name">
@@ -30,6 +35,11 @@
 			<argument index="2" name="arg2" type="Dictionary">
 			</argument>
 			<description>
+				Add a component to an `Entity` of this world, by name.
+				```gdscript
+				func _ready():
+					add_component("TransformComponent", 0)
+				```
 			</description>
 		</method>
 		<method name="add_pipeline">
