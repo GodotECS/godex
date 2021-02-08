@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="WorldECS" inherits="Node" version="4.0">
+	<brief_description>
+		Scripting API: Please edit XML with descriptions.
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_component">
+			<return type="void">
+			</return>
+			<argument index="0" name="component_id" type="int">
+			</argument>
+			<argument index="1" name="data" type="int">
+			</argument>
+			<argument index="2" name="arg2" type="Dictionary">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="add_component_by_name">
+			<return type="void">
+			</return>
+			<argument index="0" name="component_name" type="int">
+			</argument>
+			<argument index="1" name="data" type="StringName">
+			</argument>
+			<argument index="2" name="arg2" type="Dictionary">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="add_pipeline">
+			<return type="void">
+			</return>
+			<argument index="0" name="pipeline" type="PipelineECS">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="create_entity">
+			<return type="int">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="create_entity_from_prefab">
+			<return type="int">
+			</return>
+			<argument index="0" name="entity_node" type="Object">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="destroy_entity">
+			<return type="void">
+			</return>
+			<argument index="0" name="entity_id" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_databag">
+			<return type="Object">
+			</return>
+			<argument index="0" name="databag_name" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_databag_by_name">
+			<return type="Object">
+			</return>
+			<argument index="0" name="databag_name" type="StringName">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_entity_component">
+			<return type="Object">
+			</return>
+			<argument index="0" name="entity_id" type="int">
+			</argument>
+			<argument index="1" name="component_id" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_entity_component_by_name">
+			<return type="Object">
+			</return>
+			<argument index="0" name="entity_id" type="int">
+			</argument>
+			<argument index="1" name="component_name" type="StringName">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="has_entity_component">
+			<return type="bool">
+			</return>
+			<argument index="0" name="entity_id" type="int">
+			</argument>
+			<argument index="1" name="component_id" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="has_entity_component_by_name">
+			<return type="bool">
+			</return>
+			<argument index="0" name="entity_id" type="int">
+			</argument>
+			<argument index="1" name="component_name" type="StringName">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="remove_component">
+			<return type="void">
+			</return>
+			<argument index="0" name="component_id" type="int">
+			</argument>
+			<argument index="1" name="data" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="remove_component_by_name">
+			<return type="void">
+			</return>
+			<argument index="0" name="component_name" type="int">
+			</argument>
+			<argument index="1" name="data" type="StringName">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="remove_pipeline">
+			<return type="void">
+			</return>
+			<argument index="0" name="pipeline" type="PipelineECS">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="set_system_dispatchers_pipeline">
+			<return type="void">
+			</return>
+			<argument index="0" name="arg0" type="StringName">
+			</argument>
+			<argument index="1" name="arg1" type="StringName">
+			</argument>
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="active_pipeline" type="StringName" setter="set_active_pipeline" getter="get_active_pipeline" default="@&quot;&quot;">
+		</member>
+		<member name="system_dispatchers_map" type="Dictionary" setter="set_system_dispatchers_map" getter="get_system_dispatchers_map" default="{}">
+		</member>
+	</members>
+	<constants>
+	</constants>
+</class>

@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DynamicQuery" inherits="Object" version="4.0">
+	<brief_description>
+		Scripting API: Please edit XML with descriptions.
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="begin">
+			<return type="void">
+			</return>
+			<argument index="0" name="world" type="Object">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="build">
+			<return type="bool">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="end">
+			<return type="void">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="get_component">
+			<return type="Object">
+			</return>
+			<argument index="0" name="index" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_current_entity_id" qualifiers="const">
+			<return type="int">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="is_done" qualifiers="const">
+			<return type="bool">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="is_valid" qualifiers="const">
+			<return type="bool">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="maybe_component">
+			<return type="void">
+			</return>
+			<argument index="0" name="component_id" type="int">
+			</argument>
+			<argument index="1" name="mutable" type="bool">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="next">
+			<return type="void">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="reset">
+			<return type="void">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="with_component">
+			<return type="void">
+			</return>
+			<argument index="0" name="component_id" type="int">
+			</argument>
+			<argument index="1" name="mutable" type="bool">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="without_component">
+			<return type="void">
+			</return>
+			<argument index="0" name="component_id" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+	</constants>
+</class>

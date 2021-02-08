@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ECS" inherits="Object" version="4.0">
+	<brief_description>
+		Scripting API: Please edit XML with descriptions.
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_active_world">
+			<return type="Node">
+			</return>
+			<description>
+			</description>
+		</method>
+		<method name="get_component_id" qualifiers="const">
+			<return type="int">
+			</return>
+			<argument index="0" name="name" type="StringName">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_databag_id" qualifiers="const">
+			<return type="int">
+			</return>
+			<argument index="0" name="name" type="StringName">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="get_system_id" qualifiers="const">
+			<return type="int">
+			</return>
+			<argument index="0" name="name" type="StringName">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="verify_component_id" qualifiers="const">
+			<return type="bool">
+			</return>
+			<argument index="0" name="name" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="verify_databag_id" qualifiers="const">
+			<return type="bool">
+			</return>
+			<argument index="0" name="name" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+		<method name="verify_system_id" qualifiers="const">
+			<return type="bool">
+			</return>
+			<argument index="0" name="name" type="int">
+			</argument>
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="NOTIFICATION_ECS_WORLD_LOADED" value="-1">
+		</constant>
+		<constant name="NOTIFICATION_ECS_WORLD_PRE_UNLOAD" value="-2">
+		</constant>
+		<constant name="NOTIFICATION_ECS_WORLD_UNLOADED" value="-3">
+		</constant>
+		<constant name="NOTIFICATION_ECS_WORDL_READY" value="-4">
+		</constant>
+		<constant name="NOTIFICATION_ECS_ENTITY_CREATED" value="-5">
+		</constant>
+		<constant name="Child" value="0">
+		</constant>
+		<constant name="Disabled" value="1">
+		</constant>
+		<constant name="MeshComponent" value="2">
+		</constant>
+		<constant name="TransformComponent" value="3">
+		</constant>
+		<constant name="Shape3DComponent" value="4">
+		</constant>
+		<constant name="WorldCommands" value="0">
+		</constant>
+		<constant name="World" value="1">
+		</constant>
+		<constant name="FrameTime" value="2">
+		</constant>
+		<constant name="OsDatabag" value="3">
+		</constant>
+		<constant name="EngineDatabag" value="4">
+		</constant>
+		<constant name="MessageQueueDatabag" value="5">
+		</constant>
+		<constant name="RenderingServerDatabag" value="6">
+		</constant>
+		<constant name="RenderingScenarioDatabag" value="7">
+		</constant>
+		<constant name="Physics3D" value="8">
+		</constant>
+		<constant name="InputDatabag" value="9">
+		</constant>
+	</constants>
+</class>
