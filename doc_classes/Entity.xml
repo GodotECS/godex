@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="Entity" inherits="Node2D,Node3D" version="4.0">
 	<brief_description>
-	Scripting API: Please edit XML with descriptions.
+		This node can be used to create an `Entity` via editor. Under the hood an `Entity` is just an ID.
 	</brief_description>
 	<description>
 	</description>
@@ -13,8 +13,7 @@
 			</return>
 			<argument index="0" name="component_name" type="StringName">
 			</argument>
-			<argument index="1" name="values" type="Dictionary" default="{
-}">
+			<argument index="1" name="values" type="Dictionary" default="{}">
 			</argument>
 			<description>
 			</description>
