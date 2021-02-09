@@ -130,16 +130,21 @@ public:
 	virtual void on_system_release() {}
 
 public:
-	// ~~ `DataAccessor` functions.
+	/// This method is used by the `DataAccessor` to expose the `Storage` to
+	/// GDScript.
 	bool set(const StringName &p_name, const Variant &p_value) {
 		ERR_FAIL_V_MSG(false, "The storage `set` function does nothing.");
 	}
 
+	/// This method is used by the `DataAccessor` to expose the `Storage` to
+	/// GDScript.
 	bool get(const StringName &p_name, Variant &r_value) const {
 		ERR_FAIL_V_MSG(false, "The storage `get` function does nothing.");
 	}
 
-	void call(const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) {
+	/// This method is used by the `DataAccessor` to expose the `Storage` to
+	/// GDScript.
+	void da_call(const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) {
 		if (String(p_method) == "insert") { // TODO make this a static StringName to improve the check.
 			// Check argument count.
 			if (unlikely((p_argcount < 1) || (p_argcount > 2))) {

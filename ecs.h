@@ -20,6 +20,10 @@ class Databag;
 class DynamicSystemInfo;
 } // namespace godex
 
+struct DataAccessorFuncs {
+	void (*call)(void *p_self, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error);
+};
+
 /// These functions are implemented by the `COMPONENT` macro and assigned during
 /// component registration.
 struct ComponentInfo {
@@ -29,12 +33,16 @@ struct ComponentInfo {
 	DynamicComponentInfo *dynamic_component_info = nullptr;
 	bool notify_release_write = false;
 	bool is_event = false;
+
+	DataAccessorFuncs funcs;
 };
 
 /// These functions are implemented by the `DATABAG` macro and assigned during
 /// component registration.
 struct DatabagInfo {
 	godex::Databag *(*create_databag)();
+
+	DataAccessorFuncs accessor_funcs;
 };
 
 struct SystemInfo {
@@ -123,6 +131,8 @@ public:
 	static uint32_t get_databag_count();
 	static godex::databag_id get_databag_id(const StringName &p_name);
 	static StringName get_databag_name(godex::databag_id p_databag_id);
+
+	static void unsafe_databag_call(godex::databag_id p_databag_id, void *p_databag, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error);
 
 	// ~~ Systems ~~
 	static void register_system(func_get_system_exe_info p_func_get_exe_info, StringName p_name, String p_description = "");
@@ -268,7 +278,8 @@ void ECS::register_component(StorageBase *(*create_storage)()) {
 					create_storage,
 					nullptr,
 					notify_release_write,
-					false });
+					false,
+					DataAccessorFuncs{ C::static_call } });
 
 	// Store the function pointer that clear the static memory.
 	notify_static_destructor.push_back(&C::__static_destructor);
@@ -301,7 +312,8 @@ void ECS::register_databag() {
 	R::_bind_methods();
 	databags.push_back(databag_name);
 	databags_info.push_back(DatabagInfo{
-			R::create_databag_no_type });
+			R::create_databag_no_type,
+			DataAccessorFuncs{ R::static_call } });
 
 	// Store the function pointer that clear the static memory.
 	notify_static_destructor.push_back(&R::__static_destructor);

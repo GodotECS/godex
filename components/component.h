@@ -11,26 +11,25 @@
 
 namespace godex {
 
-#define COMPONENT_INTERNAL(m_class)                                           \
-	/* Components */                                                          \
-	static inline uint32_t component_id = UINT32_MAX;                         \
-																			  \
-public:                                                                       \
-	static uint32_t get_component_id() { return component_id; }               \
-	virtual godex::component_id cid() const override { return component_id; } \
-																			  \
-	ECS_PROPERTY_MAPPER(m_class)                                              \
-	ECS_METHOD_MAPPER()                                                       \
-																			  \
-	static void __static_destructor() {                                       \
-		property_map.reset();                                                 \
-		properties.reset();                                                   \
-		setters.reset();                                                      \
-		getters.reset();                                                      \
-		methods_map.reset();                                                  \
-		methods.reset();                                                      \
-	}                                                                         \
-																			  \
+#define COMPONENT_INTERNAL(m_class)                             \
+	/* Components */                                            \
+	static inline uint32_t component_id = UINT32_MAX;           \
+																\
+public:                                                         \
+	static uint32_t get_component_id() { return component_id; } \
+																\
+	ECS_PROPERTY_MAPPER(m_class)                                \
+	ECS_METHOD_MAPPER(m_class)                                  \
+																\
+	static void __static_destructor() {                         \
+		property_map.reset();                                   \
+		properties.reset();                                     \
+		setters.reset();                                        \
+		getters.reset();                                        \
+		methods_map.reset();                                    \
+		methods.reset();                                        \
+	}                                                           \
+																\
 private:
 
 /// Register a component.
@@ -87,9 +86,6 @@ public:
 public:
 	static void _bind_methods();
 
-	/// Returns the component ID.
-	virtual component_id cid() const;
-
 	virtual const LocalVector<PropertyInfo> *get_properties() const;
 	virtual bool set(const StringName &p_name, const Variant &p_data);
 	virtual bool get(const StringName &p_name, Variant &r_data) const;
@@ -99,17 +95,17 @@ public:
 
 	Variant get(const StringName &p_name) const;
 
-	virtual void call(const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error);
+	virtual void da_call(const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error);
 };
 
 template <class T>
 T *unwrap_component(Object *p_access_databag) {
-	DataAccessor<Component> *comp = dynamic_cast<DataAccessor<Component> *>(p_access_databag);
-	if (unlikely(comp == nullptr || comp->__target == nullptr)) {
+	DataAccessor *comp = dynamic_cast<DataAccessor *>(p_access_databag);
+	if (unlikely(comp == nullptr || comp->get_target() == nullptr)) {
 		return nullptr;
 	}
-	if (likely(comp->__target->cid() == T::get_component_id())) {
-		return static_cast<T *>(comp->__target);
+	if (likely(comp->get_target_identifier() == T::get_component_id() && comp->get_target_type() == DataAccessorTargetType::Component)) {
+		return static_cast<T *>(comp->get_target());
 	} else {
 		return nullptr;
 	}
@@ -117,12 +113,12 @@ T *unwrap_component(Object *p_access_databag) {
 
 template <class T>
 const T *unwrap_component(const Object *p_access_databag) {
-	const DataAccessor<Component> *comp = dynamic_cast<const DataAccessor<Component> *>(p_access_databag);
-	if (unlikely(comp == nullptr || comp->__target == nullptr)) {
+	const DataAccessor *comp = dynamic_cast<const DataAccessor *>(p_access_databag);
+	if (unlikely(comp == nullptr || comp->get_target() == nullptr)) {
 		return nullptr;
 	}
-	if (likely(comp->__target->cid() == T::get_component_id())) {
-		return static_cast<const T *>(comp->__target);
+	if (likely(comp->get_target_identifier() == T::get_component_id() && comp->get_target_type() == DataAccessorTargetType::Component)) {
+		return static_cast<const T *>(comp->target);
 	} else {
 		return nullptr;
 	}

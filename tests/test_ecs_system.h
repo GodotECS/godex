@@ -6,6 +6,7 @@
 #include "../components/dynamic_component.h"
 #include "../ecs.h"
 #include "../godot/components/transform_component.h"
+#include "../godot/nodes/ecs_utilities.h"
 #include "../pipeline/pipeline.h"
 #include "../systems/dynamic_system.h"
 #include "../world/world.h"

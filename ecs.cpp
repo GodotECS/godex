@@ -142,6 +142,23 @@ StringName ECS::get_databag_name(godex::databag_id p_databag_id) {
 	return databags[p_databag_id];
 }
 
+void ECS::unsafe_databag_call(
+		godex::databag_id p_databag_id,
+		void *p_databag,
+		const StringName &p_method,
+		const Variant **p_args,
+		int p_argcount,
+		Variant *r_ret,
+		Callable::CallError &r_error) {
+	databags_info[p_databag_id].accessor_funcs.call(
+			p_databag,
+			p_method,
+			p_args,
+			p_argcount,
+			r_ret,
+			r_error);
+}
+
 // Undefine the macro defined into `ecs.h` so we can define the method properly.
 #undef register_system
 void ECS::register_system(func_get_system_exe_info p_func_get_exe_info, StringName p_name, String p_description) {
@@ -431,7 +448,8 @@ uint32_t ECS::register_script_component(const StringName &p_name, const LocalVec
 					nullptr,
 					info,
 					false,
-					false });
+					false,
+					DataAccessorFuncs() });
 
 	// Add a new scripting constant, for fast and easy `component` access.
 	ClassDB::bind_integer_constant(get_class_static(), StringName(), String(p_name).replace(".", "_"), info->component_id);

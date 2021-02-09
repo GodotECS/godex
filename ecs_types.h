@@ -371,7 +371,7 @@ struct MethodHelperC : public MethodHelperBase {
 	}
 };
 
-#define ECS_METHOD_MAPPER()                                                                                                                                                           \
+#define ECS_METHOD_MAPPER(m_class)                                                                                                                                                    \
 private:                                                                                                                                                                              \
 	static inline LocalVector<StringName> methods_map;                                                                                                                                \
 	static inline LocalVector<godex::MethodHelperBase *> methods;                                                                                                                     \
@@ -409,7 +409,12 @@ public:                                                                         
 		methods.push_back(new godex::MethodHelperC<C, Args...>(method));                                                                                                              \
 	}                                                                                                                                                                                 \
 																																													  \
-	virtual void call(const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) override {                                    \
+	static void static_call(void *p_self, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) {                         \
+		m_class *self = static_cast<m_class *>(p_self);                                                                                                                               \
+		self->call(p_method, p_args, p_argcount, r_ret, r_error);                                                                                                                     \
+	}                                                                                                                                                                                 \
+																																													  \
+	void call(const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) {                                                     \
 		const int64_t _index = methods_map.find(p_method);                                                                                                                            \
 		if (unlikely(_index < 0)) {                                                                                                                                                   \
 			ERR_PRINT("The method " + p_method + " is unknown " + get_class_static());                                                                                                \
@@ -448,40 +453,32 @@ public:                                                                         
 		return singleton;                                                                             \
 	}
 
+enum class DataAccessorTargetType {
+	Databag,
+	Component,
+	Storage,
+};
+
 /// This is useful to access the Component / Databag / Storage.
-template <class E>
 class DataAccessor : public Object {
+private:
+	uint32_t target_identifier;
+	DataAccessorTargetType target_type;
+	bool mut = false;
+	void *target = nullptr;
+
 public:
-	E *__target = nullptr;
-	bool __mut = false;
+	void init(uint32_t p_identifier, DataAccessorTargetType p_type, bool p_mut);
 
-	bool is_mutable() const {
-		return __mut;
-	}
+	uint32_t get_target_identifier() const;
+	DataAccessorTargetType get_target_type() const;
+	bool is_mutable() const;
 
-	virtual bool _setv(const StringName &p_name, const Variant &p_value) override {
-		ERR_FAIL_COND_V(__target == nullptr, false);
-		ERR_FAIL_COND_V_MSG(__mut == false, false, "This element was taken as not mutable.");
-		return __target->set(p_name, p_value);
-	}
+	void set_target(void *p_target);
+	void *get_target();
+	const void *get_target() const;
 
-	virtual bool _getv(const StringName &p_name, Variant &r_ret) const override {
-		ERR_FAIL_COND_V(__target == nullptr, false);
-		return __target->get(p_name, r_ret);
-	}
-
-	virtual Variant call(const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) override {
-		if (String(p_method) == "is_valid") { // TODO convert to a static StringName??
-			r_error.error = Callable::CallError::Error::CALL_OK;
-			return __target != nullptr;
-		} else if (String(p_method) == "is_mutable") { // TODO convert to a static StringName??
-			r_error.error = Callable::CallError::Error::CALL_OK;
-			return __mut;
-		} else {
-			Variant ret;
-			ERR_FAIL_COND_V(__target == nullptr, ret);
-			__target->call(p_method, p_args, p_argcount, &ret, r_error);
-			return ret;
-		}
-	}
+	virtual bool _setv(const StringName &p_name, const Variant &p_value) override;
+	virtual bool _getv(const StringName &p_name, Variant &r_ret) const override;
+	virtual Variant call(const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) override;
 };
