@@ -24,9 +24,6 @@ private:                                              \
 	friend class ECS;                                 \
 													  \
 public:                                               \
-	String get_class() const {                        \
-		return String(#m_class);                      \
-	}                                                 \
 	static _FORCE_INLINE_ String get_class_static() { \
 		return String(#m_class);                      \
 	}                                                 \
@@ -125,14 +122,6 @@ public:
 
 	operator C *() {
 		return data;
-	}
-};
-
-class ECSClass {
-public:
-	virtual ~ECSClass() {}
-	virtual String get_class() const {
-		return "ECSClass";
 	}
 };
 

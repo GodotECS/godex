@@ -77,7 +77,7 @@ private:                                                                        
 	}                                                                                         \
 	COMPONENT_INTERNAL(m_class)
 
-class Component : public ECSClass {
+class Component {
 	ECSCLASS(Component)
 
 public:

@@ -49,7 +49,7 @@ public:                                                              \
 																	 \
 private:
 
-class Databag : public ECSClass {
+class Databag {
 	ECSCLASS(Databag)
 
 public:
