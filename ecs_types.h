@@ -24,7 +24,7 @@ private:                                              \
 	friend class ECS;                                 \
 													  \
 public:                                               \
-	virtual String get_class() const override {       \
+	String get_class() const {                        \
 		return String(#m_class);                      \
 	}                                                 \
 	static _FORCE_INLINE_ String get_class_static() { \
