@@ -4,8 +4,6 @@
 
 using godex::Component;
 
-Component::Component() {}
-
 void Component::_bind_methods() {}
 
 const LocalVector<PropertyInfo> *Component::get_properties() const {

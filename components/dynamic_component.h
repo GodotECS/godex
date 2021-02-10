@@ -65,7 +65,8 @@ class ZeroVariantComponent : public godex::Component {
 	DynamicComponentInfo *info = nullptr;
 
 public:
-	ZeroVariantComponent() {}
+	ZeroVariantComponent() = default;
+	ZeroVariantComponent(const ZeroVariantComponent &) = default;
 
 	void __initialize(DynamicComponentInfo *p_info) {
 #ifdef DEBUG_ENABLED
@@ -104,7 +105,8 @@ class VariantComponent : public godex::Component {
 	Variant data[SIZE];
 
 public:
-	VariantComponent() {}
+	VariantComponent() = default;
+	VariantComponent(const VariantComponent &) = default;
 
 	void __initialize(DynamicComponentInfo *p_info);
 

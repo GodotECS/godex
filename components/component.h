@@ -83,9 +83,6 @@ class Component {
 	ECSCLASS(Component)
 
 public:
-	Component();
-
-public:
 	static void _bind_methods();
 
 	virtual const LocalVector<PropertyInfo> *get_properties() const;
