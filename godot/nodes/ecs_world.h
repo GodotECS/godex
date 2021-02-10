@@ -132,8 +132,8 @@ public:
 
 	// ~~ Runtime API ~~
 private:
-	DataAccessor<godex::Component> component_accessor;
-	DataAccessor<godex::Databag> databag_accessor;
+	DataAccessor component_accessor;
+	DataAccessor databag_accessor;
 
 public:
 	uint32_t create_entity();

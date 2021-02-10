@@ -5,9 +5,6 @@ void Child::_bind_methods() {
 	ECS_BIND_PROPERTY(Child, PropertyInfo(Variant::INT, "parent"), parent);
 }
 
-Child::Child() {
-}
-
 Child::Child(EntityID p_parent) :
 		parent(p_parent) {
 }

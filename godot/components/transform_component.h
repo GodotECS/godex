@@ -7,7 +7,7 @@
 #include "../../storage/hierarchical_storage.h"
 
 // TODO the CHANGED mechanism is really bad, and MUST be handled via storage.
-class TransformComponent : public godex::Component {
+class TransformComponent {
 	COMPONENT(TransformComponent, HierarchicalStorage)
 
 	Transform transform;
@@ -15,8 +15,6 @@ class TransformComponent : public godex::Component {
 	bool changed = true;
 
 public:
-	TransformComponent() = default;
-	TransformComponent(const TransformComponent &) = default;
 	TransformComponent(const Transform &p_transform);
 
 	// Transform relative to the parent coordinate system or global if root.
@@ -47,6 +45,26 @@ public:
 
 protected:
 	static void _bind_methods();
+};
+
+struct TransformComponent2 {
+	COMPONENT(TransformComponent2, HierarchicalStorage)
+
+	Transform transform;
+	// TODO remove and use the storage to know if changed.
+	bool changed = true;
+
+	static void combine(
+			const TransformComponent2 &p_local,
+			const TransformComponent2 &p_parent_global,
+			TransformComponent2 &r_global) {}
+
+	/// Used by the `HierarchyStorage` to obtain the local data from the current
+	/// global and the parent global.
+	static void combine_inverse(
+			const TransformComponent2 &p_global,
+			const TransformComponent2 &p_parent_global,
+			TransformComponent2 &r_local) {}
 };
 
 #endif

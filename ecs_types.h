@@ -24,9 +24,6 @@ private:                                              \
 	friend class ECS;                                 \
 													  \
 public:                                               \
-	virtual String get_class() const override {       \
-		return String(#m_class);                      \
-	}                                                 \
 	static _FORCE_INLINE_ String get_class_static() { \
 		return String(#m_class);                      \
 	}                                                 \
@@ -128,14 +125,6 @@ public:
 	}
 };
 
-class ECSClass {
-public:
-	virtual ~ECSClass() {}
-	virtual String get_class() const {
-		return "ECSClass";
-	}
-};
-
 class EntityID {
 	uint32_t id = UINT32_MAX;
 
@@ -201,44 +190,45 @@ private:                                                                        
 		setters.push_back(p_set);                                                                                                      \
 		getters.push_back(p_get);                                                                                                      \
 	}                                                                                                                                  \
-	static LocalVector<PropertyInfo> *get_properties_static() {                                                                        \
+	static const LocalVector<PropertyInfo> *get_properties() {                                                                         \
 		return &properties;                                                                                                            \
 	}                                                                                                                                  \
-	static Variant get_property_default_static(StringName p_name) {                                                                    \
+	static Variant get_property_default(const StringName &p_name) {                                                                    \
 		const m_class c;                                                                                                               \
 		Variant ret;                                                                                                                   \
-		c.get(p_name, ret);                                                                                                            \
+		get_by_name(&c, p_name, ret);                                                                                                  \
 		return ret;                                                                                                                    \
 	}                                                                                                                                  \
 	static void clear_properties_static() {                                                                                            \
 		property_map.clear();                                                                                                          \
 	}                                                                                                                                  \
-	virtual const LocalVector<PropertyInfo> *get_properties() const override {                                                         \
-		return get_properties_static();                                                                                                \
-	}                                                                                                                                  \
-	uint32_t get_property_index(const StringName &p_name) const {                                                                      \
+	static uint32_t get_property_index(const StringName &p_name) {                                                                     \
 		const int64_t i = property_map.find(p_name);                                                                                   \
 		return i == -1 ? UINT32_MAX : uint32_t(i);                                                                                     \
 	}                                                                                                                                  \
 																																	   \
 public:                                                                                                                                \
-	virtual bool set(const StringName &p_name, const Variant &p_data) override {                                                       \
+	static bool set_by_name(void *p_self, const StringName &p_name, const Variant &p_data) {                                           \
+		m_class *self = static_cast<m_class *>(p_self);                                                                                \
 		const uint32_t i = get_property_index(p_name);                                                                                 \
 		ERR_FAIL_COND_V_MSG(i == UINT32_MAX, false, "The parameter " + p_name + " doesn't exist in this component.");                  \
-		return setters[i](this, p_data);                                                                                               \
+		return setters[i](self, p_data);                                                                                               \
 	}                                                                                                                                  \
-	virtual bool get(const StringName &p_name, Variant &r_data) const override {                                                       \
+	static bool get_by_name(const void *p_self, const StringName &p_name, Variant &r_data) {                                           \
+		const m_class *self = static_cast<const m_class *>(p_self);                                                                    \
 		const uint32_t i = get_property_index(p_name);                                                                                 \
 		ERR_FAIL_COND_V_MSG(i == UINT32_MAX, false, "The parameter " + p_name + " doesn't exist in this component.");                  \
-		return getters[i](this, r_data);                                                                                               \
+		return getters[i](self, r_data);                                                                                               \
 	}                                                                                                                                  \
-	virtual bool set(const uint32_t p_index, const Variant &p_data) override {                                                         \
+	static bool set_by_index(void *p_self, const uint32_t p_index, const Variant &p_data) {                                            \
+		m_class *self = static_cast<m_class *>(p_self);                                                                                \
 		ERR_FAIL_COND_V_MSG(p_index >= setters.size(), false, "The parameter " + itos(p_index) + " doesn't exist in this component."); \
-		return setters[p_index](this, p_data);                                                                                         \
+		return setters[p_index](self, p_data);                                                                                         \
 	}                                                                                                                                  \
-	virtual bool get(const uint32_t p_index, Variant &r_data) const override {                                                         \
+	static bool get_by_index(const void *p_self, const uint32_t p_index, Variant &r_data) {                                            \
+		const m_class *self = static_cast<const m_class *>(p_self);                                                                    \
 		ERR_FAIL_COND_V_MSG(p_index >= getters.size(), false, "The parameter " + itos(p_index) + " doesn't exist in this component."); \
-		return getters[p_index](this, r_data);                                                                                         \
+		return getters[p_index](self, r_data);                                                                                         \
 	}
 
 /// Must be called in `_bind_methods` and can be used to just bind a property.
@@ -371,7 +361,7 @@ struct MethodHelperC : public MethodHelperBase {
 	}
 };
 
-#define ECS_METHOD_MAPPER()                                                                                                                                                           \
+#define ECS_METHOD_MAPPER(m_class)                                                                                                                                                    \
 private:                                                                                                                                                                              \
 	static inline LocalVector<StringName> methods_map;                                                                                                                                \
 	static inline LocalVector<godex::MethodHelperBase *> methods;                                                                                                                     \
@@ -409,7 +399,12 @@ public:                                                                         
 		methods.push_back(new godex::MethodHelperC<C, Args...>(method));                                                                                                              \
 	}                                                                                                                                                                                 \
 																																													  \
-	virtual void call(const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) override {                                    \
+	static void static_call(void *p_self, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) {                         \
+		m_class *self = static_cast<m_class *>(p_self);                                                                                                                               \
+		self->call(p_method, p_args, p_argcount, r_ret, r_error);                                                                                                                     \
+	}                                                                                                                                                                                 \
+																																													  \
+	void call(const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) {                                                     \
 		const int64_t _index = methods_map.find(p_method);                                                                                                                            \
 		if (unlikely(_index < 0)) {                                                                                                                                                   \
 			ERR_PRINT("The method " + p_method + " is unknown " + get_class_static());                                                                                                \
@@ -448,40 +443,32 @@ public:                                                                         
 		return singleton;                                                                             \
 	}
 
+enum class DataAccessorTargetType {
+	Databag,
+	Component,
+	Storage,
+};
+
 /// This is useful to access the Component / Databag / Storage.
-template <class E>
 class DataAccessor : public Object {
+private:
+	uint32_t target_identifier;
+	DataAccessorTargetType target_type;
+	bool mut = false;
+	void *target = nullptr;
+
 public:
-	E *__target = nullptr;
-	bool __mut = false;
+	void init(uint32_t p_identifier, DataAccessorTargetType p_type, bool p_mut);
 
-	bool is_mutable() const {
-		return __mut;
-	}
+	uint32_t get_target_identifier() const;
+	DataAccessorTargetType get_target_type() const;
+	bool is_mutable() const;
 
-	virtual bool _setv(const StringName &p_name, const Variant &p_value) override {
-		ERR_FAIL_COND_V(__target == nullptr, false);
-		ERR_FAIL_COND_V_MSG(__mut == false, false, "This element was taken as not mutable.");
-		return __target->set(p_name, p_value);
-	}
+	void set_target(void *p_target);
+	void *get_target();
+	const void *get_target() const;
 
-	virtual bool _getv(const StringName &p_name, Variant &r_ret) const override {
-		ERR_FAIL_COND_V(__target == nullptr, false);
-		return __target->get(p_name, r_ret);
-	}
-
-	virtual Variant call(const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) override {
-		if (String(p_method) == "is_valid") { // TODO convert to a static StringName??
-			r_error.error = Callable::CallError::Error::CALL_OK;
-			return __target != nullptr;
-		} else if (String(p_method) == "is_mutable") { // TODO convert to a static StringName??
-			r_error.error = Callable::CallError::Error::CALL_OK;
-			return __mut;
-		} else {
-			Variant ret;
-			ERR_FAIL_COND_V(__target == nullptr, ret);
-			__target->call(p_method, p_args, p_argcount, &ret, r_error);
-			return ret;
-		}
-	}
+	virtual bool _setv(const StringName &p_name, const Variant &p_value) override;
+	virtual bool _getv(const StringName &p_name, Variant &r_ret) const override;
+	virtual Variant call(const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) override;
 };

@@ -20,21 +20,33 @@ class Databag;
 class DynamicSystemInfo;
 } // namespace godex
 
+struct DataAccessorFuncs {
+	const LocalVector<PropertyInfo> *(*get_properties)() = nullptr;
+	Variant (*get_property_default)(const StringName &p_property_name) = nullptr;
+	bool (*set_by_name)(void *p_self, const StringName &p_name, const Variant &p_data) = nullptr;
+	bool (*get_by_name)(const void *p_self, const StringName &p_name, Variant &r_data) = nullptr;
+	bool (*set_by_index)(void *p_self, const uint32_t p_parameter_index, const Variant &p_data) = nullptr;
+	bool (*get_by_index)(const void *p_self, const uint32_t p_parameter_index, Variant &r_data) = nullptr;
+	void (*call)(void *p_self, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) = nullptr;
+};
+
 /// These functions are implemented by the `COMPONENT` macro and assigned during
 /// component registration.
 struct ComponentInfo {
-	LocalVector<PropertyInfo> *(*get_properties)();
-	Variant (*get_property_default)(StringName p_property_name);
 	StorageBase *(*create_storage)();
 	DynamicComponentInfo *dynamic_component_info = nullptr;
 	bool notify_release_write = false;
 	bool is_event = false;
+
+	DataAccessorFuncs accessor_funcs;
 };
 
 /// These functions are implemented by the `DATABAG` macro and assigned during
 /// component registration.
 struct DatabagInfo {
 	godex::Databag *(*create_databag)();
+
+	DataAccessorFuncs accessor_funcs;
 };
 
 struct SystemInfo {
@@ -108,10 +120,18 @@ public:
 	static const LocalVector<StringName> &get_registered_components();
 	static godex::component_id get_component_id(StringName p_component_name);
 	static StringName get_component_name(godex::component_id p_component_id);
-	static const LocalVector<PropertyInfo> *get_component_properties(godex::component_id p_component_id);
-	static Variant get_component_property_default(godex::component_id p_component_id, StringName p_property_name);
 	static bool is_component_events(godex::component_id p_component_id);
 	static bool storage_notify_release_write(godex::component_id p_component_id);
+
+	static const LocalVector<PropertyInfo> *get_component_properties(godex::component_id p_component_id);
+	static Variant get_component_property_default(godex::component_id p_component_id, StringName p_property_name);
+
+	static bool unsafe_component_set_by_name(godex::component_id p_component_id, void *p_component, const StringName &p_name, const Variant &p_data);
+	static bool unsafe_component_get_by_name(godex::component_id p_component_id, const void *p_component, const StringName &p_name, Variant &r_data);
+	static Variant unsafe_component_get_by_name(godex::component_id p_component_id, const void *p_component, const StringName &p_name);
+	static bool unsafe_component_set_by_index(godex::component_id p_component_id, void *p_component, uint32_t p_index, const Variant &p_data);
+	static bool unsafe_component_get_by_index(godex::component_id p_component_id, const void *p_component, uint32_t p_index, Variant &r_data);
+	static void unsafe_component_call(godex::component_id p_component_id, void *p_component, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error);
 
 	// ~~ Databags ~~
 	template <class C>
@@ -123,6 +143,13 @@ public:
 	static uint32_t get_databag_count();
 	static godex::databag_id get_databag_id(const StringName &p_name);
 	static StringName get_databag_name(godex::databag_id p_databag_id);
+
+	static bool unsafe_databag_set_by_name(godex::databag_id p_databag_id, void *p_databag, const StringName &p_name, const Variant &p_data);
+	static bool unsafe_databag_get_by_name(godex::databag_id p_databag_id, const void *p_databag, const StringName &p_name, Variant &r_data);
+	static Variant unsafe_databag_get_by_name(godex::databag_id p_databag_id, const void *p_databag, const StringName &p_name);
+	static bool unsafe_databag_set_by_index(godex::databag_id p_databag_id, void *p_databag, uint32_t p_index, const Variant &p_data);
+	static bool unsafe_databag_get_by_index(godex::databag_id p_databag_id, const void *p_databag, uint32_t p_index, Variant &r_data);
+	static void unsafe_databag_call(godex::databag_id p_databag_id, void *p_databag, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error);
 
 	// ~~ Systems ~~
 	static void register_system(func_get_system_exe_info p_func_get_exe_info, StringName p_name, String p_description = "");
@@ -247,6 +274,10 @@ void ECS::register_component() {
 
 template <class C>
 void ECS::register_component(StorageBase *(*create_storage)()) {
+	// TODO make Godot types also trivial.
+	//static_assert(std::is_trivial<C>::value);
+	//static_assert(std::is_trivial<Batch<C>>::value);
+
 	ERR_FAIL_COND_MSG(C::get_component_id() != UINT32_MAX, "This component is already registered.");
 
 	bool notify_release_write = false;
@@ -263,12 +294,18 @@ void ECS::register_component(StorageBase *(*create_storage)()) {
 	components.push_back(component_name);
 	components_info.push_back(
 			ComponentInfo{
-					&C::get_properties_static,
-					&C::get_property_default_static,
 					create_storage,
 					nullptr,
 					notify_release_write,
-					false });
+					false,
+					DataAccessorFuncs{
+							C::get_properties,
+							C::get_property_default,
+							C::set_by_name,
+							C::get_by_name,
+							C::set_by_index,
+							C::get_by_index,
+							C::static_call } });
 
 	// Store the function pointer that clear the static memory.
 	notify_static_destructor.push_back(&C::__static_destructor);
@@ -301,7 +338,15 @@ void ECS::register_databag() {
 	R::_bind_methods();
 	databags.push_back(databag_name);
 	databags_info.push_back(DatabagInfo{
-			R::create_databag_no_type });
+			R::create_databag_no_type,
+			DataAccessorFuncs{
+					R::get_properties,
+					R::get_property_default,
+					R::set_by_name,
+					R::get_by_name,
+					R::set_by_index,
+					R::get_by_index,
+					R::static_call } });
 
 	// Store the function pointer that clear the static memory.
 	notify_static_destructor.push_back(&R::__static_destructor);

@@ -85,7 +85,10 @@ bool DynamicQuery::build() {
 	// (AccessComponent is a parent of Object).
 	accessors.resize(component_ids.size());
 	for (uint32_t i = 0; i < component_ids.size(); i += 1) {
-		accessors[i].__mut = mutability[i];
+		accessors[i].init(
+				component_ids[i],
+				DataAccessorTargetType::Component,
+				mutability[i]);
 	}
 
 	return true;
@@ -110,7 +113,7 @@ Object *DynamicQuery::get_access_gd(uint32_t p_index) {
 	return accessors.ptr() + p_index;
 }
 
-DataAccessor<godex::Component> *DynamicQuery::get_access(uint32_t p_index) {
+DataAccessor *DynamicQuery::get_access(uint32_t p_index) {
 	ERR_FAIL_COND_V_MSG(is_valid() == false, nullptr, "The query is invalid.");
 	build();
 	return accessors.ptr() + p_index;
@@ -244,7 +247,7 @@ void DynamicQuery::fetch() {
 	for (uint32_t i = 0; i < storages.size(); i += 1) {
 		if (required[i] || storages[i]->has(entity_id)) {
 			if (accessors[i].is_mutable()) {
-				accessors[i].__target = storages[i]->get_ptr(entity_id, space).get_data();
+				accessors[i].set_target(storages[i]->get_ptr(entity_id, space).get_data());
 			} else {
 				// Taken using the **CONST** `get_ptr` function, but casted back
 				// to mutable. The `Accessor` already guards its accessibility
@@ -255,12 +258,12 @@ void DynamicQuery::fetch() {
 				// data back to mutable.
 				// Note: `std::as_const` doesn't work here. The compile is
 				// optimizing it? Well, I'm just using `const_cast`.
-				const Batch<const godex::Component> c(const_cast<const StorageBase *>(storages[i])->get_ptr(entity_id, space));
-				accessors[i].__target = const_cast<godex::Component *>(c.get_data());
+				const Batch<const void> c(const_cast<const StorageBase *>(storages[i])->get_ptr(entity_id, space));
+				accessors[i].set_target(const_cast<void *>(c.get_data()));
 			}
 		} else {
 			// This data is not required and is not found.
-			accessors[i].__target = nullptr;
+			accessors[i].set_target(nullptr);
 		}
 	}
 }

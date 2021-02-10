@@ -6,48 +6,45 @@
 #include "../components/dynamic_component.h"
 #include "../ecs.h"
 #include "../godot/components/transform_component.h"
+#include "../godot/nodes/ecs_utilities.h"
 #include "../pipeline/pipeline.h"
 #include "../systems/dynamic_system.h"
 #include "../world/world.h"
 #include "test_utilities.h"
 
-class TagTestComponent : public godex::Component {
+struct TagTestComponent {
 	COMPONENT(TagTestComponent, DenseVectorStorage)
+	static void _bind_methods() {}
 };
 
-struct Test1Component : public godex::Component {
+struct Test1Component {
 	COMPONENT(Test1Component, DenseVectorStorage)
 
-public:
 	static void _bind_methods() {
 		ECS_BIND_PROPERTY(Test1Component, PropertyInfo(Variant::INT, "a"), a);
 	}
 
 	int a = 30;
 
-	Test1Component() {}
 	Test1Component(int p_a) :
 			a(p_a) {}
 };
 
-class TestSystem1Databag : public godex::Databag {
+struct TestSystem1Databag : public godex::Databag {
 	DATABAG(TestSystem1Databag)
 
-public:
 	int a = 10;
 };
 
-struct Event1Component : public godex::Component {
+struct Event1Component {
 	COMPONENT_BATCH(Event1Component, DenseVector, 2)
 
-public:
 	static void _bind_methods() {
 		ECS_BIND_PROPERTY(Event1Component, PropertyInfo(Variant::INT, "a"), a);
 	}
 
 	int a = 0;
 
-	Event1Component() {}
 	Event1Component(int p_a) :
 			a(p_a) {}
 };
@@ -270,15 +267,15 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 	// Validate the dynamic component.
 	{
 		const StorageBase *storage = world.get_storage(test_dyn_component_id);
-		CHECK(storage->get_ptr(entity_1)->get("variable_1") == Variant(4));
+		CHECK(ECS::unsafe_component_get_by_name(test_dyn_component_id, storage->get_ptr(entity_1), "variable_1") == Variant(4));
 		// Make sure this doesn't changed.
-		CHECK(storage->get_ptr(entity_1)->get("variable_2") == Variant(false));
+		CHECK(ECS::unsafe_component_get_by_name(test_dyn_component_id, storage->get_ptr(entity_1), "variable_2") == Variant(false));
 
 		CHECK(storage->has(entity_2) == false);
 
-		CHECK(storage->get_ptr(entity_3)->get("variable_1") == Variant(4));
+		CHECK(ECS::unsafe_component_get_by_name(test_dyn_component_id, storage->get_ptr(entity_3), "variable_1") == Variant(4));
 		// Make sure this doesn't changed.
-		CHECK(storage->get_ptr(entity_3)->get("variable_2") == Variant(false));
+		CHECK(ECS::unsafe_component_get_by_name(test_dyn_component_id, storage->get_ptr(entity_3), "variable_2") == Variant(false));
 	}
 }
 

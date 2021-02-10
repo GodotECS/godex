@@ -3,6 +3,7 @@
 #include "../../components/component.h"
 
 // Tag component to mark `Disabled` things.
-class Disabled : public godex::Component {
+struct Disabled {
 	COMPONENT(Disabled, DenseVectorStorage)
+	static void _bind_methods() {}
 };

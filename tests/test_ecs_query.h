@@ -10,26 +10,27 @@
 #include "../storage/batch_storage.h"
 #include "../world/world.h"
 
-class TagQueryTestComponent : public godex::Component {
+struct TagQueryTestComponent {
 	COMPONENT(TagQueryTestComponent, DenseVectorStorage)
+	static void _bind_methods() {}
 };
 
-class TestFixedSizeEvent : public godex::Component {
+struct TestFixedSizeEvent {
 	COMPONENT_BATCH(TestFixedSizeEvent, DenseVector, 2)
-public:
+	static void _bind_methods() {}
+
 	int number = 0;
 
-	TestFixedSizeEvent() {}
 	TestFixedSizeEvent(int num) :
 			number(num) {}
 };
 
-class TestEvent : public godex::Component {
+struct TestEvent {
 	COMPONENT_BATCH(TestEvent, DenseVector, -1) // -1 make the storage dynamic.
-public:
+	static void _bind_methods() {}
+
 	int number = 0;
 
-	TestEvent() {}
 	TestEvent(int num) :
 			number(num) {}
 };
@@ -165,12 +166,14 @@ public:
 	}
 };
 
-class TestAccessMutabilityComponent1 : public godex::Component {
+struct TestAccessMutabilityComponent1 {
 	COMPONENT(TestAccessMutabilityComponent1, AccessTracerStorage)
+	static void _bind_methods() {}
 };
 
-class TestAccessMutabilityComponent2 : public godex::Component {
+struct TestAccessMutabilityComponent2 {
 	COMPONENT(TestAccessMutabilityComponent2, AccessTracerStorage)
+	static void _bind_methods() {}
 };
 
 namespace godex_tests {
@@ -515,20 +518,20 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 		// This query fetches the entity that have only the `TransformComponent`.
 		CHECK(query.is_done() == false);
 		CHECK(query.get_current_entity_id() == entity_1);
-		CHECK(query.get_access(0)->__target != nullptr);
-		CHECK(query.get_access(1)->__target != nullptr);
+		CHECK(query.get_access(0)->get_target() != nullptr);
+		CHECK(query.get_access(1)->get_target() != nullptr);
 		query.next();
 
 		CHECK(query.is_done() == false);
 		CHECK(query.get_current_entity_id() == entity_2);
-		CHECK(query.get_access(0)->__target != nullptr);
-		CHECK(query.get_access(1)->__target == nullptr);
+		CHECK(query.get_access(0)->get_target() != nullptr);
+		CHECK(query.get_access(1)->get_target() == nullptr);
 		query.next();
 
 		CHECK(query.is_done() == false);
 		CHECK(query.get_current_entity_id() == entity_3);
-		CHECK(query.get_access(0)->__target != nullptr);
-		CHECK(query.get_access(1)->__target != nullptr);
+		CHECK(query.get_access(0)->get_target() != nullptr);
+		CHECK(query.get_access(1)->get_target() != nullptr);
 		query.next();
 
 		// Now it's done
@@ -551,10 +554,12 @@ TEST_CASE("[Modules][ECS] Test dynamic query with dynamic storages.") {
 
 	World world;
 
-	EntityID entity_1 = world.create_entity()
+	EntityID entity_1 = world
+								.create_entity()
 								.with(test_dyn_component_id, Dictionary());
 
-	EntityID entity_2 = world.create_entity()
+	EntityID entity_2 = world
+								.create_entity()
 								.with(test_dyn_component_id, Dictionary());
 
 	godex::DynamicQuery query;

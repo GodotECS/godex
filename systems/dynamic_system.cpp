@@ -62,7 +62,7 @@ void godex::DynamicSystemInfo::without_component(uint32_t p_component_id) {
 	query.without_component(p_component_id);
 }
 
-void godex::DynamicSystemInfo::with_storage(uint32_t p_component_id) {
+void godex::DynamicSystemInfo::with_storage(godex::component_id p_component_id) {
 	CRASH_COND_MSG(compiled, "The query can't be composed, when the system is already been compiled.");
 
 	const uint32_t index = databag_element_map.size() + storage_element_map.size() + query_element_map.size();
@@ -106,11 +106,11 @@ bool godex::DynamicSystemInfo::build() {
 
 		// Set the databag accessors.
 		for (uint32_t i = 0; i < databags.size(); i += 1) {
-			// Set the mutability.
-			// Creating a new pointer because `set_script_instance` handles
-			// the pointer lifetime unfortunately so set an automatic memory
-			// pointer is not safe.
-			databag_accessors[i].__mut = databags[i].is_mutable;
+			// Init the accessor
+			databag_accessors[i].init(
+					databags[i].databag_id,
+					DataAccessorTargetType::Databag,
+					databags[i].is_mutable);
 
 			// Assign the accessor.
 			access[databag_element_map[i]] = &databag_accessors[i];
@@ -122,8 +122,12 @@ bool godex::DynamicSystemInfo::build() {
 
 		// Set the storage accessors.
 		for (uint32_t i = 0; i < storages.size(); i += 1) {
-			// The storages are always mutable.
-			storage_accessors[i].__mut = true;
+			// Init the `Storage` accessor.
+			storage_accessors[i].init(
+					storages[i],
+					DataAccessorTargetType::Storage,
+					// The storages are always mutable.
+					true);
 
 			// Assign the accessor.
 			access[storage_element_map[i]] = &storage_accessors[i];
@@ -237,13 +241,13 @@ void godex::DynamicSystemInfo::executor(World *p_world, DynamicSystemInfo &p_inf
 		// First extract the databags.
 		for (uint32_t i = 0; i < p_info.databags.size(); i += 1) {
 			// Set the accessors pointers.
-			p_info.databag_accessors[i].__target = p_world->get_databag(p_info.databags[i].databag_id);
+			p_info.databag_accessors[i].set_target(p_world->get_databag(p_info.databags[i].databag_id));
 		}
 
 		// Then extract the storages.
 		for (uint32_t i = 0; i < p_info.storages.size(); i += 1) {
 			// Set the accessors pointers.
-			p_info.storage_accessors[i].__target = p_world->get_storage(p_info.storages[i]);
+			p_info.storage_accessors[i].set_target(p_world->get_storage(p_info.storages[i]));
 		}
 
 		// Execute the query

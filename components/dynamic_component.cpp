@@ -1,4 +1,4 @@
-#include "dynamic_component.h"
+﻿#include "dynamic_component.h"
 
 DynamicComponentInfo::DynamicComponentInfo() {
 }
@@ -59,28 +59,160 @@ StorageBase *DynamicComponentInfo::create_storage() {
 	return nullptr;
 }
 
-void ZeroVariantComponent::__initialize(DynamicComponentInfo *p_info) {
-	info = p_info;
-	CRASH_COND_MSG(p_info == nullptr, "The component info can't be nullptr.");
-	CRASH_COND_MSG(info->get_properties()->size() != 0, "The ZeroVariantComponent(size: " + itos(0) + ") got created with a ScriptComponentInfo that has " + itos(info->get_properties()->size()) + " parameters, this is not supposed to happen.");
+bool DynamicComponentInfo::static_set(void *p_self, const DynamicComponentInfo *p_info, const StringName &p_name, const Variant &p_data) {
+	const uint32_t index = p_info->get_property_id(p_name);
+	return static_set(p_self, p_info, index, p_data);
 }
 
-const LocalVector<PropertyInfo> *ZeroVariantComponent::get_properties() const {
-	return info->get_properties();
+bool DynamicComponentInfo::static_get(const void *p_self, const DynamicComponentInfo *p_info, const StringName &p_name, Variant &r_data) {
+	const uint32_t index = p_info->get_property_id(p_name);
+	return static_get(p_self, p_info, index, r_data);
 }
 
-bool ZeroVariantComponent::set(const StringName &p_name, const Variant &p_data) {
-	return false;
+bool DynamicComponentInfo::static_set(void *p_self, const DynamicComponentInfo *p_info, const uint32_t p_index, const Variant &p_data) {
+	ERR_FAIL_COND_V_MSG(p_index >= p_info->properties.size(), false, "You can't set this data to this VariantComponent.");
+	Variant *d = static_get_data(p_self, p_info);
+	ERR_FAIL_COND_V_MSG(d[p_index].get_type() != p_data.get_type(), false, "You can't set a variable with different type.");
+	d[p_index] = p_data;
+	return true;
 }
 
-bool ZeroVariantComponent::get(const StringName &p_name, Variant &p_data) const {
-	return false;
+bool DynamicComponentInfo::static_get(const void *p_self, const DynamicComponentInfo *p_info, const uint32_t p_index, Variant &r_data) {
+	ERR_FAIL_COND_V_MSG(p_index >= p_info->properties.size(), false, "You can't set this data to this VariantComponent.");
+	r_data = static_get_data(p_self, p_info)[p_index];
+	return true;
 }
 
-bool ZeroVariantComponent::set(const uint32_t p_index, const Variant &p_data) {
-	return false;
+Variant *DynamicComponentInfo::static_get_data(void *p_self, const DynamicComponentInfo *p_info) {
+	Variant *data = nullptr;
+	switch (p_info->properties.size()) {
+		case 1: {
+			data = static_cast<VariantComponent<1> *>(p_self)->data;
+		} break;
+		case 2: {
+			data = static_cast<VariantComponent<2> *>(p_self)->data;
+		} break;
+		case 3: {
+			data = static_cast<VariantComponent<3> *>(p_self)->data;
+		} break;
+		case 4: {
+			data = static_cast<VariantComponent<4> *>(p_self)->data;
+		} break;
+		case 5: {
+			data = static_cast<VariantComponent<5> *>(p_self)->data;
+		} break;
+		case 6: {
+			data = static_cast<VariantComponent<6> *>(p_self)->data;
+		} break;
+		case 7: {
+			data = static_cast<VariantComponent<7> *>(p_self)->data;
+		} break;
+		case 8: {
+			data = static_cast<VariantComponent<8> *>(p_self)->data;
+		} break;
+		case 9: {
+			data = static_cast<VariantComponent<9> *>(p_self)->data;
+		} break;
+		case 10: {
+			data = static_cast<VariantComponent<10> *>(p_self)->data;
+		} break;
+		case 11: {
+			data = static_cast<VariantComponent<11> *>(p_self)->data;
+		} break;
+		case 12: {
+			data = static_cast<VariantComponent<12> *>(p_self)->data;
+		} break;
+		case 13: {
+			data = static_cast<VariantComponent<13> *>(p_self)->data;
+		} break;
+		case 14: {
+			data = static_cast<VariantComponent<14> *>(p_self)->data;
+		} break;
+		case 15: {
+			data = static_cast<VariantComponent<15> *>(p_self)->data;
+		} break;
+		case 16: {
+			data = static_cast<VariantComponent<16> *>(p_self)->data;
+		} break;
+		case 17: {
+			data = static_cast<VariantComponent<17> *>(p_self)->data;
+		} break;
+		case 18: {
+			data = static_cast<VariantComponent<18> *>(p_self)->data;
+		} break;
+		case 19: {
+			data = static_cast<VariantComponent<19> *>(p_self)->data;
+		} break;
+		case 20: {
+			data = static_cast<VariantComponent<20> *>(p_self)->data;
+		} break;
+	};
+	return data;
 }
 
-bool ZeroVariantComponent::get(const uint32_t p_index, Variant &p_data) const {
-	return false;
+const Variant *DynamicComponentInfo::static_get_data(const void *p_self, const DynamicComponentInfo *p_info) {
+	const Variant *data = nullptr;
+	switch (p_info->properties.size()) {
+		case 1: {
+			data = static_cast<const VariantComponent<1> *>(p_self)->data;
+		} break;
+		case 2: {
+			data = static_cast<const VariantComponent<2> *>(p_self)->data;
+		} break;
+		case 3: {
+			data = static_cast<const VariantComponent<3> *>(p_self)->data;
+		} break;
+		case 4: {
+			data = static_cast<const VariantComponent<4> *>(p_self)->data;
+		} break;
+		case 5: {
+			data = static_cast<const VariantComponent<5> *>(p_self)->data;
+		} break;
+		case 6: {
+			data = static_cast<const VariantComponent<6> *>(p_self)->data;
+		} break;
+		case 7: {
+			data = static_cast<const VariantComponent<7> *>(p_self)->data;
+		} break;
+		case 8: {
+			data = static_cast<const VariantComponent<8> *>(p_self)->data;
+		} break;
+		case 9: {
+			data = static_cast<const VariantComponent<9> *>(p_self)->data;
+		} break;
+		case 10: {
+			data = static_cast<const VariantComponent<10> *>(p_self)->data;
+		} break;
+		case 11: {
+			data = static_cast<const VariantComponent<11> *>(p_self)->data;
+		} break;
+		case 12: {
+			data = static_cast<const VariantComponent<12> *>(p_self)->data;
+		} break;
+		case 13: {
+			data = static_cast<const VariantComponent<13> *>(p_self)->data;
+		} break;
+		case 14: {
+			data = static_cast<const VariantComponent<14> *>(p_self)->data;
+		} break;
+		case 15: {
+			data = static_cast<const VariantComponent<15> *>(p_self)->data;
+		} break;
+		case 16: {
+			data = static_cast<const VariantComponent<16> *>(p_self)->data;
+		} break;
+		case 17: {
+			data = static_cast<const VariantComponent<17> *>(p_self)->data;
+		} break;
+		case 18: {
+			data = static_cast<const VariantComponent<18> *>(p_self)->data;
+		} break;
+		case 19: {
+			data = static_cast<const VariantComponent<19> *>(p_self)->data;
+		} break;
+		case 20: {
+			data = static_cast<const VariantComponent<20> *>(p_self)->data;
+		} break;
+	};
+	return data;
 }

@@ -52,7 +52,7 @@ class DynamicSystemInfo {
 	/// Map used to map the list of Components to the script.
 	LocalVector<uint32_t> query_element_map;
 	LocalVector<DDatabag> databags;
-	LocalVector<uint32_t> storages;
+	LocalVector<godex::component_id> storages;
 	DynamicQuery query;
 
 	// Accessors.
@@ -60,10 +60,10 @@ class DynamicSystemInfo {
 	LocalVector<Variant *> access_ptr;
 
 	// Accessors databag.
-	LocalVector<DataAccessor<Databag>> databag_accessors;
+	LocalVector<DataAccessor> databag_accessors;
 
 	// Accessors databag.
-	LocalVector<DataAccessor<StorageBase>> storage_accessors;
+	LocalVector<DataAccessor> storage_accessors;
 
 	// ~~ Sub pipeline system ~~
 	func_system_execute_pipeline sub_pipeline_execute = nullptr;
@@ -80,7 +80,7 @@ public:
 	void with_component(uint32_t p_component_id, bool p_mutable);
 	void maybe_component(uint32_t p_component_id, bool p_mutable);
 	void without_component(uint32_t p_component_id);
-	void with_storage(uint32_t p_component_id);
+	void with_storage(godex::component_id p_component_id);
 
 	void set_target(func_system_execute_pipeline p_sub_pipeline_execite);
 	void set_pipeline(Pipeline *p_pipeline);

@@ -68,40 +68,40 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 	// ~~ Test the component is initialized with defaults. ~~
 	{
 		const StorageBase *storage = world.get_storage(test_world_component_id);
-		const godex::Component *test_component = storage->get_ptr(entity_1);
+		const void *test_component = storage->get_ptr(entity_1);
 
-		CHECK(test_component->get("variable_1") == Variant(1));
-		CHECK(test_component->get("variable_2") == Variant(false));
-		CHECK(test_component->get("variable_3") == Variant(Transform()));
+		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_1") == Variant(1));
+		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_2") == Variant(false));
+		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_3") == Variant(Transform()));
 	}
 
 	// ~~ Test change component values ~~
 	{
 		StorageBase *storage = world.get_storage(test_world_component_id);
 
-		godex::Component *test_component = storage->get_ptr(entity_1);
-		test_component->set("variable_1", 2);
-		test_component->set("variable_2", true);
-		test_component->set("variable_3", Transform(Basis(), Vector3(10., 10., 10.)));
+		void *test_component = storage->get_ptr(entity_1);
+		ECS::unsafe_component_set_by_name(test_world_component_id, test_component, "variable_1", 2);
+		ECS::unsafe_component_set_by_name(test_world_component_id, test_component, "variable_2", true);
+		ECS::unsafe_component_set_by_name(test_world_component_id, test_component, "variable_3", Transform(Basis(), Vector3(10., 10., 10.)));
 
 		// Take it again, to confirm we are operating on the stored object.
 		test_component = storage->get_ptr(entity_1);
-		CHECK(test_component->get("variable_1") == Variant(2));
-		CHECK(test_component->get("variable_2") == Variant(true));
-		CHECK(ABS(test_component->get("variable_3").operator Transform().origin.x - 10.) <= CMP_EPSILON);
+		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_1") == Variant(2));
+		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_2") == Variant(true));
+		CHECK(ABS(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_3").operator Transform().origin.x - 10.) <= CMP_EPSILON);
 	}
 
 	// ~~ Test change value with a wrong type ~~
 	{
 		StorageBase *storage = world.get_storage(test_world_component_id);
 
-		godex::Component *test_component = storage->get_ptr(entity_1);
+		void *test_component = storage->get_ptr(entity_1);
 		// Set the `variable_1` with a floating point variable.
-		test_component->set("variable_1", 0.0);
+		ECS::unsafe_component_set_by_name(test_world_component_id, test_component, "variable_1", 0.0);
 
 		// Make sure the value is not changed, since it's integer and not a float.
-		CHECK(test_component->get("variable_1") != Variant(0.0));
-		CHECK(test_component->get("variable_1") == Variant(2));
+		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_1") != Variant(0.0));
+		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_1") == Variant(2));
 	}
 
 	// ~~ Test custom initialization ~~
@@ -118,11 +118,11 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 				entity_2_data);
 
 		const StorageBase *storage = world.get_storage(test_world_component_id);
-		const godex::Component *test_component = storage->get_ptr(entity_2);
+		const void *test_component = storage->get_ptr(entity_2);
 
-		CHECK(test_component->get("variable_1") == Variant(100));
-		CHECK(test_component->get("variable_2") == Variant(true));
-		CHECK(ABS(test_component->get("variable_3").operator Transform().origin.x - (-10.)) <= CMP_EPSILON);
+		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_1") == Variant(100));
+		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_2") == Variant(true));
+		CHECK(ABS(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_3").operator Transform().origin.x - (-10.)) <= CMP_EPSILON);
 	}
 
 	// ~~ Test partial custom initialization ~~
@@ -138,12 +138,12 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 				entity_3_data);
 
 		const StorageBase *storage = world.get_storage(test_world_component_id);
-		const godex::Component *test_component = storage->get_ptr(entity_3);
+		const void *test_component = storage->get_ptr(entity_3);
 
-		CHECK(test_component->get("variable_1") == Variant(100));
+		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_1") == Variant(100));
 		// Check default.
-		CHECK(test_component->get("variable_2") == Variant(false));
-		CHECK(ABS(test_component->get("variable_3").operator Transform().origin.x - (-10.)) <= CMP_EPSILON);
+		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_2") == Variant(false));
+		CHECK(ABS(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_3").operator Transform().origin.x - (-10.)) <= CMP_EPSILON);
 	}
 
 	// ~~ Test custom initialization with wrong value type ~~
@@ -160,12 +160,12 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 				entity_4_data);
 
 		const StorageBase *storage = world.get_storage(test_world_component_id);
-		const godex::Component *test_component = storage->get_ptr(entity_4);
+		const void *test_component = storage->get_ptr(entity_4);
 
-		CHECK(test_component->get("variable_1") == Variant(100));
+		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_1") == Variant(100));
 		// Make sure the default is set, and not the `Vector3()`.
-		CHECK(test_component->get("variable_2") == Variant(false));
-		CHECK(ABS(test_component->get("variable_3").operator Transform().origin.x - (-10.)) <= CMP_EPSILON);
+		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_2") == Variant(false));
+		CHECK(ABS(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_3").operator Transform().origin.x - (-10.)) <= CMP_EPSILON);
 	}
 
 	// ~~ Test databag initialization ~~

@@ -22,8 +22,9 @@ public:
 	int a = 10;
 };
 
-class PipelineTestComponent1 : public godex::Component {
+struct PipelineTestComponent1 {
 	COMPONENT(PipelineTestComponent1, DenseVectorStorage)
+	static void _bind_methods() {}
 };
 
 namespace godex_tests_pipeline {
