@@ -12,14 +12,14 @@
 #include "../world/world.h"
 #include "test_utilities.h"
 
-class TagTestComponent : public godex::Component {
+struct TagTestComponent {
 	COMPONENT(TagTestComponent, DenseVectorStorage)
+	static void _bind_methods() {}
 };
 
-struct Test1Component : public godex::Component {
+struct Test1Component {
 	COMPONENT(Test1Component, DenseVectorStorage)
 
-public:
 	static void _bind_methods() {
 		ECS_BIND_PROPERTY(Test1Component, PropertyInfo(Variant::INT, "a"), a);
 	}
@@ -30,17 +30,15 @@ public:
 			a(p_a) {}
 };
 
-class TestSystem1Databag : public godex::Databag {
+struct TestSystem1Databag : public godex::Databag {
 	DATABAG(TestSystem1Databag)
 
-public:
 	int a = 10;
 };
 
-struct Event1Component : public godex::Component {
+struct Event1Component {
 	COMPONENT_BATCH(Event1Component, DenseVector, 2)
 
-public:
 	static void _bind_methods() {
 		ECS_BIND_PROPERTY(Event1Component, PropertyInfo(Variant::INT, "a"), a);
 	}

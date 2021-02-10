@@ -6,19 +6,17 @@
 #include "../../components/component.h"
 #include "scene/resources/mesh.h"
 
-class MeshComponent : public godex::Component {
+struct MeshComponent {
 	COMPONENT(MeshComponent, DenseVectorStorage)
+	static void _bind_methods();
 
 	RID instance;
 	RID mesh_rid;
 
-public:
 	Ref<Mesh> mesh;
 	Ref<Material> material_override;
 	uint32_t layers = 1;
 	bool visible = true;
-
-	static void _bind_methods();
 
 	void set_mesh(const Ref<Mesh> &p_mesh);
 	Ref<Mesh> get_mesh() const;

@@ -45,9 +45,6 @@ public:
 	}
 
 public:
-	// TODO remove?
-	//static void static_initialize(void *p_self, DynamicComponentInfo *p_info);
-
 	static bool static_set(void *p_self, const DynamicComponentInfo *p_info, const StringName &p_name, const Variant &p_data);
 	static bool static_get(const void *p_self, const DynamicComponentInfo *p_info, const StringName &p_name, Variant &r_data);
 
@@ -60,11 +57,13 @@ public:
 
 /// The `ZeroVariantComponent` is a special type component designed for godot
 /// scripts. This component have no variables.
-class ZeroVariantComponent : public godex::Component {
+class ZeroVariantComponent {
 	friend class DynamicComponentInfo;
 	DynamicComponentInfo *info = nullptr;
 
 public:
+	static void _bind_methods() {}
+
 	ZeroVariantComponent() = default;
 	ZeroVariantComponent(const ZeroVariantComponent &) = default;
 
@@ -99,12 +98,14 @@ public:
 /// The `VariantComponent` is a special type component designed for godot
 /// scripts. The components are stored consecutively.
 template <int SIZE>
-class VariantComponent : public godex::Component {
+class VariantComponent {
 	friend class DynamicComponentInfo;
 	DynamicComponentInfo *info = nullptr;
 	Variant data[SIZE];
 
 public:
+	static void _bind_methods() {}
+
 	VariantComponent() = default;
 	VariantComponent(const VariantComponent &) = default;
 

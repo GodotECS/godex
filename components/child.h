@@ -2,7 +2,7 @@
 
 #include "component.h"
 
-class Child : public godex::Component {
+class Child {
 	COMPONENT_CUSTOM_STORAGE(Child)
 
 	static void _bind_methods();

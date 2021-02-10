@@ -108,12 +108,12 @@ public:
 		CRASH_NOW_MSG("Override this function.");
 	}
 
-	virtual Batch<const godex::Component> get_ptr(EntityID p_entity, Space p_mode = Space::LOCAL) const {
+	virtual Batch<const void> get_ptr(EntityID p_entity, Space p_mode = Space::LOCAL) const {
 		CRASH_NOW_MSG("Override this function.");
 		return nullptr;
 	}
 
-	virtual Batch<godex::Component> get_ptr(EntityID p_entity, Space p_mode = Space::LOCAL) {
+	virtual Batch<void> get_ptr(EntityID p_entity, Space p_mode = Space::LOCAL) {
 		CRASH_NOW_MSG("Override this function.");
 		return nullptr;
 	}
@@ -214,14 +214,14 @@ public:
 		insert(p_entity, insert_data);
 	}
 
-	virtual Batch<const godex::Component> get_ptr(EntityID p_entity, Space p_mode = Space::LOCAL) const override {
+	virtual Batch<const void> get_ptr(EntityID p_entity, Space p_mode = Space::LOCAL) const override {
 		const Batch<const std::remove_const_t<T>> b = get(p_entity, p_mode);
-		return Batch<const godex::Component>(b.get_data(), b.get_size());
+		return Batch<const void>(b.get_data(), b.get_size());
 	}
 
-	virtual Batch<godex::Component> get_ptr(EntityID p_entity, Space p_mode = Space::LOCAL) override {
+	virtual Batch<void> get_ptr(EntityID p_entity, Space p_mode = Space::LOCAL) override {
 		const Batch<std::remove_const_t<T>> b = get(p_entity, p_mode);
-		return Batch<godex::Component>(b.get_data(), b.get_size());
+		return Batch<void>(b.get_data(), b.get_size());
 	}
 
 public:

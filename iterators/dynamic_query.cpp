@@ -258,8 +258,8 @@ void DynamicQuery::fetch() {
 				// data back to mutable.
 				// Note: `std::as_const` doesn't work here. The compile is
 				// optimizing it? Well, I'm just using `const_cast`.
-				const Batch<const godex::Component> c(const_cast<const StorageBase *>(storages[i])->get_ptr(entity_id, space));
-				accessors[i].set_target(const_cast<godex::Component *>(c.get_data()));
+				const Batch<const void> c(const_cast<const StorageBase *>(storages[i])->get_ptr(entity_id, space));
+				accessors[i].set_target(const_cast<void *>(c.get_data()));
 			}
 		} else {
 			// This data is not required and is not found.

@@ -79,13 +79,6 @@ private:                                                                        
 	}                                                                                         \
 	COMPONENT_INTERNAL(m_class)
 
-class Component {
-	ECSCLASS(Component)
-
-public:
-	static void _bind_methods() {}
-};
-
 template <class T>
 T *unwrap_component(Object *p_access_databag) {
 	DataAccessor *comp = dynamic_cast<DataAccessor *>(p_access_databag);

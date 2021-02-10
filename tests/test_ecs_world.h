@@ -68,7 +68,7 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 	// ~~ Test the component is initialized with defaults. ~~
 	{
 		const StorageBase *storage = world.get_storage(test_world_component_id);
-		const godex::Component *test_component = storage->get_ptr(entity_1);
+		const void *test_component = storage->get_ptr(entity_1);
 
 		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_1") == Variant(1));
 		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_2") == Variant(false));
@@ -79,7 +79,7 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 	{
 		StorageBase *storage = world.get_storage(test_world_component_id);
 
-		godex::Component *test_component = storage->get_ptr(entity_1);
+		void *test_component = storage->get_ptr(entity_1);
 		ECS::unsafe_component_set_by_name(test_world_component_id, test_component, "variable_1", 2);
 		ECS::unsafe_component_set_by_name(test_world_component_id, test_component, "variable_2", true);
 		ECS::unsafe_component_set_by_name(test_world_component_id, test_component, "variable_3", Transform(Basis(), Vector3(10., 10., 10.)));
@@ -95,7 +95,7 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 	{
 		StorageBase *storage = world.get_storage(test_world_component_id);
 
-		godex::Component *test_component = storage->get_ptr(entity_1);
+		void *test_component = storage->get_ptr(entity_1);
 		// Set the `variable_1` with a floating point variable.
 		ECS::unsafe_component_set_by_name(test_world_component_id, test_component, "variable_1", 0.0);
 
@@ -118,7 +118,7 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 				entity_2_data);
 
 		const StorageBase *storage = world.get_storage(test_world_component_id);
-		const godex::Component *test_component = storage->get_ptr(entity_2);
+		const void *test_component = storage->get_ptr(entity_2);
 
 		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_1") == Variant(100));
 		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_2") == Variant(true));
@@ -138,7 +138,7 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 				entity_3_data);
 
 		const StorageBase *storage = world.get_storage(test_world_component_id);
-		const godex::Component *test_component = storage->get_ptr(entity_3);
+		const void *test_component = storage->get_ptr(entity_3);
 
 		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_1") == Variant(100));
 		// Check default.
@@ -160,7 +160,7 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 				entity_4_data);
 
 		const StorageBase *storage = world.get_storage(test_world_component_id);
-		const godex::Component *test_component = storage->get_ptr(entity_4);
+		const void *test_component = storage->get_ptr(entity_4);
 
 		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_1") == Variant(100));
 		// Make sure the default is set, and not the `Vector3()`.

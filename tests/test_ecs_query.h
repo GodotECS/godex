@@ -10,22 +10,25 @@
 #include "../storage/batch_storage.h"
 #include "../world/world.h"
 
-class TagQueryTestComponent : public godex::Component {
+struct TagQueryTestComponent {
 	COMPONENT(TagQueryTestComponent, DenseVectorStorage)
+	static void _bind_methods() {}
 };
 
-class TestFixedSizeEvent : public godex::Component {
+struct TestFixedSizeEvent {
 	COMPONENT_BATCH(TestFixedSizeEvent, DenseVector, 2)
-public:
+	static void _bind_methods() {}
+
 	int number = 0;
 
 	TestFixedSizeEvent(int num) :
 			number(num) {}
 };
 
-class TestEvent : public godex::Component {
+struct TestEvent {
 	COMPONENT_BATCH(TestEvent, DenseVector, -1) // -1 make the storage dynamic.
-public:
+	static void _bind_methods() {}
+
 	int number = 0;
 
 	TestEvent(int num) :
@@ -163,12 +166,14 @@ public:
 	}
 };
 
-class TestAccessMutabilityComponent1 : public godex::Component {
+struct TestAccessMutabilityComponent1 {
 	COMPONENT(TestAccessMutabilityComponent1, AccessTracerStorage)
+	static void _bind_methods() {}
 };
 
-class TestAccessMutabilityComponent2 : public godex::Component {
+struct TestAccessMutabilityComponent2 {
 	COMPONENT(TestAccessMutabilityComponent2, AccessTracerStorage)
+	static void _bind_methods() {}
 };
 
 namespace godex_tests {

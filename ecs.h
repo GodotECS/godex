@@ -274,6 +274,10 @@ void ECS::register_component() {
 
 template <class C>
 void ECS::register_component(StorageBase *(*create_storage)()) {
+	// TODO make Godot types also trivial.
+	//static_assert(std::is_trivial<C>::value);
+	//static_assert(std::is_trivial<Batch<C>>::value);
+
 	ERR_FAIL_COND_MSG(C::get_component_id() != UINT32_MAX, "This component is already registered.");
 
 	bool notify_release_write = false;

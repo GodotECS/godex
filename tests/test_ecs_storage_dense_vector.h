@@ -8,7 +8,7 @@
 
 namespace godex_storage_dense_vector_tests {
 
-class TestInt : public godex::Component {
+struct TestInt {
 	COMPONENT(TestInt, DenseVectorStorage)
 
 public:

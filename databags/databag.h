@@ -45,7 +45,9 @@ public:                                                              \
 		getters.reset();                                             \
 		methods_map.reset();                                         \
 		methods.reset();                                             \
-	}
+	}                                                                \
+																	 \
+public:
 
 class Databag {
 	ECSCLASS(Databag)
