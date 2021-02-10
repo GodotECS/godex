@@ -18,8 +18,6 @@ public:
 	uint32_t layers = 1;
 	bool visible = true;
 
-	MeshComponent();
-
 	static void _bind_methods();
 
 	void set_mesh(const Ref<Mesh> &p_mesh);

@@ -26,7 +26,6 @@ public:
 
 	int a = 30;
 
-	Test1Component() {}
 	Test1Component(int p_a) :
 			a(p_a) {}
 };
@@ -48,7 +47,6 @@ public:
 
 	int a = 0;
 
-	Event1Component() {}
 	Event1Component(int p_a) :
 			a(p_a) {}
 };

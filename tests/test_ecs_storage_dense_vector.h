@@ -12,9 +12,8 @@ class TestInt : public godex::Component {
 	COMPONENT(TestInt, DenseVectorStorage)
 
 public:
-	int number;
+	int number = 0;
 
-	TestInt() {}
 	TestInt(int i) :
 			number(i) {}
 };

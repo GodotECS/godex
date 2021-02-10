@@ -19,7 +19,6 @@ class TestFixedSizeEvent : public godex::Component {
 public:
 	int number = 0;
 
-	TestFixedSizeEvent() {}
 	TestFixedSizeEvent(int num) :
 			number(num) {}
 };
@@ -29,7 +28,6 @@ class TestEvent : public godex::Component {
 public:
 	int number = 0;
 
-	TestEvent() {}
 	TestEvent(int num) :
 			number(num) {}
 };

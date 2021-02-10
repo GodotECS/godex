@@ -15,6 +15,5 @@ public:
 	// The next child in this level
 	EntityID next;
 
-	Child();
 	Child(EntityID p_parent);
 };

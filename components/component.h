@@ -30,7 +30,9 @@ public:                                                         \
 		methods.reset();                                        \
 	}                                                           \
 																\
-private:
+public:                                                         \
+	m_class() = default;                                        \
+	m_class(const m_class &) = default;
 
 /// Register a component.
 #define COMPONENT(m_class, m_storage_class)                            \

@@ -15,8 +15,6 @@ class TransformComponent : public godex::Component {
 	bool changed = true;
 
 public:
-	TransformComponent() = default;
-	TransformComponent(const TransformComponent &) = default;
 	TransformComponent(const Transform &p_transform);
 
 	// Transform relative to the parent coordinate system or global if root.
