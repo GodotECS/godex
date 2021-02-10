@@ -21,6 +21,8 @@ class DynamicSystemInfo;
 } // namespace godex
 
 struct DataAccessorFuncs {
+	const LocalVector<PropertyInfo> *(*get_properties)() = nullptr;
+	Variant (*get_property_default)(const StringName &p_property_name) = nullptr;
 	bool (*set_by_name)(void *p_self, const StringName &p_name, const Variant &p_data) = nullptr;
 	bool (*get_by_name)(const void *p_self, const StringName &p_name, Variant &r_data) = nullptr;
 	bool (*set_by_index)(void *p_self, const uint32_t p_parameter_index, const Variant &p_data) = nullptr;
@@ -31,8 +33,6 @@ struct DataAccessorFuncs {
 /// These functions are implemented by the `COMPONENT` macro and assigned during
 /// component registration.
 struct ComponentInfo {
-	LocalVector<PropertyInfo> *(*get_properties)();
-	Variant (*get_property_default)(StringName p_property_name);
 	StorageBase *(*create_storage)();
 	DynamicComponentInfo *dynamic_component_info = nullptr;
 	bool notify_release_write = false;
@@ -120,10 +120,11 @@ public:
 	static const LocalVector<StringName> &get_registered_components();
 	static godex::component_id get_component_id(StringName p_component_name);
 	static StringName get_component_name(godex::component_id p_component_id);
-	static const LocalVector<PropertyInfo> *get_component_properties(godex::component_id p_component_id);
-	static Variant get_component_property_default(godex::component_id p_component_id, StringName p_property_name);
 	static bool is_component_events(godex::component_id p_component_id);
 	static bool storage_notify_release_write(godex::component_id p_component_id);
+
+	static const LocalVector<PropertyInfo> *get_component_properties(godex::component_id p_component_id);
+	static Variant get_component_property_default(godex::component_id p_component_id, StringName p_property_name);
 
 	static bool unsafe_component_set_by_name(godex::component_id p_component_id, void *p_component, const StringName &p_name, const Variant &p_data);
 	static bool unsafe_component_get_by_name(godex::component_id p_component_id, const void *p_component, const StringName &p_name, Variant &r_data);
@@ -289,13 +290,13 @@ void ECS::register_component(StorageBase *(*create_storage)()) {
 	components.push_back(component_name);
 	components_info.push_back(
 			ComponentInfo{
-					&C::get_properties_static,
-					&C::get_property_default_static, // TODO move this under `DataAccessorFunc`? // TODO insted to return the variant, pass a reference?
 					create_storage,
 					nullptr,
 					notify_release_write,
 					false,
 					DataAccessorFuncs{
+							C::get_properties,
+							C::get_property_default,
 							C::set_by_name,
 							C::get_by_name,
 							C::set_by_index,
@@ -335,6 +336,8 @@ void ECS::register_databag() {
 	databags_info.push_back(DatabagInfo{
 			R::create_databag_no_type,
 			DataAccessorFuncs{
+					R::get_properties,
+					R::get_property_default,
 					R::set_by_name,
 					R::get_by_name,
 					R::set_by_index,

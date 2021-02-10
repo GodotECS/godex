@@ -85,12 +85,22 @@ StringName ECS::get_component_name(uint32_t p_component_id) {
 	return components[p_component_id];
 }
 
+bool ECS::is_component_events(godex::component_id p_component_id) {
+	ERR_FAIL_COND_V_MSG(verify_component_id(p_component_id) == false, false, "The component " + itos(p_component_id) + " is invalid.");
+	return components_info[p_component_id].is_event;
+}
+
+bool ECS::storage_notify_release_write(godex::component_id p_component_id) {
+	ERR_FAIL_COND_V_MSG(verify_component_id(p_component_id) == false, false, "The component " + itos(p_component_id) + " is invalid.");
+	return components_info[p_component_id].notify_release_write;
+}
+
 const LocalVector<PropertyInfo> *ECS::get_component_properties(uint32_t p_component_id) {
 	ERR_FAIL_COND_V_MSG(verify_component_id(p_component_id) == false, nullptr, "The `component_id` is invalid: " + itos(p_component_id));
 	if (components_info[p_component_id].dynamic_component_info != nullptr) {
 		return components_info[p_component_id].dynamic_component_info->get_properties();
 	} else {
-		return components_info[p_component_id].get_properties();
+		return components_info[p_component_id].accessor_funcs.get_properties();
 	}
 }
 
@@ -102,18 +112,8 @@ Variant ECS::get_component_property_default(uint32_t p_component_id, StringName 
 		return components_info[p_component_id].dynamic_component_info->get_property_default(p_property_name).duplicate();
 	} else {
 		// Native
-		return components_info[p_component_id].get_property_default(p_property_name);
+		return components_info[p_component_id].accessor_funcs.get_property_default(p_property_name);
 	}
-}
-
-bool ECS::is_component_events(godex::component_id p_component_id) {
-	ERR_FAIL_COND_V_MSG(verify_component_id(p_component_id) == false, false, "The component " + itos(p_component_id) + " is invalid.");
-	return components_info[p_component_id].is_event;
-}
-
-bool ECS::storage_notify_release_write(godex::component_id p_component_id) {
-	ERR_FAIL_COND_V_MSG(verify_component_id(p_component_id) == false, false, "The component " + itos(p_component_id) + " is invalid.");
-	return components_info[p_component_id].notify_release_write;
 }
 
 bool ECS::unsafe_component_set_by_name(godex::component_id p_component_id, void *p_component, const StringName &p_name, const Variant &p_data) {
@@ -520,8 +520,6 @@ uint32_t ECS::register_script_component(const StringName &p_name, const LocalVec
 	components.push_back(p_name);
 	components_info.push_back(
 			ComponentInfo{
-					nullptr,
-					nullptr,
 					nullptr,
 					info,
 					false,

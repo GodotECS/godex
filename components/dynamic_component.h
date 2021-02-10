@@ -24,7 +24,7 @@ public:
 		return &properties;
 	}
 
-	Variant get_property_default(StringName p_name) const {
+	Variant get_property_default(const StringName &p_name) const {
 		const uint32_t i = get_property_id(p_name);
 		ERR_FAIL_COND_V_MSG(i == UINT32_MAX, Variant(), "The property " + p_name + " doesn't exists on this component " + ECS::get_component_name(component_id));
 		return defaults[i];
@@ -34,7 +34,7 @@ public:
 		return defaults;
 	}
 
-	uint32_t get_property_id(StringName p_name) const {
+	uint32_t get_property_id(const StringName &p_name) const {
 		const int64_t i = property_map.find(p_name);
 		ERR_FAIL_COND_V_MSG(i == -1, UINT32_MAX, "The property " + p_name + " doesn't exists on this component " + ECS::get_component_name(component_id));
 		return i;

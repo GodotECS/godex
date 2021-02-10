@@ -45,25 +45,12 @@ public:                                                              \
 		getters.reset();                                             \
 		methods_map.reset();                                         \
 		methods.reset();                                             \
-	}                                                                \
-																	 \
-private:
+	}
 
 class Databag {
 	ECSCLASS(Databag)
-
 public:
-	Databag();
-
-public:
-	static void _bind_methods();
-
-	virtual const LocalVector<PropertyInfo> *get_properties() const;
-	virtual bool set(const StringName &p_name, const Variant &p_data);
-	virtual bool get(const StringName &p_name, Variant &r_data) const;
-
-	virtual bool set(const uint32_t p_parameter_index, const Variant &p_data);
-	virtual bool get(const uint32_t p_parameter_index, Variant &r_data) const;
+	static void _bind_methods() {}
 };
 
 template <class T>

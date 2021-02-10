@@ -190,10 +190,10 @@ private:                                                                        
 		setters.push_back(p_set);                                                                                                      \
 		getters.push_back(p_get);                                                                                                      \
 	}                                                                                                                                  \
-	static LocalVector<PropertyInfo> *get_properties_static() {                                                                        \
+	static const LocalVector<PropertyInfo> *get_properties() {                                                                         \
 		return &properties;                                                                                                            \
 	}                                                                                                                                  \
-	static Variant get_property_default_static(StringName p_name) {                                                                    \
+	static Variant get_property_default(const StringName &p_name) {                                                                    \
 		const m_class c;                                                                                                               \
 		Variant ret;                                                                                                                   \
 		get_by_name(&c, p_name, ret);                                                                                                  \
@@ -201,9 +201,6 @@ private:                                                                        
 	}                                                                                                                                  \
 	static void clear_properties_static() {                                                                                            \
 		property_map.clear();                                                                                                          \
-	}                                                                                                                                  \
-	virtual const LocalVector<PropertyInfo> *get_properties() const override {                                                         \
-		return get_properties_static();                                                                                                \
 	}                                                                                                                                  \
 	static uint32_t get_property_index(const StringName &p_name) {                                                                     \
 		const int64_t i = property_map.find(p_name);                                                                                   \

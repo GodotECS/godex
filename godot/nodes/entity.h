@@ -626,11 +626,12 @@ bool EntityInternal<C>::_get_component(const StringName &p_component_name, Varia
 
 		Dictionary dic;
 		Variant supp;
-		for (uint32_t i = 0; i < component->get_properties()->size(); i += 1) {
+		const LocalVector<PropertyInfo> *props = ECS::get_component_properties(id);
+		for (uint32_t i = 0; i < props->size(); i += 1) {
 			if (likely(ECS::unsafe_component_get_by_index(id, component, i, supp))) {
-				dic[(*component->get_properties())[i].name] = supp;
+				dic[(*props)[i].name] = supp;
 			} else {
-				dic[(*component->get_properties())[i].name] = Variant();
+				dic[(*props)[i].name] = Variant();
 			}
 		}
 

@@ -83,9 +83,7 @@ class Component {
 	ECSCLASS(Component)
 
 public:
-	static void _bind_methods();
-
-	virtual const LocalVector<PropertyInfo> *get_properties() const;
+	static void _bind_methods() {}
 };
 
 template <class T>
