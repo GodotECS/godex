@@ -87,15 +87,6 @@ public:
 	static void _bind_methods();
 
 	virtual const LocalVector<PropertyInfo> *get_properties() const;
-	virtual bool set(const StringName &p_name, const Variant &p_data);
-	virtual bool get(const StringName &p_name, Variant &r_data) const;
-
-	virtual bool set(const uint32_t p_parameter_index, const Variant &p_data);
-	virtual bool get(const uint32_t p_parameter_index, Variant &r_data) const;
-
-	Variant get(const StringName &p_name) const;
-
-	virtual void da_call(const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error);
 };
 
 template <class T>

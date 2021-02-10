@@ -271,15 +271,15 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 	// Validate the dynamic component.
 	{
 		const StorageBase *storage = world.get_storage(test_dyn_component_id);
-		CHECK(storage->get_ptr(entity_1)->get("variable_1") == Variant(4));
+		CHECK(ECS::unsafe_component_get_by_name(test_dyn_component_id, storage->get_ptr(entity_1), "variable_1") == Variant(4));
 		// Make sure this doesn't changed.
-		CHECK(storage->get_ptr(entity_1)->get("variable_2") == Variant(false));
+		CHECK(ECS::unsafe_component_get_by_name(test_dyn_component_id, storage->get_ptr(entity_1), "variable_2") == Variant(false));
 
 		CHECK(storage->has(entity_2) == false);
 
-		CHECK(storage->get_ptr(entity_3)->get("variable_1") == Variant(4));
+		CHECK(ECS::unsafe_component_get_by_name(test_dyn_component_id, storage->get_ptr(entity_3), "variable_1") == Variant(4));
 		// Make sure this doesn't changed.
-		CHECK(storage->get_ptr(entity_3)->get("variable_2") == Variant(false));
+		CHECK(ECS::unsafe_component_get_by_name(test_dyn_component_id, storage->get_ptr(entity_3), "variable_2") == Variant(false));
 	}
 }
 

@@ -38,11 +38,11 @@ bool DataAccessor::_setv(const StringName &p_name, const Variant &p_value) {
 
 	switch (target_type) {
 		case DataAccessorTargetType::Databag:
-			return false;
+			return ECS::unsafe_databag_set_by_name(target_identifier, target, p_name, p_value);
 		case DataAccessorTargetType::Component:
-			return false;
+			return ECS::unsafe_component_set_by_name(target_identifier, target, p_name, p_value);
 		case DataAccessorTargetType::Storage:
-			return false;
+			return static_cast<StorageBase *>(target)->set(p_name, p_value);
 	}
 
 	return false;
@@ -53,11 +53,11 @@ bool DataAccessor::_getv(const StringName &p_name, Variant &r_ret) const {
 
 	switch (target_type) {
 		case DataAccessorTargetType::Databag:
-			return false;
+			return ECS::unsafe_databag_get_by_name(target_identifier, target, p_name, r_ret);
 		case DataAccessorTargetType::Component:
-			return false;
+			return ECS::unsafe_component_get_by_name(target_identifier, target, p_name, r_ret);
 		case DataAccessorTargetType::Storage:
-			return false;
+			return static_cast<StorageBase *>(target)->get(p_name, r_ret);
 	}
 
 	return false;
@@ -86,8 +86,22 @@ Variant DataAccessor::call(const StringName &p_method, const Variant **p_args, i
 						r_error);
 				break;
 			case DataAccessorTargetType::Component:
+				ECS::unsafe_component_call(
+						target_identifier,
+						target,
+						p_method,
+						p_args,
+						p_argcount,
+						&ret,
+						r_error);
 				break;
 			case DataAccessorTargetType::Storage:
+				static_cast<StorageBase *>(target)->da_call(
+						p_method,
+						p_args,
+						p_argcount,
+						&ret,
+						r_error);
 				break;
 		}
 		return ret;

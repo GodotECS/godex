@@ -68,10 +68,30 @@ public:
 	ZeroVariantComponent() {}
 
 	void __initialize(DynamicComponentInfo *p_info) {
+#ifdef DEBUG_ENABLED
 		CRASH_COND_MSG(p_info == nullptr, "The component info can't be nullptr.");
-		CRASH_COND_MSG(info->get_properties()->size() != 0, "The ZeroVariantComponent can't be initiazlized with `DanamicComponentInfo` that has data for more paramenters.");
-
+		CRASH_COND_MSG(p_info->get_properties()->size() != 0, "The ZeroVariantComponent can't be initiazlized with `DanamicComponentInfo` that has data for more paramenters.");
+#endif
 		info = p_info;
+	}
+
+public:
+	/* Common component functions used to expose component to GDScript. */
+	static bool set_by_name(void *p_self, const StringName &p_name, const Variant &p_data) {
+		// Nothing to do.
+		return false;
+	}
+	static bool get_by_name(const void *p_self, const StringName &p_name, Variant &r_data) {
+		// Nothing to do.
+		return false;
+	}
+	static bool set_by_index(void *p_self, const uint32_t p_index, const Variant &p_data) {
+		// Nothing to do.
+		return false;
+	}
+	static bool get_by_index(const void *p_self, const uint32_t p_index, Variant &r_data) {
+		// Nothing to do.
+		return false;
 	}
 };
 
@@ -87,12 +107,37 @@ public:
 	VariantComponent() {}
 
 	void __initialize(DynamicComponentInfo *p_info);
+
+public:
+	/* Common component functions used to expose component to GDScript. */
+	static bool set_by_name(void *p_self, const StringName &p_name, const Variant &p_data) {
+		VariantComponent<SIZE> *self = static_cast<VariantComponent<SIZE> *>(p_self);
+		ERR_FAIL_COND_V_MSG(self->info == nullptr, false, "VariantComponent not initialized, you can't set the data yet: call __initialize().");
+		return DynamicComponentInfo::static_set(self, self->info, p_name, p_data);
+	}
+	static bool get_by_name(const void *p_self, const StringName &p_name, Variant &r_data) {
+		const VariantComponent<SIZE> *self = static_cast<const VariantComponent<SIZE> *>(p_self);
+		ERR_FAIL_COND_V_MSG(self->info == nullptr, false, "VariantComponent not initialized, you can't set the data yet: call __initialize().");
+		return DynamicComponentInfo::static_get(self, self->info, p_name, r_data);
+	}
+	static bool set_by_index(void *p_self, const uint32_t p_index, const Variant &p_data) {
+		VariantComponent<SIZE> *self = static_cast<VariantComponent<SIZE> *>(p_self);
+		ERR_FAIL_COND_V_MSG(self->info == nullptr, false, "VariantComponent not initialized, you can't set the data yet: call __initialize().");
+		return DynamicComponentInfo::static_set(self, self->info, p_index, p_data);
+	}
+	static bool get_by_index(const void *p_self, const uint32_t p_index, Variant &r_data) {
+		const VariantComponent<SIZE> *self = static_cast<const VariantComponent<SIZE> *>(p_self);
+		ERR_FAIL_COND_V_MSG(self->info == nullptr, false, "VariantComponent not initialized, you can't set the data yet: call __initialize().");
+		return DynamicComponentInfo::static_get(self, self->info, p_index, r_data);
+	}
 };
 
 template <int SIZE>
 void VariantComponent<SIZE>::__initialize(DynamicComponentInfo *p_info) {
+#ifdef DEBUG_ENABLED
 	CRASH_COND_MSG(p_info == nullptr, "The component info can't be nullptr.");
-	CRASH_COND_MSG(info->get_properties()->size() != SIZE, "The VariantComponent(size: " + itos(SIZE) + ") got created with a ScriptComponentInfo that has " + itos(p_info->get_properties()->size()) + " parameters, this is not supposed to happen.");
+	CRASH_COND_MSG(p_info->get_properties()->size() != SIZE, "The VariantComponent(size: " + itos(SIZE) + ") got created with a ScriptComponentInfo that has " + itos(p_info->get_properties()->size()) + " parameters, this is not supposed to happen.");
+#endif
 
 	info = p_info;
 

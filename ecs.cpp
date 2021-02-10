@@ -116,6 +116,61 @@ bool ECS::storage_notify_release_write(godex::component_id p_component_id) {
 	return components_info[p_component_id].notify_release_write;
 }
 
+bool ECS::unsafe_component_set_by_name(godex::component_id p_component_id, void *p_component, const StringName &p_name, const Variant &p_data) {
+	if (components_info[p_component_id].dynamic_component_info) {
+		// This is a dynamic component.
+		return DynamicComponentInfo::static_set(p_component, components_info[p_component_id].dynamic_component_info, p_name, p_data);
+	} else {
+		return components_info[p_component_id].accessor_funcs.set_by_name(p_component, p_name, p_data);
+	}
+}
+
+bool ECS::unsafe_component_get_by_name(godex::component_id p_component_id, const void *p_component, const StringName &p_name, Variant &r_data) {
+	if (components_info[p_component_id].dynamic_component_info) {
+		// This is a dynamic component.
+		return DynamicComponentInfo::static_get(p_component, components_info[p_component_id].dynamic_component_info, p_name, r_data);
+	} else {
+		return components_info[p_component_id].accessor_funcs.get_by_name(p_component, p_name, r_data);
+	}
+}
+
+Variant ECS::unsafe_component_get_by_name(godex::component_id p_component_id, const void *p_component, const StringName &p_name) {
+	Variant r;
+	unsafe_component_get_by_name(p_component_id, p_component, p_name, r);
+	return r;
+}
+
+bool ECS::unsafe_component_set_by_index(godex::component_id p_component_id, void *p_component, uint32_t p_index, const Variant &p_data) {
+	if (components_info[p_component_id].dynamic_component_info) {
+		return DynamicComponentInfo::static_set(p_component, components_info[p_component_id].dynamic_component_info, p_index, p_data);
+	} else {
+		return components_info[p_component_id].accessor_funcs.set_by_index(p_component, p_index, p_data);
+	}
+}
+
+bool ECS::unsafe_component_get_by_index(godex::component_id p_component_id, const void *p_component, uint32_t p_index, Variant &r_data) {
+	if (components_info[p_component_id].dynamic_component_info) {
+		return DynamicComponentInfo::static_get(p_component, components_info[p_component_id].dynamic_component_info, p_index, r_data);
+	} else {
+		return components_info[p_component_id].accessor_funcs.get_by_index(p_component, p_index, r_data);
+	}
+}
+
+void ECS::unsafe_component_call(godex::component_id p_component_id, void *p_component, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) {
+	if (components_info[p_component_id].dynamic_component_info != nullptr) {
+		// This is a variant component, right now it's
+		ERR_PRINT("GDScript component doesn't supports functions call (yet?).");
+	} else {
+		components_info[p_component_id].accessor_funcs.call(
+				p_component,
+				p_method,
+				p_args,
+				p_argcount,
+				r_ret,
+				r_error);
+	}
+}
+
 bool ECS::verify_databag_id(godex::databag_id p_id) {
 	return p_id < databags.size();
 }
@@ -140,6 +195,28 @@ uint32_t ECS::get_databag_id(const StringName &p_name) {
 StringName ECS::get_databag_name(godex::databag_id p_databag_id) {
 	ERR_FAIL_COND_V_MSG(verify_databag_id(p_databag_id) == false, StringName(), "The `databag_id` is invalid: " + itos(p_databag_id));
 	return databags[p_databag_id];
+}
+
+bool ECS::unsafe_databag_set_by_name(godex::databag_id p_databag_id, void *p_databag, const StringName &p_name, const Variant &p_data) {
+	return databags_info[p_databag_id].accessor_funcs.set_by_name(p_databag, p_name, p_data);
+}
+
+bool ECS::unsafe_databag_get_by_name(godex::databag_id p_databag_id, const void *p_databag, const StringName &p_name, Variant &r_data) {
+	return databags_info[p_databag_id].accessor_funcs.get_by_name(p_databag, p_name, r_data);
+}
+
+Variant ECS::unsafe_databag_get_by_name(godex::databag_id p_databag_id, const void *p_databag, const StringName &p_name) {
+	Variant r;
+	unsafe_databag_get_by_name(p_databag_id, p_databag, p_name, r);
+	return r;
+}
+
+bool ECS::unsafe_databag_set_by_index(godex::databag_id p_databag_id, void *p_databag, uint32_t p_index, const Variant &p_data) {
+	return databags_info[p_databag_id].accessor_funcs.set_by_index(p_databag, p_index, p_data);
+}
+
+bool ECS::unsafe_databag_get_by_index(godex::databag_id p_databag_id, const void *p_databag, uint32_t p_index, Variant &r_data) {
+	return databags_info[p_databag_id].accessor_funcs.get_by_index(p_databag, p_index, r_data);
 }
 
 void ECS::unsafe_databag_call(

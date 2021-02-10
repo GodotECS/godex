@@ -21,7 +21,11 @@ class DynamicSystemInfo;
 } // namespace godex
 
 struct DataAccessorFuncs {
-	void (*call)(void *p_self, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error);
+	bool (*set_by_name)(void *p_self, const StringName &p_name, const Variant &p_data) = nullptr;
+	bool (*get_by_name)(const void *p_self, const StringName &p_name, Variant &r_data) = nullptr;
+	bool (*set_by_index)(void *p_self, const uint32_t p_parameter_index, const Variant &p_data) = nullptr;
+	bool (*get_by_index)(const void *p_self, const uint32_t p_parameter_index, Variant &r_data) = nullptr;
+	void (*call)(void *p_self, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) = nullptr;
 };
 
 /// These functions are implemented by the `COMPONENT` macro and assigned during
@@ -34,7 +38,7 @@ struct ComponentInfo {
 	bool notify_release_write = false;
 	bool is_event = false;
 
-	DataAccessorFuncs funcs;
+	DataAccessorFuncs accessor_funcs;
 };
 
 /// These functions are implemented by the `DATABAG` macro and assigned during
@@ -121,6 +125,13 @@ public:
 	static bool is_component_events(godex::component_id p_component_id);
 	static bool storage_notify_release_write(godex::component_id p_component_id);
 
+	static bool unsafe_component_set_by_name(godex::component_id p_component_id, void *p_component, const StringName &p_name, const Variant &p_data);
+	static bool unsafe_component_get_by_name(godex::component_id p_component_id, const void *p_component, const StringName &p_name, Variant &r_data);
+	static Variant unsafe_component_get_by_name(godex::component_id p_component_id, const void *p_component, const StringName &p_name);
+	static bool unsafe_component_set_by_index(godex::component_id p_component_id, void *p_component, uint32_t p_index, const Variant &p_data);
+	static bool unsafe_component_get_by_index(godex::component_id p_component_id, const void *p_component, uint32_t p_index, Variant &r_data);
+	static void unsafe_component_call(godex::component_id p_component_id, void *p_component, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error);
+
 	// ~~ Databags ~~
 	template <class C>
 	static void register_databag();
@@ -132,6 +143,11 @@ public:
 	static godex::databag_id get_databag_id(const StringName &p_name);
 	static StringName get_databag_name(godex::databag_id p_databag_id);
 
+	static bool unsafe_databag_set_by_name(godex::databag_id p_databag_id, void *p_databag, const StringName &p_name, const Variant &p_data);
+	static bool unsafe_databag_get_by_name(godex::databag_id p_databag_id, const void *p_databag, const StringName &p_name, Variant &r_data);
+	static Variant unsafe_databag_get_by_name(godex::databag_id p_databag_id, const void *p_databag, const StringName &p_name);
+	static bool unsafe_databag_set_by_index(godex::databag_id p_databag_id, void *p_databag, uint32_t p_index, const Variant &p_data);
+	static bool unsafe_databag_get_by_index(godex::databag_id p_databag_id, const void *p_databag, uint32_t p_index, Variant &r_data);
 	static void unsafe_databag_call(godex::databag_id p_databag_id, void *p_databag, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error);
 
 	// ~~ Systems ~~
@@ -274,12 +290,17 @@ void ECS::register_component(StorageBase *(*create_storage)()) {
 	components_info.push_back(
 			ComponentInfo{
 					&C::get_properties_static,
-					&C::get_property_default_static,
+					&C::get_property_default_static, // TODO move this under `DataAccessorFunc`? // TODO insted to return the variant, pass a reference?
 					create_storage,
 					nullptr,
 					notify_release_write,
 					false,
-					DataAccessorFuncs{ C::static_call } });
+					DataAccessorFuncs{
+							C::set_by_name,
+							C::get_by_name,
+							C::set_by_index,
+							C::get_by_index,
+							C::static_call } });
 
 	// Store the function pointer that clear the static memory.
 	notify_static_destructor.push_back(&C::__static_destructor);
@@ -313,7 +334,12 @@ void ECS::register_databag() {
 	databags.push_back(databag_name);
 	databags_info.push_back(DatabagInfo{
 			R::create_databag_no_type,
-			DataAccessorFuncs{ R::static_call } });
+			DataAccessorFuncs{
+					R::set_by_name,
+					R::get_by_name,
+					R::set_by_index,
+					R::get_by_index,
+					R::static_call } });
 
 	// Store the function pointer that clear the static memory.
 	notify_static_destructor.push_back(&R::__static_destructor);

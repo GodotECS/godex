@@ -165,7 +165,9 @@ bool DynamicComponentInfo::static_get(const void *p_self, const DynamicComponent
 
 bool DynamicComponentInfo::static_set(void *p_self, const DynamicComponentInfo *p_info, const uint32_t p_index, const Variant &p_data) {
 	ERR_FAIL_COND_V_MSG(p_index >= p_info->properties.size(), false, "You can't set this data to this VariantComponent.");
-	static_get_data(p_self, p_info)[p_index] = p_data;
+	Variant *d = static_get_data(p_self, p_info);
+	ERR_FAIL_COND_V_MSG(d[p_index].get_type() != p_data.get_type(), false, "You can't set a variable with different type.");
+	d[p_index] = p_data;
 	return true;
 }
 

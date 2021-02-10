@@ -551,10 +551,12 @@ TEST_CASE("[Modules][ECS] Test dynamic query with dynamic storages.") {
 
 	World world;
 
-	EntityID entity_1 = world.create_entity()
+	EntityID entity_1 = world
+								.create_entity()
 								.with(test_dyn_component_id, Dictionary());
 
-	EntityID entity_2 = world.create_entity()
+	EntityID entity_2 = world
+								.create_entity()
 								.with(test_dyn_component_id, Dictionary());
 
 	godex::DynamicQuery query;

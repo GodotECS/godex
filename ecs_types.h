@@ -207,7 +207,7 @@ private:                                                                        
 	static Variant get_property_default_static(StringName p_name) {                                                                    \
 		const m_class c;                                                                                                               \
 		Variant ret;                                                                                                                   \
-		c.get(p_name, ret);                                                                                                            \
+		get_by_name(&c, p_name, ret);                                                                                                  \
 		return ret;                                                                                                                    \
 	}                                                                                                                                  \
 	static void clear_properties_static() {                                                                                            \
@@ -216,29 +216,33 @@ private:                                                                        
 	virtual const LocalVector<PropertyInfo> *get_properties() const override {                                                         \
 		return get_properties_static();                                                                                                \
 	}                                                                                                                                  \
-	uint32_t get_property_index(const StringName &p_name) const {                                                                      \
+	static uint32_t get_property_index(const StringName &p_name) {                                                                     \
 		const int64_t i = property_map.find(p_name);                                                                                   \
 		return i == -1 ? UINT32_MAX : uint32_t(i);                                                                                     \
 	}                                                                                                                                  \
 																																	   \
 public:                                                                                                                                \
-	virtual bool set(const StringName &p_name, const Variant &p_data) override {                                                       \
+	static bool set_by_name(void *p_self, const StringName &p_name, const Variant &p_data) {                                           \
+		m_class *self = static_cast<m_class *>(p_self);                                                                                \
 		const uint32_t i = get_property_index(p_name);                                                                                 \
 		ERR_FAIL_COND_V_MSG(i == UINT32_MAX, false, "The parameter " + p_name + " doesn't exist in this component.");                  \
-		return setters[i](this, p_data);                                                                                               \
+		return setters[i](self, p_data);                                                                                               \
 	}                                                                                                                                  \
-	virtual bool get(const StringName &p_name, Variant &r_data) const override {                                                       \
+	static bool get_by_name(const void *p_self, const StringName &p_name, Variant &r_data) {                                           \
+		const m_class *self = static_cast<const m_class *>(p_self);                                                                    \
 		const uint32_t i = get_property_index(p_name);                                                                                 \
 		ERR_FAIL_COND_V_MSG(i == UINT32_MAX, false, "The parameter " + p_name + " doesn't exist in this component.");                  \
-		return getters[i](this, r_data);                                                                                               \
+		return getters[i](self, r_data);                                                                                               \
 	}                                                                                                                                  \
-	virtual bool set(const uint32_t p_index, const Variant &p_data) override {                                                         \
+	static bool set_by_index(void *p_self, const uint32_t p_index, const Variant &p_data) {                                            \
+		m_class *self = static_cast<m_class *>(p_self);                                                                                \
 		ERR_FAIL_COND_V_MSG(p_index >= setters.size(), false, "The parameter " + itos(p_index) + " doesn't exist in this component."); \
-		return setters[p_index](this, p_data);                                                                                         \
+		return setters[p_index](self, p_data);                                                                                         \
 	}                                                                                                                                  \
-	virtual bool get(const uint32_t p_index, Variant &r_data) const override {                                                         \
+	static bool get_by_index(const void *p_self, const uint32_t p_index, Variant &r_data) {                                            \
+		const m_class *self = static_cast<const m_class *>(p_self);                                                                    \
 		ERR_FAIL_COND_V_MSG(p_index >= getters.size(), false, "The parameter " + itos(p_index) + " doesn't exist in this component."); \
-		return getters[p_index](this, r_data);                                                                                         \
+		return getters[p_index](self, r_data);                                                                                         \
 	}
 
 /// Must be called in `_bind_methods` and can be used to just bind a property.
