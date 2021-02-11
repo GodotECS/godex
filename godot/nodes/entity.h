@@ -68,12 +68,12 @@ struct EntityInternal : public EntityBase {
 	void remove_component(const StringName &p_component_name);
 	bool has_component(const StringName &p_component_name) const;
 
-	bool set_component_value(const StringName &p_component_name, const StringName &p_property_name, const Variant &p_value);
-	Variant get_component_value(const StringName &p_component_name, const StringName &p_property_name) const;
-	bool _get_component_value(const StringName &p_component_name, const StringName &p_property_name, Variant &r_ret) const;
+	bool set_component_value(const StringName &p_component_name, const StringName &p_property_name, const Variant &p_value, Space p_space = Space::LOCAL);
+	Variant get_component_value(const StringName &p_component_name, const StringName &p_property_name, Space p_space = Space::LOCAL) const;
+	bool _get_component_value(const StringName &p_component_name, const StringName &p_property_name, Variant &r_ret, Space p_space = Space::LOCAL) const;
 
-	bool set_component(const StringName &p_component_name, const Variant &d_ret);
-	bool _get_component(const StringName &p_component_name, Variant &r_ret) const;
+	bool set_component(const StringName &p_component_name, const Variant &d_ret, Space p_space = Space::LOCAL);
+	bool _get_component(const StringName &p_component_name, Variant &r_ret, Space p_space = Space::LOCAL) const;
 
 	/// Duplicate this `Entity`.
 	uint32_t clone(Object *p_world) const;
@@ -170,12 +170,12 @@ public:
 		return entity.has_component(p_component_name);
 	}
 
-	bool set_component_value(const StringName &p_component_name, const StringName &p_property_name, const Variant &p_value) {
-		return entity.set_component_value(p_component_name, p_property_name, p_value);
+	bool set_component_value(const StringName &p_component_name, const StringName &p_property_name, const Variant &p_value, Space p_space = Space::LOCAL) {
+		return entity.set_component_value(p_component_name, p_property_name, p_value, p_space);
 	}
 
-	Variant get_component_value(const StringName &p_component_name, const StringName &p_property_name) const {
-		return entity.get_component_value(p_component_name, p_property_name);
+	Variant get_component_value(const StringName &p_component_name, const StringName &p_property_name, Space p_space = Space::LOCAL) const {
+		return entity.get_component_value(p_component_name, p_property_name, p_space);
 	}
 
 	uint32_t clone(Object *p_world) const {
@@ -261,12 +261,12 @@ public:
 		return entity.has_component(p_component_name);
 	}
 
-	bool set_component_value(const StringName &p_component_name, const StringName &p_property_name, const Variant &p_value) {
-		return entity.set_component_value(p_component_name, p_property_name, p_value);
+	bool set_component_value(const StringName &p_component_name, const StringName &p_property_name, const Variant &p_value, Space p_space = Space::LOCAL) {
+		return entity.set_component_value(p_component_name, p_property_name, p_value, p_space);
 	}
 
-	Variant get_component_value(const StringName &p_component_name, const StringName &p_property_name) const {
-		return entity.get_component_value(p_component_name, p_property_name);
+	Variant get_component_value(const StringName &p_component_name, const StringName &p_property_name, Space p_space = Space::LOCAL) const {
+		return entity.get_component_value(p_component_name, p_property_name, p_space);
 	}
 
 	uint32_t clone(Object *p_world) const {
@@ -443,7 +443,7 @@ const Dictionary &EntityInternal<C>::get_components_data() const {
 }
 
 template <class C>
-bool EntityInternal<C>::set_component_value(const StringName &p_component_name, const StringName &p_property_name, const Variant &p_value) {
+bool EntityInternal<C>::set_component_value(const StringName &p_component_name, const StringName &p_property_name, const Variant &p_value, Space p_space) {
 	if (entity_id.is_null()) {
 		ERR_FAIL_COND_V(components_data.has(p_component_name) == false, false);
 		if (components_data[p_component_name].get_type() != Variant::DICTIONARY) {
@@ -466,22 +466,22 @@ bool EntityInternal<C>::set_component_value(const StringName &p_component_name, 
 		ERR_FAIL_COND_V_MSG(id == UINT32_MAX, false, "The component " + p_component_name + " doesn't exists.");
 		StorageBase *storage = ECS::get_singleton()->get_active_world()->get_storage(id);
 		ERR_FAIL_COND_V_MSG(storage == nullptr, false, "The component " + p_component_name + " doesn't have a storage on the active world.");
-		void *component = storage->get_ptr(entity_id);
+		void *component = storage->get_ptr(entity_id, p_space);
 		ERR_FAIL_COND_V_MSG(component == nullptr, false, "The entity " + itos(entity_id) + " doesn't have a component " + p_component_name);
 		return ECS::unsafe_component_set_by_name(id, component, p_property_name, p_value);
 	}
 }
 
 template <class C>
-Variant EntityInternal<C>::get_component_value(const StringName &p_component_name, const StringName &p_property_name) const {
+Variant EntityInternal<C>::get_component_value(const StringName &p_component_name, const StringName &p_property_name, Space p_space) const {
 	Variant ret;
 	// No need to test if success because the error is already logged.
-	_get_component_value(p_component_name, p_property_name, ret);
+	_get_component_value(p_component_name, p_property_name, ret, p_space);
 	return ret;
 }
 
 template <class C>
-bool EntityInternal<C>::_get_component_value(const StringName &p_component_name, const StringName &p_property_name, Variant &r_ret) const {
+bool EntityInternal<C>::_get_component_value(const StringName &p_component_name, const StringName &p_property_name, Variant &r_ret, Space p_space) const {
 	// This function is always executed in single thread.
 
 	if (entity_id.is_null()) {
@@ -522,14 +522,14 @@ bool EntityInternal<C>::_get_component_value(const StringName &p_component_name,
 		ERR_FAIL_COND_V_MSG(id == UINT32_MAX, false, "The component " + p_component_name + " doesn't exists.");
 		const StorageBase *storage = ECS::get_singleton()->get_active_world()->get_storage(id);
 		ERR_FAIL_COND_V_MSG(storage == nullptr, false, "The component " + p_component_name + " doesn't have a storage on the active world.");
-		const void *component = storage->get_ptr(entity_id);
+		const void *component = storage->get_ptr(entity_id, p_space);
 		ERR_FAIL_COND_V_MSG(component == nullptr, false, "The entity " + itos(entity_id) + " doesn't have a component " + p_component_name);
 		return ECS::unsafe_component_get_by_name(id, component, p_property_name, r_ret);
 	}
 }
 
 template <class C>
-bool EntityInternal<C>::set_component(const StringName &p_component_name, const Variant &d_data) {
+bool EntityInternal<C>::set_component(const StringName &p_component_name, const Variant &d_data, Space p_space) {
 	Dictionary data = d_data;
 
 	if (entity_id.is_null()) {
@@ -550,7 +550,7 @@ bool EntityInternal<C>::set_component(const StringName &p_component_name, const 
 		ERR_FAIL_COND_V_MSG(id == UINT32_MAX, false, "The component " + p_component_name + " doesn't exists.");
 		StorageBase *storage = ECS::get_singleton()->get_active_world()->get_storage(id);
 		ERR_FAIL_COND_V_MSG(storage == nullptr, false, "The component " + p_component_name + " doesn't have a storage on the active world.");
-		void *component = storage->get_ptr(entity_id);
+		void *component = storage->get_ptr(entity_id, p_space);
 		ERR_FAIL_COND_V_MSG(component == nullptr, false, "The entity " + itos(entity_id) + " doesn't have a component " + p_component_name);
 
 		for (const Variant *key = data.next(nullptr); key != nullptr; key = data.next(key)) {
@@ -561,7 +561,7 @@ bool EntityInternal<C>::set_component(const StringName &p_component_name, const 
 }
 
 template <class C>
-bool EntityInternal<C>::_get_component(const StringName &p_component_name, Variant &r_ret) const {
+bool EntityInternal<C>::_get_component(const StringName &p_component_name, Variant &r_ret, Space p_space) const {
 	if (entity_id.is_null()) {
 		// Entity is null, so take default or set what we have in `component_data`.
 		Dictionary dic;
@@ -621,7 +621,7 @@ bool EntityInternal<C>::_get_component(const StringName &p_component_name, Varia
 		ERR_FAIL_COND_V_MSG(id == UINT32_MAX, false, "The component " + p_component_name + " doesn't exists.");
 		const StorageBase *storage = ECS::get_singleton()->get_active_world()->get_storage(id);
 		ERR_FAIL_COND_V_MSG(storage == nullptr, false, "The component " + p_component_name + " doesn't have a storage on the active world.");
-		const void *component = storage->get_ptr(entity_id);
+		const void *component = storage->get_ptr(entity_id, p_space);
 		ERR_FAIL_COND_V_MSG(component == nullptr, false, "The entity " + itos(entity_id) + " doesn't have a component " + p_component_name);
 
 		Dictionary dic;

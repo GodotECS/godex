@@ -37,8 +37,8 @@ void Entity3D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("remove_component", "component_name"), &Entity3D::remove_component);
 	ClassDB::bind_method(D_METHOD("has_component", "component_name"), &Entity3D::has_component);
 
-	ClassDB::bind_method(D_METHOD("set_component_value", "component", "property", "value"), &Entity3D::set_component_value);
-	ClassDB::bind_method(D_METHOD("get_component_value", "component", "property"), &Entity3D::get_component_value);
+	ClassDB::bind_method(D_METHOD("set_component_value", "component", "property", "value", "space"), &Entity3D::set_component_value, DEFVAL(Space::LOCAL));
+	ClassDB::bind_method(D_METHOD("get_component_value", "component", "property", "space"), &Entity3D::get_component_value, DEFVAL(Space::LOCAL));
 
 	ClassDB::bind_method(D_METHOD("clone", "world"), &Entity3D::clone);
 
@@ -55,8 +55,8 @@ void Entity2D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("remove_component", "component_name"), &Entity2D::remove_component);
 	ClassDB::bind_method(D_METHOD("has_component", "component_name"), &Entity2D::has_component);
 
-	ClassDB::bind_method(D_METHOD("set_component_value", "component", "property", "value"), &Entity2D::set_component_value);
-	ClassDB::bind_method(D_METHOD("get_component_value", "component", "property"), &Entity2D::get_component_value);
+	ClassDB::bind_method(D_METHOD("set_component_value", "component", "property", "value", "space"), &Entity2D::set_component_value, DEFVAL(Space::LOCAL));
+	ClassDB::bind_method(D_METHOD("get_component_value", "component", "property", "space"), &Entity2D::get_component_value, DEFVAL(Space::LOCAL));
 
 	ClassDB::bind_method(D_METHOD("clone", "world"), &Entity2D::clone);
 

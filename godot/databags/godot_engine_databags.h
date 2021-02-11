@@ -46,6 +46,7 @@ class OsDatabag : public godex::Databag {
 
 	static void _bind_methods();
 
+private:
 	OS *os_singleton;
 
 public:
