@@ -90,8 +90,6 @@ class World : public godex::Databag {
 	EntityBuilder entity_builder = EntityBuilder(this);
 	bool is_dispatching_in_progress = false;
 
-	LocalVector<StorageBase *> sub_flush;
-
 	static void _bind_methods();
 
 public:

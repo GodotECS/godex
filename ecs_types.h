@@ -132,6 +132,8 @@ public:
 	EntityID() :
 			id(UINT32_MAX) {}
 
+	EntityID(const EntityID &) = default;
+
 	EntityID(uint32_t p_index) :
 			id(p_index) {}
 
