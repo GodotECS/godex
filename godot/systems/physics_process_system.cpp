@@ -40,7 +40,7 @@ void call_physics_process(
 
 	p_engine->get_engine()->set_physics_frames(p_engine->get_engine()->get_physics_frames() + 1);
 
-	// Flush any hierarchy change. GDScrip may have changed it.
+	// Flush any hierarchy change. GDScript may have changed it.
 	// Trust this that `Child` is using the `Hierarchy` storage.
 	Hierarchy *hierarchy = static_cast<Hierarchy *>(p_world->get_storage<Child>());
 	if (hierarchy) {
