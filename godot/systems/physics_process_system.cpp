@@ -1,6 +1,7 @@
 #include "physics_process_system.h"
 
 #include "../../pipeline/pipeline.h"
+#include "../../storage/hierarchical_storage.h"
 #include "../databags/godot_engine_databags.h"
 #include "core/config/engine.h"
 #include "core/object/message_queue.h"
@@ -38,6 +39,13 @@ void call_physics_process(
 	p_message_queue->get_queue()->flush();
 
 	p_engine->get_engine()->set_physics_frames(p_engine->get_engine()->get_physics_frames() + 1);
+
+	// Flush any hierarchy change. GDScrip may have changed it.
+	// Trust this that `Child` is using the `Hierarchy` storage.
+	Hierarchy *hierarchy = static_cast<Hierarchy *>(p_world->get_storage<Child>());
+	if (hierarchy) {
+		hierarchy->flush_hierarchy_changes();
+	}
 }
 
 void physics_pipeline_dispatcher(World *p_world, Pipeline *p_pipeline) {
