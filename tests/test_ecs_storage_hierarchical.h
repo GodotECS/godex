@@ -201,6 +201,23 @@ TEST_CASE("[Modules][ECS] Test Hierarchy.") {
 	CHECK(hierarchy_const.has(1) == false);
 	CHECK(hierarchy_const.has(4) == false);
 	CHECK(hierarchy_const.has(6) == false);
+
+	// Check it's possible to fetch the `Entities` stored.
+	hierarchy.clear();
+	{
+		EntitiesBuffer entities = hierarchy.get_stored_entities();
+		CHECK(entities.count == 0);
+	}
+
+	hierarchy.insert(1, Child(0));
+	hierarchy.insert(2, Child(0));
+	hierarchy.insert(3, Child(0));
+	hierarchy.insert(4, Child(0));
+
+	{
+		const EntitiesBuffer entities = hierarchy.get_stored_entities();
+		CHECK(entities.count >= 4);
+	}
 }
 
 TEST_CASE("[Modules][ECS] Test HierarchicalStorage.") {
@@ -304,6 +321,24 @@ TEST_CASE("[Modules][ECS] Test HierarchicalStorage.") {
 		CHECK(ABS(tc_entity_0->get_transform().origin[0] - 3.) <= CMP_EPSILON); // Root
 		CHECK(ABS(tc_entity_2->get_transform().origin[0] - 6.) <= CMP_EPSILON); // Child of `Entity0`.
 		CHECK(ABS(tc_entity_1->get_transform().origin[0] - 1.) <= CMP_EPSILON); // Root
+	}
+
+	// Check`Entities` fetch.
+	transform_storage.clear();
+	{
+		EntitiesBuffer entities = transform_storage.get_stored_entities();
+		CHECK(entities.count == 0);
+	}
+
+	transform_storage.insert(0, TransformComponent());
+	transform_storage.insert(1, TransformComponent());
+	transform_storage.insert(2, TransformComponent());
+	transform_storage.insert(3, TransformComponent());
+	transform_storage.insert(4, TransformComponent());
+
+	{
+		const EntitiesBuffer entities = transform_storage.get_stored_entities();
+		CHECK(entities.count == 5);
 	}
 }
 

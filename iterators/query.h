@@ -159,7 +159,12 @@ public:
 	}
 
 	bool has_data(EntityID p_entity) const {
-		return false; // TODO
+		if (unlikely(storage == nullptr)) {
+			// This is a required field, since there is no storage this can end
+			// immediately.
+			return false;
+		}
+		return storage->is_changed(p_entity) && QueryStorage<Cs...>::has_data(p_entity);
 	}
 
 	std::tuple<Batch<C>, Batch<remove_filter_t<Cs>>...> get(EntityID p_id, Space p_mode) const {
@@ -192,7 +197,12 @@ public:
 	}
 
 	bool has_data(EntityID p_entity) const {
-		return false; // TODO
+		if (unlikely(storage == nullptr)) {
+			// This is a required field, since there is no storage this can end
+			// immediately.
+			return false;
+		}
+		return storage->is_changed(p_entity) && QueryStorage<Cs...>::has_data(p_entity);
 	}
 
 	std::tuple<Batch<const C>, Batch<remove_filter_t<Cs>>...> get(EntityID p_id, Space p_mode) const {
@@ -202,7 +212,7 @@ public:
 #endif
 
 		return std::tuple_cat(
-				std::tuple<Batch<C>>(storage->get(p_id, p_mode)),
+				std::tuple<Batch<const C>>(storage->get(p_id, p_mode)),
 				QueryStorage<Cs...>::get(p_id, p_mode));
 	}
 

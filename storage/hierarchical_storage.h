@@ -146,6 +146,10 @@ public:
 		return nullptr;
 	}
 
+	virtual EntitiesBuffer get_stored_entities() const {
+		return { storage.get_entities().size(), storage.get_entities().ptr() };
+	}
+
 	/// For each child, slow version.
 	template <typename F>
 	void for_each_child(EntityID p_entity, F func) const {
@@ -287,16 +291,19 @@ public:
 
 	virtual void remove(EntityID p_index) override {
 		internal_storage.remove(p_index);
+		StorageBase::notify_updated(p_index);
 	}
 
 	virtual void clear() override {
 		internal_storage.clear();
+		StorageBase::flush_changed();
 	}
 
 	virtual void insert(EntityID p_entity, const T &p_data) override {
 		LocalGlobal<T> d;
 		d.local = p_data;
 		internal_storage.insert(p_entity, d);
+		StorageBase::notify_changed(p_entity);
 		propagate_change(
 				p_entity,
 				internal_storage.get(p_entity));
@@ -314,12 +321,17 @@ public:
 	/// The data is flushed at the end of each `system`, however you can flush it
 	/// manually via storage, if you need the data immediately back.
 	virtual Batch<T> get(EntityID p_entity, Space p_mode = Space::LOCAL) override {
+		StorageBase::notify_changed(p_entity);
 		LocalGlobal<T> &data = internal_storage.get(p_entity);
 		if (data.has_relationship) {
 			relationshitp_dirty_list.notify_changed(p_entity);
 			data.global_changed = p_mode == Space::GLOBAL;
 		}
 		return data.is_root || p_mode == Space::LOCAL ? &data.local : &data.global;
+	}
+
+	virtual EntitiesBuffer get_stored_entities() const {
+		return { internal_storage.get_entities().size(), internal_storage.get_entities().ptr() };
 	}
 
 	void propagate_change(EntityID p_entity) {

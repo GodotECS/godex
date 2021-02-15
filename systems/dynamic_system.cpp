@@ -232,7 +232,9 @@ void godex::DynamicSystemInfo::executor(World *p_world, DynamicSystemInfo &p_inf
 
 	if (p_info.sub_pipeline_execute) {
 		// Sub pipeline execution.
+		p_info.target_sub_pipeline->set_is_sub_dispatcher(true);
 		p_info.sub_pipeline_execute(p_world, p_info.target_sub_pipeline);
+		p_info.target_sub_pipeline->set_is_sub_dispatcher(false);
 	} else {
 		// Script function.
 		ERR_FAIL_COND_MSG(p_info.target_script == nullptr, "[FATAL] This system doesn't have target assigned.");

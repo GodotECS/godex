@@ -946,11 +946,15 @@ struct ChangeTracer {
 };
 
 void test_changed(Query<Changed<const TransformComponent>, ChangeTracer> &p_query) {
+	while (p_query.is_done() == false) {
+		auto [t, c] = p_query.get();
+		c->trace += 1;
+		p_query.next();
+	}
 }
 
 namespace godex_tests_system {
 TEST_CASE("[Modules][ECS] Test system changed query filter.") {
-	return;
 	ECS::register_component<ChangeTracer>();
 
 	World world;

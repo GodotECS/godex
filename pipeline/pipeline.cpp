@@ -7,6 +7,14 @@
 Pipeline::Pipeline() {
 }
 
+void Pipeline::set_is_sub_dispatcher(bool p_sub_dispatcher) {
+	is_sub_dispatcher = p_sub_dispatcher;
+}
+
+bool Pipeline::get_is_sub_dispatcher() const {
+	return is_sub_dispatcher;
+}
+
 // Unset the macro defined into the `pipeline.h` so to properly point the method
 // definition.
 #undef add_temporary_system
@@ -127,6 +135,13 @@ void Pipeline::reset() {
 }
 
 void Pipeline::prepare(World *p_world) {
+	// Make sure to reset the `need_changed` for the storages of this world.
+	for (uint32_t i = 0; i < p_world->storages.size(); i += 1) {
+		if (p_world->storages[i] != nullptr) {
+			p_world->storages[i]->set_need_changed(false);
+		}
+	}
+
 	// Crete components and databags storages.
 	SystemExeInfo info;
 	for (uint32_t i = 0; i < systems_info.size(); i += 1) {
@@ -153,6 +168,24 @@ void Pipeline::prepare(World *p_world) {
 
 		for (const Set<uint32_t>::Element *e = info.mutable_databags.front(); e; e = e->next()) {
 			p_world->create_databag(e->get());
+		}
+
+		for (const Set<uint32_t>::Element *e = info.need_changed.front(); e; e = e->next()) {
+			// Mark as `need_changed` this storage.
+			StorageBase *storage = p_world->get_storage(e->get());
+			storage->set_need_changed(true);
+		}
+	}
+
+	// Set the current `Components` as changed.
+	for (uint32_t i = 0; i < p_world->storages.size(); i += 1) {
+		if (p_world->storages[i] != nullptr) {
+			if (p_world->storages[i]->get_need_changed()) {
+				const EntitiesBuffer entities = p_world->storages[i]->get_stored_entities();
+				for (uint32_t e = 0; e < entities.count; e += 1) {
+					p_world->storages[i]->notify_changed(entities.entities[e]);
+				}
+			}
 		}
 	}
 }
@@ -192,6 +225,15 @@ void Pipeline::dispatch(World *p_world) {
 	// Clear any generated component storages.
 	for (uint32_t c = 0; c < event_generator.size(); c += 1) {
 		p_world->get_storage(event_generator[c])->clear();
+	}
+
+	// Flush changed.
+	if (is_sub_dispatcher == false) {
+		for (uint32_t c = 0; c < p_world->storages.size(); c += 1) {
+			if (p_world->storages[c] != nullptr) {
+				p_world->storages[c]->flush_changed();
+			}
+		}
 	}
 
 	p_world->is_dispatching_in_progress = false;
