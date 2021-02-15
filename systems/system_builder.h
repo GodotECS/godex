@@ -26,7 +26,7 @@ template <class C, class... Cs>
 struct InfoConstructor<Storage<C> *, Cs...> : InfoConstructor<Cs...> {
 	InfoConstructor(SystemExeInfo &r_info) :
 			InfoConstructor<Cs...>(r_info) {
-		r_info.mutable_components_storage.push_back(C::get_component_id());
+		r_info.mutable_components_storage.insert(C::get_component_id());
 	}
 };
 
@@ -54,9 +54,9 @@ struct InfoConstructor<D *, Cs...> : InfoConstructor<Cs...> {
 			InfoConstructor<Cs...>(r_info) {
 		// Databag
 		if (std::is_const<D>()) {
-			r_info.immutable_databags.push_back(D::get_databag_id());
+			r_info.immutable_databags.insert(D::get_databag_id());
 		} else {
-			r_info.mutable_databags.push_back(D::get_databag_id());
+			r_info.mutable_databags.insert(D::get_databag_id());
 		}
 	}
 };

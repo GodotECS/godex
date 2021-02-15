@@ -655,30 +655,30 @@ void EditorWorldECS::pipeline_panel_update() {
 					}
 
 					// Draw immutable components.
-					for (uint32_t u = 0; u < system_exec_info.immutable_components.size(); u += 1) {
+					for (const Set<uint32_t>::Element *e = system_exec_info.immutable_components.front(); e; e = e->next()) {
 						info_box->add_system_element(
-								ECS::get_component_name(system_exec_info.immutable_components[u]),
+								ECS::get_component_name(e->get()),
 								false);
 					}
 
 					// Draw mutable components.
-					for (uint32_t u = 0; u < system_exec_info.mutable_components.size(); u += 1) {
+					for (const Set<uint32_t>::Element *e = system_exec_info.mutable_components.front(); e; e = e->next()) {
 						info_box->add_system_element(
-								ECS::get_component_name(system_exec_info.mutable_components[u]),
+								ECS::get_component_name(e->get()),
 								true);
 					}
 
 					// Draw immutable databags.
-					for (uint32_t u = 0; u < system_exec_info.immutable_databags.size(); u += 1) {
+					for (const Set<uint32_t>::Element *e = system_exec_info.immutable_databags.front(); e; e = e->next()) {
 						info_box->add_system_element(
-								String(ECS::get_databag_name(system_exec_info.immutable_databags[u])) + " [databag]",
+								String(ECS::get_databag_name(e->get())) + " [databag]",
 								false);
 					}
 
-					// Draw immutable databags.
-					for (uint32_t u = 0; u < system_exec_info.mutable_databags.size(); u += 1) {
+					// Draw mutable databags.
+					for (const Set<uint32_t>::Element *e = system_exec_info.mutable_databags.front(); e; e = e->next()) {
 						info_box->add_system_element(
-								String(ECS::get_databag_name(system_exec_info.mutable_databags[u])) + " [databag]",
+								String(ECS::get_databag_name(e->get())) + " [databag]",
 								true);
 					}
 				}

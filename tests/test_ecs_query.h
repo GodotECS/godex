@@ -326,9 +326,9 @@ TEST_CASE("[Modules][ECS] Test static query check query type fetch.") {
 		SystemExeInfo info;
 		query.get_components(info);
 
-		CHECK(info.mutable_components.find(TagQueryTestComponent::get_component_id()) != -1);
+		CHECK(info.mutable_components.find(TagQueryTestComponent::get_component_id()) != nullptr);
 
-		CHECK(info.immutable_components.find(TransformComponent::get_component_id()) != -1);
+		CHECK(info.immutable_components.find(TransformComponent::get_component_id()) != nullptr);
 	}
 
 	{
@@ -337,9 +337,9 @@ TEST_CASE("[Modules][ECS] Test static query check query type fetch.") {
 		SystemExeInfo info;
 		query.get_components(info);
 
-		CHECK(info.mutable_components.find(TransformComponent::get_component_id()) != -1);
+		CHECK(info.mutable_components.find(TransformComponent::get_component_id()) != nullptr);
 
-		CHECK(info.immutable_components.find(TagQueryTestComponent::get_component_id()) != -1);
+		CHECK(info.immutable_components.find(TagQueryTestComponent::get_component_id()) != nullptr);
 	}
 
 	{
@@ -351,8 +351,8 @@ TEST_CASE("[Modules][ECS] Test static query check query type fetch.") {
 		CHECK(info.mutable_components.size() == 0);
 
 		// `Without` filter collects the data always immutable.
-		CHECK(info.immutable_components.find(TransformComponent::get_component_id()) != -1);
-		CHECK(info.immutable_components.find(TagQueryTestComponent::get_component_id()) != -1);
+		CHECK(info.immutable_components.find(TransformComponent::get_component_id()) != nullptr);
+		CHECK(info.immutable_components.find(TagQueryTestComponent::get_component_id()) != nullptr);
 	}
 
 	{
@@ -361,10 +361,10 @@ TEST_CASE("[Modules][ECS] Test static query check query type fetch.") {
 		SystemExeInfo info;
 		query.get_components(info);
 
-		CHECK(info.mutable_components.find(TransformComponent::get_component_id()) != -1);
-		CHECK(info.immutable_components.find(TagQueryTestComponent::get_component_id()) != -1);
-		CHECK(info.need_changed.find(TransformComponent::get_component_id()) != -1);
-		CHECK(info.need_changed.find(TagQueryTestComponent::get_component_id()) != -1);
+		CHECK(info.mutable_components.find(TransformComponent::get_component_id()) != nullptr);
+		CHECK(info.immutable_components.find(TagQueryTestComponent::get_component_id()) != nullptr);
+		CHECK(info.need_changed.find(TransformComponent::get_component_id()) != nullptr);
+		CHECK(info.need_changed.find(TagQueryTestComponent::get_component_id()) != nullptr);
 	}
 }
 

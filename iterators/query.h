@@ -75,7 +75,7 @@ public:
 	}
 
 	static void get_components(SystemExeInfo &r_info) {
-		r_info.mutable_components.push_back(C::get_component_id());
+		r_info.mutable_components.insert(C::get_component_id());
 		QueryStorage<Cs...>::get_components(r_info);
 	}
 };
@@ -110,7 +110,7 @@ public:
 	}
 
 	static void get_components(SystemExeInfo &r_info) {
-		r_info.immutable_components.push_back(C::get_component_id());
+		r_info.immutable_components.insert(C::get_component_id());
 		QueryStorage<Cs...>::get_components(r_info);
 	}
 };
@@ -142,7 +142,7 @@ public:
 
 	static void get_components(SystemExeInfo &r_info) {
 		// The `Without` collects the data always immutable.
-		r_info.immutable_components.push_back(C::get_component_id());
+		r_info.immutable_components.insert(C::get_component_id());
 		QueryStorage<Cs...>::get_components(r_info);
 	}
 };
@@ -174,8 +174,8 @@ public:
 	}
 
 	static void get_components(SystemExeInfo &r_info) {
-		r_info.mutable_components.push_back(C::get_component_id());
-		r_info.need_changed.push_back(C::get_component_id());
+		r_info.mutable_components.insert(C::get_component_id());
+		r_info.need_changed.insert(C::get_component_id());
 		QueryStorage<Cs...>::get_components(r_info);
 	}
 };
@@ -207,8 +207,8 @@ public:
 	}
 
 	static void get_components(SystemExeInfo &r_info) {
-		r_info.immutable_components.push_back(C::get_component_id());
-		r_info.need_changed.push_back(C::get_component_id());
+		r_info.immutable_components.insert(C::get_component_id());
+		r_info.need_changed.insert(C::get_component_id());
 		QueryStorage<Cs...>::get_components(r_info);
 	}
 };
@@ -245,7 +245,7 @@ public:
 	}
 
 	static void get_components(SystemExeInfo &r_info) {
-		r_info.mutable_components.push_back(C::get_component_id());
+		r_info.mutable_components.insert(C::get_component_id());
 		QueryStorage<Cs...>::get_components(r_info);
 	}
 };
@@ -282,7 +282,7 @@ public:
 	}
 
 	static void get_components(SystemExeInfo &r_info) {
-		r_info.immutable_components.push_back(C::get_component_id());
+		r_info.immutable_components.insert(C::get_component_id());
 		QueryStorage<Cs...>::get_components(r_info);
 	}
 };

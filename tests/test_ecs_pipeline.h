@@ -97,19 +97,19 @@ TEST_CASE("[Modules][ECS] Test pipeline get_systems_dependencies") {
 	pipeline.get_systems_dependencies(info);
 
 	// Make sure a MUTABLE `PipelineTestDatabag1` databag is found.
-	CHECK(info.mutable_databags.find(PipelineTestDatabag1::get_databag_id()) != -1);
+	CHECK(info.mutable_databags.find(PipelineTestDatabag1::get_databag_id()) != nullptr);
 
 	// Make sure an IMMUTABLE `PipelineTestDatabag2` databag is found.
-	CHECK(info.immutable_databags.find(PipelineTestDatabag2::get_databag_id()) != -1);
+	CHECK(info.immutable_databags.find(PipelineTestDatabag2::get_databag_id()) != nullptr);
 
 	// Make sure an MUTABLE `PipelineTestComponent1` component is found.
-	CHECK(info.mutable_components.find(PipelineTestComponent1::get_component_id()) != -1);
+	CHECK(info.mutable_components.find(PipelineTestComponent1::get_component_id()) != nullptr);
 
 	// Make sure an IMMUTABLE `TransformComponent` component is found.
-	CHECK(info.immutable_components.find(TransformComponent::get_component_id()) != -1);
+	CHECK(info.immutable_components.find(TransformComponent::get_component_id()) != nullptr);
 
 	// Make sure the component storage is correctly fetched from the world.
-	CHECK(info.mutable_components_storage.find(TransformComponent::get_component_id()) != -1);
+	CHECK(info.mutable_components_storage.find(TransformComponent::get_component_id()) != nullptr);
 }
 
 TEST_CASE("[Modules][ECS] Test pipeline get_systems_dependencies from a dispatcher.") {
@@ -148,19 +148,19 @@ TEST_CASE("[Modules][ECS] Test pipeline get_systems_dependencies from a dispatch
 	pipeline.get_systems_dependencies(info);
 
 	// Make sure a MUTABLE `PipelineTestDatabag1` databag is found.
-	CHECK(info.mutable_databags.find(PipelineTestDatabag1::get_databag_id()) != -1);
+	CHECK(info.mutable_databags.find(PipelineTestDatabag1::get_databag_id()) != nullptr);
 
 	// Make sure an IMMUTABLE `PipelineTestDatabag2` databag is found.
-	CHECK(info.immutable_databags.find(PipelineTestDatabag2::get_databag_id()) != -1);
+	CHECK(info.immutable_databags.find(PipelineTestDatabag2::get_databag_id()) != nullptr);
 
 	// Make sure an MUTABLE `PipelineTestComponent1` component is found.
-	CHECK(info.mutable_components.find(PipelineTestComponent1::get_component_id()) != -1);
+	CHECK(info.mutable_components.find(PipelineTestComponent1::get_component_id()) != nullptr);
 
 	// Make sure an IMMUTABLE `TransformComponent` component is found.
-	CHECK(info.immutable_components.find(TransformComponent::get_component_id()) != -1);
+	CHECK(info.immutable_components.find(TransformComponent::get_component_id()) != nullptr);
 
 	// Make sure the component storage is correctly fetched from the world.
-	CHECK(info.mutable_components_storage.find(TransformComponent::get_component_id()) != -1);
+	CHECK(info.mutable_components_storage.find(TransformComponent::get_component_id()) != nullptr);
 }
 } // namespace godex_tests_pipeline
 
