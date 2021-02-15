@@ -39,7 +39,7 @@ template <class... Qcs, class... Cs>
 struct InfoConstructor<Query<Qcs...> &, Cs...> : InfoConstructor<Cs...> {
 	InfoConstructor(SystemExeInfo &r_info) :
 			InfoConstructor<Cs...>(r_info) {
-		Query<Qcs...>::get_components(r_info.mutable_components, r_info.immutable_components);
+		Query<Qcs...>::get_components(r_info);
 	}
 };
 
