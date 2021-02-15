@@ -938,4 +938,76 @@ TEST_CASE("[Modules][ECS] Test Add/remove from dynamic query.") {
 }
 } // namespace godex_tests_system
 
+struct ChangeTracer {
+	COMPONENT(ChangeTracer, DenseVectorStorage)
+	static void _bind_methods() {}
+
+	int trace = 0;
+};
+
+void test_changed(Query<Changed<const TransformComponent>, ChangeTracer> &p_query) {
+}
+
+namespace godex_tests_system {
+TEST_CASE("[Modules][ECS] Test system changed query filter.") {
+	return;
+	ECS::register_component<ChangeTracer>();
+
+	World world;
+
+	EntityID entity_1 = world
+								.create_entity()
+								.with(ChangeTracer())
+								.with(TransformComponent());
+
+	EntityID entity_2 = world
+								.create_entity()
+								.with(ChangeTracer())
+								.with(TransformComponent());
+
+	EntityID entity_3 = world
+								.create_entity()
+								.with(ChangeTracer())
+								.with(TransformComponent());
+
+	Pipeline pipeline;
+	pipeline.add_system(test_changed);
+	pipeline.build();
+	pipeline.prepare(&world);
+
+	for (uint32_t i = 0; i < 3; i += 1) {
+		// Leave entity_1 untouched.
+		{}
+
+		// Trigger the entity_2 change.
+		{
+			Storage<TransformComponent> *storage = world.get_storage<TransformComponent>();
+			storage->get(entity_2);
+		}
+
+		// Touch the entity_3 immutable, this doesn't trigger the change.
+		{
+			const Storage<const TransformComponent> *storage = world.get_storage<const TransformComponent>();
+			storage->get(entity_3);
+		}
+
+		pipeline.dispatch(&world);
+	}
+
+	const Storage<const ChangeTracer> *storage = world.get_storage<const ChangeTracer>();
+
+	const ChangeTracer *entity_1_tracer = storage->get(entity_1);
+	const ChangeTracer *entity_2_tracer = storage->get(entity_2);
+	const ChangeTracer *entity_3_tracer = storage->get(entity_3);
+
+	// Only one trace because it's trigger by the initial insert.
+	CHECK(entity_1_tracer->trace == 1);
+	// Triggered each frame, because taken mutably.
+	CHECK(entity_2_tracer->trace == 3);
+	// Taken immutably, so never changed.
+	CHECK(entity_3_tracer->trace == 1);
+}
+
+} // namespace godex_tests_system
+
 #endif // TEST_ECS_SYSTEM_H

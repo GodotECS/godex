@@ -323,39 +323,48 @@ TEST_CASE("[Modules][ECS] Test static query check query type fetch.") {
 	{
 		Query<const TransformComponent, Maybe<TagQueryTestComponent>> query(&world);
 
-		LocalVector<uint32_t> mutable_components;
-		LocalVector<uint32_t> immutable_components;
-		query.get_components(mutable_components, immutable_components);
+		SystemExeInfo info;
+		query.get_components(info);
 
-		CHECK(mutable_components.find(TagQueryTestComponent::get_component_id()) != -1);
+		CHECK(info.mutable_components.find(TagQueryTestComponent::get_component_id()) != -1);
 
-		CHECK(immutable_components.find(TransformComponent::get_component_id()) != -1);
+		CHECK(info.immutable_components.find(TransformComponent::get_component_id()) != -1);
 	}
 
 	{
 		Query<TransformComponent, Maybe<const TagQueryTestComponent>> query(&world);
 
-		LocalVector<uint32_t> mutable_components;
-		LocalVector<uint32_t> immutable_components;
-		query.get_components(mutable_components, immutable_components);
+		SystemExeInfo info;
+		query.get_components(info);
 
-		CHECK(mutable_components.find(TransformComponent::get_component_id()) != -1);
+		CHECK(info.mutable_components.find(TransformComponent::get_component_id()) != -1);
 
-		CHECK(immutable_components.find(TagQueryTestComponent::get_component_id()) != -1);
+		CHECK(info.immutable_components.find(TagQueryTestComponent::get_component_id()) != -1);
 	}
 
 	{
 		Query<Without<TransformComponent>, Maybe<const TagQueryTestComponent>> query(&world);
 
-		LocalVector<uint32_t> mutable_components;
-		LocalVector<uint32_t> immutable_components;
-		query.get_components(mutable_components, immutable_components);
+		SystemExeInfo info;
+		query.get_components(info);
 
-		CHECK(mutable_components.size() == 0);
+		CHECK(info.mutable_components.size() == 0);
 
 		// `Without` filter collects the data always immutable.
-		CHECK(immutable_components.find(TransformComponent::get_component_id()) != -1);
-		CHECK(immutable_components.find(TagQueryTestComponent::get_component_id()) != -1);
+		CHECK(info.immutable_components.find(TransformComponent::get_component_id()) != -1);
+		CHECK(info.immutable_components.find(TagQueryTestComponent::get_component_id()) != -1);
+	}
+
+	{
+		Query<Changed<TransformComponent>, Changed<const TagQueryTestComponent>> query(&world);
+
+		SystemExeInfo info;
+		query.get_components(info);
+
+		CHECK(info.mutable_components.find(TransformComponent::get_component_id()) != -1);
+		CHECK(info.immutable_components.find(TagQueryTestComponent::get_component_id()) != -1);
+		CHECK(info.need_changed.find(TransformComponent::get_component_id()) != -1);
+		CHECK(info.need_changed.find(TagQueryTestComponent::get_component_id()) != -1);
 	}
 }
 
