@@ -31,6 +31,7 @@ public:
 			v.push_back(p_data);
 			storage.insert(p_entity, v);
 		}
+		StorageBase::notify_changed(p_entity);
 	}
 
 	virtual bool has(EntityID p_entity) const override {
@@ -43,16 +44,24 @@ public:
 	}
 
 	virtual Batch<T> get(EntityID p_entity, Space p_mode = Space::LOCAL) override {
+		StorageBase::notify_changed(p_entity);
 		StaticVector<T, SIZE> &data = storage.get(p_entity);
 		return Batch(data.ptr(), data.size());
 	}
 
 	virtual void remove(EntityID p_entity) override {
 		storage.remove(p_entity);
+		// Make sure to remove as changed.
+		StorageBase::notify_updated(p_entity);
 	}
 
 	virtual void clear() override {
 		storage.clear();
+		StorageBase::flush_changed();
+	}
+
+	virtual EntitiesBuffer get_stored_entities() const {
+		return { storage.get_entities().size(), storage.get_entities().ptr() };
 	}
 };
 
@@ -77,6 +86,7 @@ public:
 			s[0] = p_data;
 			storage.insert(p_entity, s);
 		}
+		StorageBase::notify_changed(p_entity);
 	}
 
 	virtual bool has(EntityID p_entity) const override {
@@ -89,15 +99,23 @@ public:
 	}
 
 	virtual Batch<T> get(EntityID p_entity, Space p_mode = Space::LOCAL) override {
+		StorageBase::notify_changed(p_entity);
 		LocalVector<T> &data = storage.get(p_entity);
 		return Batch(data.ptr(), data.size());
 	}
 
 	virtual void remove(EntityID p_entity) override {
 		storage.remove(p_entity);
+		// Make sure to remove as changed.
+		StorageBase::notify_updated(p_entity);
 	}
 
 	virtual void clear() override {
 		storage.clear();
+		StorageBase::flush_changed();
+	}
+
+	virtual EntitiesBuffer get_stored_entities() const {
+		return { storage.get_entities().size(), storage.get_entities().ptr() };
 	}
 };

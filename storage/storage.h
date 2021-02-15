@@ -97,6 +97,13 @@ public:
 		}
 	}
 
+	bool has(EntityID p_entity) const {
+		if (entity_to_data.size() <= p_entity) {
+			return false;
+		}
+		return entity_to_data[p_entity] != UINT32_MAX;
+	}
+
 	template <typename F>
 	void for_each(F func) {
 		for (iteration_index = 0; iteration_index < dense_list.size(); iteration_index += 1) {
@@ -135,8 +142,16 @@ enum Space {
 	GLOBAL,
 };
 
+struct EntitiesBuffer {
+	const uint32_t count;
+	const EntityID *entities;
+};
+
 /// Never override this directly. Always override the `Storage`.
 class StorageBase {
+	bool need_changed = false;
+	ChangeList changed;
+
 public:
 	virtual ~StorageBase() {}
 	virtual String get_type_name() const { return "Overload this function `get_type_name()` please."; }
@@ -173,7 +188,46 @@ public:
 		CRASH_NOW_MSG("Override this function.");
 	}
 
+	virtual EntitiesBuffer get_stored_entities() const {
+		CRASH_NOW_MSG("Override this function.");
+		return { 0, nullptr };
+	}
+
 	virtual void on_system_release() {}
+
+public:
+	void set_need_changed(bool p_need_changed) {
+		need_changed = p_need_changed;
+	}
+
+	bool get_need_changed() const {
+		return need_changed;
+	}
+
+	void notify_changed(EntityID p_entity) {
+		if (need_changed) {
+			changed.notify_changed(p_entity);
+		}
+	}
+
+	void notify_updated(EntityID p_entity) {
+		if (need_changed) {
+			changed.notify_updated(p_entity);
+		}
+	}
+
+	bool is_changed(EntityID p_entity) const {
+		if (need_changed) {
+			return changed.has(p_entity);
+		}
+		return false;
+	}
+
+	void flush_changed() {
+		if (need_changed) {
+			changed.clear();
+		}
+	}
 
 public:
 	/// This method is used by the `DataAccessor` to expose the `Storage` to

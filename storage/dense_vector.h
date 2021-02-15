@@ -73,6 +73,10 @@ public:
 		entity_to_data.clear();
 	}
 
+	const LocalVector<EntityID> &get_entities() const {
+		return data_to_entity;
+	}
+
 protected:
 	void insert_entity(EntityID p_entity, uint32_t p_index) {
 		if (entity_to_data.size() <= p_entity) {
@@ -105,6 +109,7 @@ public:
 
 	virtual void insert(EntityID p_entity, const T &p_data) override {
 		storage.insert(p_entity, p_data);
+		StorageBase::notify_changed(p_entity);
 	}
 
 	virtual bool has(EntityID p_entity) const override {
@@ -116,15 +121,23 @@ public:
 	}
 
 	virtual Batch<std::remove_const_t<T>> get(EntityID p_entity, Space p_mode = Space::LOCAL) override {
+		StorageBase::notify_changed(p_entity);
 		return &storage.get(p_entity);
 	}
 
 	virtual void remove(EntityID p_entity) override {
 		storage.remove(p_entity);
+		// Make sure to remove as changed.
+		StorageBase::notify_updated(p_entity);
 	}
 
 	virtual void clear() override {
 		storage.clear();
+		StorageBase::flush_changed();
+	}
+
+	virtual EntitiesBuffer get_stored_entities() const {
+		return { storage.get_entities().size(), storage.get_entities().ptr() };
 	}
 };
 
