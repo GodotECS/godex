@@ -204,15 +204,15 @@ void godex::DynamicSystemInfo::get_info(DynamicSystemInfo &p_info, func_system_e
 
 	// Set the storages dependencies.
 	for (uint32_t i = 0; i < p_info.storages.size(); i += 1) {
-		r_out.mutable_components_storage.push_back(p_info.storages[i]);
+		r_out.mutable_components_storage.insert(p_info.storages[i]);
 	}
 
 	// Set the databags dependencies.
 	for (uint32_t i = 0; i < p_info.databags.size(); i += 1) {
 		if (p_info.databags[i].is_mutable) {
-			r_out.mutable_databags.push_back(p_info.databags[i].databag_id);
+			r_out.mutable_databags.insert(p_info.databags[i].databag_id);
 		} else {
-			r_out.immutable_databags.push_back(p_info.databags[i].databag_id);
+			r_out.immutable_databags.insert(p_info.databags[i].databag_id);
 		}
 	}
 

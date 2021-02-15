@@ -82,11 +82,11 @@ void PipelineECS::fetch_used_databags(Set<godex::component_id> &r_databags) cons
 		SystemExeInfo info;
 		ECS::get_system_exe_info(id, info);
 
-		for (uint32_t r = 0; r < info.immutable_databags.size(); r += 1) {
-			r_databags.insert(info.immutable_databags[r]);
+		for (Set<uint32_t>::Element *e = info.immutable_databags.front(); e; e = e->next()) {
+			r_databags.insert(e->get());
 		}
-		for (uint32_t r = 0; r < info.mutable_databags.size(); r += 1) {
-			r_databags.insert(info.mutable_databags[r]);
+		for (Set<uint32_t>::Element *e = info.mutable_databags.front(); e; e = e->next()) {
+			r_databags.insert(e->get());
 		}
 	}
 }
