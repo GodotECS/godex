@@ -90,8 +90,28 @@ TEST_CASE("[Modules][ECS] Test dense storage insert and remove.") {
 		CHECK(storage.has(4));
 		CHECK(storage.get(4)->number == 10);
 	}
-}
 
+	// Check it's possible to fetch the `Entities` stored.
+	storage.clear();
+	{
+		EntitiesBuffer entities = storage.get_stored_entities();
+		CHECK(entities.count == 0);
+	}
+
+	storage.insert(0, 0);
+	storage.insert(1, 1);
+	storage.insert(2, 2);
+	storage.insert(3, 3);
+	storage.insert(4, 4);
+
+	{
+		const EntitiesBuffer entities = storage.get_stored_entities();
+		CHECK(entities.count == 5);
+		for (uint32_t i = 0; i < entities.count; i += 1) {
+			CHECK(entities.entities[i] == i);
+		}
+	}
+}
 } // namespace godex_storage_dense_vector_tests
 
 #endif

@@ -56,9 +56,19 @@ void godex::DynamicSystemInfo::maybe_component(uint32_t p_component_id, bool p_m
 	query.maybe_component(p_component_id, p_mutable);
 }
 
+void godex::DynamicSystemInfo::changed_component(uint32_t p_component_id, bool p_mutable) {
+	CRASH_COND_MSG(compiled, "The query can't be composed, when the system is already been compiled.");
+
+	const uint32_t index = databag_element_map.size() + storage_element_map.size() + query_element_map.size();
+	query_element_map.push_back(index);
+	query.changed_component(p_component_id, p_mutable);
+}
+
 void godex::DynamicSystemInfo::without_component(uint32_t p_component_id) {
 	CRASH_COND_MSG(compiled, "The query can't be composed, when the system is already been compiled.");
 
+	const uint32_t index = databag_element_map.size() + storage_element_map.size() + query_element_map.size();
+	query_element_map.push_back(index);
 	query.without_component(p_component_id);
 }
 
@@ -204,15 +214,15 @@ void godex::DynamicSystemInfo::get_info(DynamicSystemInfo &p_info, func_system_e
 
 	// Set the storages dependencies.
 	for (uint32_t i = 0; i < p_info.storages.size(); i += 1) {
-		r_out.mutable_components_storage.push_back(p_info.storages[i]);
+		r_out.mutable_components_storage.insert(p_info.storages[i]);
 	}
 
 	// Set the databags dependencies.
 	for (uint32_t i = 0; i < p_info.databags.size(); i += 1) {
 		if (p_info.databags[i].is_mutable) {
-			r_out.mutable_databags.push_back(p_info.databags[i].databag_id);
+			r_out.mutable_databags.insert(p_info.databags[i].databag_id);
 		} else {
-			r_out.immutable_databags.push_back(p_info.databags[i].databag_id);
+			r_out.immutable_databags.insert(p_info.databags[i].databag_id);
 		}
 	}
 
@@ -232,7 +242,9 @@ void godex::DynamicSystemInfo::executor(World *p_world, DynamicSystemInfo &p_inf
 
 	if (p_info.sub_pipeline_execute) {
 		// Sub pipeline execution.
+		p_info.target_sub_pipeline->set_is_sub_dispatcher(true);
 		p_info.sub_pipeline_execute(p_world, p_info.target_sub_pipeline);
+		p_info.target_sub_pipeline->set_is_sub_dispatcher(false);
 	} else {
 		// Script function.
 		ERR_FAIL_COND_MSG(p_info.target_script == nullptr, "[FATAL] This system doesn't have target assigned.");

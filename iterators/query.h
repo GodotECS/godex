@@ -3,6 +3,7 @@
 #pragma once
 
 #include "../storage/storage.h"
+#include "../systems/system.h"
 #include "../world/world.h"
 #include <tuple>
 
@@ -27,6 +28,9 @@ struct Without {};
 template <class C>
 struct Maybe {};
 
+template <class C>
+struct Changed {};
+
 // ~~ Query storage, is used to fetch a single data. ~~
 
 /// `QueryStorage` specialization with 0 template arguments.
@@ -38,7 +42,7 @@ public:
 	bool has_data(EntityID p_entity) const { return true; }
 	std::tuple<Batch<remove_filter_t<Cs>>...> get(EntityID p_id, Space p_mode) const { return std::tuple(); }
 
-	static void get_components(LocalVector<uint32_t> &r_mutable_components, LocalVector<uint32_t> &r_immutable_components) {}
+	static void get_components(SystemExeInfo &r_info) {}
 };
 
 /// `QueryStorage` `Maybe` mutable filter specialization.
@@ -70,9 +74,9 @@ public:
 		}
 	}
 
-	static void get_components(LocalVector<uint32_t> &r_mutable_components, LocalVector<uint32_t> &r_immutable_components) {
-		r_mutable_components.push_back(C::get_component_id());
-		QueryStorage<Cs...>::get_components(r_mutable_components, r_immutable_components);
+	static void get_components(SystemExeInfo &r_info) {
+		r_info.mutable_components.insert(C::get_component_id());
+		QueryStorage<Cs...>::get_components(r_info);
 	}
 };
 
@@ -105,9 +109,9 @@ public:
 		}
 	}
 
-	static void get_components(LocalVector<uint32_t> &r_mutable_components, LocalVector<uint32_t> &r_immutable_components) {
-		r_immutable_components.push_back(C::get_component_id());
-		QueryStorage<Cs...>::get_components(r_mutable_components, r_immutable_components);
+	static void get_components(SystemExeInfo &r_info) {
+		r_info.immutable_components.insert(C::get_component_id());
+		QueryStorage<Cs...>::get_components(r_info);
 	}
 };
 
@@ -136,11 +140,86 @@ public:
 		return std::tuple_cat(std::tuple<C *>(nullptr), QueryStorage<Cs...>::get(p_id, p_mode));
 	}
 
-	static void get_components(LocalVector<uint32_t> &r_mutable_components, LocalVector<uint32_t> &r_immutable_components) {
+	static void get_components(SystemExeInfo &r_info) {
 		// The `Without` collects the data always immutable.
-		r_immutable_components.push_back(C::get_component_id());
+		r_info.immutable_components.insert(C::get_component_id());
+		QueryStorage<Cs...>::get_components(r_info);
+	}
+};
 
-		QueryStorage<Cs...>::get_components(r_mutable_components, r_immutable_components);
+/// `QueryStorage` `Changed` mutable filter specialization.
+template <class C, class... Cs>
+class QueryStorage<Changed<C>, Cs...> : QueryStorage<Cs...> {
+	Storage<C> *storage = nullptr;
+
+public:
+	QueryStorage(World *p_world) :
+			QueryStorage<Cs...>(p_world),
+			storage(p_world->get_storage<C>()) {
+	}
+
+	bool has_data(EntityID p_entity) const {
+		if (unlikely(storage == nullptr)) {
+			// This is a required field, since there is no storage this can end
+			// immediately.
+			return false;
+		}
+		return storage->is_changed(p_entity) && QueryStorage<Cs...>::has_data(p_entity);
+	}
+
+	std::tuple<Batch<C>, Batch<remove_filter_t<Cs>>...> get(EntityID p_id, Space p_mode) const {
+#ifdef DEBUG_ENABLED
+		// This can't happen because `is_done` returns true.
+		CRASH_COND_MSG(storage == nullptr, "The storage" + String(typeid(Storage<C>).name()) + " is null.");
+#endif
+
+		return std::tuple_cat(
+				std::tuple<Batch<C>>(storage->get(p_id, p_mode)),
+				QueryStorage<Cs...>::get(p_id, p_mode));
+	}
+
+	static void get_components(SystemExeInfo &r_info) {
+		r_info.mutable_components.insert(C::get_component_id());
+		r_info.need_changed.insert(C::get_component_id());
+		QueryStorage<Cs...>::get_components(r_info);
+	}
+};
+
+/// `QueryStorage` `Changed` immutable filter specialization.
+template <class C, class... Cs>
+class QueryStorage<Changed<const C>, Cs...> : QueryStorage<Cs...> {
+	const Storage<const C> *storage = nullptr;
+
+public:
+	QueryStorage(World *p_world) :
+			QueryStorage<Cs...>(p_world),
+			storage(std::as_const(p_world)->get_storage<const C>()) {
+	}
+
+	bool has_data(EntityID p_entity) const {
+		if (unlikely(storage == nullptr)) {
+			// This is a required field, since there is no storage this can end
+			// immediately.
+			return false;
+		}
+		return storage->is_changed(p_entity) && QueryStorage<Cs...>::has_data(p_entity);
+	}
+
+	std::tuple<Batch<const C>, Batch<remove_filter_t<Cs>>...> get(EntityID p_id, Space p_mode) const {
+#ifdef DEBUG_ENABLED
+		// This can't happen because `is_done` returns true.
+		CRASH_COND_MSG(storage == nullptr, "The storage" + String(typeid(Storage<C>).name()) + " is null.");
+#endif
+
+		return std::tuple_cat(
+				std::tuple<Batch<const C>>(storage->get(p_id, p_mode)),
+				QueryStorage<Cs...>::get(p_id, p_mode));
+	}
+
+	static void get_components(SystemExeInfo &r_info) {
+		r_info.immutable_components.insert(C::get_component_id());
+		r_info.need_changed.insert(C::get_component_id());
+		QueryStorage<Cs...>::get_components(r_info);
 	}
 };
 
@@ -175,9 +254,9 @@ public:
 				QueryStorage<Cs...>::get(p_id, p_mode));
 	}
 
-	static void get_components(LocalVector<uint32_t> &r_mutable_components, LocalVector<uint32_t> &r_immutable_components) {
-		r_mutable_components.push_back(C::get_component_id());
-		QueryStorage<Cs...>::get_components(r_mutable_components, r_immutable_components);
+	static void get_components(SystemExeInfo &r_info) {
+		r_info.mutable_components.insert(C::get_component_id());
+		QueryStorage<Cs...>::get_components(r_info);
 	}
 };
 
@@ -212,9 +291,9 @@ public:
 				QueryStorage<Cs...>::get(p_id, p_mode));
 	}
 
-	static void get_components(LocalVector<uint32_t> &r_mutable_components, LocalVector<uint32_t> &r_immutable_components) {
-		r_immutable_components.push_back(C::get_component_id());
-		QueryStorage<Cs...>::get_components(r_mutable_components, r_immutable_components);
+	static void get_components(SystemExeInfo &r_info) {
+		r_info.immutable_components.insert(C::get_component_id());
+		QueryStorage<Cs...>::get_components(r_info);
 	}
 };
 
@@ -304,7 +383,7 @@ public:
 		return q.get(id, p_mode);
 	}
 
-	static void get_components(LocalVector<uint32_t> &r_mutable_components, LocalVector<uint32_t> &r_immutable_components) {
-		QueryStorage<Cs...>::get_components(r_mutable_components, r_immutable_components);
+	static void get_components(SystemExeInfo &r_info) {
+		QueryStorage<Cs...>::get_components(r_info);
 	}
 };

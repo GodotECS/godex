@@ -40,6 +40,7 @@ public:
 	void with_storage(uint32_t p_component_id);
 	void with_component(uint32_t p_component_id, Mutability p_mutability);
 	void maybe_component(uint32_t p_component_id, Mutability p_mutability);
+	void changed_component(uint32_t p_component_id, Mutability p_mutability);
 	void without_component(uint32_t p_component_id);
 
 	godex::system_id get_system_id() const;

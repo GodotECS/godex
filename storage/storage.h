@@ -1,132 +1,6 @@
-/* Author: AndreaCatania */
+#pragma once
 
-#ifndef STORAGE_H
-#define STORAGE_H
-
-#include "../ecs_types.h"
-
-namespace godex {
-class Component;
-}
-
-/// Container used to mark the `Entity` as changed.
-/// To mark an `Entity` as changed you can use `notify_updated`.
-/// To mark an `Entity` as updated (so no more changed) `notify_updated`.
-/// It's possible to use the `for_each([](EntityID p_entity){})` to iterate
-/// the change list; while iterating it's safe and fast mark the `Entity`
-/// as updated (using `notify_updated`).
-class ChangeList {
-	/// Sparse vector, used to easily know if an entity changed.
-	/// points to the dense_list element.
-	LocalVector<uint32_t> entity_to_data;
-
-	/// Used to iterate fast.
-	LocalVector<EntityID> dense_list;
-
-	/// Iterator index, used by the mutable for_each` to make sure the update
-	/// mechanism is safe even while iterating.
-	int64_t iteration_index = -1;
-
-public:
-	void notify_changed(EntityID p_entity) {
-		if (entity_to_data.size() <= p_entity) {
-			const uint32_t initial_size = entity_to_data.size();
-			entity_to_data.resize(p_entity + 1);
-			for (uint32_t i = initial_size; i < entity_to_data.size(); i += 1) {
-				entity_to_data[i] = UINT32_MAX;
-			}
-		}
-		if (entity_to_data[p_entity] == UINT32_MAX) {
-			// This entity was not yet notified.
-			entity_to_data[p_entity] = dense_list.size();
-			dense_list.push_back(p_entity);
-		}
-	}
-
-	void notify_updated(EntityID p_entity) {
-		if (entity_to_data.size() <= p_entity) {
-			// Was not changed, Nothing to do.
-			return;
-		}
-
-		const uint32_t index = entity_to_data[p_entity];
-
-		if (iteration_index >= index) {
-			// The current iteration_index is bigger than the index
-			// to remove: meaning that we already iterated that.
-			// Basing on that, it's possible to perform three copy to
-			// kick the index out, in a way that the remainin non
-			// processed `EntityID` will be processed.
-			// *Note: this mechanism allow to correctly process all the
-			//        entities while avoiding copy the entire vector to
-			//        keep the vector sort.
-
-			// 1. Copy the current index (already processed) on the index to remove.
-			dense_list[index] = dense_list[iteration_index];
-			entity_to_data[dense_list[index]] = index;
-
-			// 2. Copy the last element on the current index.
-			dense_list[iteration_index] = dense_list[dense_list.size() - 1];
-			entity_to_data[dense_list[iteration_index]] = iteration_index;
-
-			// 3. Decrese the current index so to process again this index
-			//    since it has a new data now.
-			iteration_index -= 1;
-
-			// 4. Just resize the array by -1;
-			dense_list.resize(dense_list.size() - 1);
-
-			// 5. Clear the entity_pointer since it was removed.
-			entity_to_data[p_entity] = UINT32_MAX;
-			return;
-		}
-
-		// No iteration in progress or not yet iterated.
-		if (index != UINT32_MAX) {
-			// Remove the element by replacing it with the last one.
-			// Assign the currect entity to remove index to the last one.
-			entity_to_data[dense_list[dense_list.size() - 1]] = index;
-			entity_to_data[p_entity] = UINT32_MAX;
-			dense_list[index] = dense_list[dense_list.size() - 1];
-			dense_list.resize(dense_list.size() - 1);
-
-			// This code, make sure to decrease by 1 the iterator index, only
-			// if it's iterating, otherwise does nothing.
-			iteration_index -= 1;
-			iteration_index = MAX(-1, iteration_index);
-		}
-	}
-
-	template <typename F>
-	void for_each(F func) {
-		for (iteration_index = 0; iteration_index < dense_list.size(); iteration_index += 1) {
-			func(dense_list[iteration_index]);
-		}
-		iteration_index = -1;
-	}
-
-	template <typename F>
-	void for_each(F func) const {
-		for (uint32_t i = 0; i < dense_list.size(); i += 1) {
-			func(dense_list[i]);
-		}
-	}
-
-	bool is_empty() const {
-		return dense_list.size() == 0;
-	}
-
-	bool size() const {
-		return dense_list.size();
-	}
-
-	void clear() {
-		for (uint32_t i = 0; i < entity_to_data.size(); i += 1) {
-			entity_to_data[i] = UINT32_MAX;
-		}
-		dense_list.clear();
-	}
-};
+#include "entity_list.h"
 
 /// Some stroages support `Entity` nesting, you can get local or global space
 /// data, by specifying one or the other.
@@ -135,8 +9,16 @@ enum Space {
 	GLOBAL,
 };
 
+struct EntitiesBuffer {
+	const uint32_t count;
+	const EntityID *entities;
+};
+
 /// Never override this directly. Always override the `Storage`.
 class StorageBase {
+	bool tracing_change = false;
+	EntityList changed;
+
 public:
 	virtual ~StorageBase() {}
 	virtual String get_type_name() const { return "Overload this function `get_type_name()` please."; }
@@ -173,7 +55,55 @@ public:
 		CRASH_NOW_MSG("Override this function.");
 	}
 
+	virtual EntitiesBuffer get_stored_entities() const {
+		CRASH_NOW_MSG("Override this function.");
+		return { 0, nullptr };
+	}
+
 	virtual void on_system_release() {}
+
+public:
+	void set_tracing_change(bool p_need_changed) {
+		tracing_change = p_need_changed;
+	}
+
+	bool is_tracing_change() const {
+		return tracing_change;
+	}
+
+	void notify_changed(EntityID p_entity) {
+		if (tracing_change) {
+			changed.insert(p_entity);
+		}
+	}
+
+	void notify_updated(EntityID p_entity) {
+		if (tracing_change) {
+			changed.remove(p_entity);
+		}
+	}
+
+	bool is_changed(EntityID p_entity) const {
+		if (tracing_change) {
+			return changed.has(p_entity);
+		}
+		return false;
+	}
+
+	void flush_changed() {
+		if (tracing_change) {
+			changed.clear();
+		}
+	}
+
+	/// Used to hard reset the changed storage.
+	void reset_changed() {
+		changed.reset();
+	}
+
+	EntitiesBuffer get_changed_entities() const {
+		return { changed.size(), changed.get_entities().ptr() };
+	}
 
 public:
 	/// This method is used by the `DataAccessor` to expose the `Storage` to
@@ -287,5 +217,3 @@ public:
 		return Batch<std::remove_const_t<T>>();
 	}
 };
-
-#endif

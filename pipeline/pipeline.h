@@ -18,6 +18,7 @@ struct ExecutionData {
 
 class Pipeline {
 	bool ready = false;
+	bool is_sub_dispatcher = false;
 	LocalVector<func_temporary_system_execute> temporary_systems_exe;
 
 	/// Execution information.
@@ -33,6 +34,9 @@ class Pipeline {
 
 public:
 	Pipeline();
+
+	void set_is_sub_dispatcher(bool p_sub_dispatcher);
+	bool get_is_sub_dispatcher() const;
 
 	/// Add a `TemporarySystem` which is executed untill `true` is returned.
 	/// The `TemporarySystems` are always executed in single thread and before

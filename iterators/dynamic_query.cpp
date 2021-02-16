@@ -9,6 +9,7 @@ void DynamicQuery::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_space", "space"), &DynamicQuery::set_space);
 	ClassDB::bind_method(D_METHOD("with_component", "component_id", "mutable"), &DynamicQuery::with_component);
 	ClassDB::bind_method(D_METHOD("maybe_component", "component_id", "mutable"), &DynamicQuery::maybe_component);
+	ClassDB::bind_method(D_METHOD("changed_component", "component_id", "mutable"), &DynamicQuery::changed_component);
 	ClassDB::bind_method(D_METHOD("without_component", "component_id"), &DynamicQuery::without_component);
 	ClassDB::bind_method(D_METHOD("is_valid"), &DynamicQuery::is_valid);
 	ClassDB::bind_method(D_METHOD("build"), &DynamicQuery::build);
@@ -29,29 +30,22 @@ void DynamicQuery::set_space(Space p_space) {
 }
 
 void DynamicQuery::with_component(uint32_t p_component_id, bool p_mutable) {
-	_with_component(p_component_id, p_mutable, true);
+	_with_component(p_component_id, p_mutable, WITH_MODE);
 }
 
 void DynamicQuery::maybe_component(uint32_t p_component_id, bool p_mutable) {
-	_with_component(p_component_id, p_mutable, false);
+	_with_component(p_component_id, p_mutable, MAYBE_MODE);
+}
+
+void DynamicQuery::changed_component(uint32_t p_component_id, bool p_mutable) {
+	_with_component(p_component_id, p_mutable, CHANGED_MODE);
 }
 
 void DynamicQuery::without_component(uint32_t p_component_id) {
-	ERR_FAIL_COND_MSG(is_valid() == false, "This query is not valid.");
-	ERR_FAIL_COND_MSG(can_change == false, "This query can't change at this point, you have to `clear` it.");
-	if (unlikely(ECS::verify_component_id(p_component_id) == false)) {
-		// Invalidate.
-		valid = false;
-		ERR_FAIL_MSG("The component_id " + itos(p_component_id) + " is invalid.");
-	}
-
-	ERR_FAIL_COND_MSG(component_ids.find(p_component_id) != -1, "The component " + itos(p_component_id) + " is already part of this query.");
-	ERR_FAIL_COND_MSG(reject_component_ids.find(p_component_id) != -1, "The component " + itos(p_component_id) + " is already part of this query.");
-
-	reject_component_ids.push_back(p_component_id);
+	_with_component(p_component_id, false, WITHOUT_MODE);
 }
 
-void DynamicQuery::_with_component(uint32_t p_component_id, bool p_mutable, bool p_required) {
+void DynamicQuery::_with_component(uint32_t p_component_id, bool p_mutable, FetchMode p_mode) {
 	ERR_FAIL_COND_MSG(is_valid() == false, "This query is not valid.");
 	ERR_FAIL_COND_MSG(can_change == false, "This query can't change at this point, you have to `clear` it.");
 	if (unlikely(ECS::verify_component_id(p_component_id) == false)) {
@@ -61,11 +55,10 @@ void DynamicQuery::_with_component(uint32_t p_component_id, bool p_mutable, bool
 	}
 
 	ERR_FAIL_COND_MSG(component_ids.find(p_component_id) != -1, "The component " + itos(p_component_id) + " is already part of this query.");
-	ERR_FAIL_COND_MSG(reject_component_ids.find(p_component_id) != -1, "The component " + itos(p_component_id) + " is already part of this query.");
 
 	component_ids.push_back(p_component_id);
 	mutability.push_back(p_mutable);
-	required.push_back(p_required);
+	mode.push_back(p_mode);
 }
 
 bool DynamicQuery::is_valid() const {
@@ -142,20 +135,7 @@ void DynamicQuery::begin(World *p_world) {
 	storages.resize(component_ids.size());
 	for (uint32_t i = 0; i < component_ids.size(); i += 1) {
 		storages[i] = world->get_storage(component_ids[i]);
-		if (unlikely(storages[i] == nullptr)) {
-			// The query can end now because there is an entire not used storage.
-			entity_id = UINT32_MAX;
-			return;
-		}
 	}
-
-	reject_storages.resize(reject_component_ids.size());
-	for (uint32_t i = 0; i < reject_component_ids.size(); i += 1) {
-		reject_storages[i] = world->get_storage(reject_component_ids[i]);
-		// `reject_storage` can be `nullptr`.
-	}
-
-	// At this point all the storages are taken.
 
 	// Search the fist entity
 	entity_id = 0;
@@ -211,29 +191,53 @@ void DynamicQuery::get_system_info(SystemExeInfo &p_info) const {
 	ERR_FAIL_COND(is_valid() == false);
 	for (uint32_t i = 0; i < component_ids.size(); i += 1) {
 		if (mutability[i]) {
-			p_info.mutable_components.push_back(component_ids[i]);
+			p_info.mutable_components.insert(component_ids[i]);
 		} else {
-			p_info.immutable_components.push_back(component_ids[i]);
+			p_info.immutable_components.insert(component_ids[i]);
+		}
+
+		if (mode[i] == CHANGED_MODE) {
+			p_info.need_changed.insert(component_ids[i]);
 		}
 	}
 }
 
 bool DynamicQuery::has_entity(EntityID p_id) const {
 	// Make sure this entity has all the following components.
+	uint32_t non_determinant_count = 0;
 	for (uint32_t i = 0; i < storages.size(); i += 1) {
-		if (required[i] && storages[i]->has(p_id) == false) {
-			// The component is not found and it's required.
-			return false;
+		switch (mode[i]) {
+			case WITH_MODE: {
+				if (unlikely(storages[i] == nullptr) || storages[i]->has(p_id) == false) {
+					// Nothing.
+					return false;
+				}
+			} break;
+			case WITHOUT_MODE: {
+				if (unlikely(storages[i] != nullptr) && storages[i]->has(p_id)) {
+					// Without is the opposite of `WITH`.
+					return false;
+				}
+				non_determinant_count += 1;
+			} break;
+			case MAYBE_MODE: {
+				// Maybe returns always true.
+				non_determinant_count += 1;
+			} break;
+			case CHANGED_MODE: {
+				if (unlikely(storages[i] == nullptr) || storages[i]->is_changed(p_id) == false) {
+					// Returns false if the storage doesn't exists or is not
+					// changed.
+					return false;
+				}
+			} break;
 		}
 	}
 
-	// Make sure this entity DOESN'T have the following components.
-	for (uint32_t i = 0; i < reject_storages.size(); i += 1) {
-		if (likely(reject_storages[i]) && reject_storages[i]->has(p_id)) {
-			// The component is found.
-			return false;
-		}
-	}
+	ERR_FAIL_COND_V_MSG(
+			non_determinant_count == storages.size(),
+			false,
+			"Fetching using only non_determinant filters (without and maybe) is not allowed. The reason is simply becayse the result is just meaningless.");
 
 	// This entity can be fetched.
 	return true;
@@ -245,7 +249,7 @@ void DynamicQuery::fetch() {
 	// TODO support batch
 
 	for (uint32_t i = 0; i < storages.size(); i += 1) {
-		if (required[i] || storages[i]->has(entity_id)) {
+		if (storages[i] != nullptr && storages[i]->has(entity_id)) {
 			if (accessors[i].is_mutable()) {
 				accessors[i].set_target(storages[i]->get_ptr(entity_id, space).get_data());
 			} else {
@@ -262,7 +266,7 @@ void DynamicQuery::fetch() {
 				accessors[i].set_target(const_cast<void *>(c.get_data()));
 			}
 		} else {
-			// This data is not required and is not found.
+			// This data not found, just set nullptr.
 			accessors[i].set_target(nullptr);
 		}
 	}
