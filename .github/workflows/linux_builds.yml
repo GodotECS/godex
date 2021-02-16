@@ -1,0 +1,23 @@
+name: 🐧 Linux Builds
+
+on: [push, pull_request]
+
+# Global Settings
+env:
+  GODOT_BASE_BRANCH: master
+  SCONSFLAGS: platform=linuxbsd verbose=yes warnings=extra werror=yes --jobs=2
+  SCONS_CACHE_LIMIT: 4096
+
+jobs:
+  linux-editor:
+    runs-on: "ubuntu-20.04"
+    name: Editor (target=release_debug, tools=yes, tests=yes)
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Cloning godot for godex
+      with:
+       name: GodotECS/godot
+       ref: refs/heads/customizable_iterator
+       working-directory: ${{env.GITHUB_WORKSPACE}}/godot
