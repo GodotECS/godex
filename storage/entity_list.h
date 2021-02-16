@@ -46,7 +46,12 @@ public:
 
 	bool size() const;
 
+	/// Clear the memory, but don't deallocate it so next frame it will run
+	/// faster.
 	void clear();
+
+	/// Release the memory completely.
+	void reset();
 
 	const LocalVector<EntityID> &get_entities() const;
 };

@@ -85,10 +85,18 @@ bool EntityList::size() const {
 }
 
 void EntityList::clear() {
+	// TODO make sure this is really better than just `clear`. I did in this way
+	// because this should prevent extra step on insert: not sure it's better
+	// at this point. Measure it please.
 	for (uint32_t i = 0; i < entity_to_data.size(); i += 1) {
 		entity_to_data[i] = UINT32_MAX;
 	}
 	dense_list.clear();
+}
+
+void EntityList::reset() {
+	entity_to_data.reset();
+	dense_list.reset();
 }
 
 const LocalVector<EntityID> &EntityList::get_entities() const {

@@ -16,7 +16,7 @@ struct EntitiesBuffer {
 
 /// Never override this directly. Always override the `Storage`.
 class StorageBase {
-	bool need_changed = false;
+	bool tracing_change = false;
 	EntityList changed;
 
 public:
@@ -63,37 +63,42 @@ public:
 	virtual void on_system_release() {}
 
 public:
-	void set_need_changed(bool p_need_changed) {
-		need_changed = p_need_changed;
+	void set_tracing_change(bool p_need_changed) {
+		tracing_change = p_need_changed;
 	}
 
-	bool get_need_changed() const {
-		return need_changed;
+	bool is_tracing_change() const {
+		return tracing_change;
 	}
 
 	void notify_changed(EntityID p_entity) {
-		if (need_changed) {
+		if (tracing_change) {
 			changed.insert(p_entity);
 		}
 	}
 
 	void notify_updated(EntityID p_entity) {
-		if (need_changed) {
+		if (tracing_change) {
 			changed.remove(p_entity);
 		}
 	}
 
 	bool is_changed(EntityID p_entity) const {
-		if (need_changed) {
+		if (tracing_change) {
 			return changed.has(p_entity);
 		}
 		return false;
 	}
 
 	void flush_changed() {
-		if (need_changed) {
+		if (tracing_change) {
 			changed.clear();
 		}
+	}
+
+	/// Used to hard reset the changed storage.
+	void reset_changed() {
+		changed.reset();
 	}
 
 	EntitiesBuffer get_changed_entities() const {
