@@ -12,6 +12,7 @@ protected:
 	const Hierarchy *hierarchy = nullptr;
 
 public:
+	virtual ~HierarchicalStorageBase() {}
 	virtual void flush_hierarchy_changes() = 0;
 };
 
