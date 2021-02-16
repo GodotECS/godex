@@ -138,6 +138,7 @@ void Pipeline::prepare(World *p_world) {
 	// Make sure to reset the `need_changed` for the storages of this world.
 	for (uint32_t i = 0; i < p_world->storages.size(); i += 1) {
 		if (p_world->storages[i] != nullptr) {
+			p_world->storages[i]->flush_changed();
 			p_world->storages[i]->set_need_changed(false);
 		}
 	}

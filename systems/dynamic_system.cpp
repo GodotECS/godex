@@ -56,6 +56,14 @@ void godex::DynamicSystemInfo::maybe_component(uint32_t p_component_id, bool p_m
 	query.maybe_component(p_component_id, p_mutable);
 }
 
+void godex::DynamicSystemInfo::changed_component(uint32_t p_component_id, bool p_mutable) {
+	CRASH_COND_MSG(compiled, "The query can't be composed, when the system is already been compiled.");
+
+	const uint32_t index = databag_element_map.size() + storage_element_map.size() + query_element_map.size();
+	query_element_map.push_back(index);
+	query.changed_component(p_component_id, p_mutable);
+}
+
 void godex::DynamicSystemInfo::without_component(uint32_t p_component_id) {
 	CRASH_COND_MSG(compiled, "The query can't be composed, when the system is already been compiled.");
 

@@ -16,13 +16,19 @@ namespace godex {
 class DynamicQuery : public Object {
 	GDCLASS(DynamicQuery, Object)
 
+	enum FetchMode {
+		WITH_MODE,
+		MAYBE_MODE,
+		CHANGED_MODE,
+		WITHOUT_MODE,
+	};
+
 	bool valid = true;
 	bool can_change = true;
 	Space space = Space::LOCAL;
 	LocalVector<godex::component_id> component_ids;
 	LocalVector<bool> mutability;
-	LocalVector<bool> required;
-	LocalVector<uint32_t> reject_component_ids;
+	LocalVector<FetchMode> mode;
 	LocalVector<DataAccessor> accessors;
 	LocalVector<StorageBase *> storages;
 	LocalVector<StorageBase *> reject_storages;
@@ -41,11 +47,12 @@ public:
 	/// Add component.
 	void with_component(uint32_t p_component_id, bool p_mutable = false);
 	void maybe_component(uint32_t p_component_id, bool p_mutable = false);
+	void changed_component(uint32_t p_component_id, bool p_mutable = false);
 
 	/// Excludes this component from the query.
 	void without_component(uint32_t p_component_id);
 
-	void _with_component(uint32_t p_component_id, bool p_mutable = false, bool required = true);
+	void _with_component(uint32_t p_component_id, bool p_mutable, FetchMode p_mode);
 
 	/// Returns true if this query is valid.
 	bool is_valid() const;
