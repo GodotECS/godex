@@ -31,8 +31,7 @@ TEST_CASE("[Modules][ECS] Test world has self databag.") {
 TEST_CASE("[Modules][ECS] Test world") {
 	World world;
 
-	TransformComponent entity_1_transform_component;
-	entity_1_transform_component.set_transform(Transform(Basis(), Vector3(10.0, 10.0, 10.0)));
+	TransformComponent entity_1_transform_component(Transform(Basis(), Vector3(10.0, 10.0, 10.0)));
 
 	EntityID entity_1 = world.create_entity();
 	world.add_component(
@@ -43,7 +42,7 @@ TEST_CASE("[Modules][ECS] Test world") {
 	const TransformComponent *transform_from_storage = storage->get(entity_1);
 
 	// Check the add component has the exact same data as the stored one.
-	CHECK((entity_1_transform_component.get_transform().origin - transform_from_storage->get_transform().origin).length() < CMP_EPSILON);
+	CHECK((entity_1_transform_component.transform.origin - transform_from_storage->transform.origin).length() < CMP_EPSILON);
 }
 
 TEST_CASE("[Modules][ECS] Test storage script component") {
@@ -218,7 +217,7 @@ TEST_CASE("[Modules][ECS] Test WorldECS runtime API create entity from prefab.")
 	TransformComponent *transf = godex::unwrap_component<TransformComponent>(comp);
 
 	// Make sure the default is also set.
-	CHECK(ABS(transf->get_transform().origin.x - 10) <= CMP_EPSILON);
+	CHECK(ABS(transf->transform.origin.x - 10) <= CMP_EPSILON);
 }
 
 TEST_CASE("[Modules][ECS] Test WorldECS runtime API fetch databags.") {

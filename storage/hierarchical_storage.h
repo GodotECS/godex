@@ -17,7 +17,7 @@ public:
 
 class Hierarchy : public Storage<Child> {
 	DenseVector<Child> storage;
-	ChangeList changed;
+	EntityList changed;
 	LocalVector<HierarchicalStorageBase *> sub_storages;
 
 public:
@@ -27,7 +27,7 @@ public:
 		p_storage->hierarchy = this;
 	}
 
-	const ChangeList &get_changed() const {
+	const EntityList &get_changed() const {
 		return changed;
 	}
 
@@ -68,7 +68,7 @@ public:
 			storage.remove(p_entity);
 
 			// 4. Mark this as changed.
-			changed.notify_changed(p_entity);
+			changed.insert(p_entity);
 		}
 	}
 
@@ -118,14 +118,14 @@ public:
 			child.next = EntityID();
 		}
 
-		changed.notify_changed(p_entity);
+		changed.insert(p_entity);
 
 		// Update the parent if any.
 		if (child.parent.is_null() == false) {
 			if (has(child.parent) == false) {
 				// Parent is always root when added in this way.
 				storage.insert(child.parent, Child());
-				changed.notify_changed(child.parent);
+				changed.insert(child.parent);
 			}
 
 			Child &parent = storage.get(child.parent);
@@ -274,7 +274,7 @@ template <class T>
 class HierarchicalStorage : public Storage<T>, public HierarchicalStorageBase {
 	DenseVector<LocalGlobal<T>> internal_storage;
 	// List of `Entities` taken mutably, for which we need to flush.
-	ChangeList relationshitp_dirty_list;
+	EntityList relationshitp_dirty_list;
 
 public:
 	virtual String get_type_name() const override {
@@ -324,7 +324,7 @@ public:
 		StorageBase::notify_changed(p_entity);
 		LocalGlobal<T> &data = internal_storage.get(p_entity);
 		if (data.has_relationship) {
-			relationshitp_dirty_list.notify_changed(p_entity);
+			relationshitp_dirty_list.insert(p_entity);
 			data.global_changed = p_mode == Space::GLOBAL;
 		}
 		return data.is_root || p_mode == Space::LOCAL ? &data.local : &data.global;
@@ -336,7 +336,7 @@ public:
 
 	void propagate_change(EntityID p_entity) {
 		if (has(p_entity) == false) {
-			relationshitp_dirty_list.notify_updated(p_entity);
+			relationshitp_dirty_list.remove(p_entity);
 			return;
 		}
 
@@ -349,7 +349,7 @@ public:
 
 		if (hierarchy->has(p_entity) == false) {
 			// This is not parented, nothing to do.
-			relationshitp_dirty_list.notify_updated(p_entity);
+			relationshitp_dirty_list.remove(p_entity);
 			p_data.has_relationship = false;
 		} else {
 			// This is parented, continue
@@ -385,7 +385,7 @@ public:
 			p_data.global_changed = false;
 		}
 
-		relationshitp_dirty_list.notify_updated(p_entity);
+		relationshitp_dirty_list.remove(p_entity);
 
 		// Now propagate the change to the childs.
 		hierarchy->for_each_child(p_child, [&](EntityID p_child_entity, const Child &p_child_data) -> bool {
@@ -414,7 +414,7 @@ public:
 
 	virtual void flush_hierarchy_changes() override {
 		hierarchy->get_changed().for_each([&](EntityID entity) {
-			relationshitp_dirty_list.notify_changed(entity);
+			relationshitp_dirty_list.insert(entity);
 		});
 		flush_changes();
 	}
