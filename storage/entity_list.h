@@ -47,4 +47,6 @@ public:
 	bool size() const;
 
 	void clear();
+
+	const LocalVector<EntityID> &get_entities() const;
 };
