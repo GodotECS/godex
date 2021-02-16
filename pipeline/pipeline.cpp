@@ -138,8 +138,8 @@ void Pipeline::prepare(World *p_world) {
 	// Make sure to reset the `need_changed` for the storages of this world.
 	for (uint32_t i = 0; i < p_world->storages.size(); i += 1) {
 		if (p_world->storages[i] != nullptr) {
-			p_world->storages[i]->flush_changed();
-			p_world->storages[i]->set_need_changed(false);
+			p_world->storages[i]->reset_changed();
+			p_world->storages[i]->set_tracing_change(false);
 		}
 	}
 
@@ -174,14 +174,14 @@ void Pipeline::prepare(World *p_world) {
 		for (const Set<uint32_t>::Element *e = info.need_changed.front(); e; e = e->next()) {
 			// Mark as `need_changed` this storage.
 			StorageBase *storage = p_world->get_storage(e->get());
-			storage->set_need_changed(true);
+			storage->set_tracing_change(true);
 		}
 	}
 
 	// Set the current `Components` as changed.
 	for (uint32_t i = 0; i < p_world->storages.size(); i += 1) {
 		if (p_world->storages[i] != nullptr) {
-			if (p_world->storages[i]->get_need_changed()) {
+			if (p_world->storages[i]->is_tracing_change()) {
 				const EntitiesBuffer entities = p_world->storages[i]->get_stored_entities();
 				for (uint32_t e = 0; e < entities.count; e += 1) {
 					p_world->storages[i]->notify_changed(entities.entities[e]);

@@ -403,7 +403,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery changed.") {
 								.create_entity()
 								.with(TestAccessMutabilityComponent1());
 
-	world.get_storage(TestAccessMutabilityComponent1::get_component_id())->set_need_changed(true);
+	world.get_storage(TestAccessMutabilityComponent1::get_component_id())->set_tracing_change(true);
 
 	{
 		// Trigger changed.

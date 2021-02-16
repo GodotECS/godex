@@ -944,8 +944,6 @@ TEST_CASE("[Modules][ECS] Test fetch changed from dynamic system.") {
 									  .create_entity()
 									  .with(TransformComponent());
 
-	world.get_storage<TransformComponent>()->set_need_changed(true);
-
 	Object target_obj;
 	{
 		// Create the script.
