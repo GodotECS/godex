@@ -245,9 +245,9 @@ TEST_CASE("[Modules][ECS] Test HierarchicalStorage.") {
 		const TransformComponent *tc_entity_2 = std::as_const(transform_storage).get(2);
 
 		// Test local world space.
-		CHECK(ABS(tc_entity_0->get_transform().origin[0] - 1.) <= CMP_EPSILON);
-		CHECK(ABS(tc_entity_1->get_transform().origin[0] - 1.) <= CMP_EPSILON);
-		CHECK(ABS(tc_entity_2->get_transform().origin[0] - 1.) <= CMP_EPSILON);
+		CHECK(ABS(tc_entity_0->transform.origin[0] - 1.) <= CMP_EPSILON);
+		CHECK(ABS(tc_entity_1->transform.origin[0] - 1.) <= CMP_EPSILON);
+		CHECK(ABS(tc_entity_2->transform.origin[0] - 1.) <= CMP_EPSILON);
 	}
 
 	{
@@ -256,16 +256,16 @@ TEST_CASE("[Modules][ECS] Test HierarchicalStorage.") {
 		const TransformComponent *tc_entity_0 = std::as_const(transform_storage).get(0, Space::GLOBAL);
 
 		// Test global world space.
-		CHECK(ABS(tc_entity_0->get_transform().origin[0] - 1.) <= CMP_EPSILON);
-		CHECK(ABS(tc_entity_1->get_transform().origin[0] - 2.) <= CMP_EPSILON);
-		CHECK(ABS(tc_entity_2->get_transform().origin[0] - 3.) <= CMP_EPSILON);
+		CHECK(ABS(tc_entity_0->transform.origin[0] - 1.) <= CMP_EPSILON);
+		CHECK(ABS(tc_entity_1->transform.origin[0] - 2.) <= CMP_EPSILON);
+		CHECK(ABS(tc_entity_2->transform.origin[0] - 3.) <= CMP_EPSILON);
 	}
 
 	// Test update local transform bia `get`.
 	{
 		{
 			TransformComponent *tc_entity_0 = transform_storage.get(0);
-			tc_entity_0->set_transform(Transform(Basis(), Vector3(3.0, 0., 0.)));
+			tc_entity_0->transform = Transform(Basis(), Vector3(3.0, 0., 0.));
 		}
 
 		// Flush the above change.
@@ -276,16 +276,16 @@ TEST_CASE("[Modules][ECS] Test HierarchicalStorage.") {
 		const TransformComponent *tc_entity_0 = std::as_const(transform_storage).get(0, Space::GLOBAL);
 
 		// Test global world space.
-		CHECK(ABS(tc_entity_0->get_transform().origin[0] - 3.) <= CMP_EPSILON);
-		CHECK(ABS(tc_entity_1->get_transform().origin[0] - 4.) <= CMP_EPSILON);
-		CHECK(ABS(tc_entity_2->get_transform().origin[0] - 5.) <= CMP_EPSILON);
+		CHECK(ABS(tc_entity_0->transform.origin[0] - 3.) <= CMP_EPSILON);
+		CHECK(ABS(tc_entity_1->transform.origin[0] - 4.) <= CMP_EPSILON);
+		CHECK(ABS(tc_entity_2->transform.origin[0] - 5.) <= CMP_EPSILON);
 	}
 
 	// Test update global transform bia `get`.
 	{
 		{
 			TransformComponent *tc_entity_2 = transform_storage.get(2, Space::GLOBAL);
-			tc_entity_2->set_transform(Transform(Basis(), Vector3(7.0, 0., 0.)));
+			tc_entity_2->transform = Transform(Basis(), Vector3(7.0, 0., 0.));
 		}
 
 		// Flush the above change.
@@ -297,10 +297,10 @@ TEST_CASE("[Modules][ECS] Test HierarchicalStorage.") {
 		const TransformComponent *tc_entity_0 = std::as_const(transform_storage).get(0, Space::GLOBAL);
 
 		// Test global world space.
-		CHECK(ABS(tc_entity_0->get_transform().origin[0] - 3.) <= CMP_EPSILON);
-		CHECK(ABS(tc_entity_1->get_transform().origin[0] - 4.) <= CMP_EPSILON);
-		CHECK(ABS(tc_entity_2->get_transform().origin[0] - 7.) <= CMP_EPSILON);
-		CHECK(ABS(tc_entity_2_local->get_transform().origin[0] - 3.) <= CMP_EPSILON);
+		CHECK(ABS(tc_entity_0->transform.origin[0] - 3.) <= CMP_EPSILON);
+		CHECK(ABS(tc_entity_1->transform.origin[0] - 4.) <= CMP_EPSILON);
+		CHECK(ABS(tc_entity_2->transform.origin[0] - 7.) <= CMP_EPSILON);
+		CHECK(ABS(tc_entity_2_local->transform.origin[0] - 3.) <= CMP_EPSILON);
 	}
 
 	// Test change hierarchy
@@ -318,9 +318,9 @@ TEST_CASE("[Modules][ECS] Test HierarchicalStorage.") {
 		const TransformComponent *tc_entity_0 = std::as_const(transform_storage).get(0, Space::GLOBAL);
 
 		// Test global world space.
-		CHECK(ABS(tc_entity_0->get_transform().origin[0] - 3.) <= CMP_EPSILON); // Root
-		CHECK(ABS(tc_entity_2->get_transform().origin[0] - 6.) <= CMP_EPSILON); // Child of `Entity0`.
-		CHECK(ABS(tc_entity_1->get_transform().origin[0] - 1.) <= CMP_EPSILON); // Root
+		CHECK(ABS(tc_entity_0->transform.origin[0] - 3.) <= CMP_EPSILON); // Root
+		CHECK(ABS(tc_entity_2->transform.origin[0] - 6.) <= CMP_EPSILON); // Child of `Entity0`.
+		CHECK(ABS(tc_entity_1->transform.origin[0] - 1.) <= CMP_EPSILON); // Root
 	}
 
 	// Check`Entities` fetch.

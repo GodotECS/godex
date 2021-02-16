@@ -63,7 +63,7 @@ TEST_CASE("[Modules][ECS] Test static query") {
 		// This query fetches the entity that have only the `TransformComponent`.
 		CHECK(query.is_done() == false);
 		auto [transform, tag] = query.get();
-		CHECK(ABS(transform->get_transform().origin.z - 23.0) <= CMP_EPSILON);
+		CHECK(ABS(transform->transform.origin.z - 23.0) <= CMP_EPSILON);
 		CHECK(query.get_current_entity() == entity_2);
 		CHECK(tag == nullptr);
 

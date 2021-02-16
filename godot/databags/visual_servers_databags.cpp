@@ -14,20 +14,3 @@ RenderingServer *RenderingServerDatabag::get_rs() {
 void RenderingScenarioDatabag::_bind_methods() {
 	ECS_BIND_PROPERTY(RenderingScenarioDatabag, PropertyInfo(Variant::OBJECT, "scenario"), scenario);
 }
-
-void RenderingScenarioDatabag::set_scenario(RID p_scenario_rid) {
-	changed = true;
-	scenario = p_scenario_rid;
-}
-
-RID RenderingScenarioDatabag::get_scenario() const {
-	return scenario;
-}
-
-void RenderingScenarioDatabag::set_changed(bool p_changed) {
-	changed = p_changed;
-}
-
-bool RenderingScenarioDatabag::is_changed() const {
-	return changed;
-}

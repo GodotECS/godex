@@ -18,17 +18,8 @@ public:
 
 class RenderingScenarioDatabag : public godex::Databag {
 	DATABAG(RenderingScenarioDatabag)
+	static void _bind_methods();
 
 	// TODO Probably this should be an array to support more scenarios.
 	RID scenario;
-	bool changed = false;
-
-	static void _bind_methods();
-
-public:
-	void set_scenario(RID p_scenario_rid);
-	RID get_scenario() const;
-
-	void set_changed(bool p_changed);
-	bool is_changed() const;
 };

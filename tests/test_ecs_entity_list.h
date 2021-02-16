@@ -1,23 +1,23 @@
-#ifndef TEST_ECS_CHANGE_LIST_H
-#define TEST_ECS_CHANGE_LIST_H
+#ifndef TEST_ECS_ENTITY_LIST_H
+#define TEST_ECS_ENTITY_LIST_H
 
 #include "tests/test_macros.h"
 
 #include "../storage/storage.h"
 #include "core/os/os.h"
 
-namespace godex_change_list_tests {
+namespace godex_entity_list_tests {
 
-TEST_CASE("[Modules][ECS] Test ECS ChangeList.") {
-	ChangeList changed;
+TEST_CASE("[Modules][ECS] Test ECS EntityList.") {
+	EntityList changed;
 
 	{
 		// Make sure only one time the entity is stored, even if notified multiple
 		// times.
-		changed.notify_changed(1);
-		changed.notify_changed(1);
-		changed.notify_changed(1);
-		changed.notify_changed(1);
+		changed.insert(1);
+		changed.insert(1);
+		changed.insert(1);
+		changed.insert(1);
 
 		uint32_t count = 0;
 		changed.for_each([&](EntityID p_entity) {
@@ -26,7 +26,7 @@ TEST_CASE("[Modules][ECS] Test ECS ChangeList.") {
 		CHECK(count == 1);
 
 		// Make sure on updated the entity is removed.
-		changed.notify_updated(1);
+		changed.remove(1);
 		count = 0;
 		changed.for_each([&](EntityID p_entity) {
 			count += 1;
@@ -36,8 +36,8 @@ TEST_CASE("[Modules][ECS] Test ECS ChangeList.") {
 
 	// Test clear.
 	{
-		changed.notify_updated(1);
-		changed.notify_updated(2);
+		changed.remove(1);
+		changed.remove(2);
 		changed.clear();
 		uint32_t count = 0;
 		changed.for_each([&](EntityID p_entity) {
@@ -52,10 +52,10 @@ TEST_CASE("[Modules][ECS] Test ECS ChangeList.") {
 
 	// Remove the `EntityID` 1 as soon as possible.
 	{
-		changed.notify_changed(0);
-		changed.notify_changed(1);
-		changed.notify_changed(2);
-		changed.notify_changed(3);
+		changed.insert(0);
+		changed.insert(1);
+		changed.insert(2);
+		changed.insert(3);
 
 		// Using a vector because the order is not guaranteed by this container.
 		LocalVector<bool> checked;
@@ -67,7 +67,7 @@ TEST_CASE("[Modules][ECS] Test ECS ChangeList.") {
 
 		changed.for_each([&](EntityID p_entity) {
 			checked[p_entity] = true;
-			changed.notify_updated(1);
+			changed.remove(1);
 		});
 
 		CHECK(checked[0]);
@@ -81,10 +81,10 @@ TEST_CASE("[Modules][ECS] Test ECS ChangeList.") {
 
 	// Remove the `EntityID` 1, while processing.
 	{
-		changed.notify_changed(0);
-		changed.notify_changed(1);
-		changed.notify_changed(2);
-		changed.notify_changed(3);
+		changed.insert(0);
+		changed.insert(1);
+		changed.insert(2);
+		changed.insert(3);
 
 		LocalVector<bool> checked;
 		checked.resize(4);
@@ -96,7 +96,7 @@ TEST_CASE("[Modules][ECS] Test ECS ChangeList.") {
 		changed.for_each([&](EntityID p_entity) {
 			checked[p_entity] = true;
 			if (p_entity == EntityID(1)) {
-				changed.notify_updated(1);
+				changed.remove(1);
 			}
 		});
 
@@ -111,11 +111,11 @@ TEST_CASE("[Modules][ECS] Test ECS ChangeList.") {
 
 	// Remove the `EntityID` 1, when already processed.
 	{
-		changed.notify_changed(0);
-		changed.notify_changed(1);
-		changed.notify_changed(2);
-		changed.notify_changed(3);
-		changed.notify_changed(4);
+		changed.insert(0);
+		changed.insert(1);
+		changed.insert(2);
+		changed.insert(3);
+		changed.insert(4);
 
 		LocalVector<bool> checked;
 		checked.resize(5);
@@ -128,7 +128,7 @@ TEST_CASE("[Modules][ECS] Test ECS ChangeList.") {
 		changed.for_each([&](EntityID p_entity) {
 			checked[p_entity] = true;
 			if (p_entity == EntityID(2)) {
-				changed.notify_updated(1);
+				changed.remove(1);
 			}
 		});
 
@@ -144,19 +144,19 @@ TEST_CASE("[Modules][ECS] Test ECS ChangeList.") {
 
 	// Test self consuming for_each.
 	{
-		changed.notify_changed(4);
-		changed.notify_changed(2);
-		changed.notify_changed(3);
-		changed.notify_changed(1);
-		changed.notify_changed(0);
+		changed.insert(4);
+		changed.insert(2);
+		changed.insert(3);
+		changed.insert(1);
+		changed.insert(0);
 
 		changed.for_each([&](EntityID p_entity) {
-			changed.notify_updated(p_entity);
+			changed.remove(p_entity);
 		});
 
 		CHECK(changed.is_empty());
 	}
 }
-} // namespace godex_change_list_tests
+} // namespace godex_entity_list_tests
 
 #endif

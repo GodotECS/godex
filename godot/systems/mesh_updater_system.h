@@ -18,16 +18,18 @@ void scenario_manager_system(
 		RenderingScenarioDatabag *p_scenario,
 		// Taking this just to make sure this is always performed in single
 		// thread, so I can access the `SceneTree` safely.
-		World *p_world);
+		World *p_world,
+		RenderingServerDatabag *rs,
+		Query<const MeshComponent> &p_query);
 
 /// Handles the mesh lifetime. Initializes the mesh, usually this is called
 /// before `MeshTransformUpdaterSystem`.
 void mesh_updater_system(
 		const RenderingScenarioDatabag *p_scenario,
 		RenderingServerDatabag *rs,
-		Query<MeshComponent> &query);
+		Query<Changed<MeshComponent>> &p_query);
 
 /// Updates the `VisualServer` mesh transform.
 void mesh_transform_updater_system(
 		RenderingServerDatabag *rs,
-		Query<const MeshComponent, const TransformComponent> &query);
+		Query<const MeshComponent, Changed<const TransformComponent>> &p_query);
