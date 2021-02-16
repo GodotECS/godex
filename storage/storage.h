@@ -96,6 +96,10 @@ public:
 		}
 	}
 
+	EntitiesBuffer get_changed_entities() const {
+		return { changed.size(), changed.get_entities().ptr() };
+	}
+
 public:
 	/// This method is used by the `DataAccessor` to expose the `Storage` to
 	/// GDScript.

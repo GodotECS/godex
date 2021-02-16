@@ -90,3 +90,7 @@ void EntityList::clear() {
 	}
 	dense_list.clear();
 }
+
+const LocalVector<EntityID> &EntityList::get_entities() const {
+	return dense_list;
+}
