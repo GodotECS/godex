@@ -138,6 +138,7 @@ public:
 	virtual void insert(EntityID p_entity, const T &p_data) override {
 		count_insert += 1;
 		storage.insert(p_entity, p_data);
+		StorageBase::notify_changed(p_entity);
 	}
 
 	virtual bool has(EntityID p_entity) const override {
@@ -151,11 +152,13 @@ public:
 	}
 
 	virtual Batch<std::remove_const_t<T>> get(EntityID p_entity, Space p_mode = Space::LOCAL) override {
+		StorageBase::notify_changed(p_entity);
 		count_get_mut += 1;
 		return &storage.get(p_entity);
 	}
 
 	virtual void remove(EntityID p_entity) override {
+		StorageBase::notify_updated(p_entity);
 		count_remove += 1;
 		storage.remove(p_entity);
 	}
@@ -163,6 +166,7 @@ public:
 	virtual void clear() override {
 		count_clear += 1;
 		storage.clear();
+		StorageBase::flush_changed();
 	}
 };
 
@@ -283,11 +287,12 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery fetch mutability.") {
 	CHECK(storage1->count_get_mut == 1);
 	CHECK(storage2->count_get_mut == 1);
 
-	godex::DynamicQuery query_test_maybe_mut;
-	query_test_maybe_mut.maybe_component(TestAccessMutabilityComponent1::get_component_id(), true);
-	query_test_maybe_mut.begin(&world);
+	// Make sure `maybe` alone doesn't fetch anything.
+	godex::DynamicQuery query_test_maybe_alone_mut;
+	query_test_maybe_alone_mut.maybe_component(TestAccessMutabilityComponent1::get_component_id(), true);
+	query_test_maybe_alone_mut.begin(&world);
 
-	CHECK(storage1->count_get_mut == 2);
+	CHECK(storage1->count_get_mut == 1);
 
 	// Test immutables
 
@@ -296,7 +301,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery fetch mutability.") {
 	godex::DynamicQuery query_test_immut;
 	query_test_immut.with_component(TestAccessMutabilityComponent1::get_component_id(), false);
 	query_test_immut.begin(&world);
-	CHECK(storage1->count_get_mut == 2);
+	CHECK(storage1->count_get_mut == 1);
 	CHECK(storage1->count_get_immut == 1);
 
 	CHECK(storage2->count_get_immut == 0);
@@ -305,16 +310,134 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery fetch mutability.") {
 	query_test_without_immut.with_component(TestAccessMutabilityComponent2::get_component_id(), false);
 	query_test_without_immut.begin(&world);
 
-	CHECK(storage1->count_get_mut == 2);
+	CHECK(storage1->count_get_mut == 1);
 	CHECK(storage1->count_get_immut == 1);
 	CHECK(storage2->count_get_immut == 1);
 
-	godex::DynamicQuery query_test_maybe_immut;
-	query_test_maybe_immut.maybe_component(TestAccessMutabilityComponent1::get_component_id(), false);
-	query_test_maybe_immut.begin(&world);
+	godex::DynamicQuery query_test_maybe_alone_immut;
+	query_test_maybe_alone_immut.maybe_component(TestAccessMutabilityComponent1::get_component_id(), false);
+	query_test_maybe_alone_immut.begin(&world);
 
-	CHECK(storage1->count_get_mut == 2);
-	CHECK(storage1->count_get_immut == 2);
+	CHECK(storage1->count_get_mut == 1);
+	CHECK(storage1->count_get_immut == 1);
+}
+
+TEST_CASE("[Modules][ECS] Test DynamicQuery try fetch combination.") {
+	World world;
+
+	EntityID entity_1 = world
+								.create_entity()
+								.with(TestAccessMutabilityComponent1());
+
+	world
+			.create_entity()
+			.with(TestAccessMutabilityComponent2());
+
+	EntityID entity_3 = world
+								.create_entity()
+								.with(TestAccessMutabilityComponent1())
+								.with(TestAccessMutabilityComponent2());
+
+	{
+		// Check `With`  and `With`.
+		godex::DynamicQuery query;
+		query.with_component(TestAccessMutabilityComponent1::get_component_id(), false);
+		query.with_component(TestAccessMutabilityComponent2::get_component_id(), false);
+		query.begin(&world);
+		CHECK(query.get_current_entity_id() == entity_3);
+	}
+
+	{
+		// Check `With`  and `Without`.
+		godex::DynamicQuery query;
+		query.with_component(TestAccessMutabilityComponent1::get_component_id(), false);
+		query.without_component(TestAccessMutabilityComponent2::get_component_id());
+		query.begin(&world);
+		CHECK(query.get_current_entity_id() == entity_1);
+	}
+
+	{
+		// Check `With`  and `Maybe`.
+		godex::DynamicQuery query;
+		query.with_component(TestAccessMutabilityComponent1::get_component_id(), false);
+		query.maybe_component(TestAccessMutabilityComponent2::get_component_id());
+		query.begin(&world);
+		CHECK(query.get_current_entity_id() == entity_1);
+		query.next();
+		CHECK(query.get_current_entity_id() == entity_3);
+	}
+
+	{
+		// Check `Maybe`.
+		godex::DynamicQuery query;
+		query.maybe_component(TestAccessMutabilityComponent2::get_component_id());
+		query.begin(&world);
+		// Nothing to fetch, because `Maybe` alone is meaningless.
+		CHECK(query.is_done());
+	}
+
+	{
+		// Check `Without`.
+		godex::DynamicQuery query;
+		query.without_component(TestAccessMutabilityComponent2::get_component_id());
+		query.begin(&world);
+		// Nothing to fetch, because `Without` alone is meaningless.
+		CHECK(query.is_done());
+	}
+
+	{
+		// Check `Maybe` and `Without`.
+		godex::DynamicQuery query;
+		query.maybe_component(TestAccessMutabilityComponent1::get_component_id());
+		query.without_component(TestAccessMutabilityComponent2::get_component_id());
+		query.begin(&world);
+		// Nothing to fetch, because `Maybe` and `Without` are meaningless alone.
+		CHECK(query.is_done());
+	}
+}
+
+TEST_CASE("[Modules][ECS] Test DynamicQuery changed.") {
+	World world;
+
+	EntityID entity_1 = world
+								.create_entity()
+								.with(TestAccessMutabilityComponent1());
+
+	world.get_storage(TestAccessMutabilityComponent1::get_component_id())->set_need_changed(true);
+
+	{
+		// Trigger changed.
+		godex::DynamicQuery query;
+		query.with_component(TestAccessMutabilityComponent1::get_component_id(), true);
+		query.begin(&world);
+		CHECK(query.get_current_entity_id() == entity_1);
+	}
+
+	{
+		// Check I can access changed.
+		godex::DynamicQuery query;
+		query.changed_component(TestAccessMutabilityComponent1::get_component_id(), false);
+		query.begin(&world);
+		CHECK(query.get_current_entity_id() == entity_1);
+	}
+
+	world.get_storage(TestAccessMutabilityComponent1::get_component_id())->flush_changed();
+
+	{
+		// Take the component again, without triggering changed.
+		godex::DynamicQuery query;
+		query.with_component(TestAccessMutabilityComponent1::get_component_id(), false);
+		query.begin(&world);
+		CHECK(query.get_current_entity_id() == entity_1);
+	}
+
+	{
+		// Check changed is gone.
+		godex::DynamicQuery query;
+		query.changed_component(TestAccessMutabilityComponent1::get_component_id(), false);
+		query.begin(&world);
+		CHECK(query.is_done());
+	}
 }
 
 TEST_CASE("[Modules][ECS] Test static query check query type fetch.") {
@@ -327,7 +450,6 @@ TEST_CASE("[Modules][ECS] Test static query check query type fetch.") {
 		query.get_components(info);
 
 		CHECK(info.mutable_components.find(TagQueryTestComponent::get_component_id()) != nullptr);
-
 		CHECK(info.immutable_components.find(TransformComponent::get_component_id()) != nullptr);
 	}
 

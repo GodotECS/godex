@@ -79,6 +79,7 @@ public:
 	void with_databag(uint32_t p_databag_id, bool p_mutable);
 	void with_component(uint32_t p_component_id, bool p_mutable);
 	void maybe_component(uint32_t p_component_id, bool p_mutable);
+	void changed_component(uint32_t p_component_id, bool p_mutable);
 	void without_component(uint32_t p_component_id);
 	void with_storage(godex::component_id p_component_id);
 

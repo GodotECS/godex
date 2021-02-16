@@ -829,7 +829,7 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 	}
 }
 
-TEST_CASE("[Modules][ECS] Test Add/remove from dynamic query.") {
+TEST_CASE("[Modules][ECS] Test Add/remove from dynamic system.") {
 	ECS::register_component<Test1Component>();
 
 	World world;
@@ -935,6 +935,48 @@ TEST_CASE("[Modules][ECS] Test Add/remove from dynamic query.") {
 		CHECK(world.get_storage<Test1Component>()->has(entity_2) == false);
 		CHECK(world.get_storage<Test1Component>()->has(entity_3) == false);
 	}
+}
+
+TEST_CASE("[Modules][ECS] Test fetch changed from dynamic system.") {
+	World world;
+
+	const EntityID entity_1 = world
+									  .create_entity()
+									  .with(TransformComponent());
+
+	world.get_storage<TransformComponent>()->set_need_changed(true);
+
+	Object target_obj;
+	{
+		// Create the script.
+		String code;
+		code += "extends Object\n";
+		code += "\n";
+		code += "func _for_each(transform_com):\n";
+		code += "	transform_com.transform.origin.x = 100.0\n";
+		code += "\n";
+
+		CHECK(build_and_assign_script(&target_obj, code));
+	}
+
+	// Build dynamic query.
+	const uint32_t system_id = ECS::register_dynamic_system("TestChangedDynamicSystem.gd");
+	godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
+	dynamic_system_info->changed_component(TransformComponent::get_component_id(), true);
+	dynamic_system_info->set_target(target_obj.get_script_instance());
+	dynamic_system_info->build();
+
+	// Create the pipeline.
+	Pipeline pipeline;
+	// Add the system to the pipeline.
+	pipeline.add_registered_system(system_id);
+	pipeline.build();
+	pipeline.prepare(&world);
+
+	// Dispatch 1 time.
+	pipeline.dispatch(&world);
+
+	CHECK(ABS(world.get_storage<TransformComponent>()->get(entity_1)->transform.origin.x - 100.0) <= CMP_EPSILON);
 }
 } // namespace godex_tests_system
 
