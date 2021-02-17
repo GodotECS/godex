@@ -87,7 +87,7 @@ index 168b2e5e86..0a49471814 100644
  	static bool start();
  
 +#ifdef CUSTOM_ITERATOR
-+	static bool custom_iteration(float p_process_delta, float p_physics_delta, class MainFrameTime *p_frame_time, float p_time_scale);
++	static bool custom_iteration(float p_process_delta, float p_physics_delta, struct MainFrameTime *p_frame_time, float p_time_scale);
 +#endif
  	static bool iteration();
  	static void force_redraw();
