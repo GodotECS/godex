@@ -76,7 +76,7 @@ jobs:
       # Execute unit tests for the editor
     - name: Unit Tests
       run: |
-        ./bin/godot.linuxbsd.opt.tools.64 --test
+        ./godot/bin/godot.linuxbsd.opt.tools.64 --test
 
     - uses: actions/upload-artifact@v2
       with:
