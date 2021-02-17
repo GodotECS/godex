@@ -50,9 +50,13 @@ public:
 			ScriptECS::register_runtime_scripts();
 		}
 	}
-} rep;
+};
+
+REP *rep = nullptr;
 
 void register_godex_types() {
+	rep = memnew(REP);
+
 	godex::DynamicSystemInfo::for_each_name = StringName("_for_each");
 
 	ClassDB::register_class<ECS>();
@@ -73,7 +77,7 @@ void register_godex_types() {
 
 	// Register in editor things.
 	if (MessageQueue::get_singleton()) {
-		MessageQueue::get_singleton()->push_callable(callable_mp(&rep, &REP::setup_ecs));
+		MessageQueue::get_singleton()->push_callable(callable_mp(rep, &REP::setup_ecs));
 	}
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Register engine components
@@ -133,4 +137,7 @@ void unregister_godex_types() {
 	ECS *ecs = ECS::get_singleton();
 	ECS::__set_singleton(nullptr);
 	memdelete(ecs);
+
+	memdelete(rep);
+	rep = nullptr;
 }

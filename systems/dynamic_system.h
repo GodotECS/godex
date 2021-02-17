@@ -53,7 +53,7 @@ class DynamicSystemInfo {
 	LocalVector<uint32_t> query_element_map;
 	LocalVector<DDatabag> databags;
 	LocalVector<godex::component_id> storages;
-	DynamicQuery query;
+	DynamicQuery *query;
 
 	// Accessors.
 	LocalVector<Variant> access;
@@ -71,6 +71,9 @@ class DynamicSystemInfo {
 
 public:
 	DynamicSystemInfo();
+	~DynamicSystemInfo();
+
+	void init_query();
 
 	void set_system_id(uint32_t p_id);
 	void set_target(ScriptInstance *p_target);
