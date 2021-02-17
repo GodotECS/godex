@@ -32,7 +32,14 @@ jobs:
        ref: refs/heads/godex_version
        path: godot
 
-      # Install all packages (except scons)
+    # Azure repositories are not reliable, we need to prevent azure giving us packages.
+    - name: Make apt sources.list use the default Ubuntu repositories
+      run: |
+       sudo rm -f /etc/apt/sources.list.d/*
+       sudo cp -f modules/godex/misc/ci/sources.list /etc/apt/sources.list
+       sudo apt-get update
+
+    # Install all packages (except scons)
     - name: Configure dependencies
       run: |
           sudo apt-get install build-essential pkg-config libx11-dev libxcursor-dev \
@@ -50,7 +57,7 @@ jobs:
         ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}
         ${{github.job}}-${{env.GODOT_BASE_BRANCH}}
 
-      # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
+    # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
     - name: Set up Python 3.x
       uses: actions/setup-python@v2
       with:
@@ -59,7 +66,7 @@ jobs:
        # Optional - x64 or x86 architecture, defaults to x64
        architecture: 'x64'
 
-      # Setup scons, print python version and scons version info, so if anything is broken it won't run the build.
+    # Setup scons, print python version and scons version info, so if anything is broken it won't run the build.
     - name: Configuring Python packages
       run: |
        python -c "import sys; print(sys.version)"
@@ -73,7 +80,7 @@ jobs:
        scons tools=yes tests=yes target=release_debug custom_modules="../modules" -j2
        ls -l bin/
 
-      # Execute unit tests for the editor
+    # Execute unit tests for the editor
     - name: Unit Tests
       run: |
         ./godot/bin/godot.linuxbsd.opt.tools.64 --test
@@ -81,6 +88,6 @@ jobs:
     - uses: actions/upload-artifact@v2
       with:
        name: ${{ github.job }}
-       path: bin/*
+       path: godot/bin/*
        retention-days: 14
 
