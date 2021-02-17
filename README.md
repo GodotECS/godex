@@ -3,6 +3,9 @@
 <p align="center">
     <img src="logo.svg" width="400" alt="Godex logo">
 </p>
+<p align="center">
+<img alt="GitHub Workflow Status (branch)" src="https://img.shields.io/github/workflow/status/GodotECS/godex/linux_builds/master?label=linux%20build">
+</p>
 
 Godex is a Godot Engine ecs library.
 

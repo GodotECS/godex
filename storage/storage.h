@@ -184,7 +184,7 @@ public:
 
 		// Set the custom data if any.
 		for (const Variant *key = p_data.next(); key; key = p_data.next(key)) {
-			T::set_by_name(&insert_data, StringName(*key), *p_data.getptr(*key));
+			T::set_by_name((void *)&insert_data, StringName(*key), *p_data.getptr(*key));
 		}
 
 		insert(p_entity, insert_data);
