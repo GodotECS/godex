@@ -259,7 +259,6 @@ public:                                                                         
 				r_data = static_cast<const clazz *>(self)->get_func(); \
 				return true;                                           \
 			});
-
 } // namespace godex
 
 // ~~ METHOD MAPPER ~~
@@ -429,7 +428,6 @@ public:                                                                         
 	}                                                                                                                                                                                 \
 																																													  \
 private:
-
 } // namespace godex
 
 #define SINGLETON_MAKER(m_class)                                                                      \

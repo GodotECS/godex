@@ -103,5 +103,4 @@ public:
 	static void get_info(DynamicSystemInfo &p_info, func_system_execute p_exec, SystemExeInfo &r_out);
 	static void executor(World *p_world, DynamicSystemInfo &p_info);
 };
-
 } // namespace godex

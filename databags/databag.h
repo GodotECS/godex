@@ -80,5 +80,4 @@ const T *unwrap_databag(const Object *p_access_databag) {
 		return nullptr;
 	}
 }
-
 } // namespace godex

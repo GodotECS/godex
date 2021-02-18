@@ -93,5 +93,4 @@ private:
 	bool has_entity(EntityID p_id) const;
 	void fetch();
 };
-
 } // namespace godex

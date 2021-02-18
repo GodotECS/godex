@@ -20,7 +20,7 @@ jobs:
       run: |
        mkdir godot
        mkdir modules
-       mkdir modules/godex 
+       mkdir modules/godex
 
     - name: Clone godex
       uses: actions/checkout@v2
@@ -34,7 +34,6 @@ jobs:
        ref: refs/heads/godex_version
        path: godot
 
-       
     # Upload cache on completion and check it out now
     # Editing this is pretty dangerous for Windows since it can break and needs to be properly tested with a fresh cache.
     - name: Load .scons_cache directory
@@ -48,7 +47,6 @@ jobs:
           ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}
           ${{github.job}}-${{env.GODOT_BASE_BRANCH}}
 
-          
     # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
     - name: Set up Python 3.x
       uses: actions/setup-python@v2

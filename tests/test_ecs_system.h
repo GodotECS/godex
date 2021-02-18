@@ -1051,7 +1051,6 @@ TEST_CASE("[Modules][ECS] Test system changed query filter.") {
 	// Taken immutably, so never changed.
 	CHECK(entity_3_tracer->trace == 1);
 }
-
 } // namespace godex_tests_system
 
 #endif // TEST_ECS_SYSTEM_H

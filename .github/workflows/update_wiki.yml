@@ -1,4 +1,4 @@
-name: CI
+name: Update DOC wiki
 on:
   push:
     branches: main
@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-      
+
       - name: Download makerst.py
         uses: carlosperate/download-file-action@v1.0.3
         with:
@@ -27,7 +27,7 @@ jobs:
             mv $i class_$(grep -P -o -m 1 "\w+(?=\.xml)" $i).rst
           done
           echo "Done"
-          
+
       - name: Sync files to wiki
         uses: kai-tub/external-repo-sync-action@v1
         with:
@@ -35,3 +35,4 @@ jobs:
           user: GodexBot
         env:
           GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+

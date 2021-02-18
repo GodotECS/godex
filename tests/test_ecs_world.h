@@ -230,7 +230,6 @@ TEST_CASE("[Modules][ECS] Test WorldECS runtime API fetch databags.") {
 	World *world_ptr = godex::unwrap_databag<World>(world_res_raw);
 	CHECK(world.get_world() == world_ptr);
 }
-
 } // namespace godex_tests_world
 
 #endif // TEST_ECS_WORLD_H
