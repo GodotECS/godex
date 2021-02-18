@@ -30,7 +30,7 @@ jobs:
       - name: Python style checks via black (black_format.sh)
         run: |
           bash ./misc/scripts/black_format.sh
-      - name: Documentation checks
-        run: |
-          doc/tools/makerst.py --dry-run doc/classes modules
+      #- name: Documentation checks
+      #  run: |
+      #    doc/tools/makerst.py --dry-run doc/classes modules
 
