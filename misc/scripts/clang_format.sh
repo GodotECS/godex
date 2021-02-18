@@ -32,8 +32,9 @@ while IFS= read -rd '' f; do
             elif [[ "$f" == "platform/android/java/lib/src/org/godotengine/godot/input/InputManager"* ]]; then
                 continue 2
             fi
-            python misc/scripts/copyright_headers.py "$f"
-            continue 2
+            #Disabled
+            #python misc/scripts/copyright_headers.py "$f"
+            #continue 2
         fi
     done
 done

@@ -60,7 +60,6 @@ TEST_CASE("[Modules][ECS] Test ECS dynamic component with wrong default type.") 
 	// Make sure this component was not created.
 	CHECK(test_dyn_component_id == UINT32_MAX);
 }
-
 } // namespace godex_tests
 
 #endif // TEST_ECS_BASE_H

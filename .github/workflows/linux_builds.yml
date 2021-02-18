@@ -18,7 +18,7 @@ jobs:
       run: |
        mkdir godot
        mkdir modules
-       mkdir modules/godex 
+       mkdir modules/godex
 
     - name: Clone godex
       uses: actions/checkout@v2
@@ -44,7 +44,7 @@ jobs:
       run: |
           sudo apt-get install build-essential pkg-config libx11-dev libxcursor-dev \
             libxinerama-dev libgl1-mesa-dev libglu-dev libasound2-dev libpulse-dev libudev-dev libxi-dev libxrandr-dev yasm
-           
+
     # Upload cache on completion and check it out now
     - name: Load .scons_cache directory
       id: linux-editor-cache

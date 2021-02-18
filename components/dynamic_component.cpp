@@ -1,4 +1,4 @@
-﻿#include "dynamic_component.h"
+#include "dynamic_component.h"
 
 DynamicComponentInfo::DynamicComponentInfo() {
 }

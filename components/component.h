@@ -14,13 +14,11 @@ namespace godex {
 #define COMPONENT_INTERNAL(m_class)                             \
 	/* Components */                                            \
 	static inline uint32_t component_id = UINT32_MAX;           \
-																\
+                                                                \
 public:                                                         \
 	static uint32_t get_component_id() { return component_id; } \
-																\
 	ECS_PROPERTY_MAPPER(m_class)                                \
 	ECS_METHOD_MAPPER(m_class)                                  \
-																\
 	static void __static_destructor() {                         \
 		property_map.reset();                                   \
 		properties.reset();                                     \
@@ -29,7 +27,7 @@ public:                                                         \
 		methods_map.reset();                                    \
 		methods.reset();                                        \
 	}                                                           \
-																\
+                                                                \
 public:                                                         \
 	m_class() = default;                                        \
 	m_class(const m_class &) = default;
@@ -39,7 +37,7 @@ public:                                                         \
 	ECSCLASS(m_class)                                                  \
 	friend class World;                                                \
 	friend class Component;                                            \
-																	   \
+                                                                       \
 private:                                                               \
 	/* Storages */                                                     \
 	static _FORCE_INLINE_ m_storage_class<m_class> *create_storage() { \
@@ -57,7 +55,7 @@ private:                                                               \
 	ECSCLASS(m_class)                     \
 	friend class World;                   \
 	friend class Component;               \
-										  \
+                                          \
 private:                                  \
 	COMPONENT_INTERNAL(m_class)
 
@@ -66,7 +64,7 @@ private:                                  \
 	ECSCLASS(m_class)                                                                         \
 	friend class World;                                                                       \
 	friend class Component;                                                                   \
-																							  \
+                                                                                              \
 private:                                                                                      \
 	/* Storages */                                                                            \
 	static _FORCE_INLINE_ BatchStorage<m_storage_class, m_batch, m_class> *create_storage() { \

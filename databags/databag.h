@@ -18,7 +18,7 @@ namespace godex {
 
 #define DATABAG(m_class)                                             \
 	ECSCLASS(m_class)                                                \
-																	 \
+                                                                     \
 private:                                                             \
 	/* Creation */                                                   \
 	static _FORCE_INLINE_ m_class *create_databag() {                \
@@ -28,16 +28,16 @@ private:                                                             \
 		/* Creates a storage but returns a generic component. */     \
 		return create_databag();                                     \
 	}                                                                \
-																	 \
+                                                                     \
 	/* Databag */                                                    \
 	static inline uint32_t databag_id = UINT32_MAX;                  \
-																	 \
+                                                                     \
 public:                                                              \
 	static uint32_t get_databag_id() { return databag_id; }          \
-																	 \
+                                                                     \
 	ECS_PROPERTY_MAPPER(m_class)                                     \
 	ECS_METHOD_MAPPER(m_class)                                       \
-																	 \
+                                                                     \
 	static void __static_destructor() {                              \
 		property_map.reset();                                        \
 		properties.reset();                                          \
@@ -46,7 +46,7 @@ public:                                                              \
 		methods_map.reset();                                         \
 		methods.reset();                                             \
 	}                                                                \
-																	 \
+                                                                     \
 public:
 
 class Databag {
@@ -80,5 +80,4 @@ const T *unwrap_databag(const Object *p_access_databag) {
 		return nullptr;
 	}
 }
-
 } // namespace godex

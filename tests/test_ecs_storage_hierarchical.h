@@ -341,7 +341,6 @@ TEST_CASE("[Modules][ECS] Test HierarchicalStorage.") {
 		CHECK(entities.count == 5);
 	}
 }
-
 // TODO test hierarchy sorting?
 } // namespace godex_storage_hierarchical_tests
 

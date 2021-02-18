@@ -340,19 +340,19 @@ void EntityEditor::create_component_inspector(StringName p_component_name, VBoxC
 #define SETUP_MATH_RANGE(editor, prop_info, type)                                                   \
 	type min = -65535, max = 65535;                                                                 \
 	bool hide_slider = true;                                                                        \
-																									\
+                                                                                                    \
 	if (prop_info.hint == PROPERTY_HINT_RANGE && prop_info.hint_string.get_slice_count(",") >= 2) { \
 		min = e->get().hint_string.get_slice(",", 0).to_float();                                    \
 		max = e->get().hint_string.get_slice(",", 1).to_float();                                    \
 		hide_slider = false;                                                                        \
 	}                                                                                               \
-																									\
+                                                                                                    \
 	editor->setup(min, max, hide_slider);
 
 #define SETUP_MATH_RANGE_WITH_STEP(editor, prop_info, type)                                         \
 	type min = -65535, max = 65535, step = default_float_step;                                      \
 	bool hide_slider = true;                                                                        \
-																									\
+                                                                                                    \
 	if (prop_info.hint == PROPERTY_HINT_RANGE && prop_info.hint_string.get_slice_count(",") >= 2) { \
 		min = prop_info.hint_string.get_slice(",", 0).to_float();                                   \
 		max = prop_info.hint_string.get_slice(",", 1).to_float();                                   \
@@ -361,7 +361,7 @@ void EntityEditor::create_component_inspector(StringName p_component_name, VBoxC
 		}                                                                                           \
 		hide_slider = false;                                                                        \
 	}                                                                                               \
-																									\
+                                                                                                    \
 	editor->setup(min, max, step, hide_slider);
 			// math types
 			case Variant::VECTOR2: {

@@ -109,5 +109,4 @@ struct DataFetcher<D *> {
 #include "temporary_system_exe_funcs.gen.h"
 
 #undef OBTAIN
-
 } // namespace SystemBuilder
