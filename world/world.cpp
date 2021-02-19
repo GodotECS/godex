@@ -16,7 +16,6 @@ const EntityBuilder &EntityBuilder::with(uint32_t p_component_id, const Dictiona
 void WorldCommands::_bind_methods() {
 	add_method("create_entity", &WorldCommands::create_entity);
 	add_method("destroy_deferred", &WorldCommands::destroy_deferred);
-	add_method("get_biggest_entity_id", &WorldCommands::get_biggest_entity_id);
 }
 
 EntityID WorldCommands::create_entity() {
@@ -25,14 +24,6 @@ EntityID WorldCommands::create_entity() {
 
 void WorldCommands::destroy_deferred(EntityID p_entity) {
 	garbage_list.push_back(p_entity);
-}
-
-EntityID WorldCommands::get_biggest_entity_id() const {
-	if (entity_register == 0) {
-		return EntityID();
-	} else {
-		return EntityID(entity_register - 1);
-	}
 }
 
 void World::_bind_methods() {
@@ -88,10 +79,6 @@ void World::destroy_entity(EntityID p_entity) {
 	}
 
 	// TODO consider to reuse this ID.
-}
-
-EntityID World::get_biggest_entity_id() const {
-	return commands.get_biggest_entity_id();
 }
 
 WorldCommands &World::get_commands() {

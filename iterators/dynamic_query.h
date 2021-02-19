@@ -34,7 +34,9 @@ class DynamicQuery : public Object {
 	LocalVector<StorageBase *> reject_storages;
 
 	World *world = nullptr;
-	uint32_t entity_id = UINT32_MAX;
+	uint32_t iterator_index = 0;
+	EntityID current_entity;
+	EntitiesBuffer entities = EntitiesBuffer(0, nullptr);
 
 	static void _bind_methods();
 
@@ -71,26 +73,30 @@ public:
 	DataAccessor *get_access(uint32_t p_index);
 
 	/// Start the execution of this query.
-	void begin(World *p_world);
 	void begin_script(Object *p_world);
+	void begin(World *p_world);
+	/// Ends the query execution.
+	void end();
 
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Iterator
 	/// Returns `false` if this query can still return the components via `get`.
-	bool is_done() const;
-
-	/// Returns entity id.
-	EntityID get_current_entity_id() const;
-	uint32_t get_current_entity_id_script() const;
+	bool is_not_done() const;
 
 	/// Advance entity
 	void next();
 
-	/// Ends the query execution.
-	void end();
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Random Access
+	bool script_has(uint32_t p_id) const;
+	bool has(EntityID p_id) const;
 
+	void script_fetch(uint32_t p_entity);
+	void fetch(EntityID p_entity);
+
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Utilities
+	/// Returns entity id.
+	uint32_t script_get_current_entity_id() const;
+	EntityID get_current_entity_id() const;
+	uint32_t count() const;
 	void get_system_info(SystemExeInfo &p_info) const;
-
-private:
-	bool has_entity(EntityID p_id) const;
-	void fetch();
 };
 } // namespace godex

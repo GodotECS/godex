@@ -11,15 +11,23 @@ void DynamicQuery::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("maybe_component", "component_id", "mutable"), &DynamicQuery::maybe_component);
 	ClassDB::bind_method(D_METHOD("changed_component", "component_id", "mutable"), &DynamicQuery::changed_component);
 	ClassDB::bind_method(D_METHOD("without_component", "component_id"), &DynamicQuery::without_component);
+
 	ClassDB::bind_method(D_METHOD("is_valid"), &DynamicQuery::is_valid);
 	ClassDB::bind_method(D_METHOD("build"), &DynamicQuery::build);
 	ClassDB::bind_method(D_METHOD("reset"), &DynamicQuery::reset);
 	ClassDB::bind_method(D_METHOD("get_component", "index"), &DynamicQuery::get_access_gd);
+
 	ClassDB::bind_method(D_METHOD("begin", "world"), &DynamicQuery::begin_script);
-	ClassDB::bind_method(D_METHOD("is_done"), &DynamicQuery::is_done);
-	ClassDB::bind_method(D_METHOD("get_current_entity_id"), &DynamicQuery::get_current_entity_id_script);
-	ClassDB::bind_method(D_METHOD("next"), &DynamicQuery::next);
 	ClassDB::bind_method(D_METHOD("end"), &DynamicQuery::end);
+
+	ClassDB::bind_method(D_METHOD("is_not_done"), &DynamicQuery::is_not_done);
+	ClassDB::bind_method(D_METHOD("next"), &DynamicQuery::next);
+
+	ClassDB::bind_method(D_METHOD("has", "entity_index"), &DynamicQuery::script_has);
+	ClassDB::bind_method(D_METHOD("fetch", "entity_index"), &DynamicQuery::script_fetch);
+
+	ClassDB::bind_method(D_METHOD("get_current_entity_id"), &DynamicQuery::script_get_current_entity_id);
+	ClassDB::bind_method(D_METHOD("count"), &DynamicQuery::count);
 }
 
 DynamicQuery::DynamicQuery() {
@@ -121,7 +129,9 @@ void DynamicQuery::begin_script(Object *p_world) {
 void DynamicQuery::begin(World *p_world) {
 	// Can't change anymore.
 	build();
-	entity_id = UINT32_MAX;
+	current_entity = EntityID();
+	iterator_index = 0;
+	entities.count = 0;
 
 	ERR_FAIL_COND(is_valid() == false);
 
@@ -133,76 +143,78 @@ void DynamicQuery::begin(World *p_world) {
 	world = p_world;
 
 	storages.resize(component_ids.size());
+	entities.count = UINT32_MAX;
+
 	for (uint32_t i = 0; i < component_ids.size(); i += 1) {
 		storages[i] = world->get_storage(component_ids[i]);
-	}
-
-	// Search the fist entity
-	entity_id = 0;
-	if (has_entity(0) == false) {
-		next();
-	} else {
-		fetch();
-	}
-}
-
-bool DynamicQuery::is_done() const {
-	return entity_id == UINT32_MAX;
-}
-
-uint32_t DynamicQuery::get_current_entity_id_script() const {
-	return entity_id;
-}
-
-EntityID DynamicQuery::get_current_entity_id() const {
-	return entity_id;
-}
-
-// TODO see how to improve this lookup mechanism so that no cache is miss and
-// it's fast.
-void DynamicQuery::next() {
-	const uint32_t last_id = world->get_biggest_entity_id();
-	if (unlikely(entity_id == UINT32_MAX || last_id == UINT32_MAX)) {
-		entity_id = UINT32_MAX;
-		return;
-	}
-
-	for (uint32_t new_entity_id = entity_id + 1; new_entity_id <= last_id; new_entity_id += 1) {
-		if (has_entity(new_entity_id)) {
-			// Confirmed, this `new_entity_id` has all the storages.
-			entity_id = new_entity_id;
-			fetch();
-			return;
+		if (storages[i] != nullptr) {
+			EntitiesBuffer eb(UINT32_MAX, nullptr);
+			switch (mode[i]) {
+				case WITH_MODE: {
+					eb = storages[i]->get_stored_entities();
+				} break;
+				case WITHOUT_MODE: {
+					// Not determinant, nothing to do.
+				} break;
+				case MAYBE_MODE: {
+					// Not determinant, nothing to do.
+				} break;
+				case CHANGED_MODE: {
+					eb = storages[i]->get_changed_entities();
+				} break;
+			}
+			if (eb.count < entities.count) {
+				entities = eb;
+			}
 		}
 	}
 
-	// No more entity
-	entity_id = UINT32_MAX;
+	if (unlikely(entities.count == UINT32_MAX)) {
+		entities.count = 0;
+		valid = false;
+		ERR_PRINT("The Query can't be used if there are only non determinant filters (like `Without` and `Maybe`).");
+	}
+
+	if (entities.count > 0) {
+		if (has(entities.entities[0])) {
+			fetch(entities.entities[0]);
+		} else {
+			next();
+		}
+	}
 }
 
 void DynamicQuery::end() {
 	// Clear any component reference.
-
 	world = nullptr;
 	storages.clear();
+	iterator_index = 0;
+	entities.count = 0;
 }
 
-void DynamicQuery::get_system_info(SystemExeInfo &p_info) const {
-	ERR_FAIL_COND(is_valid() == false);
-	for (uint32_t i = 0; i < component_ids.size(); i += 1) {
-		if (mutability[i]) {
-			p_info.mutable_components.insert(component_ids[i]);
-		} else {
-			p_info.immutable_components.insert(component_ids[i]);
-		}
+bool DynamicQuery::is_not_done() const {
+	return iterator_index < entities.count;
+}
 
-		if (mode[i] == CHANGED_MODE) {
-			p_info.need_changed.insert(component_ids[i]);
+void DynamicQuery::next() {
+	// Search the next Entity to fetch.
+	iterator_index += 1;
+	while (iterator_index < entities.count) {
+		const EntityID entity_id = entities.entities[iterator_index];
+		if (has(entity_id)) {
+			return fetch(entity_id);
 		}
+		iterator_index += 1;
 	}
+
+	// Nothing more to fetch.
 }
 
-bool DynamicQuery::has_entity(EntityID p_id) const {
+bool DynamicQuery::script_has(uint32_t p_id) const {
+	return has(p_id);
+}
+
+bool DynamicQuery::has(EntityID p_id) const {
 	// Make sure this entity has all the following components.
 	uint32_t non_determinant_count = 0;
 	for (uint32_t i = 0; i < storages.size(); i += 1) {
@@ -243,15 +255,18 @@ bool DynamicQuery::has_entity(EntityID p_id) const {
 	return true;
 }
 
-void DynamicQuery::fetch() {
-	ERR_FAIL_COND_MSG(entity_id == UINT32_MAX, "There is nothing to fetch.");
+void DynamicQuery::script_fetch(uint32_t p_entity_id) {
+#ifdef DEBUG_ENABLED
+	ERR_FAIL_COND_MSG(has(p_entity_id) == false, "[FATAL] This entity " + itos(p_entity_id) + " can't be fetched by this query. Please check it using the functin `has`.");
+#endif
+	fetch(p_entity_id);
+}
 
-	// TODO support batch
-
+void DynamicQuery::fetch(EntityID p_entity_id) {
 	for (uint32_t i = 0; i < storages.size(); i += 1) {
-		if (storages[i] != nullptr && storages[i]->has(entity_id)) {
+		if (storages[i] != nullptr && storages[i]->has(p_entity_id)) {
 			if (accessors[i].is_mutable()) {
-				accessors[i].set_target(storages[i]->get_ptr(entity_id, space).get_data());
+				accessors[i].set_target(storages[i]->get_ptr(p_entity_id, space).get_data());
 			} else {
 				// Taken using the **CONST** `get_ptr` function, but casted back
 				// to mutable. The `Accessor` already guards its accessibility
@@ -262,12 +277,46 @@ void DynamicQuery::fetch() {
 				// data back to mutable.
 				// Note: `std::as_const` doesn't work here. The compile is
 				// optimizing it? Well, I'm just using `const_cast`.
-				const Batch<const void> c(const_cast<const StorageBase *>(storages[i])->get_ptr(entity_id, space));
+				const Batch<const void> c(const_cast<const StorageBase *>(storages[i])->get_ptr(p_entity_id, space));
 				accessors[i].set_target(const_cast<void *>(c.get_data()));
 			}
 		} else {
 			// This data not found, just set nullptr.
 			accessors[i].set_target(nullptr);
+		}
+	}
+	current_entity = p_entity_id;
+}
+
+uint32_t DynamicQuery::script_get_current_entity_id() const {
+	return get_current_entity_id();
+}
+
+EntityID DynamicQuery::get_current_entity_id() const {
+	return current_entity;
+}
+
+uint32_t DynamicQuery::count() const {
+	uint32_t count = 0;
+	for (uint32_t i = 0; i < entities.count; i += 1) {
+		if (has(entities.entities[i])) {
+			count += 1;
+		}
+	}
+	return count;
+}
+
+void DynamicQuery::get_system_info(SystemExeInfo &p_info) const {
+	ERR_FAIL_COND(is_valid() == false);
+	for (uint32_t i = 0; i < component_ids.size(); i += 1) {
+		if (mutability[i]) {
+			p_info.mutable_components.insert(component_ids[i]);
+		} else {
+			p_info.immutable_components.insert(component_ids[i]);
+		}
+
+		if (mode[i] == CHANGED_MODE) {
+			p_info.need_changed.insert(component_ids[i]);
 		}
 	}
 }
