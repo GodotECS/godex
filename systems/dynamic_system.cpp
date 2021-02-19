@@ -297,8 +297,9 @@ void godex::DynamicSystemInfo::executor(World *p_world, DynamicSystemInfo &p_inf
 
 		// Execute the query
 
-		p_info.query->begin(p_world);
-		for (; p_info.query->is_done() == false; p_info.query->next()) {
+		for (p_info.query->begin(p_world);
+				p_info.query->is_not_done();
+				p_info.query->next()) {
 			Callable::CallError err;
 			// Call the script function.
 			if (p_info.gdscript_function) {

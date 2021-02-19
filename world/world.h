@@ -72,9 +72,6 @@ public:
 
 	/// Mark this `Entity` for disposal.
 	void destroy_deferred(EntityID p_entity);
-
-	/// Returns the ID of the last `Entity` created.
-	EntityID get_biggest_entity_id() const;
 };
 
 // IMPORTANT, when multithreading is implemented, all the `System`s asking for
@@ -123,9 +120,6 @@ public:
 
 	/// Remove the entity from this World.
 	void destroy_entity(EntityID p_entity);
-
-	/// Returns the last created EntityID or UINT32_MAX.
-	EntityID get_biggest_entity_id() const;
 
 	WorldCommands &get_commands();
 	const WorldCommands &get_commands() const;

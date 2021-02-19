@@ -855,9 +855,6 @@ TEST_CASE("[Modules][ECS] Test Add/remove from dynamic system.") {
 		// Dispatch 1 time.
 		pipeline.dispatch(&world);
 
-		// Make sure a new entity got created.
-		CHECK(world.get_biggest_entity_id() == entity_3);
-
 		// Make sure the entity 0 has the `TransformComponent`
 		CHECK(world.get_storage<TransformComponent>()->has(entity_1));
 

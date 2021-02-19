@@ -334,7 +334,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery try fetch combination.") {
 		query.with_component(TestAccessMutabilityComponent1::get_component_id(), false);
 		query.with_component(TestAccessMutabilityComponent2::get_component_id(), false);
 		query.begin(&world);
-		CHECK(query.get_current_entity_id() == entity_3);
+		CHECK(query.has(entity_3));
 	}
 
 	{
@@ -343,7 +343,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery try fetch combination.") {
 		query.with_component(TestAccessMutabilityComponent1::get_component_id(), false);
 		query.without_component(TestAccessMutabilityComponent2::get_component_id());
 		query.begin(&world);
-		CHECK(query.get_current_entity_id() == entity_1);
+		CHECK(query.has(entity_1));
 	}
 
 	{
@@ -352,9 +352,8 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery try fetch combination.") {
 		query.with_component(TestAccessMutabilityComponent1::get_component_id(), false);
 		query.maybe_component(TestAccessMutabilityComponent2::get_component_id());
 		query.begin(&world);
-		CHECK(query.get_current_entity_id() == entity_1);
-		query.next();
-		CHECK(query.get_current_entity_id() == entity_3);
+		CHECK(query.has(entity_1));
+		CHECK(query.has(entity_3));
 	}
 
 	{
@@ -363,7 +362,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery try fetch combination.") {
 		query.maybe_component(TestAccessMutabilityComponent2::get_component_id());
 		query.begin(&world);
 		// Nothing to fetch, because `Maybe` alone is meaningless.
-		CHECK(query.is_done());
+		CHECK(query.is_not_done() == false);
 	}
 
 	{
@@ -372,7 +371,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery try fetch combination.") {
 		query.without_component(TestAccessMutabilityComponent2::get_component_id());
 		query.begin(&world);
 		// Nothing to fetch, because `Without` alone is meaningless.
-		CHECK(query.is_done());
+		CHECK(query.is_not_done() == false);
 	}
 
 	{
@@ -382,7 +381,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery try fetch combination.") {
 		query.without_component(TestAccessMutabilityComponent2::get_component_id());
 		query.begin(&world);
 		// Nothing to fetch, because `Maybe` and `Without` are meaningless alone.
-		CHECK(query.is_done());
+		CHECK(query.is_not_done() == false);
 	}
 }
 
@@ -400,7 +399,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery changed.") {
 		godex::DynamicQuery query;
 		query.with_component(TestAccessMutabilityComponent1::get_component_id(), true);
 		query.begin(&world);
-		CHECK(query.get_current_entity_id() == entity_1);
+		CHECK(query.has(entity_1));
 	}
 
 	{
@@ -408,7 +407,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery changed.") {
 		godex::DynamicQuery query;
 		query.changed_component(TestAccessMutabilityComponent1::get_component_id(), false);
 		query.begin(&world);
-		CHECK(query.get_current_entity_id() == entity_1);
+		CHECK(query.has(entity_1));
 	}
 
 	world.get_storage(TestAccessMutabilityComponent1::get_component_id())->flush_changed();
@@ -418,7 +417,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery changed.") {
 		godex::DynamicQuery query;
 		query.with_component(TestAccessMutabilityComponent1::get_component_id(), false);
 		query.begin(&world);
-		CHECK(query.get_current_entity_id() == entity_1);
+		CHECK(query.has(entity_1));
 	}
 
 	{
@@ -426,7 +425,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery changed.") {
 		godex::DynamicQuery query;
 		query.changed_component(TestAccessMutabilityComponent1::get_component_id(), false);
 		query.begin(&world);
-		CHECK(query.is_done());
+		CHECK(query.is_not_done() == false);
 	}
 }
 
@@ -526,8 +525,8 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 		query.begin(&world);
 
 		// Entity 1
-		CHECK(query.is_done() == false);
-		CHECK(query.get_current_entity_id() == entity_1);
+		CHECK(query.has(entity_1));
+		query.fetch(entity_1);
 
 		{
 			CHECK(query.access_count() == 2);
@@ -536,11 +535,11 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 			query.get_access(0)->set("transform", Transform(Basis(), Vector3(100.0, 100.0, 100.0)));
 		}
 
-		query.next();
+		CHECK(query.has(entity_2) == false);
 
 		// Entity 3 (Entity 2 is skipped because it doesn't fulfil the query)
-		CHECK(query.is_done() == false);
-		CHECK(query.get_current_entity_id() == entity_3);
+		CHECK(query.has(entity_3));
+		query.fetch(entity_3);
 
 		{
 			CHECK(query.access_count() == 2);
@@ -549,10 +548,7 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 			query.get_access(0)->set("transform", Transform(Basis(), Vector3(200.0, 200.0, 200.0)));
 		}
 
-		query.next();
-
 		// Nothing more to do at this point.
-		CHECK(query.is_done());
 		query.end();
 	}
 
@@ -564,7 +560,7 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 		query.begin(&world);
 
 		// Entity 1
-		CHECK(query.is_done() == false);
+		CHECK(query.is_not_done());
 		CHECK(query.get_current_entity_id() == entity_1);
 
 		{
@@ -578,7 +574,7 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 		query.next();
 
 		// Entity 2
-		CHECK(query.is_done() == false);
+		CHECK(query.is_not_done());
 		CHECK(query.get_current_entity_id() == entity_2);
 		{
 			CHECK(query.access_count() == 1);
@@ -591,7 +587,7 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 		query.next();
 
 		// Entity 3
-		CHECK(query.is_done() == false);
+		CHECK(query.is_not_done());
 		CHECK(query.get_current_entity_id() == entity_3);
 		{
 			CHECK(query.access_count() == 1);
@@ -603,7 +599,8 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 
 		query.next();
 
-		CHECK(query.is_done());
+		CHECK(query.is_not_done() == false);
+		CHECK(query.count() == 3);
 		query.end();
 	}
 
@@ -616,14 +613,14 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 		query.begin(&world);
 
 		// This query fetches the entity that have only the `TransformComponent`.
-		CHECK(query.is_done() == false);
+		CHECK(query.is_not_done());
 		CHECK(query.get_current_entity_id() == entity_2);
 
 		query.next();
 
 		// Now it's done
-		CHECK(query.is_done());
-
+		CHECK(query.is_not_done() == false);
+		CHECK(query.count() == 1);
 		query.end();
 	}
 
@@ -637,27 +634,27 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 		query.begin(&world);
 
 		// This query fetches the entity that have only the `TransformComponent`.
-		CHECK(query.is_done() == false);
+		CHECK(query.is_not_done());
 		CHECK(query.get_current_entity_id() == entity_1);
 		CHECK(query.get_access(0)->get_target() != nullptr);
 		CHECK(query.get_access(1)->get_target() != nullptr);
 		query.next();
 
-		CHECK(query.is_done() == false);
+		CHECK(query.is_not_done());
 		CHECK(query.get_current_entity_id() == entity_2);
 		CHECK(query.get_access(0)->get_target() != nullptr);
 		CHECK(query.get_access(1)->get_target() == nullptr);
 		query.next();
 
-		CHECK(query.is_done() == false);
+		CHECK(query.is_not_done());
 		CHECK(query.get_current_entity_id() == entity_3);
 		CHECK(query.get_access(0)->get_target() != nullptr);
 		CHECK(query.get_access(1)->get_target() != nullptr);
 		query.next();
 
 		// Now it's done
-		CHECK(query.is_done());
-
+		CHECK(query.is_not_done() == false);
+		CHECK(query.count() == 3);
 		query.end();
 	}
 }
@@ -692,7 +689,7 @@ TEST_CASE("[Modules][ECS] Test dynamic query with dynamic storages.") {
 	query.begin(&world);
 
 	// Entity 1
-	CHECK(query.is_done() == false);
+	CHECK(query.is_not_done());
 	CHECK(query.get_current_entity_id() == entity_1);
 
 	{
@@ -706,7 +703,7 @@ TEST_CASE("[Modules][ECS] Test dynamic query with dynamic storages.") {
 	query.next();
 
 	// Entity 2
-	CHECK(query.is_done() == false);
+	CHECK(query.is_not_done());
 	CHECK(query.get_current_entity_id() == entity_2);
 
 	{
@@ -718,7 +715,7 @@ TEST_CASE("[Modules][ECS] Test dynamic query with dynamic storages.") {
 	}
 
 	query.next();
-	CHECK(query.is_done());
+	CHECK(query.is_not_done() == false);
 	query.end();
 
 	// ~~ Make sure the data got written using another immutable query. ~~
@@ -729,7 +726,7 @@ TEST_CASE("[Modules][ECS] Test dynamic query with dynamic storages.") {
 	query.begin(&world);
 
 	// Entity 1
-	CHECK(query.is_done() == false);
+	CHECK(query.is_not_done());
 	CHECK(query.get_current_entity_id() == entity_1);
 
 	{
@@ -744,7 +741,7 @@ TEST_CASE("[Modules][ECS] Test dynamic query with dynamic storages.") {
 	query.next();
 
 	// Entity 2
-	CHECK(query.is_done() == false);
+	CHECK(query.is_not_done());
 	CHECK(query.get_current_entity_id() == entity_2);
 
 	{
@@ -760,7 +757,7 @@ TEST_CASE("[Modules][ECS] Test dynamic query with dynamic storages.") {
 	}
 
 	query.next();
-	CHECK(query.is_done());
+	CHECK(query.is_not_done() == false);
 	query.end();
 }
 
