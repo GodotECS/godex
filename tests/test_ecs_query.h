@@ -61,16 +61,12 @@ TEST_CASE("[Modules][ECS] Test static query") {
 		Query<const TransformComponent, Without<TagQueryTestComponent>> query(&world);
 
 		// This query fetches the entity that have only the `TransformComponent`.
-		CHECK(query.is_done() == false);
-		auto [transform, tag] = query.get();
+		CHECK(query.has(entity_1) == false);
+		CHECK(query.has(entity_2));
+		CHECK(query.has(entity_3) == false);
+		auto [transform, tag] = query[entity_2];
 		CHECK(ABS(transform->transform.origin.z - 23.0) <= CMP_EPSILON);
-		CHECK(query.get_current_entity() == entity_2);
 		CHECK(tag == nullptr);
-
-		query.next();
-
-		// Now it's done
-		CHECK(query.is_done());
 	}
 
 	// Test `Maybe` filter.
@@ -81,39 +77,27 @@ TEST_CASE("[Modules][ECS] Test static query") {
 		// `TagQueryTestComponent` is not set.
 		{
 			// Entity 1
-			CHECK(query.is_done() == false);
-			auto [transform, tag] = query.get();
-			CHECK(query.get_current_entity() == entity_1);
+			CHECK(query.has(entity_1));
+			auto [transform, tag] = query[entity_1];
 			CHECK(transform != nullptr);
 			CHECK(tag != nullptr);
 		}
 
-		query.next();
-
 		{
 			// Entity 2
-			CHECK(query.is_done() == false);
-			auto [transform, tag] = query.get();
-			CHECK(query.get_current_entity() == entity_2);
+			CHECK(query.has(entity_2));
+			auto [transform, tag] = query[entity_2];
 			CHECK(transform != nullptr);
 			CHECK(tag == nullptr);
 		}
 
-		query.next();
-
 		{
 			// Entity 3
-			CHECK(query.is_done() == false);
-			auto [transform, tag] = query.get();
-			CHECK(query.get_current_entity() == entity_3);
+			CHECK(query.has(entity_3));
+			auto [transform, tag] = query[entity_3];
 			CHECK(transform != nullptr);
 			CHECK(tag != nullptr);
 		}
-
-		query.next();
-
-		// Now it's done
-		CHECK(query.is_done());
 	}
 }
 } // namespace godex_tests
@@ -168,6 +152,10 @@ public:
 		storage.clear();
 		StorageBase::flush_changed();
 	}
+
+	virtual EntitiesBuffer get_stored_entities() const override {
+		return EntitiesBuffer(storage.get_entities().size(), storage.get_entities().ptr());
+	}
 };
 
 struct TestAccessMutabilityComponent1 {
@@ -189,10 +177,12 @@ TEST_CASE("[Modules][ECS] Test query mutability.") {
 
 	world
 			.create_entity()
+			.with(TransformComponent())
 			.with(TestAccessMutabilityComponent1());
 
 	world
 			.create_entity()
+			.with(TransformComponent())
 			.with(TestAccessMutabilityComponent2());
 
 	// Make sure the query access to the storage with the correct mutability.
@@ -208,19 +198,19 @@ TEST_CASE("[Modules][ECS] Test query mutability.") {
 	CHECK(storage1->count_get_mut == 0);
 
 	Query<TestAccessMutabilityComponent1> query_test_mut(&world);
-	query_test_mut.get();
+	query_test_mut.begin().operator*(); // Fetch the data.
 
 	CHECK(storage1->count_get_mut == 1);
 	CHECK(storage2->count_get_mut == 0);
 
 	Query<Without<TestAccessMutabilityComponent1>, TestAccessMutabilityComponent2> query_test_without_mut(&world);
-	query_test_without_mut.get();
+	query_test_without_mut.begin().operator*(); //Fetch the data.
 
 	CHECK(storage1->count_get_mut == 1);
 	CHECK(storage2->count_get_mut == 1);
 
-	Query<Maybe<TestAccessMutabilityComponent1>> query_test_maybe_mut(&world);
-	query_test_maybe_mut.get();
+	Query<Maybe<TestAccessMutabilityComponent1>, TransformComponent> query_test_maybe_mut(&world);
+	query_test_maybe_mut.begin().operator*(); //Fetch the data.
 
 	CHECK(storage1->count_get_mut == 2);
 
@@ -229,21 +219,21 @@ TEST_CASE("[Modules][ECS] Test query mutability.") {
 	CHECK(storage1->count_get_immut == 0);
 
 	Query<const TestAccessMutabilityComponent1> query_test_immut(&world);
-	query_test_immut.get();
+	query_test_immut.begin().operator*(); //Fetch the data.
 
 	CHECK(storage1->count_get_mut == 2);
 	CHECK(storage1->count_get_immut == 1);
 	CHECK(storage2->count_get_immut == 0);
 
 	Query<Without<const TestAccessMutabilityComponent1>, const TestAccessMutabilityComponent2> query_test_without_immut(&world);
-	query_test_without_immut.get();
+	query_test_without_immut.begin().operator*(); //Fetch the data.
 
 	CHECK(storage1->count_get_mut == 2);
 	CHECK(storage1->count_get_immut == 1);
 	CHECK(storage2->count_get_immut == 1);
 
-	Query<Maybe<const TestAccessMutabilityComponent1>> query_test_maybe_immut(&world);
-	query_test_maybe_immut.get();
+	Query<Maybe<const TestAccessMutabilityComponent1>, const TransformComponent> query_test_maybe_immut(&world);
+	query_test_maybe_immut.begin().operator*(); //Fetch the data.
 
 	CHECK(storage1->count_get_mut == 2);
 	CHECK(storage1->count_get_immut == 2);
@@ -497,14 +487,14 @@ TEST_CASE("[Modules][ECS] Test static query filter no storage.") {
 		Query<Without<TagQueryTestComponent>, TransformComponent> query(&world);
 
 		// No storage, make sure this returns immediately.
-		CHECK(query.is_done());
+		CHECK(query.count() == 0);
 	}
 
 	{
 		Query<Maybe<TagQueryTestComponent>, TransformComponent> query(&world);
 
 		// No storage, make sure this returns immediately.
-		CHECK(query.is_done());
+		CHECK(query.count() == 0);
 	}
 }
 
@@ -817,14 +807,13 @@ TEST_CASE("[Modules][ECS] Test query with event.") {
 
 	// Try the first query with dynamic sized batch storage.
 	{
-		Query<TransformComponent, TestEvent> query(&world);
+		Query<const EntityID, TransformComponent, TestEvent> query(&world);
 
 		{
-			CHECK(query.is_done() == false);
+			CHECK(query.has(entity_1));
+			auto [entity, transform, event] = query[entity_1];
 
-			auto [transform, event] = query.get();
-
-			CHECK(query.get_current_entity() == entity_1);
+			CHECK(entity_1 == *entity);
 
 			CHECK(transform.get_size() == 1);
 			CHECK(transform != nullptr);
@@ -832,40 +821,33 @@ TEST_CASE("[Modules][ECS] Test query with event.") {
 			CHECK(event.get_size() == 2);
 			CHECK(event[0]->number == 50);
 			CHECK(event[1]->number == 38);
-
-			query.next();
 		}
 
+		CHECK(query.has(entity_2) == false);
+
 		{
-			CHECK(query.is_done() == false);
+			CHECK(query.has(entity_3));
+			auto [entity, transform, event] = query[entity_3];
 
-			auto [transform, event] = query.get();
-
-			CHECK(query.get_current_entity() == entity_3);
+			CHECK(entity_3 == *entity);
 
 			CHECK(transform.get_size() == 1);
 			CHECK(transform != nullptr);
 
 			CHECK(event.get_size() == 1);
 			CHECK(event[0]->number == 0);
-
-			query.next();
 		}
-
-		// Now it's done!
-		CHECK(query.is_done());
 	}
 
 	// Try the second query with fixed sized batch storage.
 	{
-		Query<TransformComponent, TestFixedSizeEvent> query(&world);
+		Query<const EntityID, TransformComponent, TestFixedSizeEvent> query(&world);
 
 		{
-			CHECK(query.is_done() == false);
+			CHECK(query.has(entity_2));
+			auto [entity, transform, event] = query[entity_2];
 
-			auto [transform, event] = query.get();
-
-			CHECK(query.get_current_entity() == entity_2);
+			CHECK(entity_2 == *entity);
 
 			CHECK(transform.get_size() == 1);
 			CHECK(transform != nullptr);
@@ -873,8 +855,6 @@ TEST_CASE("[Modules][ECS] Test query with event.") {
 			CHECK(event.get_size() == 2);
 			CHECK(event[0]->number == 645);
 			CHECK(event[1]->number == 33);
-
-			query.next();
 		}
 	}
 }
@@ -896,22 +876,58 @@ TEST_CASE("[Modules][ECS] Test query random Entity access.") {
 								.with(TransformComponent())
 								.with(TestEvent());
 
-	Query<TransformComponent, TestEvent> query(&world);
+	Query<const EntityID, TransformComponent, TestEvent> query(&world);
 
-	CHECK(query.fetch_entity(entity_1));
-	CHECK(query.get_current_entity() == entity_1);
 	{
-		auto [transform, event] = query.get();
+		CHECK(query.has(entity_1));
+		auto [entity, transform, event] = query[entity_1];
+		CHECK(entity_1 == *entity);
 		CHECK(event->number == 50);
 	}
 
-	CHECK(query.fetch_entity(entity_2) == false);
+	CHECK(query.has(entity_2) == false);
 
-	CHECK(query.fetch_entity(entity_3));
-	CHECK(query.get_current_entity() == entity_3);
 	{
-		auto [transform, event] = query.get();
+		CHECK(query.has(entity_3));
+		auto [entity, transform, event] = query[entity_3];
+		CHECK(entity_3 == *entity);
 		CHECK(event->number == 0);
+	}
+}
+
+TEST_CASE("[Modules][ECS] Test static query count.") {
+	World world;
+
+	world
+			.create_entity()
+			.with(TagQueryTestComponent())
+			.with(TransformComponent());
+
+	EntityID entity_2 = world
+								.create_entity()
+								.with(TransformComponent());
+
+	world
+			.create_entity()
+			.with(TestFixedSizeEvent())
+			.with(TransformComponent());
+
+	{
+		Query<const TransformComponent, TagQueryTestComponent> query(&world);
+		CHECK(query.count() == 1);
+	}
+	{
+		Query<const TransformComponent, Without<TagQueryTestComponent>, Without<TestFixedSizeEvent>> query(&world);
+		CHECK(query.count() == 1);
+		CHECK(query.has(entity_2));
+	}
+	{
+		Query<TestFixedSizeEvent> query(&world);
+		CHECK(query.count() == 1);
+	}
+	{
+		Query<const TransformComponent> query(&world);
+		CHECK(query.count() == 3);
 	}
 }
 } // namespace godex_tests

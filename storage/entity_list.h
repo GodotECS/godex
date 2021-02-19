@@ -44,7 +44,7 @@ public:
 
 	bool is_empty() const;
 
-	bool size() const;
+	uint32_t size() const;
 
 	/// Clear the memory, but don't deallocate it so next frame it will run
 	/// faster.
@@ -53,5 +53,5 @@ public:
 	/// Release the memory completely.
 	void reset();
 
-	const LocalVector<EntityID> &get_entities() const;
+	const EntityID *get_entities_ptr() const;
 };

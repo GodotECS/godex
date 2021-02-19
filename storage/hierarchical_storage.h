@@ -18,7 +18,7 @@ public:
 
 class Hierarchy : public Storage<Child> {
 	DenseVector<Child> storage;
-	EntityList changed;
+	EntityList hierarchy_changed;
 	LocalVector<HierarchicalStorageBase *> sub_storages;
 
 public:
@@ -29,7 +29,7 @@ public:
 	}
 
 	const EntityList &get_changed() const {
-		return changed;
+		return hierarchy_changed;
 	}
 
 	virtual void on_system_release() override {
@@ -40,7 +40,7 @@ public:
 		for (uint32_t i = 0; i < sub_storages.size(); i += 1) {
 			sub_storages[i]->flush_hierarchy_changes();
 		}
-		changed.clear();
+		hierarchy_changed.clear();
 	}
 
 	virtual String get_type_name() const override {
@@ -69,7 +69,7 @@ public:
 			storage.remove(p_entity);
 
 			// 4. Mark this as changed.
-			changed.insert(p_entity);
+			hierarchy_changed.insert(p_entity);
 		}
 	}
 
@@ -119,14 +119,14 @@ public:
 			child.next = EntityID();
 		}
 
-		changed.insert(p_entity);
+		hierarchy_changed.insert(p_entity);
 
 		// Update the parent if any.
 		if (child.parent.is_null() == false) {
 			if (has(child.parent) == false) {
 				// Parent is always root when added in this way.
 				storage.insert(child.parent, Child());
-				changed.insert(child.parent);
+				hierarchy_changed.insert(child.parent);
 			}
 
 			Child &parent = storage.get(child.parent);
