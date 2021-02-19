@@ -10,8 +10,10 @@ enum Space {
 };
 
 struct EntitiesBuffer {
-	const uint32_t count;
+	uint32_t count;
 	const EntityID *entities;
+	EntitiesBuffer(uint32_t c, const EntityID *e) :
+			count(c), entities(e) {}
 };
 
 /// Never override this directly. Always override the `Storage`.
@@ -102,7 +104,7 @@ public:
 	}
 
 	EntitiesBuffer get_changed_entities() const {
-		return { changed.size(), changed.get_entities().ptr() };
+		return EntitiesBuffer(changed.size(), changed.get_entities_ptr());
 	}
 
 public:

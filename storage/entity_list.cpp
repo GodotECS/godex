@@ -80,7 +80,7 @@ bool EntityList::is_empty() const {
 	return dense_list.size() == 0;
 }
 
-bool EntityList::size() const {
+uint32_t EntityList::size() const {
 	return dense_list.size();
 }
 
@@ -99,6 +99,6 @@ void EntityList::reset() {
 	dense_list.reset();
 }
 
-const LocalVector<EntityID> &EntityList::get_entities() const {
-	return dense_list;
+const EntityID *EntityList::get_entities_ptr() const {
+	return dense_list.ptr();
 }

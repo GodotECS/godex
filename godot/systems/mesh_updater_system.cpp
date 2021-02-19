@@ -15,10 +15,8 @@ void scenario_manager_system(
 	if (p_scenario->scenario != main_scenario) {
 		p_scenario->scenario = main_scenario;
 
-		while (p_query.is_done() == false) {
-			auto [mesh_comp] = p_query.get();
+		for (auto [mesh_comp] : p_query) {
 			rs->get_rs()->instance_set_scenario(mesh_comp->instance, p_scenario->scenario);
-			p_query.next();
 		}
 	}
 }
@@ -30,9 +28,7 @@ void mesh_updater_system(
 	ERR_FAIL_COND_MSG(p_scenario == nullptr, "The `RenderingScenarioDatabag` `Databag` is not part of this world. Add it please.");
 	ERR_FAIL_COND_MSG(rs == nullptr, "The `RenderingServerDatabag` `Databag` is not part of this world. Add it please.");
 
-	while (p_query.is_done() == false) {
-		MeshComponent *mesh_comp = std::get<Batch<MeshComponent>>(p_query.get());
-
+	for (auto [mesh_comp] : p_query) {
 		if (mesh_comp->instance == RID()) {
 			// Instance the Mesh.
 			RID instance = rs->get_rs()->instance_create();
@@ -53,8 +49,6 @@ void mesh_updater_system(
 		rs->get_rs()->instance_set_visible(mesh_comp->instance, mesh_comp->visible);
 		rs->get_rs()->instance_set_layer_mask(mesh_comp->instance, mesh_comp->layers);
 		// TODO add material override, once the `Changed<>` filter is integrated.
-
-		p_query.next();
 	}
 }
 
@@ -63,13 +57,9 @@ void mesh_transform_updater_system(
 		Query<const MeshComponent, Changed<const TransformComponent>> &p_query) {
 	ERR_FAIL_COND_MSG(rs == nullptr, "The `RenderingServerDatabag` `Databag` is not part of this world. Add it please.");
 
-	while (p_query.is_done() == false) {
-		auto [mesh, transf] = p_query.get(Space::GLOBAL);
-
+	for (auto [mesh, transf] : p_query.space(Space::GLOBAL)) {
 		if (mesh->instance != RID()) {
 			rs->get_rs()->instance_set_transform(mesh->instance, transf->transform);
 		}
-
-		p_query.next();
 	}
 }

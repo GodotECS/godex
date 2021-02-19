@@ -39,10 +39,44 @@ class QueryStorage {
 public:
 	QueryStorage(World *p_world) {}
 
+	EntitiesBuffer get_entities() const {
+		// This is a NON determinant filter, so just return UINT32_MAX.
+		return { UINT32_MAX, nullptr };
+	}
+
 	bool has_data(EntityID p_entity) const { return true; }
 	std::tuple<Batch<remove_filter_t<Cs>>...> get(EntityID p_id, Space p_mode) const { return std::tuple(); }
 
 	static void get_components(SystemExeInfo &r_info) {}
+};
+
+/// Fetch the `EntityID`.
+template <class... Cs>
+class QueryStorage<const EntityID, Cs...> : QueryStorage<Cs...> {
+	EntityID current_entity;
+
+public:
+	QueryStorage(World *p_world) :
+			QueryStorage<Cs...>(p_world) {}
+
+	EntitiesBuffer get_entities() const {
+		return QueryStorage<Cs...>::get_entities();
+	}
+
+	bool has_data(EntityID p_entity) const {
+		return QueryStorage<Cs...>::has_data(p_entity);
+	}
+
+	std::tuple<Batch<const EntityID>, Batch<remove_filter_t<Cs>>...> get(EntityID p_id, Space p_mode) {
+		current_entity = p_id;
+		return std::tuple_cat(
+				std::tuple<Batch<const EntityID>>(&current_entity),
+				QueryStorage<Cs...>::get(p_id, p_mode));
+	}
+
+	static void get_components(SystemExeInfo &r_info) {
+		QueryStorage<Cs...>::get_components(r_info);
+	}
 };
 
 /// `QueryStorage` `Maybe` mutable filter specialization.
@@ -54,6 +88,11 @@ public:
 	QueryStorage(World *p_world) :
 			QueryStorage<Cs...>(p_world),
 			storage(p_world->get_storage<C>()) {
+	}
+
+	EntitiesBuffer get_entities() const {
+		// This is a NON determinant filter, so just return the other filter.
+		return QueryStorage<Cs...>::get_entities();
 	}
 
 	bool has_data(EntityID p_entity) const {
@@ -91,6 +130,11 @@ public:
 			storage(std::as_const(p_world)->get_storage<const C>()) {
 	}
 
+	EntitiesBuffer get_entities() const {
+		// This is a NON determinant filter, so just return the other filter.
+		return QueryStorage<Cs...>::get_entities();
+	}
+
 	bool has_data(EntityID p_entity) const {
 		// The `Maybe` filter never stops the execution.
 		return QueryStorage<Cs...>::has_data(p_entity);
@@ -126,6 +170,11 @@ public:
 			storage(p_world->get_storage<C>()) {
 	}
 
+	EntitiesBuffer get_entities() const {
+		// This is a NON determinant filter, so just return the other filter.
+		return QueryStorage<Cs...>::get_entities();
+	}
+
 	bool has_data(EntityID p_entity) const {
 		if (unlikely(storage == nullptr)) {
 			// When the storage is null the `Without` is always `true` though
@@ -156,6 +205,17 @@ public:
 	QueryStorage(World *p_world) :
 			QueryStorage<Cs...>(p_world),
 			storage(p_world->get_storage<C>()) {
+	}
+
+	EntitiesBuffer get_entities() const {
+		// This is a determinant filter, that iterates over the changed
+		// components of this storage.
+		const EntitiesBuffer o_entities = QueryStorage<Cs...>::get_entities();
+		if (unlikely(storage == nullptr)) {
+			return o_entities;
+		}
+		const EntitiesBuffer entities = storage->get_changed_entities();
+		return entities.count < o_entities.count ? entities : o_entities;
 	}
 
 	bool has_data(EntityID p_entity) const {
@@ -196,6 +256,17 @@ public:
 			storage(std::as_const(p_world)->get_storage<const C>()) {
 	}
 
+	EntitiesBuffer get_entities() const {
+		// This is a determinant filter, that iterates over the changed
+		// components of this storage.
+		const EntitiesBuffer o_entities = QueryStorage<Cs...>::get_entities();
+		if (unlikely(storage == nullptr)) {
+			return o_entities;
+		}
+		const EntitiesBuffer entities = storage->get_changed_entities();
+		return entities.count < o_entities.count ? entities : o_entities;
+	}
+
 	bool has_data(EntityID p_entity) const {
 		if (unlikely(storage == nullptr)) {
 			// This is a required field, since there is no storage this can end
@@ -232,6 +303,17 @@ public:
 	QueryStorage(World *p_world) :
 			QueryStorage<Cs...>(p_world),
 			storage(p_world->get_storage<C>()) {
+	}
+
+	EntitiesBuffer get_entities() const {
+		// This is a determinant filter, that iterates over the existing
+		// components of this storage.
+		const EntitiesBuffer o_entities = QueryStorage<Cs...>::get_entities();
+		if (unlikely(storage == nullptr)) {
+			return o_entities;
+		}
+		const EntitiesBuffer entities = storage->get_stored_entities();
+		return entities.count < o_entities.count ? entities : o_entities;
 	}
 
 	bool has_data(EntityID p_entity) const {
@@ -271,6 +353,17 @@ public:
 			storage(std::as_const(p_world)->get_storage<const C>()) {
 	}
 
+	EntitiesBuffer get_entities() const {
+		// This is a determinant filter, that iterates over the existing
+		// components of this storage.
+		const EntitiesBuffer o_entities = QueryStorage<Cs...>::get_entities();
+		if (unlikely(storage == nullptr)) {
+			return o_entities;
+		}
+		const EntitiesBuffer entities = storage->get_stored_entities();
+		return entities.count < o_entities.count ? entities : o_entities;
+	}
+
 	bool has_data(EntityID p_entity) const {
 		if (unlikely(storage == nullptr)) {
 			// This is a required field, since there is no storage this can end
@@ -303,87 +396,153 @@ public:
 /// scripts that have to rely on the `DynamicQuery`.
 template <class... Cs>
 class Query {
-	World *world;
-	uint32_t id = UINT32_MAX;
+	/// Fetch space.
+	Space m_space = LOCAL;
 
+	/// List of entities to check.
+	EntitiesBuffer entities = EntitiesBuffer(0, nullptr);
+
+	// Storages
 	QueryStorage<Cs...> q;
 
 public:
 	Query(World *p_world) :
-			world(p_world), q(p_world) {
-		// Prepare the query: advances to the first available entity.
-		begin_iterator();
+			q(p_world) {
+		// Prepare the query:
+		// Ask all the pointed storage to return a list of entities to iterate;
+		// the query, takes the smallest one, and iterates over it.
+		entities = q.get_entities();
+		if (unlikely(entities.count == UINT32_MAX)) {
+			entities.count = 0;
+			ERR_PRINT("This query is not valid, you are using only non determinant fileters (like `Without` and `Maybe`).");
+		}
 	}
 
-	/// Returns `true` if the iteration is done.
-	bool is_done() const {
-		return id == UINT32_MAX;
+	struct Iterator {
+		using iterator_category = std::forward_iterator_tag;
+		using difference_type = std::ptrdiff_t;
+		using value_type = std::tuple<Batch<remove_filter_t<Cs>>...>;
+
+		Iterator(Query<Cs...> *p_query, const EntityID *p_entity) :
+				query(p_query), entity(p_entity) {}
+
+		bool is_valid() const {
+			return *this != query->end();
+		}
+
+		value_type operator*() const {
+			return query->q.get(*entity, query->m_space);
+		}
+
+		Iterator &operator++() {
+			entity = query->next_valid_entity(entity);
+			return *this;
+		}
+
+		Iterator operator++(int) {
+			Iterator tmp = *this;
+			++(*this);
+			return tmp;
+		}
+
+		friend bool operator==(const Iterator &a, const Iterator &b) { return a.entity == b.entity; }
+		friend bool operator!=(const Iterator &a, const Iterator &b) { return a.entity != b.entity; }
+
+	private:
+		Query<Cs...> *query;
+		const EntityID *entity;
+	};
+
+	/// Allow to specify the space you want to fetch the data, you can use this
+	/// in conjuction with the iterator and the random access:
+	/// ```
+	/// // Iterator example:
+	/// for (auto [tr] : query.space(GLOBAL)) {
+	/// 	// ...
+	/// }
+	///
+	/// // Random access
+	/// if (query.has(1)) {
+	/// 	auto [tr] = query.space(GLOBAL)[1];
+	/// }
+	/// ```
+	Query<Cs...> &space(Space p_space) {
+		m_space = p_space;
+		return *this;
 	}
 
-	EntityID get_current_entity() const {
-		return id;
-	}
-
-	void operator+=(uint32_t p_i) {
-		for (uint32_t i = 0; i < p_i; i += 1) {
-			next();
-			if (is_done()) {
-				break;
+	/// Returns the forward `Iterator`, you can use in this way:
+	/// ```
+	/// for (auto [tr] : query) {
+	/// 	// ...
+	/// }
+	/// ```
+	Iterator begin() {
+		// Returns the next available Entity.
+		if (entities.count > 0) {
+			if (q.has_data(*entities.entities) == false) {
+				return Iterator(this, next_valid_entity(entities.entities));
 			}
 		}
+		return Iterator(this, entities.entities);
 	}
 
-	/// This is automatically called when the `Query` is created, you don't need
-	/// to call this manually.
-	/// This is useful to reset the iterator, if you want to use the `Query`
-	/// again.
-	void begin_iterator() {
-		id = 0;
-		if (q.has_data(0) == false) {
-			next();
-		}
+	/// Used to know the last element of the `Iterator`.
+	Iterator end() {
+		return Iterator(this, entities.entities + entities.count);
 	}
 
-	/// Advance to the next `Entity`.
-	void next() {
-		const uint32_t last_id = world->get_biggest_entity_id();
-		if (unlikely(id == UINT32_MAX || last_id == UINT32_MAX)) {
-			id = UINT32_MAX;
-			return;
-		}
-
-		for (uint32_t i = id + 1; i <= last_id; i += 1) {
-			if (q.has_data(i)) {
-				// This is the next entity that fulfils the query.
-				id = i;
-				return;
-			}
-		}
-
-		// No more entity
-		id = UINT32_MAX;
+	/// Returns true if this `Entity` exists and can be fetched.
+	/// ```
+	/// if(query.has(1)) {
+	/// 	auto [component1, component2] = query[1];
+	/// }
+	/// ```
+	bool has(EntityID p_entity) const {
+		return q.has_data(p_entity);
 	}
 
-	/// Fetches a specific `EntityID`, returns `true` if the entity exists.
-	/// Use `get` to retrive the `Entity` data.
-	bool fetch_entity(EntityID p_entity) {
-		if (q.has_data(p_entity)) {
-			id = p_entity;
-			return true;
-		} else {
-			id = UINT32_MAX;
-			return false;
-		}
+	/// Fetch the specific `Entity` component.
+	/// If the `Entity` doesn't meet the query requirements, this function
+	/// crashes, so it's necessary to use the function `has` to check if the
+	///  entity can be fetched.
+	/// ```
+	/// if(query.has(1)) {
+	/// 	auto [component1, component2] = query[1];
+	/// }
+	/// ```
+	std::tuple<Batch<remove_filter_t<Cs>>...> operator[](EntityID p_entity) {
+		return q.get(p_entity, m_space);
 	}
 
-	// TODO The lockup mechanism of this query must be improved to avoid any
-	// useless operation.
-	std::tuple<Batch<remove_filter_t<Cs>>...> get(Space p_mode = Space::LOCAL) const {
-		CRASH_COND_MSG(id == UINT32_MAX, "No entities! Please use `is_done` to correctly stop the system execution.");
-		return q.get(id, p_mode);
+	/// Counts the Entities that meets the requirements of this `Query`.
+	/// IMPORTANT: Don't use this function to create C like loop: instead rely
+	/// on the iterator.
+	uint32_t count() {
+		uint32_t count = 0;
+		for (Iterator it = begin(); it != end(); ++it) {
+			count += 1;
+		}
+		return count;
 	}
 
 	static void get_components(SystemExeInfo &r_info) {
 		QueryStorage<Cs...>::get_components(r_info);
+	}
+
+private:
+	const EntityID *next_valid_entity(const EntityID *p_current) {
+		const EntityID *next = p_current + 1;
+
+		// Search the next valid entity.
+		for (; next != (entities.entities + entities.count); next += 1) {
+			if (q.has_data(*next)) {
+				// This is fine to return.
+				return next;
+			}
+		}
+
+		// Nothing more to iterate.
+		return next;
 	}
 };

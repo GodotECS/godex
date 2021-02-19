@@ -71,10 +71,8 @@ public:
 namespace godex_tests_system {
 
 void test_system_tag(Query<TransformComponent, const TagTestComponent> &p_query) {
-	while (p_query.is_done() == false) {
-		auto [transform, component] = p_query.get();
+	for (auto [transform, component] : p_query) {
 		transform->transform.origin.x += 100.0;
-		p_query.next();
 	}
 }
 
@@ -86,31 +84,26 @@ void test_system_check_databag(TestSystem1Databag *test_res) {
 	CHECK(test_res != nullptr);
 }
 
-void test_system_generate_events(Query<TransformComponent> &p_query, Storage<Event1Component> *p_events) {
+void test_system_generate_events(Query<const EntityID, TransformComponent> &p_query, Storage<Event1Component> *p_events) {
 	CRASH_COND_MSG(p_events == nullptr, "When taken mutable it's never supposed to be nullptr.");
 
-	while (p_query.is_done() == false) {
-		p_events->insert(p_query.get_current_entity(), Event1Component(123));
-		p_events->insert(p_query.get_current_entity(), Event1Component(456));
-		p_events->insert(p_query.get_current_entity(), Event1Component(12));
-		p_events->insert(p_query.get_current_entity(), Event1Component(33));
-		p_query.next();
+	for (auto [entity, _t] : p_query) {
+		p_events->insert(*entity, Event1Component(123));
+		p_events->insert(*entity, Event1Component(456));
+		p_events->insert(*entity, Event1Component(12));
+		p_events->insert(*entity, Event1Component(33));
 	}
 }
 
 void test_system_check_events(Query<const Event1Component> &p_query) {
 	uint32_t entities_with_events = 0;
 
-	while (p_query.is_done() == false) {
-		auto [event] = p_query.get();
-
+	for (auto [event] : p_query) {
 		CHECK(event.get_size() == 2);
 		CHECK(event[0]->a == 123);
 		CHECK(event[1]->a == 456);
 
 		entities_with_events += 1;
-
-		p_query.next();
 	}
 
 	CHECK(entities_with_events == 1);
@@ -123,13 +116,12 @@ void test_add_entity_system(WorldCommands *p_commands, Storage<TransformComponen
 	}
 }
 
-void test_remove_entity_system(WorldCommands *p_command, Query<const TransformComponent> &p_query) {
+void test_remove_entity_system(WorldCommands *p_command, Query<const EntityID, const TransformComponent> &p_query) {
 	uint32_t count = 0;
 
-	while (p_query.is_done() == false) {
+	for (auto [entity, _t] : p_query) {
 		count += 1;
-		p_command->destroy_deferred(p_query.get_current_entity());
-		p_query.next();
+		p_command->destroy_deferred(*entity);
 	}
 
 	// Make sure the `test_add_entity_system` added exactly `3` `Entities` with
@@ -298,32 +290,26 @@ void test_sub_pipeline_execute(World *p_world, Pipeline *p_pipeline) {
 }
 
 void test_system_transform_add_x(Query<TransformComponent> &p_query) {
-	while (p_query.is_done() == false) {
-		auto [transform] = p_query.get();
+	for (auto [transform] : p_query) {
 		transform->transform.origin.x += 100.0;
-		p_query.next();
 	}
 }
 
-void test_move_root(Query<TransformComponent> &p_query) {
-	while (p_query.is_done() == false) {
-		if (p_query.get_current_entity() == EntityID(0)) {
-			auto [transform] = p_query.get();
+void test_move_root(Query<const EntityID, TransformComponent> &p_query) {
+	for (auto [entity, transform] : p_query) {
+		if (*entity == EntityID(0)) {
 			transform->transform.origin.x += 1.0;
 			return;
 		}
-		p_query.next();
 	}
 }
 
-void test_move_1_global(Query<TransformComponent> &p_query) {
-	while (p_query.is_done() == false) {
-		if (p_query.get_current_entity() == EntityID(1)) {
-			auto [transform] = p_query.get(Space::GLOBAL);
+void test_move_1_global(Query<const EntityID, TransformComponent> &p_query) {
+	for (auto [entity, transform] : p_query.space(Space::GLOBAL)) {
+		if (*entity == EntityID(1)) {
 			transform->transform.origin.x = 6.0;
 			return;
 		}
-		p_query.next();
 	}
 }
 
@@ -534,14 +520,9 @@ TEST_CASE("[Modules][ECS] Test create and remove Entity from Systems.") {
 			// Count the `Entities` at this point.
 			Query<const TransformComponent> query(&world);
 
-			uint32_t count = 0;
-			while (query.is_done() == false) {
-				count += 1;
-				query.next();
-			}
-
 			// The `System` removes the `Entities` defferred, so at this point
 			// the `Entities` still exists.
+			const uint32_t count = query.count();
 			CHECK(count == 3);
 		}
 
@@ -551,13 +532,8 @@ TEST_CASE("[Modules][ECS] Test create and remove Entity from Systems.") {
 			// Count the `Entities` at this point.
 			Query<const TransformComponent> query(&world);
 
-			uint32_t count = 0;
-			while (query.is_done() == false) {
-				count += 1;
-				query.next();
-			}
-
 			// Now the `Entities` are removed.
+			const uint32_t count = query.count();
 			CHECK(count == 0);
 		}
 	}
@@ -986,10 +962,8 @@ struct ChangeTracer {
 };
 
 void test_changed(Query<Changed<const TransformComponent>, ChangeTracer> &p_query) {
-	while (p_query.is_done() == false) {
-		auto [t, c] = p_query.get();
+	for (auto [t, c] : p_query) {
 		c->trace += 1;
-		p_query.next();
 	}
 }
 
