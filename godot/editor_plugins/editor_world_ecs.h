@@ -78,10 +78,13 @@ class EditorWorldECS : public PanelContainer {
 
 	DrawLayer *draw_layer = nullptr;
 	Label *node_name_lbl = nullptr;
-	LineEdit *pip_name_ledit = nullptr;
 	VBoxContainer *pipeline_panel = nullptr;
 	OptionButton *pipeline_menu = nullptr;
-	ConfirmationDialog *pipeline_confirm_remove = nullptr;
+	ConfirmationDialog *pipeline_window_confirm_remove = nullptr;
+
+	// Rename pipeline
+	AcceptDialog *pipeline_window_rename = nullptr;
+	LineEdit *pipeline_name_ledit = nullptr;
 
 	// Add system window.
 	ConfirmationDialog *add_sys_window = nullptr;
@@ -115,6 +118,7 @@ public:
 	void pipeline_list_update();
 	void pipeline_on_menu_select(int p_index);
 	void pipeline_add();
+	void pipeline_rename_show_window();
 	void pipeline_remove_show_confirmation();
 	void pipeline_remove();
 	void pipeline_panel_update();

@@ -211,14 +211,14 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 	set_offset(SIDE_RIGHT, 0.0);
 	set_offset(SIDE_BOTTOM, 0.0);
 
-	HBoxContainer *main_hb = memnew(HBoxContainer);
-	main_hb->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-	main_hb->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-	main_hb->set_anchor(SIDE_LEFT, 0.0);
-	main_hb->set_anchor(SIDE_TOP, 0.0);
-	main_hb->set_anchor(SIDE_RIGHT, 1.0);
-	main_hb->set_anchor(SIDE_BOTTOM, 1.0);
-	add_child(main_hb);
+	VBoxContainer *main_vb = memnew(VBoxContainer);
+	main_vb->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+	main_vb->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+	main_vb->set_anchor(SIDE_LEFT, 0.0);
+	main_vb->set_anchor(SIDE_TOP, 0.0);
+	main_vb->set_anchor(SIDE_RIGHT, 1.0);
+	main_vb->set_anchor(SIDE_BOTTOM, 1.0);
+	add_child(main_vb);
 
 	DrawLayer *draw_layer = memnew(DrawLayer);
 	draw_layer->editor = this;
@@ -234,78 +234,101 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 	draw_layer->set_offset(SIDE_BOTTOM, 0.0);
 	add_child(draw_layer);
 
-	// ~~ Left Panel ~~
+	// ~~ Main menu ~~
 	{
-		VBoxContainer *main_container = memnew(VBoxContainer);
-		main_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		main_container->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		main_hb->add_child(main_container);
+		HBoxContainer *menu_wrapper = memnew(HBoxContainer);
+		menu_wrapper->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		main_vb->add_child(menu_wrapper);
 
-		// ~~ Action box ~~
+		Button *create_sys_btn = memnew(Button);
+		create_sys_btn->set_text(TTR("New system"));
+		create_sys_btn->set_icon(editor->get_theme_base()->get_theme_icon("ScriptCreate", "EditorIcons"));
+		create_sys_btn->set_flat(true);
+		create_sys_btn->set_h_size_flags(0.0);
+		create_sys_btn->set_v_size_flags(0.0);
+		create_sys_btn->connect("pressed", callable_mp(this, &EditorWorldECS::create_sys_show));
+		menu_wrapper->add_child(create_sys_btn);
+
+		Button *create_comp_btn = memnew(Button);
+		create_comp_btn->set_text(TTR("Components"));
+		create_comp_btn->set_icon(editor->get_theme_base()->get_theme_icon("Load", "EditorIcons"));
+		create_comp_btn->set_flat(true);
+		create_comp_btn->set_h_size_flags(0.0);
+		create_comp_btn->set_v_size_flags(0.0);
+		//create_comp_btn->connect("pressed", callable_mp(this, &EditorWorldECS::create_sys_show)); // TODO
+		menu_wrapper->add_child(create_comp_btn);
+
+		// ~~ Sub menu world ECS ~~
 		{
-			HBoxContainer *hori_box = memnew(HBoxContainer);
-			hori_box->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-			hori_box->set_v_size_flags(0);
-			main_container->add_child(hori_box);
+			HBoxContainer *world_ecs_sub_menu_wrap = memnew(HBoxContainer);
+			world_ecs_sub_menu_wrap->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			menu_wrapper->add_child(world_ecs_sub_menu_wrap);
 
 			node_name_lbl = memnew(Label);
 			node_name_lbl->add_theme_color_override("font_color", Color(0.0, 0.5, 1.0));
-			hori_box->add_child(node_name_lbl);
+			world_ecs_sub_menu_wrap->add_child(node_name_lbl);
 
 			pipeline_menu = memnew(OptionButton);
 			pipeline_menu->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 			pipeline_menu->connect("item_selected", callable_mp(this, &EditorWorldECS::pipeline_on_menu_select));
-			hori_box->add_child(pipeline_menu);
+			world_ecs_sub_menu_wrap->add_child(pipeline_menu);
 
 			Button *new_pipeline_btn = memnew(Button);
 			new_pipeline_btn->set_h_size_flags(0);
 			new_pipeline_btn->set_icon(editor->get_theme_base()->get_theme_icon("New", "EditorIcons"));
+			new_pipeline_btn->set_flat(true);
 			new_pipeline_btn->set_text(TTR("Add pipeline"));
 			new_pipeline_btn->connect("pressed", callable_mp(this, &EditorWorldECS::pipeline_add));
-			hori_box->add_child(new_pipeline_btn);
+			world_ecs_sub_menu_wrap->add_child(new_pipeline_btn);
 
+			Button *rename_pipeline_btn = memnew(Button);
+			rename_pipeline_btn->set_text(TTR("Rename"));
+			rename_pipeline_btn->set_h_size_flags(0);
+			rename_pipeline_btn->set_icon(editor->get_theme_base()->get_theme_icon("Edit", "EditorIcons"));
+			rename_pipeline_btn->set_flat(true);
+			rename_pipeline_btn->connect("pressed", callable_mp(this, &EditorWorldECS::pipeline_rename_show_window));
+			world_ecs_sub_menu_wrap->add_child(rename_pipeline_btn);
+
+			pipeline_window_confirm_remove = memnew(ConfirmationDialog);
 			Button *remove_pipeline_btn = memnew(Button);
 			remove_pipeline_btn->set_h_size_flags(0);
 			remove_pipeline_btn->set_icon(editor->get_theme_base()->get_theme_icon("Remove", "EditorIcons"));
+			remove_pipeline_btn->set_flat(true);
 			remove_pipeline_btn->connect("pressed", callable_mp(this, &EditorWorldECS::pipeline_remove_show_confirmation));
-			hori_box->add_child(remove_pipeline_btn);
+			world_ecs_sub_menu_wrap->add_child(remove_pipeline_btn);
 
-			pipeline_confirm_remove = memnew(ConfirmationDialog);
-			pipeline_confirm_remove->set_min_size(Size2i(200, 80));
-			pipeline_confirm_remove->set_title(TTR("Confirm removal"));
-			pipeline_confirm_remove->get_label()->set_text(TTR("Do you want to drop the selected pipeline?"));
-			pipeline_confirm_remove->get_ok_button()->set_text(TTR("Confirm"));
-			pipeline_confirm_remove->connect("confirmed", callable_mp(this, &EditorWorldECS::pipeline_remove));
-			add_child(pipeline_confirm_remove);
+			pipeline_window_confirm_remove = memnew(ConfirmationDialog);
+			pipeline_window_confirm_remove->set_min_size(Size2i(200, 80));
+			pipeline_window_confirm_remove->set_title(TTR("Confirm removal"));
+			pipeline_window_confirm_remove->get_label()->set_text(TTR("Do you want to drop the selected pipeline?"));
+			pipeline_window_confirm_remove->get_ok_button()->set_text(TTR("Confirm"));
+			pipeline_window_confirm_remove->connect("confirmed", callable_mp(this, &EditorWorldECS::pipeline_remove));
+			add_child(pipeline_window_confirm_remove);
 		}
 	}
 
-	VSeparator *separator = memnew(VSeparator);
-	main_hb->add_child(separator);
+	// ~~ Workspace ~~
+
+	HBoxContainer *workspace_container_hb = memnew(HBoxContainer);
+	workspace_container_hb->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+	workspace_container_hb->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+	main_vb->add_child(workspace_container_hb);
+
+	// ~~ Left Panel ~~
+	{
+		// TODO remove
+		VBoxContainer *main_container = memnew(VBoxContainer);
+		main_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		main_container->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		workspace_container_hb->add_child(main_container);
+	}
 
 	// ~~ Right Panel ~~
 	{
 		VBoxContainer *main_container = memnew(VBoxContainer);
 		main_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 		main_container->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		main_hb->add_child(main_container);
-
-		HBoxContainer *title_container = memnew(HBoxContainer);
-		title_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		title_container->set_v_size_flags(0);
-		main_container->add_child(title_container);
-
-		Label *title = memnew(Label);
-		title->set_text(TTR("Pipeline"));
-		title->set_h_size_flags(0);
-		title->set_v_size_flags(SIZE_FILL | SIZE_EXPAND);
-		title_container->add_child(title);
-
-		pip_name_ledit = memnew(LineEdit);
-		pip_name_ledit->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		pip_name_ledit->set_v_size_flags(0);
-		pip_name_ledit->connect("text_changed", callable_mp(this, &EditorWorldECS::pipeline_change_name));
-		title_container->add_child(pip_name_ledit);
+		workspace_container_hb->add_child(main_container);
 
 		Panel *panel = memnew(Panel);
 		panel->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
@@ -343,13 +366,31 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		show_btn_add_sys->set_v_size_flags(0);
 		show_btn_add_sys->connect("pressed", callable_mp(this, &EditorWorldECS::add_sys_show));
 		button_container->add_child(show_btn_add_sys);
+	}
 
-		Button *create_sys_btn = memnew(Button);
-		create_sys_btn->set_icon(editor->get_theme_base()->get_theme_icon("New", "EditorIcons"));
-		create_sys_btn->set_h_size_flags(0.0);
-		create_sys_btn->set_v_size_flags(0.0);
-		create_sys_btn->connect("pressed", callable_mp(this, &EditorWorldECS::create_sys_show));
-		button_container->add_child(create_sys_btn);
+	// ~~ Rename pipeline window ~~
+	{
+		pipeline_window_rename = memnew(AcceptDialog);
+		pipeline_window_rename->set_min_size(Size2i(500, 180));
+		pipeline_window_rename->set_title(TTR("Rename pipeline"));
+		pipeline_window_rename->set_hide_on_ok(true);
+		pipeline_window_rename->get_ok_button()->set_text(TTR("Ok"));
+		pipeline_window_rename->connect("confirmed", callable_mp(this, &EditorWorldECS::add_script_do));
+		add_child(pipeline_window_rename);
+
+		VBoxContainer *vert_container = memnew(VBoxContainer);
+		vert_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		vert_container->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		pipeline_window_rename->add_child(vert_container);
+
+		Label *lbl = memnew(Label);
+		lbl->set_text("Pipeline name");
+		vert_container->add_child(lbl);
+
+		pipeline_name_ledit = memnew(LineEdit);
+		pipeline_name_ledit->set_placeholder(TTR("Pipeline name"));
+		pipeline_name_ledit->connect("text_changed", callable_mp(this, &EditorWorldECS::pipeline_change_name));
+		vert_container->add_child(pipeline_name_ledit);
 	}
 
 	// ~~ Add system window ~~
@@ -447,7 +488,7 @@ void EditorWorldECS::show_editor() {
 	}
 	add_sys_hide();
 	create_sys_hide();
-	pipeline_confirm_remove->set_visible(false);
+	pipeline_window_confirm_remove->set_visible(false);
 
 	pipeline_list_update();
 }
@@ -550,12 +591,12 @@ void EditorWorldECS::pipeline_on_menu_select(int p_index) {
 		set_pipeline(Ref<PipelineECS>());
 	}
 	if (pipeline.is_null()) {
-		pip_name_ledit->set_text("");
+		pipeline_name_ledit->set_text("");
 	} else {
-		pip_name_ledit->set_text(pipeline->get_pipeline_name());
+		pipeline_name_ledit->set_text(pipeline->get_pipeline_name());
 	}
 	// Always position the cursor at the end.
-	pip_name_ledit->set_cursor_position(INT32_MAX);
+	pipeline_name_ledit->set_cursor_position(INT32_MAX);
 	pipeline_panel_update();
 }
 
@@ -590,10 +631,16 @@ void EditorWorldECS::pipeline_add() {
 	editor->get_undo_redo()->commit_action();
 }
 
+void EditorWorldECS::pipeline_rename_show_window() {
+	const Vector2i modal_pos = (Vector2i(get_viewport_rect().size) - pipeline_window_rename->get_size()) / 2.0;
+	pipeline_window_rename->set_position(modal_pos);
+	pipeline_window_rename->set_visible(true);
+}
+
 void EditorWorldECS::pipeline_remove_show_confirmation() {
-	const Vector2i modal_pos = (Vector2i(get_viewport_rect().size) - pipeline_confirm_remove->get_size()) / 2.0;
-	pipeline_confirm_remove->set_position(modal_pos);
-	pipeline_confirm_remove->set_visible(true);
+	const Vector2i modal_pos = (Vector2i(get_viewport_rect().size) - pipeline_window_confirm_remove->get_size()) / 2.0;
+	pipeline_window_confirm_remove->set_position(modal_pos);
+	pipeline_window_confirm_remove->set_visible(true);
 }
 
 void EditorWorldECS::pipeline_remove() {
