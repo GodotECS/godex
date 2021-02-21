@@ -76,6 +76,9 @@ class EditorWorldECS : public PanelContainer {
 	WorldECS *world_ecs = nullptr;
 	Ref<PipelineECS> pipeline;
 
+	HBoxContainer *world_ecs_sub_menu_wrap = nullptr;
+	HBoxContainer *workspace_container_hb = nullptr;
+
 	DrawLayer *draw_layer = nullptr;
 	Label *node_name_lbl = nullptr;
 	VBoxContainer *pipeline_panel = nullptr;
@@ -160,7 +163,7 @@ public:
 	WorldECSEditorPlugin(EditorNode *p_node);
 	~WorldECSEditorPlugin();
 
-	virtual String get_name() const override { return "WorldECS"; }
+	virtual String get_name() const override { return "ECS"; }
 	virtual bool has_main_screen() const override { return true; }
 	virtual void edit(Object *p_object) override;
 	virtual bool handles(Object *p_object) const override;

@@ -258,15 +258,14 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		//create_comp_btn->connect("pressed", callable_mp(this, &EditorWorldECS::create_sys_show)); // TODO
 		menu_wrapper->add_child(create_comp_btn);
 
+		node_name_lbl = memnew(Label);
+		menu_wrapper->add_child(node_name_lbl);
+
 		// ~~ Sub menu world ECS ~~
 		{
-			HBoxContainer *world_ecs_sub_menu_wrap = memnew(HBoxContainer);
+			world_ecs_sub_menu_wrap = memnew(HBoxContainer);
 			world_ecs_sub_menu_wrap->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 			menu_wrapper->add_child(world_ecs_sub_menu_wrap);
-
-			node_name_lbl = memnew(Label);
-			node_name_lbl->add_theme_color_override("font_color", Color(0.0, 0.5, 1.0));
-			world_ecs_sub_menu_wrap->add_child(node_name_lbl);
 
 			pipeline_menu = memnew(OptionButton);
 			pipeline_menu->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
@@ -309,7 +308,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 
 	// ~~ Workspace ~~
 
-	HBoxContainer *workspace_container_hb = memnew(HBoxContainer);
+	workspace_container_hb = memnew(HBoxContainer);
 	workspace_container_hb->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 	workspace_container_hb->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 	main_vb->add_child(workspace_container_hb);
@@ -481,16 +480,14 @@ void EditorWorldECS::show_editor() {
 		}
 	}
 
-	if (world_ecs != nullptr) {
-		show();
-	} else {
-		hide();
-	}
 	add_sys_hide();
 	create_sys_hide();
+	pipeline_window_rename->set_visible(false);
 	pipeline_window_confirm_remove->set_visible(false);
 
-	pipeline_list_update();
+	// Refresh world ECS show hide.
+	set_world_ecs(world_ecs);
+	show();
 }
 
 void EditorWorldECS::hide_editor() {
@@ -502,9 +499,13 @@ void EditorWorldECS::hide_editor() {
 void EditorWorldECS::set_world_ecs(WorldECS *p_world) {
 	if (world_ecs != nullptr) {
 		world_ecs->remove_change_receptor(this);
-		node_name_lbl->set_text("");
-		set_pipeline(Ref<PipelineECS>());
 	}
+
+	node_name_lbl->set_text("No world ECS selected.");
+	node_name_lbl->add_theme_color_override("font_color", Color(0.7, 0.7, 0.7));
+	set_pipeline(Ref<PipelineECS>());
+	world_ecs_sub_menu_wrap->hide();
+	workspace_container_hb->hide();
 
 	world_ecs = p_world;
 	pipeline_panel_clear();
@@ -512,7 +513,9 @@ void EditorWorldECS::set_world_ecs(WorldECS *p_world) {
 	if (world_ecs != nullptr) {
 		world_ecs->add_change_receptor(this);
 		node_name_lbl->set_text(world_ecs->get_name());
-		show();
+		node_name_lbl->add_theme_color_override("font_color", Color(0.0, 0.5, 1.0));
+		world_ecs_sub_menu_wrap->show();
+		workspace_container_hb->show();
 	}
 
 	pipeline_list_update();
