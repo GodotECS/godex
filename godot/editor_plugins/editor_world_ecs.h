@@ -10,6 +10,7 @@ class WorldECS;
 class PipelineECS;
 class EditorWorldECS;
 class SpinBox;
+class Tree;
 
 class SystemInfoBox : public MarginContainer {
 	GDCLASS(SystemInfoBox, MarginContainer);
@@ -52,6 +53,14 @@ public:
 
 	void system_remove();
 	void dispatcher_pipeline_change(const String &p_value);
+};
+
+class ComponentElement : public HBoxContainer {
+	EditorNode *editor = nullptr;
+
+public:
+	ComponentElement(EditorNode *p_editor);
+	~ComponentElement();
 };
 
 class DrawLayer : public Control {
@@ -100,6 +109,10 @@ class EditorWorldECS : public PanelContainer {
 	LineEdit *add_script_path = nullptr;
 	Label *add_script_error_lbl = nullptr;
 
+	AcceptDialog *components_window = nullptr;
+	Tree *components_tree = nullptr;
+	LineEdit *component_name_le = nullptr;
+
 	LocalVector<SystemInfoBox *> pipeline_systems;
 
 	bool is_pipeline_panel_dirty = false;
@@ -139,6 +152,9 @@ public:
 	void create_sys_show();
 	void create_sys_hide();
 	void add_script_do();
+
+	void components_manage_show();
+	void components_manage_on_component_select();
 
 protected:
 	void _changed_callback(Object *p_changed, const char *p_prop) override;

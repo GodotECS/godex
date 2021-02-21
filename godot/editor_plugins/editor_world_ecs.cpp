@@ -176,6 +176,42 @@ void SystemInfoBox::dispatcher_pipeline_change(const String &p_value) {
 	editor_world_ecs->pipeline_system_dispatcher_set_pipeline(system_name, p_value);
 }
 
+ComponentElement::ComponentElement(EditorNode *p_editor) :
+		editor(p_editor) {
+	set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+
+	OptionButton *type = memnew(OptionButton);
+	type->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("bool", "EditorIcons"), "Bool");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("int", "EditorIcons"), "Int");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("float", "EditorIcons"), "Float");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("Vector3", "EditorIcons"), "Vector3");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("Vector3i", "EditorIcons"), "Vector3i");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("Quat", "EditorIcons"), "Quat");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("AABB", "EditorIcons"), "Aabb");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("Basis", "EditorIcons"), "Basis");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("Transform", "EditorIcons"), "Transform3D");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("Vector2", "EditorIcons"), "Vector2");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("Vector2i", "EditorIcons"), "Vector2i");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("Transform2D", "EditorIcons"), "Transform2D");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("Color", "EditorIcons"), "Color");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("String", "EditorIcons"), "String");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("StringName", "EditorIcons"), "StringName");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("RID", "EditorIcons"), "Rid");
+	add_child(type);
+
+	LineEdit *name = memnew(LineEdit);
+	name->set_text("AA");
+	add_child(name);
+
+	LineEdit *val = memnew(LineEdit);
+	val->set_text("value");
+	add_child(val);
+}
+
+ComponentElement::~ComponentElement() {
+}
+
 DrawLayer::DrawLayer() {
 	// This is just a draw layer, we don't need input.
 	set_mouse_filter(MOUSE_FILTER_IGNORE);
@@ -255,8 +291,10 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		create_comp_btn->set_flat(true);
 		create_comp_btn->set_h_size_flags(0.0);
 		create_comp_btn->set_v_size_flags(0.0);
-		//create_comp_btn->connect("pressed", callable_mp(this, &EditorWorldECS::create_sys_show)); // TODO
+		create_comp_btn->connect("pressed", callable_mp(this, &EditorWorldECS::components_manage_show));
 		menu_wrapper->add_child(create_comp_btn);
+
+		menu_wrapper->add_child(memnew(VSeparator));
 
 		node_name_lbl = memnew(Label);
 		menu_wrapper->add_child(node_name_lbl);
@@ -438,7 +476,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 	{
 		add_script_window = memnew(ConfirmationDialog);
 		add_script_window->set_min_size(Size2i(500, 180));
-		add_script_window->set_title(TTR("Add script System / Component / Databag"));
+		add_script_window->set_title(TTR("Add script System"));
 		add_script_window->set_hide_on_ok(false);
 		add_script_window->get_ok_button()->set_text(TTR("Create"));
 		add_script_window->connect("confirmed", callable_mp(this, &EditorWorldECS::add_script_do));
@@ -461,6 +499,126 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		add_script_error_lbl->hide();
 		add_script_error_lbl->add_theme_color_override("font_color", Color(1.0, 0.0, 0.0));
 		vert_container->add_child(add_script_error_lbl);
+	}
+
+	// ~~ Component manager ~~
+	{
+		components_window = memnew(AcceptDialog);
+		components_window->set_min_size(Size2i(800, 500));
+		components_window->set_title(TTR("Component and Databag manager"));
+		components_window->set_hide_on_ok(true);
+		components_window->get_ok_button()->set_text(TTR("Done"));
+		add_child(components_window);
+
+		HBoxContainer *window_main_hb = memnew(HBoxContainer);
+		window_main_hb->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		window_main_hb->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		components_window->add_child(window_main_hb);
+
+		//  ~~ Left panel ~~
+		{
+			VBoxContainer *vertical_container = memnew(VBoxContainer);
+			vertical_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			vertical_container->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			window_main_hb->add_child(vertical_container);
+
+			components_tree = memnew(Tree);
+			components_tree->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			components_tree->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			components_tree->set_hide_root(true);
+			components_tree->connect("item_selected", callable_mp(this, &EditorWorldECS::components_manage_on_component_select));
+			vertical_container->add_child(components_tree);
+
+			Button *new_component_btn = memnew(Button);
+			new_component_btn->set_icon(editor->get_theme_base()->get_theme_icon("New", "EditorIcons"));
+			new_component_btn->set_text(TTR("New component"));
+			new_component_btn->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			new_component_btn->set_v_size_flags(0);
+			//new_component_btn->connect("pressed", callable_mp(this, &EditorWorldECS::add_sys_show)); // TODO
+			vertical_container->add_child(new_component_btn);
+		}
+
+		window_main_hb->add_child(memnew(VSeparator));
+
+		//  ~~ Right panel ~~
+		{
+			VBoxContainer *vertical_container = memnew(VBoxContainer);
+			vertical_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			vertical_container->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			window_main_hb->add_child(vertical_container);
+
+			component_name_le = memnew(LineEdit);
+			component_name_le->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			component_name_le->set_v_size_flags(0);
+			component_name_le->set_placeholder(TTR("Component name"));
+			vertical_container->add_child(component_name_le);
+
+			OptionButton *component_storage = memnew(OptionButton);
+			component_storage->set_text(TTR("Component storage"));
+			component_storage->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			component_storage->set_v_size_flags(0);
+			component_storage->add_item(TTR("Dense Vector"));
+			component_storage->select(0);
+			vertical_container->add_child(component_storage);
+
+			// Panel
+			{
+				Panel *panel = memnew(Panel);
+				panel->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+				panel->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+				panel->set_anchor(SIDE_LEFT, 0.0);
+				panel->set_anchor(SIDE_TOP, 0.0);
+				panel->set_anchor(SIDE_RIGHT, 1.0);
+				panel->set_anchor(SIDE_BOTTOM, 1.0);
+				vertical_container->add_child(panel);
+
+				ScrollContainer *scroll = memnew(ScrollContainer);
+				scroll->set_h_scroll(false);
+				scroll->set_v_scroll(true);
+				scroll->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+				scroll->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+				scroll->set_anchor(SIDE_LEFT, 0.0);
+				scroll->set_anchor(SIDE_TOP, 0.0);
+				scroll->set_anchor(SIDE_RIGHT, 1.0);
+				scroll->set_anchor(SIDE_BOTTOM, 1.0);
+				panel->add_child(scroll);
+
+				PanelContainer *panel_container = memnew(PanelContainer);
+				panel_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+				panel_container->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+				panel_container->set_anchor(SIDE_LEFT, 0.0);
+				panel_container->set_anchor(SIDE_TOP, 0.0);
+				panel_container->set_anchor(SIDE_RIGHT, 1.0);
+				panel_container->set_anchor(SIDE_BOTTOM, 1.0);
+				scroll->add_child(panel_container);
+
+				VBoxContainer *component_element_container = memnew(VBoxContainer);
+				component_element_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+				component_element_container->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+				panel_container->add_child(component_element_container);
+
+				// TODO list of variables?
+				component_element_container->add_child(memnew(ComponentElement(editor)));
+				component_element_container->add_child(memnew(ComponentElement(editor)));
+				component_element_container->add_child(memnew(ComponentElement(editor)));
+				component_element_container->add_child(memnew(ComponentElement(editor)));
+				component_element_container->add_child(memnew(ComponentElement(editor)));
+				component_element_container->add_child(memnew(ComponentElement(editor)));
+				component_element_container->add_child(memnew(ComponentElement(editor)));
+				component_element_container->add_child(memnew(ComponentElement(editor)));
+				component_element_container->add_child(memnew(ComponentElement(editor)));
+				component_element_container->add_child(memnew(ComponentElement(editor)));
+				component_element_container->add_child(memnew(ComponentElement(editor)));
+			}
+
+			Button *add_var_btn = memnew(Button);
+			add_var_btn->set_text(TTR("Add variable"));
+			add_var_btn->set_icon(editor->get_theme_base()->get_theme_icon("Add", "EditorIcons"));
+			add_var_btn->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			add_var_btn->set_v_size_flags(0);
+			//add_var_btn->connect("pressed", callable_mp(this, &EditorWorldECS::add_sys_show)); // TODO
+			vertical_container->add_child(add_var_btn);
+		}
 	}
 }
 
@@ -983,6 +1141,16 @@ void EditorWorldECS::add_script_do() {
 
 	add_script_path->set_text("");
 	add_script_window->set_visible(false);
+}
+
+void EditorWorldECS::components_manage_show() {
+	// Display the modal window centered.
+	const Vector2i modal_pos = (Vector2i(get_viewport_rect().size) - components_window->get_size()) / 2.0;
+	components_window->set_position(modal_pos);
+	components_window->set_visible(true);
+}
+
+void EditorWorldECS::components_manage_on_component_select() {
 }
 
 void EditorWorldECS::_changed_callback(Object *p_changed, const char *p_prop) {
