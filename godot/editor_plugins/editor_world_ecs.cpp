@@ -36,6 +36,14 @@ SystemInfoBox::SystemInfoBox(EditorNode *p_editor, EditorWorldECS *p_editor_worl
 	box->set_v_size_flags(0);
 	inner_container->add_child(box);
 
+	remove_btn = memnew(Button);
+	remove_btn->set_icon(editor->get_theme_base()->get_theme_icon("Close", "EditorIcons"));
+	remove_btn->set_h_size_flags(0);
+	remove_btn->set_v_size_flags(0);
+	remove_btn->set_flat(true);
+	remove_btn->connect("pressed", callable_mp(this, &SystemInfoBox::system_remove), Vector<Variant>(), CONNECT_DEFERRED);
+	box->add_child(remove_btn);
+
 	position_btn = memnew(Button);
 	position_btn->set_text("0");
 	position_btn->set_h_size_flags(0);
@@ -53,14 +61,6 @@ SystemInfoBox::SystemInfoBox(EditorNode *p_editor, EditorWorldECS *p_editor_worl
 	position_input->connect("value_changed", callable_mp(this, &SystemInfoBox::system_position_changed), Vector<Variant>(), CONNECT_DEFERRED);
 	box->add_child(position_input);
 
-	remove_btn = memnew(Button);
-	remove_btn->set_icon(editor->get_theme_base()->get_theme_icon("Remove", "EditorIcons"));
-	remove_btn->set_h_size_flags(0);
-	remove_btn->set_v_size_flags(0);
-	remove_btn->set_visible(false);
-	remove_btn->connect("pressed", callable_mp(this, &SystemInfoBox::system_remove), Vector<Variant>(), CONNECT_DEFERRED);
-	box->add_child(remove_btn);
-
 	system_name_lbl = memnew(Label);
 	system_name_lbl->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 	system_name_lbl->set_v_size_flags(SizeFlags::SIZE_EXPAND);
@@ -73,7 +73,16 @@ SystemInfoBox::SystemInfoBox(EditorNode *p_editor, EditorWorldECS *p_editor_worl
 	system_data_list->set_max_columns(0);
 	system_data_list->set_fixed_icon_size(Size2(13.0, 13.0));
 	system_data_list->add_theme_constant_override("hseparation", 7.0);
+	system_data_list->hide();
 	box->add_child(system_data_list);
+
+	toggle_system_data_btn = memnew(Button);
+	toggle_system_data_btn->set_icon(editor->get_theme_base()->get_theme_icon("Collapse", "EditorIcons"));
+	toggle_system_data_btn->set_h_size_flags(SizeFlags::SIZE_SHRINK_END);
+	toggle_system_data_btn->set_v_size_flags(0);
+	toggle_system_data_btn->set_flat(true);
+	toggle_system_data_btn->connect("pressed", callable_mp(this, &SystemInfoBox::system_toggle_data));
+	box->add_child(toggle_system_data_btn);
 
 	dispatcher_pipeline_name = memnew(LineEdit);
 	dispatcher_pipeline_name->set_placeholder(TTR("Pipeline name."));
@@ -91,13 +100,14 @@ SystemInfoBox::~SystemInfoBox() {
 void SystemInfoBox::set_position(uint32_t p_position) {
 	position_input->set_visible(false);
 	position_input->set_value(p_position);
-	remove_btn->set_visible(false);
 	position_btn->set_text(itos(p_position));
 }
 
 void SystemInfoBox::setup_system(const StringName &p_name, SystemMode p_mode) {
 	system_name_lbl->set_text(String(p_name) + (p_mode == SYSTEM_INVALID ? " [INVALID]" : ""));
 	system_name = p_name;
+
+	toggle_system_data_btn->set_visible(true);
 
 	StringName icon_name;
 	switch (p_mode) {
@@ -111,6 +121,7 @@ void SystemInfoBox::setup_system(const StringName &p_name, SystemMode p_mode) {
 			icon_name = "ShaderMaterial";
 			system_data_list->set_visible(false);
 			dispatcher_pipeline_name->set_visible(true);
+			toggle_system_data_btn->set_visible(false);
 			break;
 		case SYSTEM_TEMPORARY:
 			icon_name = "Time";
@@ -148,7 +159,6 @@ Point2 SystemInfoBox::name_global_transform() const {
 
 void SystemInfoBox::position_btn_pressed() {
 	position_input->set_visible(!position_input->is_visible());
-	remove_btn->set_visible(!remove_btn->is_visible());
 }
 
 void SystemInfoBox::system_position_changed(double p_value) {
@@ -157,7 +167,6 @@ void SystemInfoBox::system_position_changed(double p_value) {
 		return;
 	}
 	position_input->set_visible(false);
-	remove_btn->set_visible(false);
 
 	const uint32_t new_position = p_value;
 	editor_world_ecs->pipeline_item_position_change(system_name, new_position);
@@ -176,11 +185,15 @@ void SystemInfoBox::dispatcher_pipeline_change(const String &p_value) {
 	editor_world_ecs->pipeline_system_dispatcher_set_pipeline(system_name, p_value);
 }
 
-ComponentElement::ComponentElement(EditorNode *p_editor) :
+void SystemInfoBox::system_toggle_data() {
+	system_data_list->set_visible(!system_data_list->is_visible());
+}
+
+ComponentElement::ComponentElement(EditorNode *p_editor, const String &p_name, Variant p_default) :
 		editor(p_editor) {
 	set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 
-	OptionButton *type = memnew(OptionButton);
+	type = memnew(OptionButton);
 	type->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("bool", "EditorIcons"), "Bool");
 	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("int", "EditorIcons"), "Int");
@@ -200,16 +213,45 @@ ComponentElement::ComponentElement(EditorNode *p_editor) :
 	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("RID", "EditorIcons"), "Rid");
 	add_child(type);
 
-	LineEdit *name = memnew(LineEdit);
-	name->set_text("AA");
+	name = memnew(LineEdit);
 	add_child(name);
 
-	LineEdit *val = memnew(LineEdit);
-	val->set_text("value");
+	val = memnew(LineEdit);
 	add_child(val);
+
+	init_variable(p_name, p_default);
 }
 
 ComponentElement::~ComponentElement() {
+}
+
+void ComponentElement::init_variable(const String &p_name, Variant p_default) {
+	int c = 0;
+
+	int types[Variant::VARIANT_MAX];
+	for (uint32_t i = 0; i < Variant::VARIANT_MAX; i += 1) {
+		types[i] = 0;
+	}
+	types[Variant::BOOL] = c++;
+	types[Variant::INT] = c++;
+	types[Variant::FLOAT] = c++;
+	types[Variant::VECTOR3] = c++;
+	types[Variant::VECTOR3I] = c++;
+	types[Variant::QUAT] = c++;
+	types[Variant::AABB] = c++;
+	types[Variant::BASIS] = c++;
+	types[Variant::TRANSFORM] = c++;
+	types[Variant::VECTOR2] = c++;
+	types[Variant::VECTOR2I] = c++;
+	types[Variant::TRANSFORM2D] = c++;
+	types[Variant::COLOR] = c++;
+	types[Variant::STRING] = c++;
+	types[Variant::STRING_NAME] = c++;
+	types[Variant::RID] = c++;
+
+	type->select(types[p_default.get_type()]);
+	name->set_text(p_name);
+	val->set_text(p_default);
 }
 
 DrawLayer::DrawLayer() {
@@ -277,7 +319,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		main_vb->add_child(menu_wrapper);
 
 		Button *create_sys_btn = memnew(Button);
-		create_sys_btn->set_text(TTR("New system"));
+		create_sys_btn->set_text(TTR("New system / component"));
 		create_sys_btn->set_icon(editor->get_theme_base()->get_theme_icon("ScriptCreate", "EditorIcons"));
 		create_sys_btn->set_flat(true);
 		create_sys_btn->set_h_size_flags(0.0);
@@ -345,36 +387,25 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 	}
 
 	// ~~ Workspace ~~
-
-	workspace_container_hb = memnew(HBoxContainer);
-	workspace_container_hb->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-	workspace_container_hb->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-	main_vb->add_child(workspace_container_hb);
-
-	// ~~ Left Panel ~~
 	{
-		// TODO remove
-		VBoxContainer *main_container = memnew(VBoxContainer);
-		main_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		main_container->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		workspace_container_hb->add_child(main_container);
-	}
+		workspace_container_hb = memnew(HBoxContainer);
+		workspace_container_hb->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		workspace_container_hb->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		main_vb->add_child(workspace_container_hb);
 
-	// ~~ Right Panel ~~
-	{
 		VBoxContainer *main_container = memnew(VBoxContainer);
 		main_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 		main_container->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 		workspace_container_hb->add_child(main_container);
 
-		Panel *panel = memnew(Panel);
-		panel->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		panel->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		panel->set_anchor(SIDE_LEFT, 0.0);
-		panel->set_anchor(SIDE_TOP, 0.0);
-		panel->set_anchor(SIDE_RIGHT, 1.0);
-		panel->set_anchor(SIDE_BOTTOM, 1.0);
-		main_container->add_child(panel);
+		Panel *panel_w = memnew(Panel);
+		panel_w->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		panel_w->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		panel_w->set_anchor(SIDE_LEFT, 0.0);
+		panel_w->set_anchor(SIDE_TOP, 0.0);
+		panel_w->set_anchor(SIDE_RIGHT, 1.0);
+		panel_w->set_anchor(SIDE_BOTTOM, 1.0);
+		main_container->add_child(panel_w);
 
 		ScrollContainer *wrapper = memnew(ScrollContainer);
 		wrapper->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
@@ -385,12 +416,21 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		wrapper->set_anchor(SIDE_BOTTOM, 1.0);
 		wrapper->set_enable_h_scroll(true);
 		wrapper->set_enable_v_scroll(false);
-		panel->add_child(wrapper);
+		panel_w->add_child(wrapper);
+
+		PanelContainer *panel = memnew(PanelContainer);
+		panel->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		panel->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		panel->set_anchor(SIDE_LEFT, 0.0);
+		panel->set_anchor(SIDE_TOP, 0.0);
+		panel->set_anchor(SIDE_RIGHT, 1.0);
+		panel->set_anchor(SIDE_BOTTOM, 1.0);
+		wrapper->add_child(panel);
 
 		pipeline_panel = memnew(VBoxContainer);
 		pipeline_panel->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 		pipeline_panel->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		wrapper->add_child(pipeline_panel);
+		panel->add_child(pipeline_panel);
 
 		HBoxContainer *button_container = memnew(HBoxContainer);
 		button_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
@@ -398,7 +438,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		main_container->add_child(button_container);
 
 		Button *show_btn_add_sys = memnew(Button);
-		show_btn_add_sys->set_text(TTR("Add System"));
+		show_btn_add_sys->set_text(TTR("Add System / Component"));
 		show_btn_add_sys->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 		show_btn_add_sys->set_v_size_flags(0);
 		show_btn_add_sys->connect("pressed", callable_mp(this, &EditorWorldECS::add_sys_show));
@@ -476,7 +516,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 	{
 		add_script_window = memnew(ConfirmationDialog);
 		add_script_window->set_min_size(Size2i(500, 180));
-		add_script_window->set_title(TTR("Add script System"));
+		add_script_window->set_title(TTR("Add script System / Component"));
 		add_script_window->set_hide_on_ok(false);
 		add_script_window->get_ok_button()->set_text(TTR("Create"));
 		add_script_window->connect("confirmed", callable_mp(this, &EditorWorldECS::add_script_do));
@@ -505,7 +545,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 	{
 		components_window = memnew(AcceptDialog);
 		components_window->set_min_size(Size2i(800, 500));
-		components_window->set_title(TTR("Component and Databag manager"));
+		components_window->set_title(TTR("Component and Databag manager - [WIP]"));
 		components_window->set_hide_on_ok(true);
 		components_window->get_ok_button()->set_text(TTR("Done"));
 		add_child(components_window);
@@ -598,17 +638,12 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 				panel_container->add_child(component_element_container);
 
 				// TODO list of variables?
-				component_element_container->add_child(memnew(ComponentElement(editor)));
-				component_element_container->add_child(memnew(ComponentElement(editor)));
-				component_element_container->add_child(memnew(ComponentElement(editor)));
-				component_element_container->add_child(memnew(ComponentElement(editor)));
-				component_element_container->add_child(memnew(ComponentElement(editor)));
-				component_element_container->add_child(memnew(ComponentElement(editor)));
-				component_element_container->add_child(memnew(ComponentElement(editor)));
-				component_element_container->add_child(memnew(ComponentElement(editor)));
-				component_element_container->add_child(memnew(ComponentElement(editor)));
-				component_element_container->add_child(memnew(ComponentElement(editor)));
-				component_element_container->add_child(memnew(ComponentElement(editor)));
+				component_element_container->add_child(memnew(ComponentElement(editor, "Var_0", 123)));
+				component_element_container->add_child(memnew(ComponentElement(editor, "Var_1", 123.0)));
+				component_element_container->add_child(memnew(ComponentElement(editor, "Var_2", true)));
+				component_element_container->add_child(memnew(ComponentElement(editor, "Var_3", Vector3(10, 0, 0))));
+				component_element_container->add_child(memnew(ComponentElement(editor, "Var_4", Transform2D())));
+				component_element_container->add_child(memnew(ComponentElement(editor, "Var_5", Dictionary())));
 			}
 
 			Button *add_var_btn = memnew(Button);

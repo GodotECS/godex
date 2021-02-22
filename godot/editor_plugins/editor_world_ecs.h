@@ -33,6 +33,7 @@ private:
 	Label *system_name_lbl = nullptr;
 	ItemList *system_data_list = nullptr;
 	LineEdit *dispatcher_pipeline_name = nullptr;
+	Button *toggle_system_data_btn = nullptr;
 
 	StringName system_name;
 	SystemMode mode = SYSTEM_INVALID;
@@ -53,14 +54,22 @@ public:
 
 	void system_remove();
 	void dispatcher_pipeline_change(const String &p_value);
+
+	void system_toggle_data();
 };
 
 class ComponentElement : public HBoxContainer {
 	EditorNode *editor = nullptr;
 
+	OptionButton *type = nullptr;
+	LineEdit *name = nullptr;
+	LineEdit *val = nullptr;
+
 public:
-	ComponentElement(EditorNode *p_editor);
+	ComponentElement(EditorNode *p_editor, const String &p_name = "", Variant p_default = false);
 	~ComponentElement();
+
+	void init_variable(const String &p_name, Variant p_default);
 };
 
 class DrawLayer : public Control {
