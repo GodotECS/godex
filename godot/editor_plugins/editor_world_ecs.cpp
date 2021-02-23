@@ -36,6 +36,14 @@ SystemInfoBox::SystemInfoBox(EditorNode *p_editor, EditorWorldECS *p_editor_worl
 	box->set_v_size_flags(0);
 	inner_container->add_child(box);
 
+	remove_btn = memnew(Button);
+	remove_btn->set_icon(editor->get_theme_base()->get_theme_icon("Close", "EditorIcons"));
+	remove_btn->set_h_size_flags(0);
+	remove_btn->set_v_size_flags(0);
+	remove_btn->set_flat(true);
+	remove_btn->connect("pressed", callable_mp(this, &SystemInfoBox::system_remove), Vector<Variant>(), CONNECT_DEFERRED);
+	box->add_child(remove_btn);
+
 	position_btn = memnew(Button);
 	position_btn->set_text("0");
 	position_btn->set_h_size_flags(0);
@@ -53,14 +61,6 @@ SystemInfoBox::SystemInfoBox(EditorNode *p_editor, EditorWorldECS *p_editor_worl
 	position_input->connect("value_changed", callable_mp(this, &SystemInfoBox::system_position_changed), Vector<Variant>(), CONNECT_DEFERRED);
 	box->add_child(position_input);
 
-	remove_btn = memnew(Button);
-	remove_btn->set_icon(editor->get_theme_base()->get_theme_icon("Remove", "EditorIcons"));
-	remove_btn->set_h_size_flags(0);
-	remove_btn->set_v_size_flags(0);
-	remove_btn->set_visible(false);
-	remove_btn->connect("pressed", callable_mp(this, &SystemInfoBox::system_remove), Vector<Variant>(), CONNECT_DEFERRED);
-	box->add_child(remove_btn);
-
 	system_name_lbl = memnew(Label);
 	system_name_lbl->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 	system_name_lbl->set_v_size_flags(SizeFlags::SIZE_EXPAND);
@@ -73,7 +73,16 @@ SystemInfoBox::SystemInfoBox(EditorNode *p_editor, EditorWorldECS *p_editor_worl
 	system_data_list->set_max_columns(0);
 	system_data_list->set_fixed_icon_size(Size2(13.0, 13.0));
 	system_data_list->add_theme_constant_override("hseparation", 7.0);
+	system_data_list->hide();
 	box->add_child(system_data_list);
+
+	toggle_system_data_btn = memnew(Button);
+	toggle_system_data_btn->set_icon(editor->get_theme_base()->get_theme_icon("Collapse", "EditorIcons"));
+	toggle_system_data_btn->set_h_size_flags(SizeFlags::SIZE_SHRINK_END);
+	toggle_system_data_btn->set_v_size_flags(0);
+	toggle_system_data_btn->set_flat(true);
+	toggle_system_data_btn->connect("pressed", callable_mp(this, &SystemInfoBox::system_toggle_data));
+	box->add_child(toggle_system_data_btn);
 
 	dispatcher_pipeline_name = memnew(LineEdit);
 	dispatcher_pipeline_name->set_placeholder(TTR("Pipeline name."));
@@ -91,13 +100,14 @@ SystemInfoBox::~SystemInfoBox() {
 void SystemInfoBox::set_position(uint32_t p_position) {
 	position_input->set_visible(false);
 	position_input->set_value(p_position);
-	remove_btn->set_visible(false);
 	position_btn->set_text(itos(p_position));
 }
 
 void SystemInfoBox::setup_system(const StringName &p_name, SystemMode p_mode) {
 	system_name_lbl->set_text(String(p_name) + (p_mode == SYSTEM_INVALID ? " [INVALID]" : ""));
 	system_name = p_name;
+
+	toggle_system_data_btn->set_visible(true);
 
 	StringName icon_name;
 	switch (p_mode) {
@@ -111,6 +121,7 @@ void SystemInfoBox::setup_system(const StringName &p_name, SystemMode p_mode) {
 			icon_name = "ShaderMaterial";
 			system_data_list->set_visible(false);
 			dispatcher_pipeline_name->set_visible(true);
+			toggle_system_data_btn->set_visible(false);
 			break;
 		case SYSTEM_TEMPORARY:
 			icon_name = "Time";
@@ -148,7 +159,6 @@ Point2 SystemInfoBox::name_global_transform() const {
 
 void SystemInfoBox::position_btn_pressed() {
 	position_input->set_visible(!position_input->is_visible());
-	remove_btn->set_visible(!remove_btn->is_visible());
 }
 
 void SystemInfoBox::system_position_changed(double p_value) {
@@ -157,7 +167,6 @@ void SystemInfoBox::system_position_changed(double p_value) {
 		return;
 	}
 	position_input->set_visible(false);
-	remove_btn->set_visible(false);
 
 	const uint32_t new_position = p_value;
 	editor_world_ecs->pipeline_item_position_change(system_name, new_position);
@@ -174,6 +183,75 @@ void SystemInfoBox::dispatcher_pipeline_change(const String &p_value) {
 	}
 
 	editor_world_ecs->pipeline_system_dispatcher_set_pipeline(system_name, p_value);
+}
+
+void SystemInfoBox::system_toggle_data() {
+	system_data_list->set_visible(!system_data_list->is_visible());
+}
+
+ComponentElement::ComponentElement(EditorNode *p_editor, const String &p_name, Variant p_default) :
+		editor(p_editor) {
+	set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+
+	type = memnew(OptionButton);
+	type->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("bool", "EditorIcons"), "Bool");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("int", "EditorIcons"), "Int");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("float", "EditorIcons"), "Float");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("Vector3", "EditorIcons"), "Vector3");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("Vector3i", "EditorIcons"), "Vector3i");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("Quat", "EditorIcons"), "Quat");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("AABB", "EditorIcons"), "Aabb");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("Basis", "EditorIcons"), "Basis");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("Transform", "EditorIcons"), "Transform3D");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("Vector2", "EditorIcons"), "Vector2");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("Vector2i", "EditorIcons"), "Vector2i");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("Transform2D", "EditorIcons"), "Transform2D");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("Color", "EditorIcons"), "Color");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("String", "EditorIcons"), "String");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("StringName", "EditorIcons"), "StringName");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("RID", "EditorIcons"), "Rid");
+	add_child(type);
+
+	name = memnew(LineEdit);
+	add_child(name);
+
+	val = memnew(LineEdit);
+	add_child(val);
+
+	init_variable(p_name, p_default);
+}
+
+ComponentElement::~ComponentElement() {
+}
+
+void ComponentElement::init_variable(const String &p_name, Variant p_default) {
+	int c = 0;
+
+	int types[Variant::VARIANT_MAX];
+	for (uint32_t i = 0; i < Variant::VARIANT_MAX; i += 1) {
+		types[i] = 0;
+	}
+	types[Variant::BOOL] = c++;
+	types[Variant::INT] = c++;
+	types[Variant::FLOAT] = c++;
+	types[Variant::VECTOR3] = c++;
+	types[Variant::VECTOR3I] = c++;
+	types[Variant::QUAT] = c++;
+	types[Variant::AABB] = c++;
+	types[Variant::BASIS] = c++;
+	types[Variant::TRANSFORM] = c++;
+	types[Variant::VECTOR2] = c++;
+	types[Variant::VECTOR2I] = c++;
+	types[Variant::TRANSFORM2D] = c++;
+	types[Variant::COLOR] = c++;
+	types[Variant::STRING] = c++;
+	types[Variant::STRING_NAME] = c++;
+	types[Variant::RID] = c++;
+
+	type->select(types[p_default.get_type()]);
+	name->set_text(p_name);
+	val->set_text(p_default);
 }
 
 DrawLayer::DrawLayer() {
@@ -211,14 +289,14 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 	set_offset(SIDE_RIGHT, 0.0);
 	set_offset(SIDE_BOTTOM, 0.0);
 
-	HBoxContainer *main_hb = memnew(HBoxContainer);
-	main_hb->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-	main_hb->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-	main_hb->set_anchor(SIDE_LEFT, 0.0);
-	main_hb->set_anchor(SIDE_TOP, 0.0);
-	main_hb->set_anchor(SIDE_RIGHT, 1.0);
-	main_hb->set_anchor(SIDE_BOTTOM, 1.0);
-	add_child(main_hb);
+	VBoxContainer *main_vb = memnew(VBoxContainer);
+	main_vb->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+	main_vb->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+	main_vb->set_anchor(SIDE_LEFT, 0.0);
+	main_vb->set_anchor(SIDE_TOP, 0.0);
+	main_vb->set_anchor(SIDE_RIGHT, 1.0);
+	main_vb->set_anchor(SIDE_BOTTOM, 1.0);
+	add_child(main_vb);
 
 	DrawLayer *draw_layer = memnew(DrawLayer);
 	draw_layer->editor = this;
@@ -234,87 +312,100 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 	draw_layer->set_offset(SIDE_BOTTOM, 0.0);
 	add_child(draw_layer);
 
-	// ~~ Left Panel ~~
+	// ~~ Main menu ~~
 	{
-		VBoxContainer *main_container = memnew(VBoxContainer);
-		main_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		main_container->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		main_hb->add_child(main_container);
+		HBoxContainer *menu_wrapper = memnew(HBoxContainer);
+		menu_wrapper->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		main_vb->add_child(menu_wrapper);
 
-		// ~~ Action box ~~
+		Button *create_sys_btn = memnew(Button);
+		create_sys_btn->set_text(TTR("New system / component"));
+		create_sys_btn->set_icon(editor->get_theme_base()->get_theme_icon("ScriptCreate", "EditorIcons"));
+		create_sys_btn->set_flat(true);
+		create_sys_btn->set_h_size_flags(0.0);
+		create_sys_btn->set_v_size_flags(0.0);
+		create_sys_btn->connect("pressed", callable_mp(this, &EditorWorldECS::create_sys_show));
+		menu_wrapper->add_child(create_sys_btn);
+
+		Button *create_comp_btn = memnew(Button);
+		create_comp_btn->set_text(TTR("Components"));
+		create_comp_btn->set_icon(editor->get_theme_base()->get_theme_icon("Load", "EditorIcons"));
+		create_comp_btn->set_flat(true);
+		create_comp_btn->set_h_size_flags(0.0);
+		create_comp_btn->set_v_size_flags(0.0);
+		create_comp_btn->connect("pressed", callable_mp(this, &EditorWorldECS::components_manage_show));
+		menu_wrapper->add_child(create_comp_btn);
+
+		menu_wrapper->add_child(memnew(VSeparator));
+
+		node_name_lbl = memnew(Label);
+		menu_wrapper->add_child(node_name_lbl);
+
+		// ~~ Sub menu world ECS ~~
 		{
-			HBoxContainer *hori_box = memnew(HBoxContainer);
-			hori_box->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-			hori_box->set_v_size_flags(0);
-			main_container->add_child(hori_box);
-
-			node_name_lbl = memnew(Label);
-			node_name_lbl->add_theme_color_override("font_color", Color(0.0, 0.5, 1.0));
-			hori_box->add_child(node_name_lbl);
+			world_ecs_sub_menu_wrap = memnew(HBoxContainer);
+			world_ecs_sub_menu_wrap->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			menu_wrapper->add_child(world_ecs_sub_menu_wrap);
 
 			pipeline_menu = memnew(OptionButton);
 			pipeline_menu->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 			pipeline_menu->connect("item_selected", callable_mp(this, &EditorWorldECS::pipeline_on_menu_select));
-			hori_box->add_child(pipeline_menu);
+			world_ecs_sub_menu_wrap->add_child(pipeline_menu);
 
 			Button *new_pipeline_btn = memnew(Button);
 			new_pipeline_btn->set_h_size_flags(0);
 			new_pipeline_btn->set_icon(editor->get_theme_base()->get_theme_icon("New", "EditorIcons"));
+			new_pipeline_btn->set_flat(true);
 			new_pipeline_btn->set_text(TTR("Add pipeline"));
 			new_pipeline_btn->connect("pressed", callable_mp(this, &EditorWorldECS::pipeline_add));
-			hori_box->add_child(new_pipeline_btn);
+			world_ecs_sub_menu_wrap->add_child(new_pipeline_btn);
 
+			Button *rename_pipeline_btn = memnew(Button);
+			rename_pipeline_btn->set_text(TTR("Rename"));
+			rename_pipeline_btn->set_h_size_flags(0);
+			rename_pipeline_btn->set_icon(editor->get_theme_base()->get_theme_icon("Edit", "EditorIcons"));
+			rename_pipeline_btn->set_flat(true);
+			rename_pipeline_btn->connect("pressed", callable_mp(this, &EditorWorldECS::pipeline_rename_show_window));
+			world_ecs_sub_menu_wrap->add_child(rename_pipeline_btn);
+
+			pipeline_window_confirm_remove = memnew(ConfirmationDialog);
 			Button *remove_pipeline_btn = memnew(Button);
 			remove_pipeline_btn->set_h_size_flags(0);
 			remove_pipeline_btn->set_icon(editor->get_theme_base()->get_theme_icon("Remove", "EditorIcons"));
+			remove_pipeline_btn->set_flat(true);
 			remove_pipeline_btn->connect("pressed", callable_mp(this, &EditorWorldECS::pipeline_remove_show_confirmation));
-			hori_box->add_child(remove_pipeline_btn);
+			world_ecs_sub_menu_wrap->add_child(remove_pipeline_btn);
 
-			pipeline_confirm_remove = memnew(ConfirmationDialog);
-			pipeline_confirm_remove->set_min_size(Size2i(200, 80));
-			pipeline_confirm_remove->set_title(TTR("Confirm removal"));
-			pipeline_confirm_remove->get_label()->set_text(TTR("Do you want to drop the selected pipeline?"));
-			pipeline_confirm_remove->get_ok_button()->set_text(TTR("Confirm"));
-			pipeline_confirm_remove->connect("confirmed", callable_mp(this, &EditorWorldECS::pipeline_remove));
-			add_child(pipeline_confirm_remove);
+			pipeline_window_confirm_remove = memnew(ConfirmationDialog);
+			pipeline_window_confirm_remove->set_min_size(Size2i(200, 80));
+			pipeline_window_confirm_remove->set_title(TTR("Confirm removal"));
+			pipeline_window_confirm_remove->get_label()->set_text(TTR("Do you want to drop the selected pipeline?"));
+			pipeline_window_confirm_remove->get_ok_button()->set_text(TTR("Confirm"));
+			pipeline_window_confirm_remove->connect("confirmed", callable_mp(this, &EditorWorldECS::pipeline_remove));
+			add_child(pipeline_window_confirm_remove);
 		}
 	}
 
-	VSeparator *separator = memnew(VSeparator);
-	main_hb->add_child(separator);
-
-	// ~~ Right Panel ~~
+	// ~~ Workspace ~~
 	{
+		workspace_container_hb = memnew(HBoxContainer);
+		workspace_container_hb->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		workspace_container_hb->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		main_vb->add_child(workspace_container_hb);
+
 		VBoxContainer *main_container = memnew(VBoxContainer);
 		main_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 		main_container->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		main_hb->add_child(main_container);
+		workspace_container_hb->add_child(main_container);
 
-		HBoxContainer *title_container = memnew(HBoxContainer);
-		title_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		title_container->set_v_size_flags(0);
-		main_container->add_child(title_container);
-
-		Label *title = memnew(Label);
-		title->set_text(TTR("Pipeline"));
-		title->set_h_size_flags(0);
-		title->set_v_size_flags(SIZE_FILL | SIZE_EXPAND);
-		title_container->add_child(title);
-
-		pip_name_ledit = memnew(LineEdit);
-		pip_name_ledit->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		pip_name_ledit->set_v_size_flags(0);
-		pip_name_ledit->connect("text_changed", callable_mp(this, &EditorWorldECS::pipeline_change_name));
-		title_container->add_child(pip_name_ledit);
-
-		Panel *panel = memnew(Panel);
-		panel->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		panel->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		panel->set_anchor(SIDE_LEFT, 0.0);
-		panel->set_anchor(SIDE_TOP, 0.0);
-		panel->set_anchor(SIDE_RIGHT, 1.0);
-		panel->set_anchor(SIDE_BOTTOM, 1.0);
-		main_container->add_child(panel);
+		Panel *panel_w = memnew(Panel);
+		panel_w->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		panel_w->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		panel_w->set_anchor(SIDE_LEFT, 0.0);
+		panel_w->set_anchor(SIDE_TOP, 0.0);
+		panel_w->set_anchor(SIDE_RIGHT, 1.0);
+		panel_w->set_anchor(SIDE_BOTTOM, 1.0);
+		main_container->add_child(panel_w);
 
 		ScrollContainer *wrapper = memnew(ScrollContainer);
 		wrapper->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
@@ -325,12 +416,21 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		wrapper->set_anchor(SIDE_BOTTOM, 1.0);
 		wrapper->set_enable_h_scroll(true);
 		wrapper->set_enable_v_scroll(false);
-		panel->add_child(wrapper);
+		panel_w->add_child(wrapper);
+
+		PanelContainer *panel = memnew(PanelContainer);
+		panel->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		panel->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		panel->set_anchor(SIDE_LEFT, 0.0);
+		panel->set_anchor(SIDE_TOP, 0.0);
+		panel->set_anchor(SIDE_RIGHT, 1.0);
+		panel->set_anchor(SIDE_BOTTOM, 1.0);
+		wrapper->add_child(panel);
 
 		pipeline_panel = memnew(VBoxContainer);
 		pipeline_panel->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 		pipeline_panel->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		wrapper->add_child(pipeline_panel);
+		panel->add_child(pipeline_panel);
 
 		HBoxContainer *button_container = memnew(HBoxContainer);
 		button_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
@@ -338,18 +438,36 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		main_container->add_child(button_container);
 
 		Button *show_btn_add_sys = memnew(Button);
-		show_btn_add_sys->set_text(TTR("Add System"));
+		show_btn_add_sys->set_text(TTR("Add System / Component"));
 		show_btn_add_sys->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 		show_btn_add_sys->set_v_size_flags(0);
 		show_btn_add_sys->connect("pressed", callable_mp(this, &EditorWorldECS::add_sys_show));
 		button_container->add_child(show_btn_add_sys);
+	}
 
-		Button *create_sys_btn = memnew(Button);
-		create_sys_btn->set_icon(editor->get_theme_base()->get_theme_icon("New", "EditorIcons"));
-		create_sys_btn->set_h_size_flags(0.0);
-		create_sys_btn->set_v_size_flags(0.0);
-		create_sys_btn->connect("pressed", callable_mp(this, &EditorWorldECS::create_sys_show));
-		button_container->add_child(create_sys_btn);
+	// ~~ Rename pipeline window ~~
+	{
+		pipeline_window_rename = memnew(AcceptDialog);
+		pipeline_window_rename->set_min_size(Size2i(500, 180));
+		pipeline_window_rename->set_title(TTR("Rename pipeline"));
+		pipeline_window_rename->set_hide_on_ok(true);
+		pipeline_window_rename->get_ok_button()->set_text(TTR("Ok"));
+		pipeline_window_rename->connect("confirmed", callable_mp(this, &EditorWorldECS::add_script_do));
+		add_child(pipeline_window_rename);
+
+		VBoxContainer *vert_container = memnew(VBoxContainer);
+		vert_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		vert_container->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		pipeline_window_rename->add_child(vert_container);
+
+		Label *lbl = memnew(Label);
+		lbl->set_text("Pipeline name");
+		vert_container->add_child(lbl);
+
+		pipeline_name_ledit = memnew(LineEdit);
+		pipeline_name_ledit->set_placeholder(TTR("Pipeline name"));
+		pipeline_name_ledit->connect("text_changed", callable_mp(this, &EditorWorldECS::pipeline_change_name));
+		vert_container->add_child(pipeline_name_ledit);
 	}
 
 	// ~~ Add system window ~~
@@ -398,7 +516,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 	{
 		add_script_window = memnew(ConfirmationDialog);
 		add_script_window->set_min_size(Size2i(500, 180));
-		add_script_window->set_title(TTR("Add script System / Component / Databag"));
+		add_script_window->set_title(TTR("Add script System / Component"));
 		add_script_window->set_hide_on_ok(false);
 		add_script_window->get_ok_button()->set_text(TTR("Create"));
 		add_script_window->connect("confirmed", callable_mp(this, &EditorWorldECS::add_script_do));
@@ -422,6 +540,121 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		add_script_error_lbl->add_theme_color_override("font_color", Color(1.0, 0.0, 0.0));
 		vert_container->add_child(add_script_error_lbl);
 	}
+
+	// ~~ Component manager ~~
+	{
+		components_window = memnew(AcceptDialog);
+		components_window->set_min_size(Size2i(800, 500));
+		components_window->set_title(TTR("Component and Databag manager - [WIP]"));
+		components_window->set_hide_on_ok(true);
+		components_window->get_ok_button()->set_text(TTR("Done"));
+		add_child(components_window);
+
+		HBoxContainer *window_main_hb = memnew(HBoxContainer);
+		window_main_hb->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		window_main_hb->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		components_window->add_child(window_main_hb);
+
+		//  ~~ Left panel ~~
+		{
+			VBoxContainer *vertical_container = memnew(VBoxContainer);
+			vertical_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			vertical_container->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			window_main_hb->add_child(vertical_container);
+
+			components_tree = memnew(Tree);
+			components_tree->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			components_tree->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			components_tree->set_hide_root(true);
+			components_tree->connect("item_selected", callable_mp(this, &EditorWorldECS::components_manage_on_component_select));
+			vertical_container->add_child(components_tree);
+
+			Button *new_component_btn = memnew(Button);
+			new_component_btn->set_icon(editor->get_theme_base()->get_theme_icon("New", "EditorIcons"));
+			new_component_btn->set_text(TTR("New component"));
+			new_component_btn->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			new_component_btn->set_v_size_flags(0);
+			//new_component_btn->connect("pressed", callable_mp(this, &EditorWorldECS::add_sys_show)); // TODO
+			vertical_container->add_child(new_component_btn);
+		}
+
+		window_main_hb->add_child(memnew(VSeparator));
+
+		//  ~~ Right panel ~~
+		{
+			VBoxContainer *vertical_container = memnew(VBoxContainer);
+			vertical_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			vertical_container->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			window_main_hb->add_child(vertical_container);
+
+			component_name_le = memnew(LineEdit);
+			component_name_le->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			component_name_le->set_v_size_flags(0);
+			component_name_le->set_placeholder(TTR("Component name"));
+			vertical_container->add_child(component_name_le);
+
+			OptionButton *component_storage = memnew(OptionButton);
+			component_storage->set_text(TTR("Component storage"));
+			component_storage->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			component_storage->set_v_size_flags(0);
+			component_storage->add_item(TTR("Dense Vector"));
+			component_storage->select(0);
+			vertical_container->add_child(component_storage);
+
+			// Panel
+			{
+				Panel *panel = memnew(Panel);
+				panel->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+				panel->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+				panel->set_anchor(SIDE_LEFT, 0.0);
+				panel->set_anchor(SIDE_TOP, 0.0);
+				panel->set_anchor(SIDE_RIGHT, 1.0);
+				panel->set_anchor(SIDE_BOTTOM, 1.0);
+				vertical_container->add_child(panel);
+
+				ScrollContainer *scroll = memnew(ScrollContainer);
+				scroll->set_h_scroll(false);
+				scroll->set_v_scroll(true);
+				scroll->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+				scroll->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+				scroll->set_anchor(SIDE_LEFT, 0.0);
+				scroll->set_anchor(SIDE_TOP, 0.0);
+				scroll->set_anchor(SIDE_RIGHT, 1.0);
+				scroll->set_anchor(SIDE_BOTTOM, 1.0);
+				panel->add_child(scroll);
+
+				PanelContainer *panel_container = memnew(PanelContainer);
+				panel_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+				panel_container->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+				panel_container->set_anchor(SIDE_LEFT, 0.0);
+				panel_container->set_anchor(SIDE_TOP, 0.0);
+				panel_container->set_anchor(SIDE_RIGHT, 1.0);
+				panel_container->set_anchor(SIDE_BOTTOM, 1.0);
+				scroll->add_child(panel_container);
+
+				VBoxContainer *component_element_container = memnew(VBoxContainer);
+				component_element_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+				component_element_container->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+				panel_container->add_child(component_element_container);
+
+				// TODO list of variables?
+				component_element_container->add_child(memnew(ComponentElement(editor, "Var_0", 123)));
+				component_element_container->add_child(memnew(ComponentElement(editor, "Var_1", 123.0)));
+				component_element_container->add_child(memnew(ComponentElement(editor, "Var_2", true)));
+				component_element_container->add_child(memnew(ComponentElement(editor, "Var_3", Vector3(10, 0, 0))));
+				component_element_container->add_child(memnew(ComponentElement(editor, "Var_4", Transform2D())));
+				component_element_container->add_child(memnew(ComponentElement(editor, "Var_5", Dictionary())));
+			}
+
+			Button *add_var_btn = memnew(Button);
+			add_var_btn->set_text(TTR("Add variable"));
+			add_var_btn->set_icon(editor->get_theme_base()->get_theme_icon("Add", "EditorIcons"));
+			add_var_btn->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			add_var_btn->set_v_size_flags(0);
+			//add_var_btn->connect("pressed", callable_mp(this, &EditorWorldECS::add_sys_show)); // TODO
+			vertical_container->add_child(add_var_btn);
+		}
+	}
 }
 
 void EditorWorldECS::_notification(int p_what) {
@@ -440,16 +673,14 @@ void EditorWorldECS::show_editor() {
 		}
 	}
 
-	if (world_ecs != nullptr) {
-		show();
-	} else {
-		hide();
-	}
 	add_sys_hide();
 	create_sys_hide();
-	pipeline_confirm_remove->set_visible(false);
+	pipeline_window_rename->set_visible(false);
+	pipeline_window_confirm_remove->set_visible(false);
 
-	pipeline_list_update();
+	// Refresh world ECS show hide.
+	set_world_ecs(world_ecs);
+	show();
 }
 
 void EditorWorldECS::hide_editor() {
@@ -461,9 +692,13 @@ void EditorWorldECS::hide_editor() {
 void EditorWorldECS::set_world_ecs(WorldECS *p_world) {
 	if (world_ecs != nullptr) {
 		world_ecs->remove_change_receptor(this);
-		node_name_lbl->set_text("");
-		set_pipeline(Ref<PipelineECS>());
 	}
+
+	node_name_lbl->set_text("No world ECS selected.");
+	node_name_lbl->add_theme_color_override("font_color", Color(0.7, 0.7, 0.7));
+	set_pipeline(Ref<PipelineECS>());
+	world_ecs_sub_menu_wrap->hide();
+	workspace_container_hb->hide();
 
 	world_ecs = p_world;
 	pipeline_panel_clear();
@@ -471,7 +706,9 @@ void EditorWorldECS::set_world_ecs(WorldECS *p_world) {
 	if (world_ecs != nullptr) {
 		world_ecs->add_change_receptor(this);
 		node_name_lbl->set_text(world_ecs->get_name());
-		show();
+		node_name_lbl->add_theme_color_override("font_color", Color(0.0, 0.5, 1.0));
+		world_ecs_sub_menu_wrap->show();
+		workspace_container_hb->show();
 	}
 
 	pipeline_list_update();
@@ -550,12 +787,12 @@ void EditorWorldECS::pipeline_on_menu_select(int p_index) {
 		set_pipeline(Ref<PipelineECS>());
 	}
 	if (pipeline.is_null()) {
-		pip_name_ledit->set_text("");
+		pipeline_name_ledit->set_text("");
 	} else {
-		pip_name_ledit->set_text(pipeline->get_pipeline_name());
+		pipeline_name_ledit->set_text(pipeline->get_pipeline_name());
 	}
 	// Always position the cursor at the end.
-	pip_name_ledit->set_cursor_position(INT32_MAX);
+	pipeline_name_ledit->set_cursor_position(INT32_MAX);
 	pipeline_panel_update();
 }
 
@@ -590,10 +827,16 @@ void EditorWorldECS::pipeline_add() {
 	editor->get_undo_redo()->commit_action();
 }
 
+void EditorWorldECS::pipeline_rename_show_window() {
+	const Vector2i modal_pos = (Vector2i(get_viewport_rect().size) - pipeline_window_rename->get_size()) / 2.0;
+	pipeline_window_rename->set_position(modal_pos);
+	pipeline_window_rename->set_visible(true);
+}
+
 void EditorWorldECS::pipeline_remove_show_confirmation() {
-	const Vector2i modal_pos = (Vector2i(get_viewport_rect().size) - pipeline_confirm_remove->get_size()) / 2.0;
-	pipeline_confirm_remove->set_position(modal_pos);
-	pipeline_confirm_remove->set_visible(true);
+	const Vector2i modal_pos = (Vector2i(get_viewport_rect().size) - pipeline_window_confirm_remove->get_size()) / 2.0;
+	pipeline_window_confirm_remove->set_position(modal_pos);
+	pipeline_window_confirm_remove->set_visible(true);
 }
 
 void EditorWorldECS::pipeline_remove() {
@@ -933,6 +1176,16 @@ void EditorWorldECS::add_script_do() {
 
 	add_script_path->set_text("");
 	add_script_window->set_visible(false);
+}
+
+void EditorWorldECS::components_manage_show() {
+	// Display the modal window centered.
+	const Vector2i modal_pos = (Vector2i(get_viewport_rect().size) - components_window->get_size()) / 2.0;
+	components_window->set_position(modal_pos);
+	components_window->set_visible(true);
+}
+
+void EditorWorldECS::components_manage_on_component_select() {
 }
 
 void EditorWorldECS::_changed_callback(Object *p_changed, const char *p_prop) {

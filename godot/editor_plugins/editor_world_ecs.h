@@ -10,6 +10,7 @@ class WorldECS;
 class PipelineECS;
 class EditorWorldECS;
 class SpinBox;
+class Tree;
 
 class SystemInfoBox : public MarginContainer {
 	GDCLASS(SystemInfoBox, MarginContainer);
@@ -32,6 +33,7 @@ private:
 	Label *system_name_lbl = nullptr;
 	ItemList *system_data_list = nullptr;
 	LineEdit *dispatcher_pipeline_name = nullptr;
+	Button *toggle_system_data_btn = nullptr;
 
 	StringName system_name;
 	SystemMode mode = SYSTEM_INVALID;
@@ -52,6 +54,22 @@ public:
 
 	void system_remove();
 	void dispatcher_pipeline_change(const String &p_value);
+
+	void system_toggle_data();
+};
+
+class ComponentElement : public HBoxContainer {
+	EditorNode *editor = nullptr;
+
+	OptionButton *type = nullptr;
+	LineEdit *name = nullptr;
+	LineEdit *val = nullptr;
+
+public:
+	ComponentElement(EditorNode *p_editor, const String &p_name = "", Variant p_default = false);
+	~ComponentElement();
+
+	void init_variable(const String &p_name, Variant p_default);
 };
 
 class DrawLayer : public Control {
@@ -76,12 +94,18 @@ class EditorWorldECS : public PanelContainer {
 	WorldECS *world_ecs = nullptr;
 	Ref<PipelineECS> pipeline;
 
+	HBoxContainer *world_ecs_sub_menu_wrap = nullptr;
+	HBoxContainer *workspace_container_hb = nullptr;
+
 	DrawLayer *draw_layer = nullptr;
 	Label *node_name_lbl = nullptr;
-	LineEdit *pip_name_ledit = nullptr;
 	VBoxContainer *pipeline_panel = nullptr;
 	OptionButton *pipeline_menu = nullptr;
-	ConfirmationDialog *pipeline_confirm_remove = nullptr;
+	ConfirmationDialog *pipeline_window_confirm_remove = nullptr;
+
+	// Rename pipeline
+	AcceptDialog *pipeline_window_rename = nullptr;
+	LineEdit *pipeline_name_ledit = nullptr;
 
 	// Add system window.
 	ConfirmationDialog *add_sys_window = nullptr;
@@ -93,6 +117,10 @@ class EditorWorldECS : public PanelContainer {
 	ConfirmationDialog *add_script_window = nullptr;
 	LineEdit *add_script_path = nullptr;
 	Label *add_script_error_lbl = nullptr;
+
+	AcceptDialog *components_window = nullptr;
+	Tree *components_tree = nullptr;
+	LineEdit *component_name_le = nullptr;
 
 	LocalVector<SystemInfoBox *> pipeline_systems;
 
@@ -115,6 +143,7 @@ public:
 	void pipeline_list_update();
 	void pipeline_on_menu_select(int p_index);
 	void pipeline_add();
+	void pipeline_rename_show_window();
 	void pipeline_remove_show_confirmation();
 	void pipeline_remove();
 	void pipeline_panel_update();
@@ -132,6 +161,9 @@ public:
 	void create_sys_show();
 	void create_sys_hide();
 	void add_script_do();
+
+	void components_manage_show();
+	void components_manage_on_component_select();
 
 protected:
 	void _changed_callback(Object *p_changed, const char *p_prop) override;
@@ -156,7 +188,7 @@ public:
 	WorldECSEditorPlugin(EditorNode *p_node);
 	~WorldECSEditorPlugin();
 
-	virtual String get_name() const override { return "WorldECS"; }
+	virtual String get_name() const override { return "ECS"; }
 	virtual bool has_main_screen() const override { return true; }
 	virtual void edit(Object *p_object) override;
 	virtual bool handles(Object *p_object) const override;
