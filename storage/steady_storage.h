@@ -4,7 +4,7 @@
 #include "dense_vector.h"
 #include "storage.h"
 
-/// Storage that is a lot useful when it's necessary to store big objects:
+/// Storage that is a lot useful when it's necessary to store big components:
 /// in those cases, you don't want to reallocate the memory each time a new
 /// entity is added or removed.
 ///
@@ -14,7 +14,8 @@
 /// to this storage it's possible to create components that are fixed in memory,
 /// so pass the pointer or internal component pointers is safe.
 ///
-/// Note, the allocated memory is contiguous.
+/// Note: The allocated memory is contiguous, but fragmented. Internally the
+/// storage creates some pages within the components are stored contiguosly.
 template <class T>
 class SteadyStorage : public Storage<T> {
 	PagedAllocator<T, false> allocator;
