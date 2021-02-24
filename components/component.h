@@ -4,7 +4,7 @@
 
 #include "../ecs.h"
 #include "../storage/batch_storage.h"
-#include "../storage/dense_vector.h"
+#include "../storage/dense_vector_storage.h"
 #include "core/object/class_db.h"
 #include "core/object/object.h"
 #include "core/templates/oa_hash_map.h"

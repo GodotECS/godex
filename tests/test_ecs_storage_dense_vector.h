@@ -4,7 +4,7 @@
 #include "tests/test_macros.h"
 
 #include "../components/component.h"
-#include "../storage/dense_vector.h"
+#include "../storage/dense_vector_storage.h"
 
 namespace godex_storage_dense_vector_tests {
 
