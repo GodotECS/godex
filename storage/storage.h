@@ -219,3 +219,41 @@ public:
 		return Batch<std::remove_const_t<T>>();
 	}
 };
+
+/// Base storage for shared components.
+template <class T>
+class SharedStorage : public Storage<T> {
+public:
+	virtual godex::SID create_shared_component(const T &p_data) {
+		CRASH_NOW_MSG("Please override this function.");
+		return UINT32_MAX;
+	}
+
+	virtual void free_shared_component(godex::SID p_id) {
+		CRASH_NOW_MSG("Please override this function.");
+	}
+
+	virtual bool has_shared_component(godex::SID p_id) const {
+		CRASH_NOW_MSG("Please override this function.");
+		return false;
+	}
+
+	virtual void insert(EntityID p_entity, godex::SID p_id) {
+		CRASH_NOW_MSG("Please override this function.");
+	}
+
+	virtual T *get_shared_component(godex::SID p_id) {
+		CRASH_NOW_MSG("Please override this function.");
+		return nullptr;
+	}
+
+	virtual const T *get_shared_component(godex::SID p_id) const {
+		CRASH_NOW_MSG("Please override this function.");
+		return nullptr;
+	}
+
+public:
+	virtual void insert(EntityID, const T &) override final {
+		ERR_PRINT("This component is stored inside a SharedStorage, so you can't just insert the data using the normal `insert` function. Check the documentation.");
+	}
+};

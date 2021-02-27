@@ -170,6 +170,8 @@ namespace godex {
 typedef uint32_t component_id;
 typedef uint32_t databag_id;
 typedef uint32_t system_id;
+/// Shared Component ID, used to identify a component.
+typedef uint32_t SID;
 } // namespace godex
 
 // ~~ PROPERTY MAPPER ~~
