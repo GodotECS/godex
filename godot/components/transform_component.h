@@ -8,6 +8,7 @@
 class TransformComponent {
 	COMPONENT(TransformComponent, HierarchicalStorage)
 	static void _bind_methods();
+	static void _get_storage_config(Dictionary &r_dictionary);
 
 	Transform transform;
 

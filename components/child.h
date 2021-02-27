@@ -6,6 +6,7 @@ class Child {
 	COMPONENT_CUSTOM_STORAGE(Child)
 
 	static void _bind_methods();
+	static void _get_storage_config(Dictionary &r_dictionary);
 
 public:
 	// The parent `Entity`.

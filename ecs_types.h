@@ -475,3 +475,11 @@ public:
 	virtual bool _getv(const StringName &p_name, Variant &r_ret) const override;
 	virtual Variant call(const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) override;
 };
+
+struct PropertyInfoWithDefault {
+	PropertyInfo info;
+	Variant def;
+
+	PropertyInfoWithDefault(PropertyInfo &p_info, const Variant &p_def) :
+			info(p_info), def(p_def) {}
+};

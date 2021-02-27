@@ -15,6 +15,11 @@ protected:
 	DenseVector<T> storage;
 
 public:
+	virtual void configure(const Dictionary &p_config) override {
+		storage.reset();
+		storage.configure(p_config.get("pre_allocate", 500));
+	}
+
 	virtual String get_type_name() const override {
 		return "DenseVector[" + String(typeid(T).name()) + "]";
 	}

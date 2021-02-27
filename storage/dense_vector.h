@@ -65,14 +65,38 @@ public:
 		entity_to_data[p_entity] = UINT32_MAX;
 	}
 
+	const LocalVector<EntityID> &get_entities() const {
+		return data_to_entity;
+	}
+
+	/// Clear the storage.
 	void clear() {
 		data.clear();
 		data_to_entity.clear();
 		entity_to_data.clear();
 	}
 
-	const LocalVector<EntityID> &get_entities() const {
-		return data_to_entity;
+	/// Reset the storage unallocating the memory.
+	void reset() {
+		data.reset();
+		data_to_entity.reset();
+		entity_to_data.reset();
+	}
+
+	/// Preallocate a given size, avoid useless allocations.
+	/// Note, never call this if there are stored data: before call always
+	/// `clear`.
+	void configure(uint32_t p_reserve) {
+		CRASH_COND_MSG(data.size() != 0, "Please call `clear` before `configure`.");
+
+		data.reserve(p_reserve);
+		data_to_entity.reserve(p_reserve);
+		entity_to_data.reserve(p_reserve);
+
+		entity_to_data.resize(p_reserve);
+		for (uint32_t i = 0; i < p_reserve; i += 1) {
+			entity_to_data[i] = UINT32_MAX;
+		}
 	}
 
 protected:
