@@ -307,7 +307,11 @@ void ECS::register_component(StorageBase *(*create_storage)()) {
 
 	StringName component_name = C::get_class_static();
 	C::component_id = components.size();
-	C::_bind_methods();
+
+	if constexpr (godex_has_bind_methods<C>::value) {
+		C::_bind_methods();
+	}
+
 	components.push_back(component_name);
 	components_info.push_back(
 			ComponentInfo{

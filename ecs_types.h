@@ -1,7 +1,5 @@
 #pragma once
 
-/* Author: AndreaCatania */
-
 #include "core/object/object.h"
 #include "core/object/script_language.h"
 #include "core/string/ustring.h"
@@ -10,14 +8,17 @@
 #include "core/variant/binder_common.h"
 #include "modules/gdscript/gdscript.h"
 
-template <bool B>
-struct bool_type {};
+template <typename T, typename = void>
+struct godex_has_bind_methods : std::false_type {};
 
-template <typename Test, template <typename...> class Ref>
-struct is_specialization : bool_type<false> {};
+template <typename T>
+struct godex_has_bind_methods<T, decltype(void(std::declval<T &>()._bind_methods()))> : std::true_type {};
 
-template <template <typename...> class Ref, typename... Args>
-struct is_specialization<Ref<Args...>, Ref> : bool_type<true> {};
+template <typename T, typename = void>
+struct godex_has_storage_config : std::false_type {};
+
+template <typename T>
+struct godex_has_storage_config<T, decltype(void(std::declval<T &>()._get_storage_config(std::declval<Dictionary &>())))> : std::true_type {};
 
 #define ECSCLASS(m_class)                             \
 private:                                              \

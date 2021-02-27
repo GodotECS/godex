@@ -7,6 +7,7 @@
 
 class TransformComponent {
 	COMPONENT(TransformComponent, HierarchicalStorage)
+	static void _bind_methods();
 
 	Transform transform;
 
@@ -25,7 +26,4 @@ class TransformComponent {
 			const TransformComponent &p_global,
 			const TransformComponent &p_parent_global,
 			TransformComponent &r_local);
-
-protected:
-	static void _bind_methods();
 };
