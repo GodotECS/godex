@@ -87,6 +87,12 @@ class World : public godex::Databag {
 	EntityBuilder entity_builder = EntityBuilder(this);
 	bool is_dispatching_in_progress = false;
 
+	/// Storages configuration, the format is as follows:
+	/// {"Component Name" :{"param_1": 11, "param_2": 11},
+	///  "Component Name" :{"param_1": 11, "param_2": 11},
+	///  "Component Name" :{"param_1": 11, "param_2": 11}}
+	Dictionary storages_config;
+
 	static void _bind_methods();
 
 public:

@@ -34,6 +34,7 @@ struct DataAccessorFuncs {
 /// component registration.
 struct ComponentInfo {
 	StorageBase *(*create_storage)();
+	void (*get_storage_config)(Dictionary &);
 	DynamicComponentInfo *dynamic_component_info = nullptr;
 	bool notify_release_write = false;
 	bool is_event = false;
@@ -114,9 +115,11 @@ public:
 	static uint32_t register_script_component(const StringName &p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type);
 	static uint32_t register_script_component_event(const StringName &p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type);
 
+	static uint32_t get_components_count();
 	static bool verify_component_id(uint32_t p_component_id);
 
 	static StorageBase *create_storage(godex::component_id p_component_id);
+	static void get_storage_config(godex::component_id p_component_id, Dictionary &r_config);
 	static const LocalVector<StringName> &get_registered_components();
 	static godex::component_id get_component_id(StringName p_component_name);
 	static StringName get_component_name(godex::component_id p_component_id);
@@ -307,11 +310,21 @@ void ECS::register_component(StorageBase *(*create_storage)()) {
 
 	StringName component_name = C::get_class_static();
 	C::component_id = components.size();
-	C::_bind_methods();
+
+	if constexpr (godex_has_bind_methods<C>::value) {
+		C::_bind_methods();
+	}
+
+	void (*get_storage_config)(Dictionary &) = nullptr;
+	if constexpr (godex_has_storage_config<C>::value) {
+		get_storage_config = C::_get_storage_config;
+	}
+
 	components.push_back(component_name);
 	components_info.push_back(
 			ComponentInfo{
 					create_storage,
+					get_storage_config,
 					nullptr,
 					notify_release_write,
 					false,

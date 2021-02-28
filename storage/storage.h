@@ -22,6 +22,10 @@ class StorageBase {
 	EntityList changed;
 
 public:
+	/// This function is called each time this storage is initialized.
+	/// It's possible to provide configuration by passing a dictionary.
+	virtual void configure(const Dictionary &p_config) {}
+
 	virtual ~StorageBase() {}
 	virtual String get_type_name() const { return "Overload this function `get_type_name()` please."; }
 

@@ -521,6 +521,7 @@ uint32_t ECS::register_script_component(const StringName &p_name, const LocalVec
 	components_info.push_back(
 			ComponentInfo{
 					nullptr,
+					nullptr,
 					info,
 					false,
 					false,
@@ -542,6 +543,10 @@ uint32_t ECS::register_script_component_event(const StringName &p_name, const Lo
 	return cid;
 }
 
+uint32_t ECS::get_components_count() {
+	return components.size();
+}
+
 bool ECS::verify_component_id(uint32_t p_component_id) {
 	return components.size() > p_component_id;
 }
@@ -557,5 +562,12 @@ StorageBase *ECS::create_storage(uint32_t p_component_id) {
 	} else {
 		// This is a native component.
 		return components_info[p_component_id].create_storage();
+	}
+}
+
+void ECS::get_storage_config(godex::component_id p_component_id, Dictionary &r_config) {
+	ERR_FAIL_COND_MSG(ECS::verify_component_id(p_component_id) == false, "This component doesn't exists: " + itos(p_component_id));
+	if (components_info[p_component_id].get_storage_config != nullptr) {
+		components_info[p_component_id].get_storage_config(r_config);
 	}
 }

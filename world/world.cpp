@@ -166,6 +166,20 @@ void World::create_storage(uint32_t p_component_id) {
 		Hierarchy *hierarchy = static_cast<Hierarchy *>(get_storage<Child>());
 		hierarchy->add_sub_storage(hs);
 	}
+
+	// Search the config for this storage.
+	Dictionary config = storages_config.get(
+			ECS::get_component_name(p_component_id),
+			storages_config.get(
+					String(ECS::get_component_name(p_component_id)),
+					Dictionary()));
+
+	if (config.size() == 0) {
+		// At this point the config is undefined, so take the default.
+		ECS::get_storage_config(p_component_id, config);
+	}
+
+	storages[p_component_id]->configure(config);
 }
 
 void World::destroy_storage(uint32_t p_component_id) {

@@ -19,7 +19,10 @@ struct SharedSteadyComponentTest {
 };
 
 TEST_CASE("[SharedSteadyStorage] Check memory share.") {
-	SharedSteadyStorage<SharedSteadyComponentTest> storage(5);
+	SharedSteadyStorage<SharedSteadyComponentTest> storage;
+	Dictionary config;
+	config["page_size"] = 5;
+	storage.configure(config);
 
 	const godex::SID shared_component_id_1 = storage.create_shared_component(
 			SharedSteadyComponentTest(10));
@@ -111,7 +114,10 @@ TEST_CASE("[SharedSteadyStorage] Check memory share.") {
 }
 
 TEST_CASE("[SharedSteadyStorage] Check memory steadness.") {
-	SharedSteadyStorage<SharedSteadyComponentTest> storage(5);
+	SharedSteadyStorage<SharedSteadyComponentTest> storage;
+	Dictionary config;
+	config["page_size"] = 5;
+	storage.configure(config);
 
 	const godex::SID shared_component_id_1 = storage.create_shared_component(
 			SharedSteadyComponentTest(10));

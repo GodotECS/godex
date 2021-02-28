@@ -22,11 +22,11 @@ class SteadyStorage : public Storage<T> {
 	DenseVector<T *> storage;
 
 public:
-	SteadyStorage(uint32_t p_page_size) :
-			allocator(p_page_size) {
+	virtual void configure(const Dictionary &p_config) override {
+		clear();
+		allocator.configure(p_config.get("page_size", 200));
 	}
 
-public:
 	virtual String get_type_name() const override {
 		return "SteadyStorage[" + String(typeid(T).name()) + "]";
 	}

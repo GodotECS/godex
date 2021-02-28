@@ -22,6 +22,11 @@ class Hierarchy : public Storage<Child> {
 	LocalVector<HierarchicalStorageBase *> sub_storages;
 
 public:
+	void configure(const Dictionary &p_config) {
+		storage.reset();
+		storage.configure(p_config.get("pre_allocate", 500));
+	}
+
 	void add_sub_storage(HierarchicalStorageBase *p_storage) {
 		CRASH_COND_MSG(p_storage->hierarchy != nullptr, "This hierarchy storage is already added to another `Hierarchy`.");
 		sub_storages.push_back(p_storage);
@@ -278,6 +283,11 @@ class HierarchicalStorage : public Storage<T>, public HierarchicalStorageBase {
 	EntityList relationshitp_dirty_list;
 
 public:
+	void configure(const Dictionary &p_config) {
+		internal_storage.reset();
+		internal_storage.configure(p_config.get("pre_allocate", 500));
+	}
+
 	virtual String get_type_name() const override {
 		return "HierarchicalStorage[" + String(typeid(T).name()) + "]";
 	}

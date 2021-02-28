@@ -20,7 +20,10 @@ struct SteadyComponentTest {
 
 TEST_CASE("[SteadyStorage] Insert and iteration check.") {
 	// Create a storage with pages of 5 elements.
-	SteadyStorage<SteadyComponentTest> storage(5);
+	SteadyStorage<SteadyComponentTest> storage;
+	Dictionary config;
+	config["page_size"] = 5;
+	storage.configure(config);
 
 	const uint32_t count = 100;
 	bool entities[count];
@@ -45,7 +48,10 @@ TEST_CASE("[SteadyStorage] Insert and iteration check.") {
 }
 
 TEST_CASE("[SteadyStorage] Push and remove memory check.") {
-	SteadyStorage<SteadyComponentTest> storage(5);
+	SteadyStorage<SteadyComponentTest> storage;
+	Dictionary config;
+	config["page_size"] = 5;
+	storage.configure(config);
 
 	const uint32_t count = 100;
 	SteadyComponentTest *pointers[count];

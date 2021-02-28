@@ -130,6 +130,9 @@ public:
 	void set_active_pipeline(StringName p_name);
 	StringName get_active_pipeline() const;
 
+	void set_storages_config(Dictionary p_config);
+	Dictionary get_storages_config() const;
+
 	// ~~ Runtime API ~~
 private:
 	DataAccessor component_accessor;

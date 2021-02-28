@@ -143,8 +143,12 @@ void WorldECS::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_active_pipeline", "name"), &WorldECS::set_active_pipeline);
 	ClassDB::bind_method(D_METHOD("get_active_pipeline"), &WorldECS::get_active_pipeline);
 
-	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "system_dispatchers_map"), "set_system_dispatchers_map", "get_system_dispatchers_map");
+	ClassDB::bind_method(D_METHOD("set_storages_config", "config"), &WorldECS::set_storages_config);
+	ClassDB::bind_method(D_METHOD("get_storages_config"), &WorldECS::get_storages_config);
+
 	ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "active_pipeline"), "set_active_pipeline", "get_active_pipeline");
+	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "system_dispatchers_map", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_system_dispatchers_map", "get_system_dispatchers_map");
+	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "storages_config", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_storages_config", "get_storages_config");
 
 	// ~~ Runtime API ~~
 
@@ -172,45 +176,104 @@ void WorldECS::_bind_methods() {
 
 bool WorldECS::_set(const StringName &p_name, const Variant &p_value) {
 	Vector<String> split = String(p_name).split("/");
-	ERR_FAIL_COND_V_MSG(split.size() != 2, false, "This variable name is not recognized: " + p_name);
+	ERR_FAIL_COND_V_MSG(split.size() < 1, false, "This variable name is not recognized: " + p_name);
 
-	const int index = find_pipeline_index(split[1]);
+	if (split[0] == "storages_config") {
+		ERR_FAIL_COND_V_MSG(split.size() < 3, false, "This variable name is not recognized: " + p_name);
 
-	Ref<PipelineECS> pip = p_value;
-	if (pip.is_null()) {
-		// Nothing to do.
-		return false;
+		const StringName component_name = split[1];
+		const String property_name = split[2];
+
+		ERR_FAIL_COND_V_MSG(ECS::verify_component_id(ECS::get_component_id(component_name)) == false, false, "This component " + component_name + " doesn't exist.");
+
+		if (world->storages_config.has(component_name) == false) {
+			world->storages_config[component_name] = Dictionary();
+		}
+		world->storages_config.getptr(component_name)->operator Dictionary()[property_name] = p_value;
+		return true;
+
+	} else if (split[0] == "pipelines") {
+		ERR_FAIL_COND_V_MSG(split.size() < 2, false, "This variable name is not recognized: " + p_name);
+
+		const int index = find_pipeline_index(split[1]);
+
+		Ref<PipelineECS> pip = p_value;
+		if (pip.is_null()) {
+			// Nothing to do.
+			return false;
+		}
+
+		// Make sure the property name is the same.
+		ERR_FAIL_COND_V(pip->get_pipeline_name() != split[1], false);
+
+		if (index == -1) {
+			pipelines.push_back(p_value);
+		} else {
+			pipelines.write[index] = p_value;
+		}
+
+		return true;
 	}
-
-	// Make sure the property name is the same.
-	ERR_FAIL_COND_V(pip->get_pipeline_name() != split[1], false);
-
-	if (index == -1) {
-		pipelines.push_back(p_value);
-	} else {
-		pipelines.write[index] = p_value;
-	}
-
-	return true;
+	return false;
 }
 
 bool WorldECS::_get(const StringName &p_name, Variant &r_ret) const {
 	Vector<String> split = String(p_name).split("/");
-	ERR_FAIL_COND_V_MSG(split.size() != 2, false, "This variable name is not recognized: " + p_name);
+	ERR_FAIL_COND_V_MSG(split.size() < 1, false, "This variable name is not recognized: " + p_name);
 
-	const int index = find_pipeline_index(split[1]);
+	if (split[0] == "storages_config") {
+		ERR_FAIL_COND_V_MSG(split.size() < 3, false, "This variable name is not recognized: " + p_name);
 
-	if (index == -1) {
+		const StringName component_name = split[1];
+		const String property_name = split[2];
+
+		ERR_FAIL_COND_V_MSG(ECS::verify_component_id(ECS::get_component_id(component_name)) == false, false, "This component " + component_name + " doesn't exist.");
+
+		if (world->storages_config.get(component_name, Dictionary()).operator Dictionary().has(property_name)) {
+			r_ret = world->storages_config[component_name].operator Dictionary()[property_name];
+			return true;
+		}
+
+		Dictionary storage_config;
+		ECS::get_storage_config(ECS::get_component_id(component_name), storage_config);
+		if (storage_config.has(property_name)) {
+			r_ret = storage_config[property_name];
+			return true;
+		}
+
 		return false;
-	} else {
-		r_ret = pipelines[index];
-		return true;
+
+	} else if (split[0] == "pipelines") {
+		ERR_FAIL_COND_V_MSG(split.size() < 2, false, "This variable name is not recognized: " + p_name);
+		const int index = find_pipeline_index(split[1]);
+
+		if (index == -1) {
+			return false;
+		} else {
+			r_ret = pipelines[index];
+			return true;
+		}
 	}
+
+	return false;
 }
 
 void WorldECS::_get_property_list(List<PropertyInfo> *p_list) const {
+	// Get storage settings for C++ components.
+	for (godex::component_id i = 0; i < ECS::get_components_count(); i += 1) {
+		const StringName name = ECS::get_component_name(i);
+
+		Dictionary storage_config;
+		ECS::get_storage_config(i, storage_config);
+		for (int key_index = 0; key_index < storage_config.size(); key_index += 1) {
+			const String prop_name = storage_config.get_key_at_index(key_index);
+			const Variant def = storage_config.get_value_at_index(key_index);
+			p_list->push_back(PropertyInfo(def.get_type(), "storages_config/" + name + "/" + prop_name));
+		}
+	}
+
 	for (int i = 0; i < pipelines.size(); i += 1) {
-		p_list->push_back(PropertyInfo(Variant::OBJECT, "pipelines/" + pipelines[i]->get_pipeline_name(), PROPERTY_HINT_RESOURCE_TYPE, "PipelineECS"));
+		p_list->push_back(PropertyInfo(Variant::OBJECT, "pipelines/" + pipelines[i]->get_pipeline_name(), PROPERTY_HINT_RESOURCE_TYPE, "PipelineECS", PROPERTY_USAGE_STORAGE));
 	}
 }
 
@@ -347,6 +410,14 @@ void WorldECS::set_active_pipeline(StringName p_name) {
 
 StringName WorldECS::get_active_pipeline() const {
 	return active_pipeline;
+}
+
+void WorldECS::set_storages_config(Dictionary p_config) {
+	world->storages_config = p_config;
+}
+
+Dictionary WorldECS::get_storages_config() const {
+	return world->storages_config;
 }
 
 void WorldECS::active_world() {
