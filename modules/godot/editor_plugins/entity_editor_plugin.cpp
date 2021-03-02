@@ -462,7 +462,7 @@ void EntityEditor::create_component_inspector(StringName p_component_name, VBoxC
 			} break;
 			case Variant::NODE_PATH: {
 				EditorPropertyNodePath *editor = memnew(EditorPropertyNodePath);
-				const int usage = 0; // TODO how to integrate this? check /godot/editor/editor_properties.cpp::parse_property
+				const int usage = 0; // TODO how to integrate this? check /modules/godot/editor/editor_properties.cpp::parse_property
 				if (e->get().hint == PROPERTY_HINT_NODE_PATH_TO_EDITED_NODE && e->get().hint_string != String()) {
 					editor->setup(e->get().hint_string, Vector<StringName>(), (usage & PROPERTY_USAGE_NODE_PATH_FROM_SCENE_ROOT));
 				}

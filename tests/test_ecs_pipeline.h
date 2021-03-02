@@ -4,7 +4,7 @@
 #include "tests/test_macros.h"
 
 #include "../ecs.h"
-#include "../godot/components/transform_component.h"
+#include "../modules/godot/components/transform_component.h"
 #include "../pipeline/pipeline.h"
 #include "../systems/dynamic_system.h"
 

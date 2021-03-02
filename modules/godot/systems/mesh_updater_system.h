@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../iterators/query.h"
+#include "../../../iterators/query.h"
 #include "../components/mesh_component.h"
 #include "../components/transform_component.h"
 

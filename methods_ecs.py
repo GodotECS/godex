@@ -147,3 +147,26 @@ def generate_temporary_system_exe_funcs():
     path = "./systems/temporary_system_exe_funcs.gen.h"
 
     internal_generate_system_exe_funcs(True, max_parameters, path)
+
+
+def generate_modules_register_file(modules):
+    """Generates .h file that contains all the function call to register and
+    unregister the modules."""
+
+    file_path = "./ecs_modules_register.gen.cpp"
+
+    f = open(file_path, "w")
+    f.write("/* THIS FILE IS GENERATED DO NOT EDIT */\n")
+
+    for name, path in modules.items():
+        f.write('#include "' + path + '/register_types.h"\n')
+
+    f.write("void ecs_register_modules() {\n")
+    for name, path in modules.items():
+        f.write("	ecs_register_" + name + "_types();\n")
+    f.write("}\n")
+
+    f.write("void ecs_unregister_modules() {\n")
+    for name, path in modules.items():
+        f.write("	ecs_unregister_" + name + "_types();\n")
+    f.write("}\n")

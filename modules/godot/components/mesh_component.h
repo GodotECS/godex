@@ -3,7 +3,7 @@
 #ifndef MESH_COMPONENT_H
 #define MESH_COMPONENT_H
 
-#include "../../components/component.h"
+#include "../../../components/component.h"
 #include "scene/resources/mesh.h"
 
 struct MeshComponent {

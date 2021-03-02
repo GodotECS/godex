@@ -3,9 +3,9 @@
 
 #include "ecs_world.h"
 
-#include "../../ecs.h"
-#include "../../pipeline/pipeline.h"
-#include "../../world/world.h"
+#include "../../../ecs.h"
+#include "../../../pipeline/pipeline.h"
+#include "../../../world/world.h"
 #include "ecs_utilities.h"
 #include "entity.h"
 

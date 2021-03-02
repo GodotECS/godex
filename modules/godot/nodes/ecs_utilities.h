@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../ecs.h"
+#include "../../../ecs.h"
 #include "core/io/resource.h" // TODO remove this or the one on the cpp?
 #include "core/templates/local_vector.h"
 #include "core/templates/oa_hash_map.h"

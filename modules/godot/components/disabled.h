@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../components/component.h"
+#include "../../../components/component.h"
 
 // Tag component to mark `Disabled` things.
 struct Disabled {

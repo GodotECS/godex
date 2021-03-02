@@ -4,9 +4,9 @@
 #include "tests/test_macros.h"
 
 #include "../ecs.h"
-#include "../godot/components/transform_component.h"
-#include "../godot/nodes/ecs_world.h"
-#include "../godot/nodes/entity.h"
+#include "../modules/godot/components/transform_component.h"
+#include "../modules/godot/nodes/ecs_world.h"
+#include "../modules/godot/nodes/entity.h"
 #include "../world/world.h"
 
 struct Test1Databag : public godex::Databag {

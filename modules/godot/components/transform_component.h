@@ -1,9 +1,7 @@
 #pragma once
 
-/* Author: AndreaCatania */
-
-#include "../../components/component.h"
-#include "../../storage/hierarchical_storage.h"
+#include "../../../components/component.h"
+#include "../../../storage/hierarchical_storage.h"
 
 class TransformComponent {
 	COMPONENT(TransformComponent, HierarchicalStorage)

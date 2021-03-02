@@ -1,14 +1,10 @@
 
-/**
-	@author AndreaCatania
-*/
-
 #include "main/main.h"
 
 #include "core/object/message_queue.h"
 #include "ecs.h"
-#include "godot/databags/godot_engine_databags.h"
 #include "main/main_timer_sync.h"
+#include "modules/godot/databags/godot_engine_databags.h"
 #include "world/world.h"
 
 bool Main::custom_iteration(float p_process_delta, float p_physics_delta, MainFrameTime *p_frame_time, float p_time_scale) {
