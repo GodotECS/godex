@@ -5,8 +5,8 @@
 
 #include "../components/dynamic_component.h"
 #include "../ecs.h"
-#include "../godot/components/transform_component.h"
 #include "../iterators/dynamic_query.h"
+#include "../modules/godot/components/transform_component.h"
 #include "../storage/batch_storage.h"
 #include "../world/world.h"
 

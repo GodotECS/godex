@@ -2,8 +2,8 @@
 
 /* Author: AndreaCatania */
 
-#include "../../components/component.h"
-#include "../../ecs_types.h"
+#include "../../../components/component.h"
+#include "../../../ecs_types.h"
 #include "scene/main/node.h"
 
 class Pipeline;

@@ -4,7 +4,7 @@
 #include "tests/test_macros.h"
 
 #include "../components/child.h"
-#include "../godot/components/transform_component.h"
+#include "../modules/godot/components/transform_component.h"
 #include "../storage/hierarchical_storage.h"
 
 namespace godex_storage_hierarchical_tests {

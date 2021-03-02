@@ -1,7 +1,7 @@
 #include "physics_process_system.h"
 
-#include "../../pipeline/pipeline.h"
-#include "../../storage/hierarchical_storage.h"
+#include "../../../pipeline/pipeline.h"
+#include "../../../storage/hierarchical_storage.h"
 #include "../databags/godot_engine_databags.h"
 #include "core/config/engine.h"
 #include "core/object/message_queue.h"

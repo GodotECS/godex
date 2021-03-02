@@ -3,7 +3,7 @@
 
 #include "components/dynamic_component.h"
 #include "core/object/message_queue.h"
-#include "godot/nodes/ecs_world.h"
+#include "modules/godot/nodes/ecs_world.h"
 #include "pipeline/pipeline.h"
 #include "scene/main/scene_tree.h"
 #include "scene/main/window.h"

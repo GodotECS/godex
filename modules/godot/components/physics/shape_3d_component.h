@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../../../godex/components/component.h"
+#include "../../../../components/component.h"
 #include "scene/resources/shape_3d.h"
 
 struct Shape3DComponent {

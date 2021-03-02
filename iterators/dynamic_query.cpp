@@ -1,7 +1,7 @@
 #include "dynamic_query.h"
 
 #include "../ecs.h"
-#include "../godot/nodes/ecs_world.h"
+#include "../modules/godot/nodes/ecs_world.h"
 
 using godex::DynamicQuery;
 
