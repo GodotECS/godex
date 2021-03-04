@@ -1,5 +1,5 @@
 
-#include "components.h"
+#include "components_rigid_body.h"
 
 #include <btBulletCollisionCommon.h>
 
@@ -9,6 +9,7 @@ void BtSpaceMarker::_bind_methods() {
 
 void BtRigidBody::_bind_methods() {
 	ECS_BIND_PROPERTY_FUNC(BtRigidBody, PropertyInfo(Variant::INT, "body_mode", PROPERTY_HINT_ENUM, "Dynamic,Character,Kinematic,Static"), script_set_body_mode, get_body_mode);
+	ECS_BIND_PROPERTY_FUNC(BtRigidBody, PropertyInfo(Variant::FLOAT, "mass", PROPERTY_HINT_RANGE, "0,1000,0.01,1"), set_mass, get_mass);
 }
 
 void BtRigidBody::_get_storage_config(Dictionary &r_config) {

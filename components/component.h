@@ -26,11 +26,10 @@ public:                                                         \
 	}                                                           \
                                                                 \
 public:                                                         \
-	m_class() = default;                                        \
 	m_class(const m_class &) = default;
 
-/// Register a component.
-#define COMPONENT(m_class, m_storage_class)                            \
+/// Register a component and allow to use a custom constructor.
+#define COMPONENT_CUSTOM_CONSTRUCTOR(m_class, m_storage_class)         \
 	ECSCLASS(m_class)                                                  \
 	friend class World;                                                \
 	friend class Component;                                            \
@@ -46,6 +45,11 @@ private:                                                               \
 	}                                                                  \
 	COMPONENT_INTERNAL(m_class)
 
+/// Register a component.
+#define COMPONENT(m_class, m_storage_class)                \
+	COMPONENT_CUSTOM_CONSTRUCTOR(m_class, m_storage_class) \
+	m_class() = default;
+
 /// Register a component using custom create storage function. The function is
 /// specified on `ECS::register_component<Component>([]() -> StorageBase * { /* Create the storage and return it. */ });`.
 #define COMPONENT_CUSTOM_STORAGE(m_class) \
@@ -54,7 +58,8 @@ private:                                                               \
 	friend class Component;               \
                                           \
 private:                                  \
-	COMPONENT_INTERNAL(m_class)
+	COMPONENT_INTERNAL(m_class)           \
+	m_class() = default;
 
 /// Register a component that can store batched data.
 #define COMPONENT_BATCH(m_class, m_storage_class, m_batch)                                    \
@@ -72,7 +77,8 @@ private:                                                                        
 		/* Creates a storage but returns a generic component. */                              \
 		return create_storage();                                                              \
 	}                                                                                         \
-	COMPONENT_INTERNAL(m_class)
+	COMPONENT_INTERNAL(m_class)                                                               \
+	m_class() = default;
 
 template <class T>
 T *unwrap_component(Object *p_access_databag) {
