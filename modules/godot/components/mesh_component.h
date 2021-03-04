@@ -2,6 +2,7 @@
 #define MESH_COMPONENT_H
 
 #include "../../../components/component.h"
+#include "../../../storage/dense_vector_storage.h"
 #include "scene/resources/mesh.h"
 
 struct MeshComponent {
