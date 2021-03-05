@@ -816,15 +816,14 @@ TEST_CASE("[Modules][ECS] Test query with event.") {
 
 	// Try the first query with dynamic sized batch storage.
 	{
-		Query<const EntityID, TransformComponent, TestEvent> query(&world);
+		Query<EntityID, TransformComponent, BatchN<TestEvent>> query(&world);
 
 		{
 			CHECK(query.has(entity_1));
 			auto [entity, transform, event] = query[entity_1];
 
-			CHECK(entity_1 == *entity);
+			CHECK(entity_1 == entity);
 
-			CHECK(transform.get_size() == 1);
 			CHECK(transform != nullptr);
 
 			CHECK(event.get_size() == 2);
@@ -838,9 +837,8 @@ TEST_CASE("[Modules][ECS] Test query with event.") {
 			CHECK(query.has(entity_3));
 			auto [entity, transform, event] = query[entity_3];
 
-			CHECK(entity_3 == *entity);
+			CHECK(entity_3 == entity);
 
-			CHECK(transform.get_size() == 1);
 			CHECK(transform != nullptr);
 
 			CHECK(event.get_size() == 1);
@@ -850,15 +848,14 @@ TEST_CASE("[Modules][ECS] Test query with event.") {
 
 	// Try the second query with fixed sized batch storage.
 	{
-		Query<const EntityID, TransformComponent, TestFixedSizeEvent> query(&world);
+		Query<EntityID, TransformComponent, BatchN<TestFixedSizeEvent>> query(&world);
 
 		{
 			CHECK(query.has(entity_2));
 			auto [entity, transform, event] = query[entity_2];
 
-			CHECK(entity_2 == *entity);
+			CHECK(entity_2 == entity);
 
-			CHECK(transform.get_size() == 1);
 			CHECK(transform != nullptr);
 
 			CHECK(event.get_size() == 2);
@@ -885,12 +882,12 @@ TEST_CASE("[Modules][ECS] Test query random Entity access.") {
 								.with(TransformComponent())
 								.with(TestEvent());
 
-	Query<const EntityID, TransformComponent, TestEvent> query(&world);
+	Query<EntityID, TransformComponent, TestEvent> query(&world);
 
 	{
 		CHECK(query.has(entity_1));
 		auto [entity, transform, event] = query[entity_1];
-		CHECK(entity_1 == *entity);
+		CHECK(entity_1 == entity);
 		CHECK(event->number == 50);
 	}
 
@@ -899,7 +896,7 @@ TEST_CASE("[Modules][ECS] Test query random Entity access.") {
 	{
 		CHECK(query.has(entity_3));
 		auto [entity, transform, event] = query[entity_3];
-		CHECK(entity_3 == *entity);
+		CHECK(entity_3 == entity);
 		CHECK(event->number == 0);
 	}
 }
@@ -940,7 +937,7 @@ TEST_CASE("[Modules][ECS] Test static query count.") {
 	}
 }
 
-TEST_CASE("[Modules][ECS] Test static query ## filter.") {
+TEST_CASE("[Modules][ECS] Test static query PickValid filter.") {
 	ECS::register_component<TagA>();
 	ECS::register_component<TagB>();
 	ECS::register_component<TagC>();
@@ -968,22 +965,22 @@ TEST_CASE("[Modules][ECS] Test static query ## filter.") {
 			.with(TagC())
 			.with(TransformComponent());
 
-	Query<TransformComponent, const PickValid<TagA, TagB, TagC>> query(&world);
+	//Query<TransformComponent, const PickValid<TagA, TagB, TagC>> query(&world);
 
-	//query.
-	PickValid<TagA, TagB, TagC> x;
-	if (x.is<TagA>()) {
-		TagA *a = x.get<TagA>();
-		print_line(itos((long)a));
+	////query.
+	//PickValid<TagA, TagB, TagC> x;
+	//if (x.is<TagA>()) {
+	//	TagA *a = x.get<TagA>();
+	//	print_line(itos((long)a));
 
-	} else if (x.is<TagB>()) {
-		TagB *b = x.get<TagB>();
-		print_line(itos((long)b));
+	//} else if (x.is<TagB>()) {
+	//	TagB *b = x.get<TagB>();
+	//	print_line(itos((long)b));
 
-	} else if (x.is<TagC>()) {
-		TagC *c = x.get<TagC>();
-		print_line(itos((long)c));
-	}
+	//} else if (x.is<TagC>()) {
+	//	TagC *c = x.get<TagC>();
+	//	print_line(itos((long)c));
+	//}
 }
 } // namespace godex_tests
 
