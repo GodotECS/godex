@@ -15,6 +15,18 @@ struct TagQueryTestComponent {
 	static void _bind_methods() {}
 };
 
+struct TagA {
+	COMPONENT(TagA, DenseVectorStorage)
+};
+
+struct TagB {
+	COMPONENT(TagB, DenseVectorStorage)
+};
+
+struct TagC {
+	COMPONENT(TagC, DenseVectorStorage)
+};
+
 struct TestFixedSizeEvent {
 	COMPONENT_BATCH(TestFixedSizeEvent, DenseVector, 2)
 	static void _bind_methods() {}
@@ -925,6 +937,52 @@ TEST_CASE("[Modules][ECS] Test static query count.") {
 	{
 		Query<const TransformComponent> query(&world);
 		CHECK(query.count() == 3);
+	}
+}
+
+TEST_CASE("[Modules][ECS] Test static query ## filter.") {
+	ECS::register_component<TagA>();
+	ECS::register_component<TagB>();
+	ECS::register_component<TagC>();
+
+	World world;
+
+	world
+			.create_entity()
+			.with(TagA())
+			.with(TagB())
+			.with(TagC())
+			.with(TransformComponent());
+
+	world
+			.create_entity()
+			.with(TransformComponent());
+
+	world
+			.create_entity()
+			.with(TagB())
+			.with(TransformComponent());
+
+	world
+			.create_entity()
+			.with(TagC())
+			.with(TransformComponent());
+
+	Query<TransformComponent, const PickValid<TagA, TagB, TagC>> query(&world);
+
+	//query.
+	PickValid<TagA, TagB, TagC> x;
+	if (x.is<TagA>()) {
+		TagA *a = x.get<TagA>();
+		print_line(itos((long)a));
+
+	} else if (x.is<TagB>()) {
+		TagB *b = x.get<TagB>();
+		print_line(itos((long)b));
+
+	} else if (x.is<TagC>()) {
+		TagC *c = x.get<TagC>();
+		print_line(itos((long)c));
 	}
 }
 } // namespace godex_tests

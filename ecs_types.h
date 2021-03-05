@@ -173,6 +173,10 @@ typedef uint32_t databag_id;
 typedef uint32_t system_id;
 /// Shared Component ID, used to identify a component.
 typedef uint32_t SID;
+
+const component_id COMPONENT_NONE = UINT32_MAX;
+const databag_id DATABAG_NONE = UINT32_MAX;
+const system_id SYSTEM_NONE = UINT32_MAX;
 } // namespace godex
 
 // ~~ PROPERTY MAPPER ~~

@@ -7,20 +7,6 @@
 #include "../world/world.h"
 #include <tuple>
 
-// ~~ Utility to remove the filter from the query. ~~
-template <typename T>
-struct remove_filter {
-	typedef T type;
-};
-
-template <template <typename> class X, typename T>
-struct remove_filter<X<T>> {
-	typedef T type;
-};
-
-template <typename T>
-using remove_filter_t = typename remove_filter<T>::type;
-
 // ~~ Query filters. ~~
 template <class C>
 struct Without {};
@@ -30,6 +16,67 @@ struct Maybe {};
 
 template <class C>
 struct Changed {};
+
+/// Return a pointer that can be of a specific type.
+template <class... Cs>
+struct PickValid {
+private:
+	void *ptr;
+	godex::component_id id;
+
+public:
+	PickValid(void *p_ptr, godex::component_id p_id) :
+			ptr(p_ptr), id(p_id) {}
+
+	template <class T>
+	bool is() const {
+		return id == T::get_component_id();
+	}
+
+	template <class T>
+	T *get() {
+		return static_cast<T *>(ptr);
+	}
+
+	template <class T>
+	const T *get() const {
+		return static_cast<const T *>(ptr);
+	}
+};
+
+// ~~ Utility to remove the filter from the query. ~~
+template <typename T>
+struct remove_filter {
+	typedef T type;
+};
+
+template <typename T>
+struct remove_filter<Without<T>> {
+	typedef T type;
+};
+
+template <typename T>
+struct remove_filter<Maybe<T>> {
+	typedef T type;
+};
+
+template <typename T>
+struct remove_filter<Changed<T>> {
+	typedef T type;
+};
+
+template <typename T>
+struct remove_filter<PickValid<T>> {
+	typedef PickValid<T> type;
+};
+
+template <typename T>
+struct remove_filter<const PickValid<T>> {
+	typedef const PickValid<T> type;
+};
+
+template <typename T>
+using remove_filter_t = typename remove_filter<T>::type;
 
 // ~~ Query storage, is used to fetch a single data. ~~
 
@@ -290,6 +337,80 @@ public:
 	static void get_components(SystemExeInfo &r_info) {
 		r_info.immutable_components.insert(C::get_component_id());
 		r_info.need_changed.insert(C::get_component_id());
+		QueryStorage<Cs...>::get_components(r_info);
+	}
+};
+
+template <class... Cs>
+struct PickValidStorage {
+	PickValidStorage(World *p_world) {}
+
+	EntitiesBuffer get_entities() const { return EntitiesBuffer(0, nullptr); }
+	bool has_data(EntityID p_entity) const { return false; }
+	std::tuple<PickValid<remove_filter_t<Cs>>...> get(EntityID p_id, Space p_mode) const { return PickValid(nullptr, godex::COMPONENT_NONE); }
+};
+
+template <class C, class... Cs>
+struct PickValidStorage<const C, Cs...> : PickValidStorage<Cs...> {
+	QueryStorage<C> storage;
+
+	PickValidStorage(World *p_world) :
+			PickValidStorage<Cs...>(p_world),
+			storage(p_world) {
+	}
+
+	EntitiesBuffer get_entities() const {
+		const EntitiesBuffer o_entities = PickValidStorage<Cs...>::get_entities();
+		const EntitiesBuffer entities = storage.get_entities();
+		return entities.count < o_entities.count ? entities : o_entities;
+	}
+
+	bool has_data(EntityID p_entity) const {
+		if (storage != nullptr && storage.has_data(p_entity)) {
+			// Found in storage.
+			return true;
+		} else {
+			// Not in storage, try the next one.
+			return PickValidStorage<Cs...>::has_data(p_entity);
+		}
+	}
+
+	std::tuple<Batch<C>, Batch<remove_filter_t<Cs>>...> get(EntityID p_id, Space p_mode) const {
+		if (has_data(p_id)) {
+			return PickValid(storage.get(p_id, p_mode), C::get_component_id());
+		} else {
+			return PickValidStorage<Cs...>::get(p_id, p_mode);
+		}
+	}
+};
+
+/// `QueryStorage` `PickValid` immutable filter specialization.
+template <class... C, class... Cs>
+class QueryStorage<const PickValid<C...>, Cs...> : QueryStorage<Cs...> {
+	PickValidStorage<const C...> sub_storages;
+
+public:
+	QueryStorage(World *p_world) :
+			QueryStorage<Cs...>(p_world),
+			sub_storages(p_world) {
+	}
+
+	EntitiesBuffer get_entities() const {
+		return sub_storages.get_entities();
+	}
+
+	bool has_data(EntityID p_entity) const {
+		return sub_storages.has_data(p_entity);
+	}
+
+	std::tuple<Batch<const PickValid<C...>>, Batch<remove_filter_t<Cs>>...> get(EntityID p_id, Space p_mode) const {
+		return sub_storages.get(p_id, p_mode);
+	}
+
+	static void get_components(SystemExeInfo &r_info) {
+		// Take the components storages used, taking advantage of the
+		// get_components function.
+		QueryStorage<const C...>::get_components(r_info);
 		QueryStorage<Cs...>::get_components(r_info);
 	}
 };
