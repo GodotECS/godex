@@ -8,6 +8,9 @@
 struct BtRigidShape {
 private:
 	btCollisionShape *shape = nullptr;
+	/// List of bodies where this shape is assigned.
+	/// TODO Do I really need this, can I take this infor from the storage instead??
+	LocalVector<EntityID> bodies;
 
 public:
 	BtRigidShape(btCollisionShape *p_shape) :
@@ -15,6 +18,10 @@ public:
 
 	btCollisionShape *get_shape() { return shape; }
 	const btCollisionShape *get_shape() const { return shape; }
+
+	void add_body(EntityID p_entity) {
+		bodies.push_back(p_entity);
+	}
 };
 
 struct BtShapeBox : public BtRigidShape {

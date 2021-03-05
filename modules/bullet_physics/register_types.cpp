@@ -8,7 +8,7 @@
 void ecs_register_bullet_physics_types() {
 	ECS::register_databag<BtSpaces>();
 
-	ECS::register_component<BtSpaceMarker>();
+	ECS::register_component<BtWorldMarker>();
 	ECS::register_component<BtRigidBody>();
 	ECS::register_component<BtShapeBox>();
 }

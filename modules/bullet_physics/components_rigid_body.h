@@ -4,6 +4,7 @@
 #include "../../storage/dense_vector_storage.h"
 #include "../../storage/shared_steady_storage.h"
 #include "../../storage/steady_storage.h"
+#include "bt_def_type.h"
 #include <BulletDynamics/Dynamics/btRigidBody.h>
 #include <LinearMath/btMotionState.h>
 
@@ -15,12 +16,12 @@ class btCollisionShape;
 /// space.
 ///
 /// Note, you have at max 4 spaces, and it's unlikely that you need more than 1.
-struct BtSpaceMarker {
-	COMPONENT(BtSpaceMarker, DenseVectorStorage)
+struct BtWorldMarker {
+	COMPONENT(BtWorldMarker, DenseVectorStorage)
 
 	static void _bind_methods();
 
-	uint32_t space_id = 0;
+	uint32_t world_index = BT_WORLD_0;
 };
 
 /// This class is responsible to move a kinematic body and tell when a body
@@ -88,17 +89,29 @@ struct BtRigidBody {
 		RIGID_MODE_STATIC
 	};
 
+	enum ReloadFlags {
+		/// Reload the mass.
+		RELOAD_FLAGS_MASS,
+		/// Remove and insert the body into the world again.
+		RELOAD_FLAGS_BODY,
+	};
+
 	static void _bind_methods();
 	static void _get_storage_config(Dictionary &r_config);
+
+public:
+	/// NOTE: Never use this, it's for internal use only.
+	BtWorldIndex current_world = BT_WOLRD_NONE;
 
 private:
 	real_t mass = 1.0;
 	GodexMotionState motion_state;
 	btRigidBody body = btRigidBody(0.0, &motion_state, nullptr, btVector3(0.0, 0.0, 0.0));
 
-	/// This point to the assigned share. When this is not `nullptr` always
-	/// assume it exists. If the shape is destroyed, this is cleared.
-	btCollisionShape *main_shape = nullptr;
+	uint32_t layer = 1;
+	uint32_t mask = 1;
+
+	uint32_t reload_flags = 0;
 
 public:
 	void script_set_body_mode(uint32_t p_mode);
@@ -107,4 +120,19 @@ public:
 
 	void set_mass(real_t p_mass);
 	real_t get_mass() const;
+
+	bool need_mass_reload() const;
+	/// Reload the mass.
+	void reload_mass(const btCollisionShape *p_shape);
+
+	void set_layer(uint32_t p_layer);
+	uint32_t get_layer() const;
+
+	void set_mask(uint32_t p_mask);
+	uint32_t get_mask() const;
+
+	bool need_body_reload() const;
+	void reload_body();
+
+	void set_shape(btCollisionShape *p_shape);
 };

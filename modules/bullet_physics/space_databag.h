@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../databags/databag.h"
+#include "bt_def_type.h"
 
 class btBroadphaseInterface;
 class btDefaultCollisionConfiguration;
@@ -58,36 +59,27 @@ public:
 class BtSpaces : public godex::Databag {
 	DATABAG(BtSpaces)
 
-public:
-	enum SpaceID {
-		SPACE_0 = 0,
-		SPACE_1 = 1,
-		SPACE_2 = 2,
-		SPACE_3 = 3,
-		SPACE_MAX = 4,
-	};
-
 private:
-	BtSpace spaces[SPACE_MAX];
+	BtSpace spaces[BT_WOLRD_MAX];
 
 public:
 	BtSpaces();
 	~BtSpaces();
 
 	/// Returns `true` if the space is initialized.
-	bool is_space_initialized(SpaceID p_id) const;
+	bool is_space_initialized(BtWorldIndex p_id) const;
 
 	/// Initialize the space pointeed by this ID. If this space is already
 	/// initialize does nothing.
-	void init_space(SpaceID p_id, bool p_soft_world);
+	void init_space(BtWorldIndex p_id, bool p_soft_world);
 
 	/// Free the space pointed by this ID, or does nothing if the space is not
 	/// initialized.
-	void free_space(SpaceID p_id);
+	void free_space(BtWorldIndex p_id);
 
 	/// Returns the Space of this ID mutable.
-	BtSpace *get_space(SpaceID p_id);
+	BtSpace *get_space(BtWorldIndex p_id);
 
 	/// Returns the Space of this ID, not mutable.
-	const BtSpace *get_space(SpaceID p_space_id) const;
+	const BtSpace *get_space(BtWorldIndex p_space_id) const;
 };
