@@ -202,6 +202,9 @@ TEST_CASE("[Modules][ECS] Test query mutability.") {
 	AccessTracerStorage<TestAccessMutabilityComponent1> *storage1 = static_cast<AccessTracerStorage<TestAccessMutabilityComponent1> *>(world.get_storage<TestAccessMutabilityComponent1>());
 	AccessTracerStorage<TestAccessMutabilityComponent2> *storage2 = static_cast<AccessTracerStorage<TestAccessMutabilityComponent2> *>(world.get_storage<TestAccessMutabilityComponent2>());
 
+	storage1->set_tracing_change(true);
+	storage2->set_tracing_change(true);
+
 	// Just two insert.
 	CHECK(storage1->count_insert == 1);
 	CHECK(storage2->count_insert == 1);
@@ -226,6 +229,11 @@ TEST_CASE("[Modules][ECS] Test query mutability.") {
 
 	CHECK(storage1->count_get_mut == 2);
 
+	Query<Changed<TestAccessMutabilityComponent1>, TransformComponent> query_test_changed_mut(&world);
+	query_test_changed_mut.begin().operator*(); //Fetch the data.
+
+	CHECK(storage1->count_get_mut == 3);
+
 	// Test immutables
 
 	CHECK(storage1->count_get_immut == 0);
@@ -233,22 +241,28 @@ TEST_CASE("[Modules][ECS] Test query mutability.") {
 	Query<const TestAccessMutabilityComponent1> query_test_immut(&world);
 	query_test_immut.begin().operator*(); //Fetch the data.
 
-	CHECK(storage1->count_get_mut == 2);
+	CHECK(storage1->count_get_mut == 3);
 	CHECK(storage1->count_get_immut == 1);
 	CHECK(storage2->count_get_immut == 0);
 
 	Query<Without<const TestAccessMutabilityComponent1>, const TestAccessMutabilityComponent2> query_test_without_immut(&world);
 	query_test_without_immut.begin().operator*(); //Fetch the data.
 
-	CHECK(storage1->count_get_mut == 2);
+	CHECK(storage1->count_get_mut == 3);
 	CHECK(storage1->count_get_immut == 1);
 	CHECK(storage2->count_get_immut == 1);
 
 	Query<Maybe<const TestAccessMutabilityComponent1>, const TransformComponent> query_test_maybe_immut(&world);
 	query_test_maybe_immut.begin().operator*(); //Fetch the data.
 
-	CHECK(storage1->count_get_mut == 2);
+	CHECK(storage1->count_get_mut == 3);
 	CHECK(storage1->count_get_immut == 2);
+
+	Query<Changed<const TestAccessMutabilityComponent1>, TransformComponent> query_test_changed_immut(&world);
+	query_test_changed_immut.begin().operator*(); //Fetch the data.
+
+	CHECK(storage1->count_get_mut == 3);
+	CHECK(storage1->count_get_immut == 3);
 }
 
 TEST_CASE("[Modules][ECS] Test DynamicQuery fetch mutability.") {

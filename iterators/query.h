@@ -173,7 +173,7 @@ struct QueryStorage<EntityID, Cs...> : QueryStorage<Cs...> {
 	}
 };
 
-/// `QueryStorage` `Maybe` mutable filter specialization.
+/// `QueryStorage` `Maybe` filter specialization.
 template <class C, class... Cs>
 struct QueryStorage<Maybe<C>, Cs...> : QueryStorage<Cs...> {
 	Storage<C> *storage = nullptr;
@@ -195,9 +195,15 @@ struct QueryStorage<Maybe<C>, Cs...> : QueryStorage<Cs...> {
 
 	std::tuple<C *, remove_filter_t<Cs>...> get(EntityID p_id, Space p_mode) const {
 		if (likely(storage != nullptr) && storage->has(p_id)) {
-			return std::tuple_cat(
-					std::tuple<C *>(storage->get(p_id, p_mode)),
-					QueryStorage<Cs...>::get(p_id, p_mode));
+			if constexpr (std::is_const<C>::value) {
+				return std::tuple_cat(
+						std::tuple<C *>(const_cast<const Storage<C> *>(storage)->get(p_id, p_mode)),
+						QueryStorage<Cs...>::get(p_id, p_mode));
+			} else {
+				return std::tuple_cat(
+						std::tuple<C *>(storage->get(p_id, p_mode)),
+						QueryStorage<Cs...>::get(p_id, p_mode));
+			}
 		} else {
 			// Nothing to fetch, just set nullptr.
 			return std::tuple_cat(
@@ -207,46 +213,11 @@ struct QueryStorage<Maybe<C>, Cs...> : QueryStorage<Cs...> {
 	}
 
 	static void get_components(SystemExeInfo &r_info) {
-		r_info.mutable_components.insert(C::get_component_id());
-		QueryStorage<Cs...>::get_components(r_info);
-	}
-};
-
-/// `QueryStorage` `Maybe` immutable filter specialization.
-template <class C, class... Cs>
-struct QueryStorage<Maybe<const C>, Cs...> : QueryStorage<Cs...> {
-	const Storage<const C> *storage = nullptr;
-
-	QueryStorage(World *p_world) :
-			QueryStorage<Cs...>(p_world),
-			storage(std::as_const(p_world)->get_storage<const C>()) {
-	}
-
-	EntitiesBuffer get_entities() const {
-		// This is a NON determinant filter, so just return the other filter.
-		return QueryStorage<Cs...>::get_entities();
-	}
-
-	bool has_data(EntityID p_entity) const {
-		// The `Maybe` filter never stops the execution.
-		return QueryStorage<Cs...>::has_data(p_entity);
-	}
-
-	std::tuple<const C *, remove_filter_t<Cs>...> get(EntityID p_id, Space p_mode) const {
-		if (likely(storage != nullptr) && storage->has(p_id)) {
-			return std::tuple_cat(
-					std::tuple<const C *>(storage->get(p_id, p_mode)),
-					QueryStorage<Cs...>::get(p_id, p_mode));
+		if constexpr (std::is_const<C>::value) {
+			r_info.immutable_components.insert(C::get_component_id());
 		} else {
-			// Nothing to fetch, just set nullptr.
-			return std::tuple_cat(
-					std::tuple<const C *>(nullptr),
-					QueryStorage<Cs...>::get(p_id, p_mode));
+			r_info.mutable_components.insert(C::get_component_id());
 		}
-	}
-
-	static void get_components(SystemExeInfo &r_info) {
-		r_info.immutable_components.insert(C::get_component_id());
 		QueryStorage<Cs...>::get_components(r_info);
 	}
 };
@@ -287,7 +258,7 @@ struct QueryStorage<Without<C>, Cs...> : QueryStorage<Cs...> {
 	}
 };
 
-/// `QueryStorage` `Changed` mutable filter specialization.
+/// `QueryStorage` `Changed` filter specialization.
 template <class C, class... Cs>
 struct QueryStorage<Changed<C>, Cs...> : QueryStorage<Cs...> {
 	Storage<C> *storage = nullptr;
@@ -323,61 +294,23 @@ struct QueryStorage<Changed<C>, Cs...> : QueryStorage<Cs...> {
 		CRASH_COND_MSG(storage == nullptr, "The storage" + String(typeid(Storage<C>).name()) + " is null.");
 #endif
 
-		return std::tuple_cat(
-				std::tuple<C *>(storage->get(p_id, p_mode)),
-				QueryStorage<Cs...>::get(p_id, p_mode));
+		if constexpr (std::is_const<C>::value) {
+			return std::tuple_cat(
+					std::tuple<C *>(const_cast<const Storage<C> *>(storage)->get(p_id, p_mode)),
+					QueryStorage<Cs...>::get(p_id, p_mode));
+		} else {
+			return std::tuple_cat(
+					std::tuple<C *>(storage->get(p_id, p_mode)),
+					QueryStorage<Cs...>::get(p_id, p_mode));
+		}
 	}
 
 	static void get_components(SystemExeInfo &r_info) {
-		r_info.mutable_components.insert(C::get_component_id());
-		r_info.need_changed.insert(C::get_component_id());
-		QueryStorage<Cs...>::get_components(r_info);
-	}
-};
-
-/// `QueryStorage` `Changed` immutable filter specialization.
-template <class C, class... Cs>
-struct QueryStorage<Changed<const C>, Cs...> : QueryStorage<Cs...> {
-	const Storage<const C> *storage = nullptr;
-
-	QueryStorage(World *p_world) :
-			QueryStorage<Cs...>(p_world),
-			storage(std::as_const(p_world)->get_storage<const C>()) {
-	}
-
-	EntitiesBuffer get_entities() const {
-		// This is a determinant filter, that iterates over the changed
-		// components of this storage.
-		const EntitiesBuffer o_entities = QueryStorage<Cs...>::get_entities();
-		if (unlikely(storage == nullptr)) {
-			return o_entities;
+		if constexpr (std::is_const<C>::value) {
+			r_info.immutable_components.insert(C::get_component_id());
+		} else {
+			r_info.mutable_components.insert(C::get_component_id());
 		}
-		const EntitiesBuffer entities = storage->get_changed_entities();
-		return entities.count < o_entities.count ? entities : o_entities;
-	}
-
-	bool has_data(EntityID p_entity) const {
-		if (unlikely(storage == nullptr)) {
-			// This is a required field, since there is no storage this can end
-			// immediately.
-			return false;
-		}
-		return storage->is_changed(p_entity) && QueryStorage<Cs...>::has_data(p_entity);
-	}
-
-	std::tuple<const C *, remove_filter_t<Cs>...> get(EntityID p_id, Space p_mode) const {
-#ifdef DEBUG_ENABLED
-		// This can't happen because `is_done` returns true.
-		CRASH_COND_MSG(storage == nullptr, "The storage" + String(typeid(Storage<C>).name()) + " is null.");
-#endif
-
-		return std::tuple_cat(
-				std::tuple<const C *>(storage->get(p_id, p_mode)),
-				QueryStorage<Cs...>::get(p_id, p_mode));
-	}
-
-	static void get_components(SystemExeInfo &r_info) {
-		r_info.immutable_components.insert(C::get_component_id());
 		r_info.need_changed.insert(C::get_component_id());
 		QueryStorage<Cs...>::get_components(r_info);
 	}
@@ -456,6 +389,7 @@ struct PickValidStorage<const C, Cs...> : PickValidStorage<Cs...> {
 //	}
 //};
 
+/// `QueryStorage` `Batch` filter specialization.
 template <class C, class... Cs>
 struct QueryStorage<Batch<C>, Cs...> : QueryStorage<Cs...> {
 	QueryStorage<C> query_storage;
@@ -528,60 +462,23 @@ struct QueryStorage<C, Cs...> : QueryStorage<Cs...> {
 		CRASH_COND_MSG(storage == nullptr, "The storage" + String(typeid(Storage<C>).name()) + " is null.");
 #endif
 
-		return std::tuple_cat(
-				std::tuple<C *>(storage->get(p_id, p_mode)),
-				QueryStorage<Cs...>::get(p_id, p_mode));
+		if constexpr (std::is_const<C>::value) {
+			return std::tuple_cat(
+					std::tuple<C *>(const_cast<const Storage<C> *>(storage)->get(p_id, p_mode)),
+					QueryStorage<Cs...>::get(p_id, p_mode));
+		} else {
+			return std::tuple_cat(
+					std::tuple<C *>(storage->get(p_id, p_mode)),
+					QueryStorage<Cs...>::get(p_id, p_mode));
+		}
 	}
 
 	static void get_components(SystemExeInfo &r_info) {
-		r_info.mutable_components.insert(C::get_component_id());
-		QueryStorage<Cs...>::get_components(r_info);
-	}
-};
-
-/// `QueryStorage` const no filter specialization.
-template <class C, class... Cs>
-struct QueryStorage<const C, Cs...> : QueryStorage<Cs...> {
-	const Storage<const C> *storage = nullptr;
-
-	QueryStorage(World *p_world) :
-			QueryStorage<Cs...>(p_world),
-			storage(std::as_const(p_world)->get_storage<const C>()) {
-	}
-
-	EntitiesBuffer get_entities() const {
-		// This is a determinant filter, that iterates over the existing
-		// components of this storage.
-		const EntitiesBuffer o_entities = QueryStorage<Cs...>::get_entities();
-		if (unlikely(storage == nullptr)) {
-			return o_entities;
+		if constexpr (std::is_const<C>::value) {
+			r_info.immutable_components.insert(C::get_component_id());
+		} else {
+			r_info.mutable_components.insert(C::get_component_id());
 		}
-		const EntitiesBuffer entities = storage->get_stored_entities();
-		return entities.count < o_entities.count ? entities : o_entities;
-	}
-
-	bool has_data(EntityID p_entity) const {
-		if (unlikely(storage == nullptr)) {
-			// This is a required field, since there is no storage this can end
-			// immediately.
-			return false;
-		}
-		return storage->has(p_entity) && QueryStorage<Cs...>::has_data(p_entity);
-	}
-
-	std::tuple<const C *, remove_filter_t<Cs>...> get(EntityID p_id, Space p_mode) const {
-#ifdef DEBUG_ENABLED
-		// This can't happen because `is_done` returns true.
-		CRASH_COND_MSG(storage == nullptr, "The storage" + String(typeid(Storage<C>).name()) + " is null.");
-#endif
-
-		return std::tuple_cat(
-				std::tuple<const C *>(storage->get(p_id, p_mode)),
-				QueryStorage<Cs...>::get(p_id, p_mode));
-	}
-
-	static void get_components(SystemExeInfo &r_info) {
-		r_info.immutable_components.insert(C::get_component_id());
 		QueryStorage<Cs...>::get_components(r_info);
 	}
 };
