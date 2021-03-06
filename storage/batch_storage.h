@@ -38,15 +38,17 @@ public:
 		return storage.has(p_entity);
 	}
 
-	virtual Batch<const T> get(EntityID p_entity, Space p_mode = Space::LOCAL) const override {
-		const StaticVector<T, SIZE> &data = storage.get(p_entity);
-		return Batch(data.ptr(), data.size());
+	virtual T *get(EntityID p_entity, Space p_mode = Space::LOCAL) override {
+		StorageBase::notify_changed(p_entity);
+		return storage.get(p_entity).ptr();
 	}
 
-	virtual Batch<T> get(EntityID p_entity, Space p_mode = Space::LOCAL) override {
-		StorageBase::notify_changed(p_entity);
-		StaticVector<T, SIZE> &data = storage.get(p_entity);
-		return Batch(data.ptr(), data.size());
+	virtual const T *get(EntityID p_entity, Space p_mode = Space::LOCAL) const override {
+		return storage.get(p_entity).ptr();
+	}
+
+	virtual uint32_t get_batch_size(EntityID p_entity) const override {
+		return storage.get(p_entity).size();
 	}
 
 	virtual void remove(EntityID p_entity) override {
@@ -93,15 +95,19 @@ public:
 		return storage.has(p_entity);
 	}
 
-	virtual Batch<const T> get(EntityID p_entity, Space p_mode = Space::LOCAL) const override {
-		const LocalVector<T> &data = storage.get(p_entity);
-		return Batch(data.ptr(), data.size());
-	}
-
-	virtual Batch<T> get(EntityID p_entity, Space p_mode = Space::LOCAL) override {
+	virtual T *get(EntityID p_entity, Space p_mode = Space::LOCAL) override {
 		StorageBase::notify_changed(p_entity);
 		LocalVector<T> &data = storage.get(p_entity);
-		return Batch(data.ptr(), data.size());
+		return data.ptr();
+	}
+
+	virtual const T *get(EntityID p_entity, Space p_mode = Space::LOCAL) const override {
+		const LocalVector<T> &data = storage.get(p_entity);
+		return data.ptr();
+	}
+
+	virtual uint32_t get_batch_size(EntityID p_entity) const override {
+		return storage.get(p_entity).size();
 	}
 
 	virtual void remove(EntityID p_entity) override {

@@ -142,14 +142,14 @@ public:
 		return storage.has(p_entity);
 	}
 
-	virtual Batch<const std::remove_const_t<T>> get(EntityID p_entity, Space p_mode = Space::LOCAL) const override {
-		const_cast<AccessTracerStorage<T> *>(this)->count_get_immut += 1;
+	virtual T *get(EntityID p_entity, Space p_mode = Space::LOCAL) override {
+		StorageBase::notify_changed(p_entity);
+		count_get_mut += 1;
 		return &storage.get(p_entity);
 	}
 
-	virtual Batch<std::remove_const_t<T>> get(EntityID p_entity, Space p_mode = Space::LOCAL) override {
-		StorageBase::notify_changed(p_entity);
-		count_get_mut += 1;
+	virtual const T *get(EntityID p_entity, Space p_mode = Space::LOCAL) const override {
+		const_cast<AccessTracerStorage<T> *>(this)->count_get_immut += 1;
 		return &storage.get(p_entity);
 	}
 
@@ -816,7 +816,7 @@ TEST_CASE("[Modules][ECS] Test query with event.") {
 
 	// Try the first query with dynamic sized batch storage.
 	{
-		Query<EntityID, TransformComponent, BatchN<TestEvent>> query(&world);
+		Query<EntityID, TransformComponent, Batch<TestEvent>> query(&world);
 
 		{
 			CHECK(query.has(entity_1));
@@ -848,7 +848,7 @@ TEST_CASE("[Modules][ECS] Test query with event.") {
 
 	// Try the second query with fixed sized batch storage.
 	{
-		Query<EntityID, TransformComponent, BatchN<TestFixedSizeEvent>> query(&world);
+		Query<EntityID, TransformComponent, Batch<TestFixedSizeEvent>> query(&world);
 
 		{
 			CHECK(query.has(entity_2));

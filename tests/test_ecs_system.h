@@ -95,7 +95,7 @@ void test_system_generate_events(Query<EntityID, TransformComponent> &p_query, S
 	}
 }
 
-void test_system_check_events(Query<const BatchN<Event1Component>> &p_query) {
+void test_system_check_events(Query<Batch<const Event1Component>> &p_query) {
 	uint32_t entities_with_events = 0;
 
 	for (auto [event] : p_query) {

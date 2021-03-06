@@ -19,16 +19,17 @@ struct Changed {};
 
 /// `Batch` it's used by the queries to return multiple `Component`s for
 /// entity. Depending on the storage used, it's possible to store more
-/// components per entity; in all these cases a `Batch` is returned.
+/// components per entity; in all these cases the `Batch` filter can be used
+/// to retrieve those.
 template <class C>
-class BatchN {
+class Batch {
 	C data;
 	uint32_t size;
 
 public:
-	BatchN(C p_data, uint32_t p_size) :
+	Batch(C p_data, uint32_t p_size) :
 			data(p_data), size(p_size) {}
-	BatchN(const BatchN &) = default;
+	Batch(const Batch &) = default;
 
 	C operator[](uint32_t p_index) {
 #ifdef DEBUG_ENABLED
@@ -110,13 +111,13 @@ template <typename T>
 using remove_filter_t = typename remove_filter<T>::type;
 
 template <typename T>
-struct remove_filter<BatchN<T>> {
-	typedef BatchN<remove_filter_t<T>> type;
+struct remove_filter<Batch<T>> {
+	typedef Batch<remove_filter_t<T>> type;
 };
 
 template <typename T>
-struct remove_filter<const BatchN<T>> {
-	typedef const BatchN<remove_filter_t<const T>> type;
+struct remove_filter<const Batch<T>> {
+	typedef const Batch<remove_filter_t<const T>> type;
 };
 
 template <typename T>
@@ -133,8 +134,7 @@ struct remove_filter<const PickValid<T>> {
 
 /// `QueryStorage` specialization with 0 template arguments.
 template <class... Cs>
-class QueryStorage {
-public:
+struct QueryStorage {
 	QueryStorage(World *p_world) {}
 
 	EntitiesBuffer get_entities() const {
@@ -150,8 +150,7 @@ public:
 
 /// Fetch the `EntityID`.
 template <class... Cs>
-class QueryStorage<EntityID, Cs...> : QueryStorage<Cs...> {
-public:
+struct QueryStorage<EntityID, Cs...> : QueryStorage<Cs...> {
 	QueryStorage(World *p_world) :
 			QueryStorage<Cs...>(p_world) {}
 
@@ -176,10 +175,9 @@ public:
 
 /// `QueryStorage` `Maybe` mutable filter specialization.
 template <class C, class... Cs>
-class QueryStorage<Maybe<C>, Cs...> : QueryStorage<Cs...> {
+struct QueryStorage<Maybe<C>, Cs...> : QueryStorage<Cs...> {
 	Storage<C> *storage = nullptr;
 
-public:
 	QueryStorage(World *p_world) :
 			QueryStorage<Cs...>(p_world),
 			storage(p_world->get_storage<C>()) {
@@ -216,10 +214,9 @@ public:
 
 /// `QueryStorage` `Maybe` immutable filter specialization.
 template <class C, class... Cs>
-class QueryStorage<Maybe<const C>, Cs...> : QueryStorage<Cs...> {
+struct QueryStorage<Maybe<const C>, Cs...> : QueryStorage<Cs...> {
 	const Storage<const C> *storage = nullptr;
 
-public:
 	QueryStorage(World *p_world) :
 			QueryStorage<Cs...>(p_world),
 			storage(std::as_const(p_world)->get_storage<const C>()) {
@@ -256,10 +253,9 @@ public:
 
 /// `QueryStorage` `With` filter specialization.
 template <class C, class... Cs>
-class QueryStorage<Without<C>, Cs...> : QueryStorage<Cs...> {
+struct QueryStorage<Without<C>, Cs...> : QueryStorage<Cs...> {
 	Storage<C> *storage = nullptr;
 
-public:
 	QueryStorage(World *p_world) :
 			QueryStorage<Cs...>(p_world),
 			storage(p_world->get_storage<C>()) {
@@ -293,10 +289,9 @@ public:
 
 /// `QueryStorage` `Changed` mutable filter specialization.
 template <class C, class... Cs>
-class QueryStorage<Changed<C>, Cs...> : QueryStorage<Cs...> {
+struct QueryStorage<Changed<C>, Cs...> : QueryStorage<Cs...> {
 	Storage<C> *storage = nullptr;
 
-public:
 	QueryStorage(World *p_world) :
 			QueryStorage<Cs...>(p_world),
 			storage(p_world->get_storage<C>()) {
@@ -342,10 +337,9 @@ public:
 
 /// `QueryStorage` `Changed` immutable filter specialization.
 template <class C, class... Cs>
-class QueryStorage<Changed<const C>, Cs...> : QueryStorage<Cs...> {
+struct QueryStorage<Changed<const C>, Cs...> : QueryStorage<Cs...> {
 	const Storage<const C> *storage = nullptr;
 
-public:
 	QueryStorage(World *p_world) :
 			QueryStorage<Cs...>(p_world),
 			storage(std::as_const(p_world)->get_storage<const C>()) {
@@ -434,10 +428,9 @@ struct PickValidStorage<const C, Cs...> : PickValidStorage<Cs...> {
 
 /// `QueryStorage` `PickValid` immutable filter specialization.
 //template <class... C, class... Cs>
-//class QueryStorage<const PickValid<C...>, Cs...> : QueryStorage<Cs...> {
+//struct QueryStorage<const PickValid<C...>, Cs...> : QueryStorage<Cs...> {
 //	PickValidStorage<const C...> sub_storages;
 //
-//public:
 //	QueryStorage(World *p_world) :
 //			QueryStorage<Cs...>(p_world),
 //			sub_storages(p_world) {
@@ -464,10 +457,9 @@ struct PickValidStorage<const C, Cs...> : PickValidStorage<Cs...> {
 //};
 
 template <class C, class... Cs>
-class QueryStorage<const BatchN<C>, Cs...> : QueryStorage<Cs...> {
-	QueryStorage<remove_filter_t<const C>> query_storage;
+struct QueryStorage<Batch<C>, Cs...> : QueryStorage<Cs...> {
+	QueryStorage<C> query_storage;
 
-public:
 	QueryStorage(World *p_world) :
 			QueryStorage<Cs...>(p_world),
 			query_storage(p_world) {
@@ -481,10 +473,17 @@ public:
 		return query_storage.has_data(p_entity);
 	}
 
-	std::tuple<const BatchN<remove_filter_t<const C>>, remove_filter_t<Cs>...> get(EntityID p_id, Space p_mode) const {
-		// TODO here!
-		C *sub_storages.get(p_id, p_mode);
-		return sub_storages.get(p_id, p_mode);
+	std::tuple<Batch<remove_filter_t<C>>, remove_filter_t<Cs>...> get(EntityID p_id, Space p_mode) const {
+		Batch<remove_filter_t<C>> ret(nullptr, 0);
+		if (query_storage.storage != nullptr) {
+			auto [d] = query_storage.get(p_id, p_mode);
+			ret = Batch(
+					d,
+					query_storage.storage->get_batch_size(p_id));
+		}
+		return std::tuple_cat(
+				std::tuple<Batch<remove_filter_t<C>>>(ret),
+				QueryStorage<Cs...>::get(p_id, p_mode));
 	}
 
 	static void get_components(SystemExeInfo &r_info) {
@@ -495,10 +494,9 @@ public:
 
 /// `QueryStorage` no filter specialization.
 template <class C, class... Cs>
-class QueryStorage<C, Cs...> : QueryStorage<Cs...> {
+struct QueryStorage<C, Cs...> : QueryStorage<Cs...> {
 	Storage<C> *storage = nullptr;
 
-public:
 	QueryStorage(World *p_world) :
 			QueryStorage<Cs...>(p_world),
 			storage(p_world->get_storage<C>()) {
@@ -543,10 +541,9 @@ public:
 
 /// `QueryStorage` const no filter specialization.
 template <class C, class... Cs>
-class QueryStorage<const C, Cs...> : QueryStorage<Cs...> {
+struct QueryStorage<const C, Cs...> : QueryStorage<Cs...> {
 	const Storage<const C> *storage = nullptr;
 
-public:
 	QueryStorage(World *p_world) :
 			QueryStorage<Cs...>(p_world),
 			storage(std::as_const(p_world)->get_storage<const C>()) {

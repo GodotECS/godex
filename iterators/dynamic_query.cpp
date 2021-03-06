@@ -266,7 +266,7 @@ void DynamicQuery::fetch(EntityID p_entity_id) {
 	for (uint32_t i = 0; i < storages.size(); i += 1) {
 		if (storages[i] != nullptr && storages[i]->has(p_entity_id)) {
 			if (accessors[i].is_mutable()) {
-				accessors[i].set_target(storages[i]->get_ptr(p_entity_id, space).get_data());
+				accessors[i].set_target(storages[i]->get_ptr(p_entity_id, space));
 			} else {
 				// Taken using the **CONST** `get_ptr` function, but casted back
 				// to mutable. The `Accessor` already guards its accessibility
@@ -277,8 +277,8 @@ void DynamicQuery::fetch(EntityID p_entity_id) {
 				// data back to mutable.
 				// Note: `std::as_const` doesn't work here. The compile is
 				// optimizing it? Well, I'm just using `const_cast`.
-				const Batch<const void> c(const_cast<const StorageBase *>(storages[i])->get_ptr(p_entity_id, space));
-				accessors[i].set_target(const_cast<void *>(c.get_data()));
+				const void *c(const_cast<const StorageBase *>(storages[i])->get_ptr(p_entity_id, space));
+				accessors[i].set_target(const_cast<void *>(c));
 			}
 		} else {
 			// This data not found, just set nullptr.

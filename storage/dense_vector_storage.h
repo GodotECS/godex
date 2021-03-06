@@ -33,12 +33,12 @@ public:
 		return storage.has(p_entity);
 	}
 
-	virtual Batch<const std::remove_const_t<T>> get(EntityID p_entity, Space p_mode = Space::LOCAL) const override {
+	virtual T *get(EntityID p_entity, Space p_mode = Space::LOCAL) override {
+		StorageBase::notify_changed(p_entity);
 		return &storage.get(p_entity);
 	}
 
-	virtual Batch<std::remove_const_t<T>> get(EntityID p_entity, Space p_mode = Space::LOCAL) override {
-		StorageBase::notify_changed(p_entity);
+	virtual const T *get(EntityID p_entity, Space p_mode = Space::LOCAL) const override {
 		return &storage.get(p_entity);
 	}
 
