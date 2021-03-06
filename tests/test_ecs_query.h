@@ -951,38 +951,50 @@ TEST_CASE("[Modules][ECS] Test static query count.") {
 	}
 }
 
-TEST_CASE("[Modules][ECS] Test static query PickValid filter.") {
+TEST_CASE("[Modules][ECS] Test static query Flatten filter.") {
 	ECS::register_component<TagA>();
 	ECS::register_component<TagB>();
 	ECS::register_component<TagC>();
 
 	World world;
 
-	world
-			.create_entity()
-			.with(TagA())
-			.with(TagB())
-			.with(TagC())
-			.with(TransformComponent());
+	EntityID entity_1 = world
+								.create_entity()
+								.with(TagA())
+								.with(TransformComponent());
 
-	world
-			.create_entity()
-			.with(TransformComponent());
+	EntityID entity_2 = world
+								.create_entity()
+								.with(TransformComponent());
 
-	world
-			.create_entity()
-			.with(TagB())
-			.with(TransformComponent());
+	EntityID entity_3 = world
+								.create_entity()
+								.with(TagB())
+								.with(TransformComponent());
 
-	world
-			.create_entity()
-			.with(TagC())
-			.with(TransformComponent());
+	EntityID entity_4 = world
+								.create_entity()
+								.with(TagC())
+								.with(TransformComponent());
 
-	//Query<TransformComponent, const PickValid<TagA, TagB, TagC>> query(&world);
+	Query<TransformComponent, Flatten<const TagA, const TagB, const TagC>> query(&world);
 
-	////query.
-	//PickValid<TagA, TagB, TagC> x;
+	CHECK(query.has(entity_1));
+	CHECK(query.has(entity_2) == false);
+	CHECK(query.has(entity_3));
+	CHECK(query.has(entity_4));
+
+	// Fetch entity_1
+	{
+		auto [transform, tag] = query[entity_1];
+		CHECK(tag.is<const TagA>());
+		CHECK(tag.is<const TagB>() == false);
+		CHECK(tag.is<const TagC>() == false);
+		CHECK(tag.is<TagA>() == false);
+		CHECK(tag.is<TagB>() == false);
+		CHECK(tag.is<TagC>() == false);
+	}
+	//Flatten<TagA, TagB, TagC> x;
 	//if (x.is<TagA>()) {
 	//	TagA *a = x.get<TagA>();
 	//	print_line(itos((long)a));

@@ -12,6 +12,7 @@ enum Space {
 struct EntitiesBuffer {
 	uint32_t count;
 	const EntityID *entities;
+	EntitiesBuffer() = default;
 	EntitiesBuffer(uint32_t c, const EntityID *e) :
 			count(c), entities(e) {}
 };

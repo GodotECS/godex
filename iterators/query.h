@@ -56,22 +56,26 @@ public:
 
 /// Return a pointer that can be of a specific type.
 template <class... Cs>
-struct PickValid {
+struct Flatten {
 private:
 	void *ptr;
 	godex::component_id id;
+	bool is_const;
 
 public:
-	PickValid(void *p_ptr, godex::component_id p_id) :
-			ptr(p_ptr), id(p_id) {}
+	Flatten(void *p_ptr, godex::component_id p_id, bool p_const) :
+			ptr(p_ptr), id(p_id), is_const(p_const) {}
 
 	template <class T>
 	bool is() const {
-		return id == T::get_component_id();
+		return id == T::get_component_id() && std::is_const<T>::value == is_const;
 	}
 
 	template <class T>
 	T *get() {
+#ifdef DEBUG_ENABLED
+		CRASH_COND_MSG(std::is_const<T>::value != is_const, "Please retrieve this data with the correct mutability.");
+#endif
 		return static_cast<T *>(ptr);
 	}
 
@@ -121,16 +125,14 @@ struct remove_filter<const Batch<T>> {
 };
 
 template <typename T>
-struct remove_filter<PickValid<T>> {
-	typedef PickValid<T> type;
+struct remove_filter<Flatten<T>> {
+	typedef Flatten<T> type;
 };
 
 template <typename T>
-struct remove_filter<const PickValid<T>> {
-	typedef const PickValid<T> type;
+struct remove_filter<const Flatten<T>> {
+	typedef const Flatten<T> type;
 };
-
-// ~~ Query storage, is used to fetch a single data. ~~
 
 /// `QueryStorage` specialization with 0 template arguments.
 template <class... Cs>
@@ -147,6 +149,8 @@ struct QueryStorage {
 
 	static void get_components(SystemExeInfo &r_info) {}
 };
+
+// -------------------------------------------------------------------- EntityID
 
 /// Fetch the `EntityID`.
 template <class... Cs>
@@ -172,6 +176,8 @@ struct QueryStorage<EntityID, Cs...> : QueryStorage<Cs...> {
 		QueryStorage<Cs...>::get_components(r_info);
 	}
 };
+
+// ----------------------------------------------------------------------- Maybe
 
 /// `QueryStorage` `Maybe` filter specialization.
 template <class C, class... Cs>
@@ -222,7 +228,9 @@ struct QueryStorage<Maybe<C>, Cs...> : QueryStorage<Cs...> {
 	}
 };
 
-/// `QueryStorage` `With` filter specialization.
+// --------------------------------------------------------------------- Without
+
+/// `QueryStorage` `Without` filter specialization.
 template <class C, class... Cs>
 struct QueryStorage<Without<C>, Cs...> : QueryStorage<Cs...> {
 	Storage<C> *storage = nullptr;
@@ -257,6 +265,8 @@ struct QueryStorage<Without<C>, Cs...> : QueryStorage<Cs...> {
 		QueryStorage<Cs...>::get_components(r_info);
 	}
 };
+
+// --------------------------------------------------------------------- Changed
 
 /// `QueryStorage` `Changed` filter specialization.
 template <class C, class... Cs>
@@ -316,78 +326,7 @@ struct QueryStorage<Changed<C>, Cs...> : QueryStorage<Cs...> {
 	}
 };
 
-template <class... Cs>
-struct PickValidStorage {
-	PickValidStorage(World *p_world) {}
-
-	EntitiesBuffer get_entities() const { return EntitiesBuffer(0, nullptr); }
-	bool has_data(EntityID p_entity) const { return false; }
-	std::tuple<PickValid<remove_filter_t<Cs>>...> get(EntityID p_id, Space p_mode) const { return PickValid(nullptr, godex::COMPONENT_NONE); }
-};
-
-template <class C, class... Cs>
-struct PickValidStorage<const C, Cs...> : PickValidStorage<Cs...> {
-	QueryStorage<C> storage;
-
-	PickValidStorage(World *p_world) :
-			PickValidStorage<Cs...>(p_world),
-			storage(p_world) {
-	}
-
-	EntitiesBuffer get_entities() const {
-		const EntitiesBuffer o_entities = PickValidStorage<Cs...>::get_entities();
-		const EntitiesBuffer entities = storage.get_entities();
-		return entities.count < o_entities.count ? entities : o_entities;
-	}
-
-	bool has_data(EntityID p_entity) const {
-		if (storage != nullptr && storage.has_data(p_entity)) {
-			// Found in storage.
-			return true;
-		} else {
-			// Not in storage, try the next one.
-			return PickValidStorage<Cs...>::has_data(p_entity);
-		}
-	}
-
-	std::tuple<C *, remove_filter_t<Cs>...> get(EntityID p_id, Space p_mode) const {
-		if (has_data(p_id)) {
-			return PickValid(storage.get(p_id, p_mode), C::get_component_id());
-		} else {
-			return PickValidStorage<Cs...>::get(p_id, p_mode);
-		}
-	}
-};
-
-/// `QueryStorage` `PickValid` immutable filter specialization.
-//template <class... C, class... Cs>
-//struct QueryStorage<const PickValid<C...>, Cs...> : QueryStorage<Cs...> {
-//	PickValidStorage<const C...> sub_storages;
-//
-//	QueryStorage(World *p_world) :
-//			QueryStorage<Cs...>(p_world),
-//			sub_storages(p_world) {
-//	}
-//
-//	EntitiesBuffer get_entities() const {
-//		return sub_storages.get_entities();
-//	}
-//
-//	bool has_data(EntityID p_entity) const {
-//		return sub_storages.has_data(p_entity);
-//	}
-//
-//	std::tuple<Batch<const PickValid<C...>>, Batch<remove_filter_t<Cs>>...> get(EntityID p_id, Space p_mode) const {
-//		return sub_storages.get(p_id, p_mode);
-//	}
-//
-//	static void get_components(SystemExeInfo &r_info) {
-//		// Take the components storages used, taking advantage of the
-//		// get_components function.
-//		QueryStorage<const C...>::get_components(r_info);
-//		QueryStorage<Cs...>::get_components(r_info);
-//	}
-//};
+// ----------------------------------------------------------------------- Batch
 
 /// `QueryStorage` `Batch` filter specialization.
 template <class C, class... Cs>
@@ -422,6 +361,115 @@ struct QueryStorage<Batch<C>, Cs...> : QueryStorage<Cs...> {
 
 	static void get_components(SystemExeInfo &r_info) {
 		QueryStorage<C>::get_components(r_info);
+		QueryStorage<Cs...>::get_components(r_info);
+	}
+};
+
+// --------------------------------------------------------------------- Flatten
+
+template <class... Cs>
+struct FlattenStorage {
+	FlattenStorage(World *p_world) {}
+
+	void get_entities(EntitiesBuffer r_buffers[], uint32_t p_index = 0) const {}
+	bool has_data(EntityID p_entity) const { return false; }
+	std::tuple<Flatten<remove_filter_t<Cs>>...> get(EntityID p_id, Space p_mode) const { return Flatten(nullptr, godex::COMPONENT_NONE); }
+};
+
+template <class C, class... Cs>
+struct FlattenStorage<const C, Cs...> : FlattenStorage<Cs...> {
+	QueryStorage<C> storage;
+
+	FlattenStorage(World *p_world) :
+			FlattenStorage<Cs...>(p_world),
+			storage(p_world) {
+	}
+
+	void get_entities(EntitiesBuffer r_buffers[], uint32_t p_index = 0) const {
+		r_buffers[p_index] = storage.get_entities();
+		FlattenStorage<Cs...>::get_entities(r_buffers, p_index + 1);
+	}
+
+	bool has_data(EntityID p_entity) const {
+		if (storage.has_data(p_entity)) {
+			// Found in storage, stop here.
+			return true;
+		} else {
+			// Not in storage, try the next one.
+			return FlattenStorage<Cs...>::has_data(p_entity);
+		}
+	}
+
+	std::tuple<Flatten<remove_filter_t<C>>, remove_filter_t<Cs>...> get(EntityID p_id, Space p_mode) const {
+		if (has_data(p_id)) {
+			return Flatten<remove_filter_t<C>>(storage.get(p_id, p_mode), remove_filter_t<C>::get_component_id(), std::is_const<remove_filter_t<C>>::value);
+		} else {
+			return FlattenStorage<Cs...>::get(p_id, p_mode);
+		}
+	}
+};
+
+/// `QueryStorage` `Flatten` immutable filter specialization.
+template <class... C, class... Cs>
+struct QueryStorage<Flatten<C...>, Cs...> : QueryStorage<Cs...> {
+	constexpr static std::size_t storages_count = sizeof...(C);
+	FlattenStorage<C...> flat_storages;
+
+	EntityID *entities_data = nullptr;
+	EntitiesBuffer entities_buffer;
+
+	QueryStorage(World *p_world) :
+			QueryStorage<Cs...>(p_world),
+			flat_storages(p_world) {
+		// Fetch the entities from the storages, and creates a contiguous
+		// memory that the query can fetch.
+		EntitiesBuffer buffers[storages_count];
+		flat_storages.get_entities(buffers);
+
+		uint32_t sum = 0;
+		for (uint32_t i = 0; i < storages_count; i += 1) {
+			sum += buffers[i].count;
+		}
+
+		if (sum > 0) {
+			// TODO Find a way to not allocate this memory!
+			entities_data = (EntityID *)memalloc(sizeof(EntityID) * sum);
+
+			// TODO Find a way to not copy this memory!
+			for (uint32_t i = 0, offset = 0; i < storages_count; i += 1) {
+				memcpy(entities_data + offset, buffers[i].entities, sizeof(EntityID) * buffers[i].count);
+				offset += buffers[i].count;
+			}
+
+			// TODO or at least find a way to not do this each frame.
+		}
+
+		entities_buffer.count = sum;
+		entities_buffer.entities = entities_data;
+	}
+
+	~QueryStorage() {
+		if (entities_data != nullptr) {
+			memfree(entities_data);
+		}
+	}
+
+	EntitiesBuffer get_entities() const {
+		return entities_buffer;
+	}
+
+	bool has_data(EntityID p_entity) const {
+		return flat_storages.has_data(p_entity);
+	}
+
+	std::tuple<Flatten<C...>, remove_filter_t<Cs>...> get(EntityID p_id, Space p_mode) const {
+		return flat_storages.get(p_id, p_mode);
+	}
+
+	static void get_components(SystemExeInfo &r_info) {
+		// Take the components storages used, taking advantage of the
+		// get_components function.
+		QueryStorage<C...>::get_components(r_info);
 		QueryStorage<Cs...>::get_components(r_info);
 	}
 };
