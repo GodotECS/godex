@@ -34,3 +34,8 @@ Open an issue to give a feedback, propose a new feature, or signal a bug is real
 If you want to help with coding instead, those two links may turn useful:
 - [Junior Job](https://github.com/GodotECS/godex/issues?q=is%3Aissue+is%3Aopen+label%3A%22Junior+Job%22)
 - [Hero Wanted!](https://github.com/GodotECS/godex/issues?q=is%3Aissue+is%3Aopen+label%3A%22hero+wanted%21%22)
+
+### Binary download
+You can download [Linux](https://github.com/GodotECS/godex/actions/workflows/linux_builds.yml) and [Windows](https://github.com/GodotECS/godex/actions/workflows/windows_builds.yml) binary, from [GitHub Actions](https://github.com/GodotECS/godex/actions)
+
+![download-godex-binary](https://user-images.githubusercontent.com/8342599/109544641-19cf5c80-7ac8-11eb-8b28-f678f9408c85.gif)
