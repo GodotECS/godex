@@ -164,41 +164,41 @@ struct Flattened {
 
 // ~~ Utility to remove the filter from the query. ~~
 template <typename T>
-struct remove_filter {
+struct to_query_return_type {
 	typedef T *type;
 };
 
 template <typename T>
-struct remove_filter<Without<T>> {
+struct to_query_return_type<Without<T>> {
 	typedef T *type;
 };
 
 template <typename T>
-struct remove_filter<Maybe<T>> {
+struct to_query_return_type<Maybe<T>> {
 	typedef T *type;
 };
 
 template <typename T>
-struct remove_filter<Changed<T>> {
+struct to_query_return_type<Changed<T>> {
 	typedef T *type;
 };
 
 template <>
-struct remove_filter<EntityID> {
+struct to_query_return_type<EntityID> {
 	typedef EntityID type;
 };
 
 template <typename... Ts>
-struct remove_filter<Flatten<Ts...>> {
+struct to_query_return_type<Flatten<Ts...>> {
 	typedef Flattened type;
 };
 
 template <typename T>
-using remove_filter_t = typename remove_filter<T>::type;
+using to_query_return_type_t = typename to_query_return_type<T>::type;
 
 template <typename T>
-struct remove_filter<Batch<T>> {
-	typedef Batch<remove_filter_t<T>> type;
+struct to_query_return_type<Batch<T>> {
+	typedef Batch<to_query_return_type_t<T>> type;
 };
 
 /// `QueryStorage` specialization with 0 template arguments.
@@ -212,7 +212,7 @@ struct QueryStorage {
 	}
 
 	bool filter_satisfied(EntityID p_entity) const { return true; }
-	std::tuple<remove_filter_t<Cs>...> get(EntityID p_id, Space p_mode) const { return std::tuple(); }
+	std::tuple<to_query_return_type_t<Cs>...> get(EntityID p_id, Space p_mode) const { return std::tuple(); }
 
 	static void get_components(SystemExeInfo &r_info) {}
 };
@@ -233,7 +233,7 @@ struct QueryStorage<EntityID, Cs...> : QueryStorage<Cs...> {
 		return QueryStorage<Cs...>::filter_satisfied(p_entity);
 	}
 
-	std::tuple<EntityID, remove_filter_t<Cs>...> get(EntityID p_id, Space p_mode) {
+	std::tuple<EntityID, to_query_return_type_t<Cs>...> get(EntityID p_id, Space p_mode) {
 		return std::tuple_cat(
 				std::tuple<EntityID>(p_id),
 				QueryStorage<Cs...>::get(p_id, p_mode));
@@ -266,7 +266,7 @@ struct QueryStorage<Maybe<C>, Cs...> : QueryStorage<Cs...> {
 		return QueryStorage<Cs...>::filter_satisfied(p_entity);
 	}
 
-	std::tuple<C *, remove_filter_t<Cs>...> get(EntityID p_id, Space p_mode) const {
+	std::tuple<C *, to_query_return_type_t<Cs>...> get(EntityID p_id, Space p_mode) const {
 		if (likely(storage != nullptr) && storage->has(p_id)) {
 			if constexpr (std::is_const<C>::value) {
 				return std::tuple_cat(
@@ -321,7 +321,7 @@ struct QueryStorage<Without<C>, Cs...> : QueryStorage<Cs...> {
 		return storage->has(p_entity) == false && QueryStorage<Cs...>::filter_satisfied(p_entity);
 	}
 
-	std::tuple<C *, remove_filter_t<Cs>...> get(EntityID p_id, Space p_mode) const {
+	std::tuple<C *, to_query_return_type_t<Cs>...> get(EntityID p_id, Space p_mode) const {
 		// Just keep going, the `Without` filter doesn't collect data.
 		return std::tuple_cat(std::tuple<C *>(nullptr), QueryStorage<Cs...>::get(p_id, p_mode));
 	}
@@ -365,7 +365,7 @@ struct QueryStorage<Changed<C>, Cs...> : QueryStorage<Cs...> {
 		return storage->is_changed(p_entity) && QueryStorage<Cs...>::filter_satisfied(p_entity);
 	}
 
-	std::tuple<C *, remove_filter_t<Cs>...> get(EntityID p_id, Space p_mode) const {
+	std::tuple<C *, to_query_return_type_t<Cs>...> get(EntityID p_id, Space p_mode) const {
 #ifdef DEBUG_ENABLED
 		// This can't happen because `is_done` returns true.
 		CRASH_COND_MSG(storage == nullptr, "The storage" + String(typeid(Storage<C>).name()) + " is null.");
@@ -413,8 +413,8 @@ struct QueryStorage<Batch<C>, Cs...> : QueryStorage<Cs...> {
 		return query_storage.filter_satisfied(p_entity);
 	}
 
-	std::tuple<Batch<remove_filter_t<C>>, remove_filter_t<Cs>...> get(EntityID p_id, Space p_mode) const {
-		Batch<remove_filter_t<C>> ret(nullptr, 0);
+	std::tuple<Batch<to_query_return_type_t<C>>, to_query_return_type_t<Cs>...> get(EntityID p_id, Space p_mode) const {
+		Batch<to_query_return_type_t<C>> ret(nullptr, 0);
 		if (query_storage.storage != nullptr) {
 			auto [d] = query_storage.get(p_id, p_mode);
 			ret = Batch(
@@ -422,7 +422,7 @@ struct QueryStorage<Batch<C>, Cs...> : QueryStorage<Cs...> {
 					query_storage.storage->get_batch_size(p_id));
 		}
 		return std::tuple_cat(
-				std::tuple<Batch<remove_filter_t<C>>>(ret),
+				std::tuple<Batch<to_query_return_type_t<C>>>(ret),
 				QueryStorage<Cs...>::get(p_id, p_mode));
 	}
 
@@ -470,15 +470,15 @@ struct FlattenStorage<C, Cs...> : FlattenStorage<Cs...> {
 	Flattened get(EntityID p_id, Space p_mode) const {
 		if (storage.filter_satisfied(p_id)) {
 			auto [d] = storage.get(p_id, p_mode);
-			if constexpr (std::is_const<std::remove_pointer_t<remove_filter_t<C>>>::value) {
+			if constexpr (std::is_const<std::remove_pointer_t<to_query_return_type_t<C>>>::value) {
 				return Flattened(
 						const_cast<void *>(static_cast<const void *>(d)),
-						std::remove_pointer_t<remove_filter_t<C>>::get_component_id(),
+						std::remove_pointer_t<to_query_return_type_t<C>>::get_component_id(),
 						true);
 			} else {
 				return Flattened(
 						static_cast<void *>(d),
-						std::remove_pointer_t<remove_filter_t<C>>::get_component_id(),
+						std::remove_pointer_t<to_query_return_type_t<C>>::get_component_id(),
 						false);
 			}
 		} else {
@@ -552,7 +552,7 @@ struct QueryStorage<Flatten<C...>, Cs...> : QueryStorage<Cs...> {
 		return flat_storages.filter_satisfied(p_entity);
 	}
 
-	std::tuple<Flattened, remove_filter_t<Cs>...> get(EntityID p_id, Space p_mode) const {
+	std::tuple<Flattened, to_query_return_type_t<Cs>...> get(EntityID p_id, Space p_mode) const {
 		return std::tuple_cat(
 				std::tuple<Flattened>(flat_storages.get(p_id, p_mode)),
 				QueryStorage<Cs...>::get(p_id, p_mode));
@@ -596,7 +596,7 @@ struct QueryStorage<C, Cs...> : QueryStorage<Cs...> {
 		return storage->has(p_entity) && QueryStorage<Cs...>::filter_satisfied(p_entity);
 	}
 
-	std::tuple<C *, remove_filter_t<Cs>...> get(EntityID p_id, Space p_mode) const {
+	std::tuple<C *, to_query_return_type_t<Cs>...> get(EntityID p_id, Space p_mode) const {
 #ifdef DEBUG_ENABLED
 		// This can't happen because `is_done` returns true.
 		CRASH_COND_MSG(storage == nullptr, "The storage" + String(typeid(Storage<C>).name()) + " is null.");
@@ -654,7 +654,7 @@ public:
 	struct Iterator {
 		using iterator_category = std::forward_iterator_tag;
 		using difference_type = std::ptrdiff_t;
-		using value_type = std::tuple<remove_filter_t<Cs>...>;
+		using value_type = std::tuple<to_query_return_type_t<Cs>...>;
 
 		Iterator(Query<Cs...> *p_query, const EntityID *p_entity) :
 				query(p_query), entity(p_entity) {}
@@ -744,7 +744,7 @@ public:
 	/// 	auto [component1, component2] = query[1];
 	/// }
 	/// ```
-	std::tuple<remove_filter_t<Cs>...> operator[](EntityID p_entity) {
+	std::tuple<to_query_return_type_t<Cs>...> operator[](EntityID p_entity) {
 		return q.get(p_entity, m_space);
 	}
 
