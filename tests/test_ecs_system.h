@@ -84,18 +84,18 @@ void test_system_check_databag(TestSystem1Databag *test_res) {
 	CHECK(test_res != nullptr);
 }
 
-void test_system_generate_events(Query<const EntityID, TransformComponent> &p_query, Storage<Event1Component> *p_events) {
+void test_system_generate_events(Query<EntityID, TransformComponent> &p_query, Storage<Event1Component> *p_events) {
 	CRASH_COND_MSG(p_events == nullptr, "When taken mutable it's never supposed to be nullptr.");
 
 	for (auto [entity, _t] : p_query) {
-		p_events->insert(*entity, Event1Component(123));
-		p_events->insert(*entity, Event1Component(456));
-		p_events->insert(*entity, Event1Component(12));
-		p_events->insert(*entity, Event1Component(33));
+		p_events->insert(entity, Event1Component(123));
+		p_events->insert(entity, Event1Component(456));
+		p_events->insert(entity, Event1Component(12));
+		p_events->insert(entity, Event1Component(33));
 	}
 }
 
-void test_system_check_events(Query<const Event1Component> &p_query) {
+void test_system_check_events(Query<Batch<const Event1Component>> &p_query) {
 	uint32_t entities_with_events = 0;
 
 	for (auto [event] : p_query) {
@@ -116,12 +116,12 @@ void test_add_entity_system(WorldCommands *p_commands, Storage<TransformComponen
 	}
 }
 
-void test_remove_entity_system(WorldCommands *p_command, Query<const EntityID, const TransformComponent> &p_query) {
+void test_remove_entity_system(WorldCommands *p_command, Query<EntityID, const TransformComponent> &p_query) {
 	uint32_t count = 0;
 
 	for (auto [entity, _t] : p_query) {
 		count += 1;
-		p_command->destroy_deferred(*entity);
+		p_command->destroy_deferred(entity);
 	}
 
 	// Make sure the `test_add_entity_system` added exactly `3` `Entities` with
@@ -295,18 +295,18 @@ void test_system_transform_add_x(Query<TransformComponent> &p_query) {
 	}
 }
 
-void test_move_root(Query<const EntityID, TransformComponent> &p_query) {
+void test_move_root(Query<EntityID, TransformComponent> &p_query) {
 	for (auto [entity, transform] : p_query) {
-		if (*entity == EntityID(0)) {
+		if (entity == EntityID(0)) {
 			transform->transform.origin.x += 1.0;
 			return;
 		}
 	}
 }
 
-void test_move_1_global(Query<const EntityID, TransformComponent> &p_query) {
+void test_move_1_global(Query<EntityID, TransformComponent> &p_query) {
 	for (auto [entity, transform] : p_query.space(Space::GLOBAL)) {
-		if (*entity == EntityID(1)) {
+		if (entity == EntityID(1)) {
 			transform->transform.origin.x = 6.0;
 			return;
 		}

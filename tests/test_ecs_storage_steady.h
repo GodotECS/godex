@@ -65,7 +65,7 @@ TEST_CASE("[SteadyStorage] Push and remove memory check.") {
 	// For each pointer, make sure the memory is still valid after all the
 	// insert.
 	for (uint32_t i = 0; i < count; i += 1) {
-		CHECK(pointers[i] == storage.get(i).get_data());
+		CHECK(pointers[i] == storage.get(i));
 	}
 
 	// Remove some random pointers.
@@ -82,7 +82,7 @@ TEST_CASE("[SteadyStorage] Push and remove memory check.") {
 	// Check the validity of remaining one.
 	for (uint32_t i = 0; i < count; i += 1) {
 		if (pointers[i]) {
-			CHECK(pointers[i] == storage.get(i).get_data());
+			CHECK(pointers[i] == storage.get(i));
 		}
 	}
 

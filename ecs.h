@@ -287,16 +287,6 @@ void ECS::register_component(StorageBase *(*create_storage)()) {
 		WARN_PRINT("The component " + C::get_class_static() + " is not trivial move assignable");
 	if (std::is_trivially_move_constructible<C>::value == false)
 		WARN_PRINT("The component " + C::get_class_static() + " is not trivial move constructible");
-	if (std::is_trivially_copyable<Batch<C>>::value == false)
-		WARN_PRINT("The component Batch<" + C::get_class_static() + "> is not trivial copyable");
-	if (std::is_trivially_destructible<Batch<C>>::value == false)
-		WARN_PRINT("The component Batch<" + C::get_class_static() + "> is not trivial destructible");
-	if (std::is_trivially_copy_assignable<Batch<C>>::value == false)
-		WARN_PRINT("The component Batch<" + C::get_class_static() + "> is not trivial copy assignable");
-	if (std::is_trivially_move_assignable<Batch<C>>::value == false)
-		WARN_PRINT("The component Batch<" + C::get_class_static() + "> is not trivial move assignable");
-	if (std::is_trivially_move_constructible<Batch<C>>::value == false)
-		WARN_PRINT("The component Batch<" + C::get_class_static() + "> is not trivial move constructible");
 
 	ERR_FAIL_COND_MSG(C::get_component_id() != UINT32_MAX, "This component is already registered.");
 

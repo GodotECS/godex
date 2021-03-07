@@ -143,13 +143,13 @@ public:
 		}
 	}
 
-	virtual Batch<const Child> get(EntityID p_entity, Space p_mode = Space::LOCAL) const override {
-		return &storage.get(p_entity);
-	}
-
-	virtual Batch<Child> get(EntityID p_entity, Space p_mode = Space::LOCAL) override {
+	virtual Child *get(EntityID p_entity, Space p_mode = Space::LOCAL) override {
 		CRASH_NOW_MSG("You can't fetch the parenting as mutable. This storage is special and you have to use `insert` to update the structure.");
 		return nullptr;
+	}
+
+	virtual const Child *get(EntityID p_entity, Space p_mode = Space::LOCAL) const override {
+		return &storage.get(p_entity);
 	}
 
 	virtual EntitiesBuffer get_stored_entities() const {
@@ -320,18 +320,13 @@ public:
 				internal_storage.get(p_entity));
 	}
 
-	virtual Batch<const T> get(EntityID p_entity, Space p_mode = Space::LOCAL) const override {
-		const LocalGlobal<T> &data = internal_storage.get(p_entity);
-		return p_mode == Space::LOCAL || data.is_root ? &data.local : &data.global;
-	}
-
 	/// This function returns an internal piece of memory that is possible
 	/// to modify. From the outside, it's not possible to detect if the
 	/// variable is modified, so we have to assume that it will.
 	/// Use the const function suppress this logic.
 	/// The data is flushed at the end of each `system`, however you can flush it
 	/// manually via storage, if you need the data immediately back.
-	virtual Batch<T> get(EntityID p_entity, Space p_mode = Space::LOCAL) override {
+	virtual T *get(EntityID p_entity, Space p_mode = Space::LOCAL) override {
 		StorageBase::notify_changed(p_entity);
 		LocalGlobal<T> &data = internal_storage.get(p_entity);
 		if (data.has_relationship) {
@@ -339,6 +334,11 @@ public:
 			data.global_changed = p_mode == Space::GLOBAL;
 		}
 		return data.is_root || p_mode == Space::LOCAL ? &data.local : &data.global;
+	}
+
+	virtual const T *get(EntityID p_entity, Space p_mode = Space::LOCAL) const override {
+		const LocalGlobal<T> &data = internal_storage.get(p_entity);
+		return p_mode == Space::LOCAL || data.is_root ? &data.local : &data.global;
 	}
 
 	virtual EntitiesBuffer get_stored_entities() const {

@@ -501,7 +501,7 @@ Object *WorldECS::get_entity_component(uint32_t entity_id, uint32_t p_component_
 				p_component_id,
 				DataAccessorTargetType::Component,
 				true);
-		component_accessor.set_target(world->get_storage(p_component_id)->get_ptr(entity_id).get_data());
+		component_accessor.set_target(world->get_storage(p_component_id)->get_ptr(entity_id));
 	} else {
 		component_accessor.set_target(nullptr);
 	}

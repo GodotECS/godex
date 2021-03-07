@@ -12,6 +12,7 @@ enum Space {
 struct EntitiesBuffer {
 	uint32_t count;
 	const EntityID *entities;
+	EntitiesBuffer() = default;
 	EntitiesBuffer(uint32_t c, const EntityID *e) :
 			count(c), entities(e) {}
 };
@@ -42,12 +43,12 @@ public:
 		CRASH_NOW_MSG("Override this function.");
 	}
 
-	virtual Batch<const void> get_ptr(EntityID p_entity, Space p_mode = Space::LOCAL) const {
+	virtual void *get_ptr(EntityID p_entity, Space p_mode = Space::LOCAL) {
 		CRASH_NOW_MSG("Override this function.");
 		return nullptr;
 	}
 
-	virtual Batch<void> get_ptr(EntityID p_entity, Space p_mode = Space::LOCAL) {
+	virtual const void *get_ptr(EntityID p_entity, Space p_mode = Space::LOCAL) const {
 		CRASH_NOW_MSG("Override this function.");
 		return nullptr;
 	}
@@ -196,14 +197,12 @@ public:
 		insert(p_entity, insert_data);
 	}
 
-	virtual Batch<const void> get_ptr(EntityID p_entity, Space p_mode = Space::LOCAL) const override {
-		const Batch<const std::remove_const_t<T>> b = get(p_entity, p_mode);
-		return Batch<const void>(b.get_data(), b.get_size());
+	virtual void *get_ptr(EntityID p_entity, Space p_mode = Space::LOCAL) override final {
+		return (void *)get(p_entity, p_mode);
 	}
 
-	virtual Batch<void> get_ptr(EntityID p_entity, Space p_mode = Space::LOCAL) override {
-		const Batch<std::remove_const_t<T>> b = get(p_entity, p_mode);
-		return Batch<void>(b.get_data(), b.get_size());
+	virtual const void *get_ptr(EntityID p_entity, Space p_mode = Space::LOCAL) const override final {
+		return (const void *)get(p_entity, p_mode);
 	}
 
 public:
@@ -211,16 +210,19 @@ public:
 		CRASH_NOW_MSG("Override this function.");
 	}
 
-	// TODO remove `std::remove_const_t` if useless, now.
-	virtual Batch<const std::remove_const_t<T>> get(EntityID p_entity, Space p_mode = Space::LOCAL) const {
+	virtual T *get(EntityID p_entity, Space p_mode = Space::LOCAL) {
 		CRASH_NOW_MSG("Override this function.");
-		return Batch<const std::remove_const_t<T>>();
+		return nullptr;
 	}
 
-	// TODO remove `std::remove_const_t` if useless, now.
-	virtual Batch<std::remove_const_t<T>> get(EntityID p_entity, Space p_mode = Space::LOCAL) {
+	virtual const T *get(EntityID p_entity, Space p_mode = Space::LOCAL) const {
 		CRASH_NOW_MSG("Override this function.");
-		return Batch<std::remove_const_t<T>>();
+		return nullptr;
+	}
+
+	/// Must be overridden if this storage is storing in batch.
+	virtual uint32_t get_batch_size(EntityID p_entity) const {
+		return 1;
 	}
 };
 
