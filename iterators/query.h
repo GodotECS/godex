@@ -189,7 +189,7 @@ struct QueryStorage {
 		return { UINT32_MAX, nullptr };
 	}
 
-	bool has_data(EntityID p_entity) const { return true; }
+	bool filter_satisfied(EntityID p_entity) const { return true; }
 	std::tuple<remove_filter_t<Cs>...> get(EntityID p_id, Space p_mode) const { return std::tuple(); }
 
 	static void get_components(SystemExeInfo &r_info) {}
@@ -207,8 +207,8 @@ struct QueryStorage<EntityID, Cs...> : QueryStorage<Cs...> {
 		return QueryStorage<Cs...>::get_entities();
 	}
 
-	bool has_data(EntityID p_entity) const {
-		return QueryStorage<Cs...>::has_data(p_entity);
+	bool filter_satisfied(EntityID p_entity) const {
+		return QueryStorage<Cs...>::filter_satisfied(p_entity);
 	}
 
 	std::tuple<EntityID, remove_filter_t<Cs>...> get(EntityID p_id, Space p_mode) {
@@ -239,9 +239,9 @@ struct QueryStorage<Maybe<C>, Cs...> : QueryStorage<Cs...> {
 		return QueryStorage<Cs...>::get_entities();
 	}
 
-	bool has_data(EntityID p_entity) const {
+	bool filter_satisfied(EntityID p_entity) const {
 		// The `Maybe` filter never stops the execution.
-		return QueryStorage<Cs...>::has_data(p_entity);
+		return QueryStorage<Cs...>::filter_satisfied(p_entity);
 	}
 
 	std::tuple<C *, remove_filter_t<Cs>...> get(EntityID p_id, Space p_mode) const {
@@ -290,13 +290,13 @@ struct QueryStorage<Without<C>, Cs...> : QueryStorage<Cs...> {
 		return QueryStorage<Cs...>::get_entities();
 	}
 
-	bool has_data(EntityID p_entity) const {
+	bool filter_satisfied(EntityID p_entity) const {
 		if (unlikely(storage == nullptr)) {
 			// When the storage is null the `Without` is always `true` though
 			// we have to keep check the other storages.
-			return QueryStorage<Cs...>::has_data(p_entity);
+			return QueryStorage<Cs...>::filter_satisfied(p_entity);
 		}
-		return storage->has(p_entity) == false && QueryStorage<Cs...>::has_data(p_entity);
+		return storage->has(p_entity) == false && QueryStorage<Cs...>::filter_satisfied(p_entity);
 	}
 
 	std::tuple<C *, remove_filter_t<Cs>...> get(EntityID p_id, Space p_mode) const {
@@ -334,13 +334,13 @@ struct QueryStorage<Changed<C>, Cs...> : QueryStorage<Cs...> {
 		return entities.count < o_entities.count ? entities : o_entities;
 	}
 
-	bool has_data(EntityID p_entity) const {
+	bool filter_satisfied(EntityID p_entity) const {
 		if (unlikely(storage == nullptr)) {
 			// This is a required field, since there is no storage this can end
 			// immediately.
 			return false;
 		}
-		return storage->is_changed(p_entity) && QueryStorage<Cs...>::has_data(p_entity);
+		return storage->is_changed(p_entity) && QueryStorage<Cs...>::filter_satisfied(p_entity);
 	}
 
 	std::tuple<C *, remove_filter_t<Cs>...> get(EntityID p_id, Space p_mode) const {
@@ -387,8 +387,8 @@ struct QueryStorage<Batch<C>, Cs...> : QueryStorage<Cs...> {
 		return query_storage.get_entities();
 	}
 
-	bool has_data(EntityID p_entity) const {
-		return query_storage.has_data(p_entity);
+	bool filter_satisfied(EntityID p_entity) const {
+		return query_storage.filter_satisfied(p_entity);
 	}
 
 	std::tuple<Batch<remove_filter_t<C>>, remove_filter_t<Cs>...> get(EntityID p_id, Space p_mode) const {
@@ -417,7 +417,7 @@ struct FlattenStorage {
 	FlattenStorage(World *p_world) {}
 
 	void get_entities(EntitiesBuffer r_buffers[], uint32_t p_index = 0) const {}
-	bool has_data(EntityID p_entity) const { return false; }
+	bool filter_satisfied(EntityID p_entity) const { return false; }
 	Flattened get(EntityID p_id, Space p_mode) const { return Flattened(nullptr, godex::COMPONENT_NONE, true); }
 };
 
@@ -435,18 +435,18 @@ struct FlattenStorage<C, Cs...> : FlattenStorage<Cs...> {
 		FlattenStorage<Cs...>::get_entities(r_buffers, p_index + 1);
 	}
 
-	bool has_data(EntityID p_entity) const {
-		if (storage.has_data(p_entity)) {
+	bool filter_satisfied(EntityID p_entity) const {
+		if (storage.filter_satisfied(p_entity)) {
 			// Found in storage, stop here.
 			return true;
 		} else {
 			// Not in storage, try the next one.
-			return FlattenStorage<Cs...>::has_data(p_entity);
+			return FlattenStorage<Cs...>::filter_satisfied(p_entity);
 		}
 	}
 
 	Flattened get(EntityID p_id, Space p_mode) const {
-		if (storage.has_data(p_id)) {
+		if (storage.filter_satisfied(p_id)) {
 			auto [d] = storage.get(p_id, p_mode);
 			if constexpr (std::is_const<std::remove_pointer_t<remove_filter_t<C>>>::value) {
 				return Flattened(
@@ -526,8 +526,8 @@ struct QueryStorage<Flatten<C...>, Cs...> : QueryStorage<Cs...> {
 		return entities_buffer;
 	}
 
-	bool has_data(EntityID p_entity) const {
-		return flat_storages.has_data(p_entity);
+	bool filter_satisfied(EntityID p_entity) const {
+		return flat_storages.filter_satisfied(p_entity);
 	}
 
 	std::tuple<Flattened, remove_filter_t<Cs>...> get(EntityID p_id, Space p_mode) const {
@@ -565,13 +565,13 @@ struct QueryStorage<C, Cs...> : QueryStorage<Cs...> {
 		return entities.count < o_entities.count ? entities : o_entities;
 	}
 
-	bool has_data(EntityID p_entity) const {
+	bool filter_satisfied(EntityID p_entity) const {
 		if (unlikely(storage == nullptr)) {
 			// This is a required field, since there is no storage this can end
 			// immediately.
 			return false;
 		}
-		return storage->has(p_entity) && QueryStorage<Cs...>::has_data(p_entity);
+		return storage->has(p_entity) && QueryStorage<Cs...>::filter_satisfied(p_entity);
 	}
 
 	std::tuple<C *, remove_filter_t<Cs>...> get(EntityID p_id, Space p_mode) const {
@@ -691,7 +691,7 @@ public:
 	Iterator begin() {
 		// Returns the next available Entity.
 		if (entities.count > 0) {
-			if (q.has_data(*entities.entities) == false) {
+			if (q.filter_satisfied(*entities.entities) == false) {
 				return Iterator(this, next_valid_entity(entities.entities));
 			}
 		}
@@ -710,7 +710,7 @@ public:
 	/// }
 	/// ```
 	bool has(EntityID p_entity) const {
-		return q.has_data(p_entity);
+		return q.filter_satisfied(p_entity);
 	}
 
 	/// Fetch the specific `Entity` component.
@@ -747,7 +747,7 @@ private:
 
 		// Search the next valid entity.
 		for (; next != (entities.entities + entities.count); next += 1) {
-			if (q.has_data(*next)) {
+			if (q.filter_satisfied(*next)) {
 				// This is fine to return.
 				return next;
 			}
