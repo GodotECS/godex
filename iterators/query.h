@@ -54,34 +54,89 @@ public:
 	}
 };
 
-/// Return a pointer that can be of a specific type.
+/// With the `Flatten` filter you can specify many components, and it returns
+/// the first valid. The `Flatten` filter, fetches the data if at least one of
+/// its own filters is satisfied.
+///
+/// For example, this `Query<Flatten<TagA, TagB>>` returns all the entities
+/// that contains TagA or TagB.
+/// The syntax to extract the data is the following:
+/// ```
+/// Query<Flatten<TagA, TagB>> query;
+/// auto [tag] = query[entity_1];
+/// if( tag.is<TagA>() ){
+/// 	TagA* tag_a = tag.as<TagA>();
+/// } else
+/// if( tag.is<TagB>() ){
+/// 	TagB* tag_b = tag.as<TagB>();
+/// }
+/// ```
+///
+/// Note:
+/// The `Flatten` filter, supports nesting. For example, you can use
+/// the `Changed` filter in this way:
+/// `Query<Flatten<const TagA, Changed<const TagB>>> query;`
+/// Remember that the fist valid filter is returned.
+/// The mutability is also important.
+///
+/// Known limitations:
+/// `Query<Flatten<TagA, TagB>>` if you have an `Entity` that satisfy more
+/// filters, like in the below case (**Entity 2**):
+/// 	[Entity 0, TagA, ___]
+/// 	[Entity 1, ___, TagB]
+/// 	[Entity 2, TagA,TagB]
+/// the query fetches the **Entity 2** twice, but the first specified component
+/// is always taken (in this case the `TagA`).
+/// _Remove this limitation would be a lot more expensinve than useful._
 template <class... Cs>
-struct Flatten {
-private:
-	void *ptr;
-	godex::component_id id;
-	bool is_const;
+struct Flatten {};
 
-public:
-	Flatten(void *p_ptr, godex::component_id p_id, bool p_const) :
+struct Flattened {
+	void *const ptr;
+	const godex::component_id id;
+	const bool is_const;
+
+	Flattened(void *p_ptr, godex::component_id p_id, bool p_const) :
 			ptr(p_ptr), id(p_id), is_const(p_const) {}
 
-	template <class T>
-	bool is() const {
-		return id == T::get_component_id() && std::is_const<T>::value == is_const;
+	/// Returns `true` when the wrapped ptr is `nullptr`.
+	bool is_null() const {
+		return ptr == nullptr;
 	}
 
+	/// Returns `true` if `T` is a valid conversion. This function take into
+	/// account mutability.
+	/// ```
+	/// Flattened flat;
+	/// if( flat.is<TestComponent>() ){
+	/// 	flat.as<TestComponent>();
+	/// } else
+	/// if ( flat.is<const TestComponent>() ) {
+	/// 	flat.as<const TestComponent>();
+	/// }
+	/// ```
 	template <class T>
-	T *get() {
+	bool is() const {
+		return id == T::get_component_id() &&
+			   std::is_const<T>::value == is_const;
+	}
+
+	/// Unwrap the pointer, and cast it to T.
+	/// It's possible to check the type using `is<TypeHere>()`.
+	template <class T>
+	T *as() {
 #ifdef DEBUG_ENABLED
+		// Just check the mutability here, no need to check the type also, so
+		// it's possible to cast it easily to other types (like the base type).
 		CRASH_COND_MSG(std::is_const<T>::value != is_const, "Please retrieve this data with the correct mutability.");
 #endif
 		return static_cast<T *>(ptr);
 	}
 
+	/// If the data is const, never return the pointer as non const.
 	template <class T>
-	const T *get() const {
-		return static_cast<const T *>(ptr);
+	const T *as() const {
+		return static_cast<const std::remove_const_t<T> *>(ptr);
 	}
 };
 
@@ -111,27 +166,17 @@ struct remove_filter<EntityID> {
 	typedef EntityID type;
 };
 
+template <typename... Ts>
+struct remove_filter<Flatten<Ts...>> {
+	typedef Flattened type;
+};
+
 template <typename T>
 using remove_filter_t = typename remove_filter<T>::type;
 
 template <typename T>
 struct remove_filter<Batch<T>> {
 	typedef Batch<remove_filter_t<T>> type;
-};
-
-template <typename T>
-struct remove_filter<const Batch<T>> {
-	typedef const Batch<remove_filter_t<const T>> type;
-};
-
-template <typename T>
-struct remove_filter<Flatten<T>> {
-	typedef Flatten<T> type;
-};
-
-template <typename T>
-struct remove_filter<const Flatten<T>> {
-	typedef const Flatten<T> type;
 };
 
 /// `QueryStorage` specialization with 0 template arguments.
@@ -373,11 +418,11 @@ struct FlattenStorage {
 
 	void get_entities(EntitiesBuffer r_buffers[], uint32_t p_index = 0) const {}
 	bool has_data(EntityID p_entity) const { return false; }
-	std::tuple<Flatten<remove_filter_t<Cs>>...> get(EntityID p_id, Space p_mode) const { return Flatten(nullptr, godex::COMPONENT_NONE); }
+	Flattened get(EntityID p_id, Space p_mode) const { return Flattened(nullptr, godex::COMPONENT_NONE, true); }
 };
 
 template <class C, class... Cs>
-struct FlattenStorage<const C, Cs...> : FlattenStorage<Cs...> {
+struct FlattenStorage<C, Cs...> : FlattenStorage<Cs...> {
 	QueryStorage<C> storage;
 
 	FlattenStorage(World *p_world) :
@@ -400,9 +445,20 @@ struct FlattenStorage<const C, Cs...> : FlattenStorage<Cs...> {
 		}
 	}
 
-	std::tuple<Flatten<remove_filter_t<C>>, remove_filter_t<Cs>...> get(EntityID p_id, Space p_mode) const {
-		if (has_data(p_id)) {
-			return Flatten<remove_filter_t<C>>(storage.get(p_id, p_mode), remove_filter_t<C>::get_component_id(), std::is_const<remove_filter_t<C>>::value);
+	Flattened get(EntityID p_id, Space p_mode) const {
+		if (storage.has_data(p_id)) {
+			auto [d] = storage.get(p_id, p_mode);
+			if constexpr (std::is_const<std::remove_pointer_t<remove_filter_t<C>>>::value) {
+				return Flattened(
+						const_cast<void *>(static_cast<const void *>(d)),
+						std::remove_pointer_t<remove_filter_t<C>>::get_component_id(),
+						true);
+			} else {
+				return Flattened(
+						static_cast<void *>(d),
+						std::remove_pointer_t<remove_filter_t<C>>::get_component_id(),
+						false);
+			}
 		} else {
 			return FlattenStorage<Cs...>::get(p_id, p_mode);
 		}
@@ -428,10 +484,22 @@ struct QueryStorage<Flatten<C...>, Cs...> : QueryStorage<Cs...> {
 
 		uint32_t sum = 0;
 		for (uint32_t i = 0; i < storages_count; i += 1) {
-			sum += buffers[i].count;
+			if (buffers[i].count == UINT32_MAX) {
+				// One of the used sub filters is not determinant
+				// (like `Without` and `Maybe`), so this filter can't drive
+				// the iteration.
+				// Just return `UINT32_MAX`.
+				sum = UINT32_MAX;
+				break;
+			} else {
+				sum += buffers[i].count;
+			}
 		}
 
-		if (sum > 0) {
+		if (sum > 0 && sum < UINT32_MAX) {
+			// This filter can drive the iteration.
+			// Put all the `Entities` in one single array.
+
 			// TODO Find a way to not allocate this memory!
 			entities_data = (EntityID *)memalloc(sizeof(EntityID) * sum);
 
@@ -441,7 +509,7 @@ struct QueryStorage<Flatten<C...>, Cs...> : QueryStorage<Cs...> {
 				offset += buffers[i].count;
 			}
 
-			// TODO or at least find a way to not do this each frame.
+			// TODO or at least, find a way to not do this each frame.
 		}
 
 		entities_buffer.count = sum;
@@ -462,8 +530,10 @@ struct QueryStorage<Flatten<C...>, Cs...> : QueryStorage<Cs...> {
 		return flat_storages.has_data(p_entity);
 	}
 
-	std::tuple<Flatten<C...>, remove_filter_t<Cs>...> get(EntityID p_id, Space p_mode) const {
-		return flat_storages.get(p_id, p_mode);
+	std::tuple<Flattened, remove_filter_t<Cs>...> get(EntityID p_id, Space p_mode) const {
+		return std::tuple_cat(
+				std::tuple<Flattened>(flat_storages.get(p_id, p_mode)),
+				QueryStorage<Cs...>::get(p_id, p_mode));
 	}
 
 	static void get_components(SystemExeInfo &r_info) {

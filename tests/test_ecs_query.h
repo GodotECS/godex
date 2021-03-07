@@ -977,36 +977,151 @@ TEST_CASE("[Modules][ECS] Test static query Flatten filter.") {
 								.with(TagC())
 								.with(TransformComponent());
 
-	Query<TransformComponent, Flatten<const TagA, const TagB, const TagC>> query(&world);
-
-	CHECK(query.has(entity_1));
-	CHECK(query.has(entity_2) == false);
-	CHECK(query.has(entity_3));
-	CHECK(query.has(entity_4));
-
-	// Fetch entity_1
 	{
-		auto [transform, tag] = query[entity_1];
-		CHECK(tag.is<const TagA>());
-		CHECK(tag.is<const TagB>() == false);
-		CHECK(tag.is<const TagC>() == false);
-		CHECK(tag.is<TagA>() == false);
-		CHECK(tag.is<TagB>() == false);
-		CHECK(tag.is<TagC>() == false);
+		Query<TransformComponent, Flatten<const TagA, const TagB, TagC>> query(&world);
+
+		CHECK(query.has(entity_1));
+		CHECK(query.has(entity_2) == false);
+		CHECK(query.has(entity_3));
+		CHECK(query.has(entity_4));
+
+		// Fetch entity_1
+		{
+			auto [transform, tag] = query[entity_1];
+			CHECK(tag.is<const TagA>());
+			CHECK(tag.is<const TagB>() == false);
+			CHECK(tag.is<const TagC>() == false);
+			CHECK(tag.is<TagA>() == false);
+			CHECK(tag.is<TagB>() == false);
+			CHECK(tag.is<TagC>() == false);
+
+			const TagA *tag_a = tag.as<const TagA>();
+			CHECK(tag_a != nullptr);
+		}
+
+		// Fetch entity_2
+		{
+			CHECK(query.has(entity_2) == false);
+		}
+
+		// Fetch entity_3
+		{
+			auto [transform, tag] = query[entity_3];
+			CHECK(tag.is<const TagA>() == false);
+			CHECK(tag.is<const TagB>());
+			CHECK(tag.is<const TagC>() == false);
+			CHECK(tag.is<TagA>() == false);
+			CHECK(tag.is<TagB>() == false);
+			CHECK(tag.is<TagC>() == false);
+
+			const TagB *tag_b = tag.as<const TagB>();
+			CHECK(tag_b != nullptr);
+		}
+
+		// Fetch entity_4
+		{
+			auto [transform, tag] = query[entity_4];
+			CHECK(tag.is<const TagA>() == false);
+			CHECK(tag.is<const TagB>() == false);
+			CHECK(tag.is<const TagC>() == false);
+			CHECK(tag.is<TagA>() == false);
+			CHECK(tag.is<TagB>() == false);
+			CHECK(tag.is<TagC>());
+
+			TagC *tag_c = tag.as<TagC>();
+			CHECK(tag_c != nullptr);
+		}
 	}
-	//Flatten<TagA, TagB, TagC> x;
-	//if (x.is<TagA>()) {
-	//	TagA *a = x.get<TagA>();
-	//	print_line(itos((long)a));
 
-	//} else if (x.is<TagB>()) {
-	//	TagB *b = x.get<TagB>();
-	//	print_line(itos((long)b));
+	world.get_storage<TransformComponent>()->set_tracing_change(true);
+	world.get_storage<TransformComponent>()->notify_changed(entity_1);
+	world.get_storage<TransformComponent>()->notify_changed(entity_2);
+	world.get_storage<TransformComponent>()->notify_changed(entity_3);
+	world.get_storage<TransformComponent>()->notify_changed(entity_4);
 
-	//} else if (x.is<TagC>()) {
-	//	TagC *c = x.get<TagC>();
-	//	print_line(itos((long)c));
-	//}
+	world.get_storage<TagB>()->set_tracing_change(true);
+	world.get_storage<TagB>()->notify_changed(entity_3);
+
+	world.get_storage<TagC>()->set_tracing_change(true);
+	world.get_storage<TagC>()->notify_changed(entity_4);
+
+	// Test `Flatten` with `Changed` filter.
+	{
+		Query<Changed<TransformComponent>, Flatten<Changed<const TagA>, Changed<const TagB>, Changed<TagC>>> query(&world);
+
+		CHECK(query.has(entity_1) == false);
+		CHECK(query.has(entity_2) == false);
+		CHECK(query.has(entity_3));
+		CHECK(query.has(entity_4));
+
+		{
+			auto [transform, tag] = query[entity_3];
+			CHECK(tag.is<const TagB>());
+		}
+
+		{
+			auto [transform, tag] = query[entity_4];
+			CHECK(tag.is<TagC>());
+		}
+	}
+
+	// Test `Flatten` with and without `Changed` filter.
+	{
+		Query<Changed<TransformComponent>, Flatten<const TagA, Changed<const TagB>, Changed<TagC>>> query(&world);
+
+		CHECK(query.has(entity_1));
+		CHECK(query.has(entity_2) == false);
+		CHECK(query.has(entity_3));
+		CHECK(query.has(entity_4));
+
+		{
+			auto [transform, tag] = query[entity_1];
+			CHECK(tag.is<const TagA>());
+		}
+
+		{
+			auto [transform, tag] = query[entity_3];
+			CHECK(tag.is<const TagB>());
+		}
+
+		{
+			auto [transform, tag] = query[entity_4];
+			CHECK(tag.is<TagC>());
+		}
+	}
+
+	// Test `Flatten` with `Without` filter.
+	// Note: This test is here just for validation, but doesn't make much sense.
+	{
+		Query<Changed<TransformComponent>, Flatten<Without<TagA>, Without<const TagB>, Without<TagC>>> query(&world);
+
+		// Since `Flatten` needs just one filter to be satisfied, all are valid.
+		CHECK(query.has(entity_1));
+		CHECK(query.has(entity_2));
+		CHECK(query.has(entity_3));
+		CHECK(query.has(entity_4));
+
+		{
+			auto [transform, tag] = query[entity_1];
+			CHECK(transform != nullptr);
+			CHECK(tag.is_null());
+		}
+		{
+			auto [transform, tag] = query[entity_2];
+			CHECK(transform != nullptr);
+			CHECK(tag.is_null());
+		}
+		{
+			auto [transform, tag] = query[entity_3];
+			CHECK(transform != nullptr);
+			CHECK(tag.is_null());
+		}
+		{
+			auto [transform, tag] = query[entity_4];
+			CHECK(transform != nullptr);
+			CHECK(tag.is_null());
+		}
+	}
 }
 } // namespace godex_tests
 
