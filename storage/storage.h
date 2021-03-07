@@ -198,11 +198,11 @@ public:
 	}
 
 	virtual void *get_ptr(EntityID p_entity, Space p_mode = Space::LOCAL) override final {
-		return static_cast<void *>(get(p_entity, p_mode));
+		return (void *)get(p_entity, p_mode);
 	}
 
 	virtual const void *get_ptr(EntityID p_entity, Space p_mode = Space::LOCAL) const override final {
-		return static_cast<const void *>(get(p_entity, p_mode));
+		return (const void *)get(p_entity, p_mode);
 	}
 
 public:
