@@ -17,10 +17,28 @@ struct Maybe {};
 template <class C>
 struct Changed {};
 
-/// `Batch` it's used by the queries to return multiple `Component`s for
-/// entity. Depending on the storage used, it's possible to store more
-/// components per entity; in all these cases the `Batch` filter can be used
-/// to retrieve those.
+/// Some storages have the ability to store multiple components per `Entity`,
+/// to get all the stored components you can use the `Batch` filter:
+/// `Query<Batch<MyEvent>> query;`
+///
+/// This filter allow nesting, indeed it's possible to specify sub filters:
+/// - `Query<Batch<Changed<MyEvent>> query;`
+/// - `Query<Batch<Maybe<const MyEvent>> query;`
+/// - `Query<Batch<const MyEvent> query;`
+///
+/// You can access the data like an array, here an example:
+/// ```
+/// Query<Batch<Changed<MyEvent>> query;
+/// for( auto [event] : query ){
+/// 	if(event.is_empty()){
+/// 		print_line("No events");
+/// 	}else{
+/// 		for(uint32_t i = 0; i < event.get_size(); i+=1){
+/// 			print_line(event[i]);
+/// 		}
+/// 	}
+/// }
+/// ```
 template <class C>
 class Batch {
 	C data;
@@ -31,6 +49,7 @@ public:
 			data(p_data), size(p_size) {}
 	Batch(const Batch &) = default;
 
+	// Get the component at position `index`.
 	C operator[](uint32_t p_index) {
 #ifdef DEBUG_ENABLED
 		CRASH_COND(p_index >= size);
@@ -38,17 +57,20 @@ public:
 		return data + p_index;
 	}
 
-	C operator[](uint32_t p_index) const {
+	// Get the component at position `index`.
+	const std::remove_const<C> operator[](uint32_t p_index) const {
 #ifdef DEBUG_ENABLED
 		CRASH_COND(p_index >= size);
 #endif
 		return data + p_index;
 	}
 
+	/// Get the components count.
 	uint32_t get_size() const {
 		return size;
 	}
 
+	/// Returns `true` if this contains 0 components.
 	bool is_empty() const {
 		return data == nullptr;
 	}

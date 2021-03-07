@@ -828,9 +828,11 @@ TEST_CASE("[Modules][ECS] Test query with event.") {
 								.with(TransformComponent())
 								.with(TestEvent());
 
+	world.get_storage<TestEvent>()->set_tracing_change(true);
+
 	// Try the first query with dynamic sized batch storage.
 	{
-		Query<EntityID, TransformComponent, Batch<TestEvent>> query(&world);
+		Query<EntityID, TransformComponent, Batch<const TestEvent>> query(&world);
 
 		{
 			CHECK(query.has(entity_1));
@@ -862,7 +864,7 @@ TEST_CASE("[Modules][ECS] Test query with event.") {
 
 	// Try the second query with fixed sized batch storage.
 	{
-		Query<EntityID, TransformComponent, Batch<TestFixedSizeEvent>> query(&world);
+		Query<EntityID, TransformComponent, Batch<const TestFixedSizeEvent>> query(&world);
 
 		{
 			CHECK(query.has(entity_2));
@@ -875,6 +877,52 @@ TEST_CASE("[Modules][ECS] Test query with event.") {
 			CHECK(event.get_size() == 2);
 			CHECK(event[0]->number == 645);
 			CHECK(event[1]->number == 33);
+		}
+	}
+
+	// Try the second query with fixed sized batch storage.
+	{
+		Query<EntityID, TransformComponent, Batch<const TestFixedSizeEvent>> query(&world);
+
+		{
+			CHECK(query.has(entity_2));
+			auto [entity, transform, event] = query[entity_2];
+
+			CHECK(entity_2 == entity);
+
+			CHECK(transform != nullptr);
+
+			CHECK(event.get_size() == 2);
+			CHECK(event[0]->number == 645);
+			CHECK(event[1]->number == 33);
+		}
+	}
+
+	// Test sub filters
+	{
+		// We always fetched with `const`, make sure no changes got triggered.
+		{
+			Query<EntityID, Batch<Changed<const TestEvent>>> query(&world);
+			CHECK(query.count() == 0);
+		}
+
+		// Trigger the changed event now, by fetching MUTABLE.
+		{
+			Query<EntityID, Batch<TestEvent>> query(&world);
+			uint32_t c = 0;
+			// Using the for loop to trigger the changed event.
+			for (auto [e, te] : query) {
+				CHECK(e != EntityID());
+				CHECK(te.is_empty() == false);
+				c += 1;
+			}
+			CHECK(c == 2);
+		}
+
+		// Try again with the changed now.
+		{
+			Query<EntityID, Batch<Changed<const TestEvent>>> query(&world);
+			CHECK(query.count() == 2); // Two entities.
 		}
 	}
 }
