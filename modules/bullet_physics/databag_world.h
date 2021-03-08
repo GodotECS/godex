@@ -8,13 +8,13 @@ class btDefaultCollisionConfiguration;
 class btCollisionDispatcher;
 class btConstraintSolver;
 class btDiscreteDynamicsWorld;
-class btSoftBodyWorldInfo;
+struct btSoftBodyWorldInfo;
 class btGhostPairCallback;
-class GodotFilterCallback;
-class BtSpaces;
+struct GodotFilterCallback;
+class BtWorlds;
 
-class BtSpace {
-	friend class BtSpaces;
+class BtWorld {
+	friend class BtWorlds;
 
 	btBroadphaseInterface *broadphase = nullptr;
 	btDefaultCollisionConfiguration *collision_configuration = nullptr;
@@ -48,23 +48,23 @@ public:
 	const GodotFilterCallback *get_godotFilterCallback() const { return godot_filter_callback; }
 };
 
-/// The `BtSpaces` is a databag that contains all the physics worlds
+/// The `BtWorlds` is a databag that contains all the physics worlds
 /// (called spaces).
 /// You can have at max 4 spaces at the same time, but note that have more than
 /// one is not a common use case.
 ///
 /// You can specify to which `Space` an entity has to stay by using the
-/// optional `BtSpaceMarker`. When the `BtSpaceMarker` is not used the `Entity`
+/// optional `BtWorldMarker`. When the `BtWorldMarker` is not used the `Entity`
 /// is put to the main default world (ID 0).
-class BtSpaces : public godex::Databag {
-	DATABAG(BtSpaces)
+class BtWorlds : public godex::Databag {
+	DATABAG(BtWorlds)
 
 private:
-	BtSpace spaces[BT_WOLRD_MAX];
+	BtWorld spaces[BT_WOLRD_MAX];
 
 public:
-	BtSpaces();
-	~BtSpaces();
+	BtWorlds();
+	~BtWorlds();
 
 	/// Returns `true` if the space is initialized.
 	bool is_space_initialized(BtWorldIndex p_id) const;
@@ -78,8 +78,8 @@ public:
 	void free_space(BtWorldIndex p_id);
 
 	/// Returns the Space of this ID mutable.
-	BtSpace *get_space(BtWorldIndex p_id);
+	BtWorld *get_space(BtWorldIndex p_id);
 
 	/// Returns the Space of this ID, not mutable.
-	const BtSpace *get_space(BtWorldIndex p_space_id) const;
+	const BtWorld *get_space(BtWorldIndex p_space_id) const;
 };

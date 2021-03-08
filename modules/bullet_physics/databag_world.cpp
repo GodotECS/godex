@@ -1,4 +1,4 @@
-#include "space_databag.h"
+#include "databag_world.h"
 
 #include "core/config/project_settings.h"
 #include "modules/bullet/godot_collision_configuration.h"
@@ -23,27 +23,27 @@ btScalar calculate_godot_combined_friction(const btCollisionObject *body0, const
 }
 
 void on_post_tick_callback(btDynamicsWorld *p_dynamics_world, btScalar p_delta) {
-	//BtSpace *space = static_cast<BtSpace *>(p_dynamics_world->getWorldUserInfo());
+	//BtWorld *space = static_cast<BtWorld *>(p_dynamics_world->getWorldUserInfo());
 }
 
-BtSpaces::BtSpaces() {
+BtWorlds::BtWorlds() {
 	// Always init the space 0, which is the default one.
 	init_space(BT_WORLD_0, GLOBAL_DEF("physics/3d/active_soft_world", true));
 	CRASH_COND_MSG(is_space_initialized(BT_WORLD_0) == false, "At this point the space 0 is expected to be initialized.");
 }
 
-BtSpaces::~BtSpaces() {
+BtWorlds::~BtWorlds() {
 	// Free all the spaces.
 	for (uint32_t i = 0; i < BT_WOLRD_MAX; i += 1) {
 		free_space(static_cast<BtWorldIndex>(i));
 	}
 }
 
-bool BtSpaces::is_space_initialized(BtWorldIndex p_id) const {
+bool BtWorlds::is_space_initialized(BtWorldIndex p_id) const {
 	return spaces[p_id].broadphase != nullptr;
 }
 
-void BtSpaces::init_space(BtWorldIndex p_id, bool p_soft_world) {
+void BtWorlds::init_space(BtWorldIndex p_id, bool p_soft_world) {
 	ERR_FAIL_COND_MSG(is_space_initialized(p_id), "This space " + itos(p_id) + " is already initialized");
 
 	void *world_mem;
@@ -100,7 +100,7 @@ void BtSpaces::init_space(BtWorldIndex p_id, bool p_soft_world) {
 			spaces[p_id].godot_filter_callback);
 }
 
-void BtSpaces::free_space(BtWorldIndex p_id) {
+void BtWorlds::free_space(BtWorldIndex p_id) {
 	if (is_space_initialized(p_id)) {
 		// Nothing to do.
 		return;
@@ -128,14 +128,14 @@ void BtSpaces::free_space(BtWorldIndex p_id) {
 	spaces[p_id].godot_filter_callback = nullptr;
 }
 
-BtSpace *BtSpaces::get_space(BtWorldIndex p_index) {
+BtWorld *BtWorlds::get_space(BtWorldIndex p_index) {
 #ifdef DEBUG_ENABLED
 	ERR_FAIL_COND_V_MSG(p_index >= BT_WOLRD_MAX, spaces, "This index is out of bounds.");
 #endif
 	return spaces + p_index;
 }
 
-const BtSpace *BtSpaces::get_space(BtWorldIndex p_index) const {
+const BtWorld *BtWorlds::get_space(BtWorldIndex p_index) const {
 #ifdef DEBUG_ENABLED
 	ERR_FAIL_COND_V_MSG(p_index >= BT_WOLRD_MAX, spaces, "This index is out of bounds.");
 #endif

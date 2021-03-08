@@ -41,3 +41,14 @@ struct BtShapeBox : public BtRigidShape {
 	void set_margin(real_t p_margin);
 	real_t get_margin() const;
 };
+
+struct BtShapeSphere : public BtRigidShape {
+	COMPONENT_CUSTOM_CONSTRUCTOR(BtShapeSphere, SteadyStorage) // TODO Please use SharedComponent
+
+	btSphereShape sphere = btSphereShape(1.0);
+
+	BtShapeSphere() :
+			BtRigidShape(&sphere) {}
+
+	// TODO finalize shape.
+};
