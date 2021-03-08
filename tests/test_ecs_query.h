@@ -999,7 +999,7 @@ TEST_CASE("[Modules][ECS] Test static query count.") {
 	}
 }
 
-TEST_CASE("[Modules][ECS] Test static query Flatten filter.") {
+TEST_CASE("[Modules][ECS] Test static query Any filter.") {
 	ECS::register_component<TagA>();
 	ECS::register_component<TagB>();
 	ECS::register_component<TagC>();
@@ -1026,7 +1026,7 @@ TEST_CASE("[Modules][ECS] Test static query Flatten filter.") {
 								.with(TransformComponent());
 
 	{
-		Query<TransformComponent, Flatten<const TagA, const TagB, TagC>> query(&world);
+		Query<TransformComponent, Any<const TagA, const TagB, TagC>> query(&world);
 
 		CHECK(query.has(entity_1));
 		CHECK(query.has(entity_2) == false);
@@ -1093,9 +1093,9 @@ TEST_CASE("[Modules][ECS] Test static query Flatten filter.") {
 	world.get_storage<TagC>()->set_tracing_change(true);
 	world.get_storage<TagC>()->notify_changed(entity_4);
 
-	// Test `Flatten` with `Changed` filter.
+	// Test `Any` with `Changed` filter.
 	{
-		Query<Changed<TransformComponent>, Flatten<Changed<const TagA>, Changed<const TagB>, Changed<TagC>>> query(&world);
+		Query<Changed<TransformComponent>, Any<Changed<const TagA>, Changed<const TagB>, Changed<TagC>>> query(&world);
 
 		CHECK(query.has(entity_1) == false);
 		CHECK(query.has(entity_2) == false);
@@ -1113,9 +1113,9 @@ TEST_CASE("[Modules][ECS] Test static query Flatten filter.") {
 		}
 	}
 
-	// Test `Flatten` with and without `Changed` filter.
+	// Test `Any` with and without `Changed` filter.
 	{
-		Query<Changed<TransformComponent>, Flatten<const TagA, Changed<const TagB>, Changed<TagC>>> query(&world);
+		Query<Changed<TransformComponent>, Any<const TagA, Changed<const TagB>, Changed<TagC>>> query(&world);
 
 		CHECK(query.has(entity_1));
 		CHECK(query.has(entity_2) == false);
@@ -1138,12 +1138,12 @@ TEST_CASE("[Modules][ECS] Test static query Flatten filter.") {
 		}
 	}
 
-	// Test `Flatten` with `Without` filter.
+	// Test `Any` with `Without` filter.
 	// Note: This test is here just for validation, but doesn't make much sense.
 	{
-		Query<Changed<TransformComponent>, Flatten<Without<TagA>, Without<const TagB>, Without<TagC>>> query(&world);
+		Query<Changed<TransformComponent>, Any<Without<TagA>, Without<const TagB>, Without<TagC>>> query(&world);
 
-		// Since `Flatten` needs just one filter to be satisfied, all are valid.
+		// Since `Any` needs just one filter to be satisfied, all are valid.
 		CHECK(query.has(entity_1));
 		CHECK(query.has(entity_2));
 		CHECK(query.has(entity_3));
