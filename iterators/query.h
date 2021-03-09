@@ -76,15 +76,15 @@ public:
 	}
 };
 
-/// With the `Flatten` filter you can specify many components, and it returns
-/// the first valid. The `Flatten` filter, fetches the data if at least one of
+/// With the `Any` filter you can specify many components, and it returns
+/// the first valid. The `Any` filter, fetches the data if at least one of
 /// its own filters is satisfied.
 ///
-/// For example, this `Query<Flatten<TagA, TagB>>` returns all the entities
+/// For example, this `Query<Any<TagA, TagB>>` returns all the entities
 /// that contains TagA or TagB.
 /// The syntax to extract the data is the following:
 /// ```
-/// Query<Flatten<TagA, TagB>> query;
+/// Query<Any<TagA, TagB>> query;
 /// auto [tag] = query[entity_1];
 /// if( tag.is<TagA>() ){
 /// 	TagA* tag_a = tag.as<TagA>();
@@ -95,14 +95,14 @@ public:
 /// ```
 ///
 /// Note:
-/// The `Flatten` filter, supports nesting. For example, you can use
+/// The `Any` filter, supports nesting. For example, you can use
 /// the `Changed` filter in this way:
-/// `Query<Flatten<const TagA, Changed<const TagB>>> query;`
+/// `Query<Any<const TagA, Changed<const TagB>>> query;`
 /// Remember that the fist valid filter is returned.
 /// The mutability is also important.
 ///
 /// Known limitations:
-/// `Query<Flatten<TagA, TagB>>` if you have an `Entity` that satisfy more
+/// `Query<Any<TagA, TagB>>` if you have an `Entity` that satisfy more
 /// filters, like in the below case (**Entity 2**):
 /// 	[Entity 0, TagA, ___]
 /// 	[Entity 1, ___, TagB]
@@ -111,14 +111,14 @@ public:
 /// is always taken (in this case the `TagA`).
 /// _Remove this limitation would be a lot more expensinve than useful._
 template <class... Cs>
-struct Flatten {};
+struct Any {};
 
-struct Flattened {
+struct AnyData {
 	void *const ptr;
 	const godex::component_id id;
 	const bool is_const;
 
-	Flattened(void *p_ptr, godex::component_id p_id, bool p_const) :
+	AnyData(void *p_ptr, godex::component_id p_id, bool p_const) :
 			ptr(p_ptr), id(p_id), is_const(p_const) {}
 
 	/// Returns `true` when the wrapped ptr is `nullptr`.
@@ -129,7 +129,7 @@ struct Flattened {
 	/// Returns `true` if `T` is a valid conversion. This function take into
 	/// account mutability.
 	/// ```
-	/// Flattened flat;
+	/// AnyData flat;
 	/// if( flat.is<TestComponent>() ){
 	/// 	flat.as<TestComponent>();
 	/// } else
@@ -189,8 +189,8 @@ struct to_query_return_type<EntityID> {
 };
 
 template <typename... Ts>
-struct to_query_return_type<Flatten<Ts...>> {
-	typedef Flattened type;
+struct to_query_return_type<Any<Ts...>> {
+	typedef AnyData type;
 };
 
 template <typename T>
@@ -432,29 +432,29 @@ struct QueryStorage<Batch<C>, Cs...> : QueryStorage<Cs...> {
 	}
 };
 
-// --------------------------------------------------------------------- Flatten
+// ------------------------------------------------------------------------- Any
 
 template <class... Cs>
-struct FlattenStorage {
-	FlattenStorage(World *p_world) {}
+struct AnyStorage {
+	AnyStorage(World *p_world) {}
 
 	void get_entities(EntitiesBuffer r_buffers[], uint32_t p_index = 0) const {}
 	bool filter_satisfied(EntityID p_entity) const { return false; }
-	Flattened get(EntityID p_id, Space p_mode) const { return Flattened(nullptr, godex::COMPONENT_NONE, true); }
+	AnyData get(EntityID p_id, Space p_mode) const { return AnyData(nullptr, godex::COMPONENT_NONE, true); }
 };
 
 template <class C, class... Cs>
-struct FlattenStorage<C, Cs...> : FlattenStorage<Cs...> {
+struct AnyStorage<C, Cs...> : AnyStorage<Cs...> {
 	QueryStorage<C> storage;
 
-	FlattenStorage(World *p_world) :
-			FlattenStorage<Cs...>(p_world),
+	AnyStorage(World *p_world) :
+			AnyStorage<Cs...>(p_world),
 			storage(p_world) {
 	}
 
 	void get_entities(EntitiesBuffer r_buffers[], uint32_t p_index = 0) const {
 		r_buffers[p_index] = storage.get_entities();
-		FlattenStorage<Cs...>::get_entities(r_buffers, p_index + 1);
+		AnyStorage<Cs...>::get_entities(r_buffers, p_index + 1);
 	}
 
 	bool filter_satisfied(EntityID p_entity) const {
@@ -463,35 +463,35 @@ struct FlattenStorage<C, Cs...> : FlattenStorage<Cs...> {
 			return true;
 		} else {
 			// Not in storage, try the next one.
-			return FlattenStorage<Cs...>::filter_satisfied(p_entity);
+			return AnyStorage<Cs...>::filter_satisfied(p_entity);
 		}
 	}
 
-	Flattened get(EntityID p_id, Space p_mode) const {
+	AnyData get(EntityID p_id, Space p_mode) const {
 		if (storage.filter_satisfied(p_id)) {
 			auto [d] = storage.get(p_id, p_mode);
 			if constexpr (std::is_const<std::remove_pointer_t<to_query_return_type_t<C>>>::value) {
-				return Flattened(
+				return AnyData(
 						const_cast<void *>(static_cast<const void *>(d)),
 						std::remove_pointer_t<to_query_return_type_t<C>>::get_component_id(),
 						true);
 			} else {
-				return Flattened(
+				return AnyData(
 						static_cast<void *>(d),
 						std::remove_pointer_t<to_query_return_type_t<C>>::get_component_id(),
 						false);
 			}
 		} else {
-			return FlattenStorage<Cs...>::get(p_id, p_mode);
+			return AnyStorage<Cs...>::get(p_id, p_mode);
 		}
 	}
 };
 
-/// `QueryStorage` `Flatten` immutable filter specialization.
+/// `QueryStorage` `Any` immutable filter specialization.
 template <class... C, class... Cs>
-struct QueryStorage<Flatten<C...>, Cs...> : QueryStorage<Cs...> {
+struct QueryStorage<Any<C...>, Cs...> : QueryStorage<Cs...> {
 	constexpr static std::size_t storages_count = sizeof...(C);
-	FlattenStorage<C...> flat_storages;
+	AnyStorage<C...> flat_storages;
 
 	EntityID *entities_data = nullptr;
 	EntitiesBuffer entities_buffer;
@@ -552,9 +552,9 @@ struct QueryStorage<Flatten<C...>, Cs...> : QueryStorage<Cs...> {
 		return flat_storages.filter_satisfied(p_entity);
 	}
 
-	std::tuple<Flattened, to_query_return_type_t<Cs>...> get(EntityID p_id, Space p_mode) const {
+	std::tuple<AnyData, to_query_return_type_t<Cs>...> get(EntityID p_id, Space p_mode) const {
 		return std::tuple_cat(
-				std::tuple<Flattened>(flat_storages.get(p_id, p_mode)),
+				std::tuple<AnyData>(flat_storages.get(p_id, p_mode)),
 				QueryStorage<Cs...>::get(p_id, p_mode));
 	}
 
