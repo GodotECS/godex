@@ -113,6 +113,7 @@ public:
 template <class... Cs>
 struct Any {};
 
+// TODO conver this to `Flat`
 struct AnyData {
 	void *const ptr;
 	const godex::component_id id;
@@ -162,6 +163,9 @@ struct AnyData {
 	}
 };
 
+template <class... Cs>
+struct Group {};
+
 // ~~ Utility to remove the filter from the query. ~~
 template <typename T>
 struct to_query_return_type {
@@ -196,10 +200,192 @@ struct to_query_return_type<Any<Ts...>> {
 template <typename T>
 using to_query_return_type_t = typename to_query_return_type<T>::type;
 
+template <typename... Ts>
+struct to_query_return_type<Group<Ts...>> {
+	typedef std::tuple<to_query_return_type_t<Ts>...> type;
+};
+
 template <typename T>
 struct to_query_return_type<Batch<T>> {
 	typedef Batch<to_query_return_type_t<T>> type;
 };
+
+/// Base type: if arrives here, the compiler fails because the search index
+/// is out of bounds.
+///
+/// @param S stands for `Search`
+/// @param I stands for `Index`
+template <std::size_t S, std::size_t I, class... Cs>
+struct query_element {};
+
+/// Query element type found: It's just a pointer.
+template <std::size_t S, class C, class... Cs>
+struct query_element<S, S, C, Cs...> : query_element<S, S + 1, Cs...> {
+	using type = C *;
+};
+
+/// Query element using `Any`. This is called when we want totake the first
+/// parameter of `Any` (notice what `Search` is set also on the `Index`).
+/// Here we are just flattening `Any` the type will be resolved later.
+template <std::size_t S, class... C, class... Cs>
+struct query_element<S, S, Any<C...>, Cs...> : query_element<S, S, C..., Cs...> {
+};
+
+/// Query element using `Any`: Make it flat and keep searching it.
+template <std::size_t S, std::size_t I, class... C, class... Cs>
+struct query_element<S, I, Any<C...>, Cs...> : query_element<S, I, C..., Cs...> {};
+
+/// Query element not yet found, keep going.
+template <std::size_t S, std::size_t I, class C, class... Cs>
+struct query_element<S, I, C, Cs...> : query_element<S, I + 1, Cs...> {};
+
+/// Just an utility.
+template <std::size_t S, std::size_t B, class... Cs>
+using query_element_t = typename query_element<S, B, Cs...>::type;
+
+/// This class is the base query result tuple.
+/// `I` stands for `Index` and it's used to index the types.
+///
+/// When you use it, you must always set `I = 0` (so it can correctly index
+/// the types); or just use `QueryResultTuple`
+template <std::size_t I, class... Cs>
+struct QueryResultTuple_Impl {
+	/// The count of elements in this tuple.
+	static constexpr std::size_t SIZE = I;
+
+	QueryResultTuple_Impl() = default;
+};
+
+template <std::size_t I, class C, class... Cs>
+struct QueryResultTuple_Impl<I, C, Cs...> : public QueryResultTuple_Impl<I + 1, Cs...> {
+	C *value = nullptr;
+
+	QueryResultTuple_Impl(
+			C *p_value,
+			query_element_t<0, 0, Cs>... p_rest) :
+			QueryResultTuple_Impl<I + 1, Cs...>(p_rest...),
+			value(p_value) {}
+
+	QueryResultTuple_Impl() = default;
+};
+
+/// Stores the filters inside `Any` as a sub tuple.
+///
+/// NOTICE: that the sub tuple elements indices follows the main tuple, so
+/// they are flattened and can be extracted directly, like if it was one
+/// dimensional tuple.
+/// ```cpp
+/// QueryResultTuple_Impl<0, TagC, Any<TagA, TagB>> tuple(
+/// 		&c,
+/// 		QueryResultTuple_Impl<0, TagA, TagB>(&a, &b));
+///
+/// static_assert(tuple.SIZE == 3);
+///
+/// auto [ptr_c, ptr_a, ptr_b] = tuple;
+/// ```
+//template <std::size_t I, class... C, class... Cs>
+//struct QueryResultTuple_Impl<I, Any<C...>, Cs...> : public QueryResultTuple_Impl<I + QueryResultTuple_Impl<0, C...>::SIZE, Cs...> {
+//	static constexpr std::size_t INDEX = I;
+//	QueryResultTuple_Impl<0, C...> values;
+//
+//	QueryResultTuple_Impl(
+//			QueryResultTuple_Impl<0, C...> p_values,
+//			QueryResultTuple_Impl<I + QueryResultTuple_Impl<0, C...>::SIZE, Cs>... p_rest) :
+//			QueryResultTuple_Impl<I + QueryResultTuple_Impl<0, C...>::SIZE, Cs...>(p_rest...),
+//			values(p_values) {}
+//};
+
+template <std::size_t I, class... C, class... Cs>
+struct QueryResultTuple_Impl<I, Any<C...>, Cs...> : public QueryResultTuple_Impl<I, C..., Cs...> {
+	static constexpr std::size_t INDEX = I;
+
+	QueryResultTuple_Impl(
+			query_element_t<0, 0, C>... p_values,
+			query_element_t<0, 0, Cs>... p_rest) :
+			QueryResultTuple_Impl<I, C..., Cs...>(p_values..., p_rest...) {}
+
+	QueryResultTuple_Impl() = default;
+};
+
+/// `QueryResult` is the tuple returned by the `Query`. You can fetch the
+/// data using the `get` function:
+/// ```cpp
+/// Query<Transform, Mesh> query;
+/// QueryResult result = query.get();
+/// Transform* t = get<0>(result);
+/// ```
+///
+/// Or you can use the structured bindings:
+/// ```cpp
+/// Query<Transform, Mesh> query;
+/// QueryResult result = query.get();
+/// auto [transform, mesh] = result;
+/// ```
+// TODO
+//template <class... Cs>
+//struct QueryResultTuple : public QueryResultTuple_Impl<0, Cs...> {
+//	QueryResultTuple(QueryResultTuple_Impl<0, Cs>... p_values) :
+//			QueryResultTuple_Impl<0, Cs...>(p_values...) {}
+//};
+
+/// Bindings to allow use structured bidnings.
+/// These are necessary to tell the compiler how to decompose the custom class.
+namespace std {
+template <class... Cs>
+struct tuple_size<QueryResultTuple_Impl<0, Cs...>> : std::integral_constant<int, QueryResultTuple_Impl<0, Cs...>::SIZE> {};
+
+template <size_t S, class... Cs>
+struct tuple_element<S, QueryResultTuple_Impl<0, Cs...>> {
+	using type = typename query_element<S, 0, Cs...>::type;
+};
+} // namespace std
+
+// -- QueryResultTuple Setter
+template <std::size_t S, class T, class C, class... Cs>
+constexpr void set_impl(T p_val, QueryResultTuple_Impl<S, C, Cs...> &tuple) noexcept {
+	tuple.value = p_val;
+}
+
+template <std::size_t S, class T, class... C, class... Cs>
+constexpr void set_impl(T p_val, QueryResultTuple_Impl<S, Any<C...>, Cs...> &tuple) noexcept {
+	set_impl<S>(p_val, static_cast<QueryResultTuple_Impl<tuple.INDEX, C..., Cs...> &>(tuple));
+}
+
+template <std::size_t S, class T, class... Cs>
+constexpr void set(QueryResultTuple_Impl<0, Cs...> &tuple, T p_val) noexcept {
+	set_impl<S>(p_val, tuple);
+}
+
+// -- QueryResultTuple Getter
+template <std::size_t S, class C, class... Cs>
+constexpr auto get_impl(QueryResultTuple_Impl<S, C, Cs...> &tuple) noexcept {
+	return tuple.value;
+}
+
+template <std::size_t S, class C, class... Cs>
+constexpr auto get_impl(const QueryResultTuple_Impl<S, C, Cs...> &tuple) noexcept {
+	return tuple.value;
+}
+
+template <std::size_t S, class... C, class... Cs>
+constexpr auto get_impl(QueryResultTuple_Impl<S, Any<C...>, Cs...> &tuple) noexcept {
+	return get_impl<S>(static_cast<QueryResultTuple_Impl<tuple.INDEX, C..., Cs...> &>(tuple));
+}
+
+template <std::size_t S, class... C, class... Cs>
+constexpr auto get_impl(const QueryResultTuple_Impl<S, Any<C...>, Cs...> &tuple) noexcept {
+	return get_impl<S>(static_cast<const QueryResultTuple_Impl<tuple.INDEX, C..., Cs...> &>(tuple));
+}
+
+template <std::size_t S, class... Cs>
+constexpr query_element_t<S, 0, Cs...> get(QueryResultTuple_Impl<0, Cs...> &tuple) noexcept {
+	return get_impl<S>(tuple);
+}
+
+template <std::size_t S, class... Cs>
+constexpr const query_element_t<S, 0, Cs...> get(const QueryResultTuple_Impl<0, Cs...> &tuple) noexcept {
+	return get_impl<S>(tuple);
+}
 
 /// `QueryStorage` specialization with 0 template arguments.
 template <class... Cs>
@@ -565,6 +751,41 @@ struct QueryStorage<Any<C...>, Cs...> : QueryStorage<Cs...> {
 		QueryStorage<Cs...>::get_components(r_info);
 	}
 };
+
+// ------------------------------------------------------------------------ Group
+
+//template <class... Cs>
+//struct GroupStorage {
+//	GroupStorage(World *p_world) {}
+//
+//	void get_entities(EntitiesBuffer r_buffers[], uint32_t p_index = 0) const {}
+//	bool filter_satisfied(EntityID p_entity) const { return false; }
+//	AnyData get(EntityID p_id, Space p_mode) const { return AnyData(nullptr, godex::COMPONENT_NONE, true); }
+//};
+
+/// `QueryStorage` `Any` immutable filter specialization.
+//template <class... C, class... Cs>
+//struct QueryStorage<Group<C...>, Cs...> : QueryStorage<Cs...> {
+//	QueryStorage(World *p_world) :
+//			QueryStorage<Cs...>(p_world) {
+//	}
+//
+//	EntitiesBuffer get_entities() const {
+//		return EntitiesBuffer(0, nullptr);
+//	}
+//
+//	bool filter_satisfied(EntityID p_entity) const {
+//		return false;
+//	}
+//
+//	std::tuple<to_query_return_type_t<C>..., to_query_return_type_t<Cs>...> get(EntityID p_id, Space p_mode) const {
+//	}
+//
+//	static void get_components(SystemExeInfo &r_info) {
+//	}
+//};
+
+// -------------------------------------------------------------------- No filter
 
 /// `QueryStorage` no filter specialization.
 template <class C, class... Cs>

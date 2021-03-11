@@ -49,6 +49,134 @@ struct TestEvent {
 
 namespace godex_tests {
 
+TEST_CASE("[Modules][ECS] Test QueryResultTuple.") {
+	// Test fetch element type
+	{
+		// Make sure the `query_element_t` is able to fetch always the correct
+		// type, basing on the given `Search` (the first number in the template
+		// list).
+		int xx = 30;
+		int jj = 10;
+		float gg = 20;
+		bool bb = 30;
+		query_element_t<0, 0, int, Any<int, float>, bool> ptr_xx = &xx;
+		query_element_t<1, 0, int, Any<int, float>, bool> ptr_jj = &jj;
+		query_element_t<2, 0, int, Any<int, float>, bool> ptr_gg = &gg;
+		query_element_t<3, 0, int, Any<int, float>, bool> ptr_bb = &bb;
+		CHECK(ptr_xx == &xx);
+		CHECK(ptr_jj == &jj);
+		CHECK(ptr_gg == &gg);
+		CHECK(ptr_bb == &bb);
+	}
+
+	TagA a;
+	TagB b;
+	TagC c;
+
+	// Test basic types get:
+	// Make sure it's possible to compose a tuple and the stored data
+	// can be correctly retrieved.
+	{
+		QueryResultTuple_Impl<0, TagA, TagB> tuple(&a, &b);
+		static_assert(tuple.SIZE == 2);
+
+		{
+			TagA *ptr_a = get<0>(tuple);
+			TagB *ptr_b = get<1>(tuple);
+			CHECK(ptr_a == &a);
+			CHECK(ptr_b == &b);
+		}
+
+		{
+			auto [ptr_a, ptr_b] = tuple;
+
+			CHECK(ptr_a == &a);
+			CHECK(ptr_b == &b);
+		}
+	}
+
+	// Test advanced nesting:
+	// Make sure deep nesting is correctly flattened: so all the variables are
+	// all in 1 dimention and can be easily accessed with just 1 structured
+	// bindings as below.
+	{
+		QueryResultTuple_Impl<0, Any<TagA, TagB>, TagC> tuple(&a, &b, &c);
+
+		static_assert(tuple.SIZE == 3);
+
+		{
+			TagC *ptr_c = get<2>(tuple);
+			TagA *ptr_a = get<0>(tuple);
+			TagB *ptr_b = get<1>(tuple);
+
+			CHECK(ptr_a == &a);
+			CHECK(ptr_b == &b);
+			CHECK(ptr_c == &c);
+		}
+
+		{
+			auto [ptr_a, ptr_b, ptr_c] = tuple;
+
+			CHECK(ptr_a == &a);
+			CHECK(ptr_b == &b);
+			CHECK(ptr_c == &c);
+		}
+	}
+
+	// Test late initialization.
+	{
+		TransformComponent transf;
+
+		QueryResultTuple_Impl<0, TransformComponent, Any<TagA, TagB>, TagC> tuple;
+
+		static_assert(tuple.SIZE == 4);
+
+		{
+			{
+				TransformComponent *transform_ptr = get<0>(tuple);
+				TagA *ptr_a = get<1>(tuple);
+				TagB *ptr_b = get<2>(tuple);
+				TagC *ptr_c = get<3>(tuple);
+
+				CHECK(transform_ptr == nullptr);
+				CHECK(ptr_a == nullptr);
+				CHECK(ptr_b == nullptr);
+				CHECK(ptr_c == nullptr);
+			}
+
+			{
+				set<0>(tuple, &transf);
+				set<1>(tuple, &a);
+				set<2>(tuple, &b);
+				set<3>(tuple, &c);
+
+				TransformComponent *transform_ptr = get<0>(tuple);
+				TagA *ptr_a = get<1>(tuple);
+				TagB *ptr_b = get<2>(tuple);
+				TagC *ptr_c = get<3>(tuple);
+
+				CHECK(transform_ptr == &transf);
+				CHECK(ptr_a == &a);
+				CHECK(ptr_b == &b);
+				CHECK(ptr_c == &c);
+			}
+		}
+
+		transf.transform.origin.x = -50;
+
+		{
+			auto [transform_ptr, ptr_a, ptr_b, ptr_c] = tuple;
+
+			CHECK(transform_ptr == &transf);
+			CHECK(ptr_a == &a);
+			CHECK(ptr_b == &b);
+			CHECK(ptr_c == &c);
+
+			CHECK(ABS(transform_ptr->transform.origin.x - transf.transform.origin.x) <= CMP_EPSILON);
+		}
+	}
+}
+
 TEST_CASE("[Modules][ECS] Test static query") {
 	ECS::register_component<TagQueryTestComponent>();
 
@@ -1170,6 +1298,55 @@ TEST_CASE("[Modules][ECS] Test static query Any filter.") {
 			CHECK(tag.is_null());
 		}
 	}
+}
+
+TEST_CASE("[Modules][ECS] Test static query Group filter.") {
+	//World world;
+
+	///*EntityID entity_1 =*/world
+	//		.create_entity()
+	//		.with(TagA())
+	//		.with(TransformComponent());
+
+	///*EntityID entity_2 =*/world
+	//		.create_entity()
+	//		.with(TransformComponent());
+
+	//EntityID entity_3 = world
+	//							.create_entity()
+	//							.with(TagB())
+	//							.with(TransformComponent());
+
+	//EntityID entity_4 = world
+	//							.create_entity()
+	//							.with(TagC())
+	//							.with(TransformComponent());
+
+	//world.get_storage<TagA>()->set_tracing_change(true);
+	//world.get_storage<TagB>()->set_tracing_change(true);
+	//world.get_storage<TagC>()->set_tracing_change(true);
+	//world.get_storage<TransformComponent>()->set_tracing_change(true);
+
+	//world.get_storage<TagC>()->notify_changed(entity_4);
+	//world.get_storage<TransformComponent>()->notify_changed(entity_3);
+
+	//{
+	//	//Query<EntityID, Group<TransformComponent, Any<TagA, TagB, TagC>>> query(&world);
+	//	Query<EntityID, Group<Changed<TransformComponent>, Any<Changed<TagA>, Changed<TagB>, Changed<TagC>>>> query(&world);
+
+	//	auto it = query.begin();
+	//	{
+	//		auto [entity, group] = it.operator*();
+	//		auto [transf, tag] = group;
+	//		CHECK(entity == entity_3);
+	//	}
+
+	//	{
+	//		auto [entity, group] = it.operator*();
+	//		auto [transf, tag] = group;
+	//		CHECK(entity == entity_4);
+	//	}
+	//}
 }
 } // namespace godex_tests
 
