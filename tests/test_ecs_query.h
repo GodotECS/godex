@@ -49,26 +49,127 @@ struct TestEvent {
 
 namespace godex_tests {
 
-TEST_CASE("[Modules][ECS] Test QueryResultTuple.") {
+TEST_CASE("[Modules][ECS] Test fetch element type using fetch_element_type.") {
+	// Make sure the `fetch_element_type` is able to fetch always the correct
+	// type, basing on the given `Search` (the first number in the template
+	// list) and the following parameters.
+	// Check the doc on the `fetch_element` (in query.h) to know more about it.
+
 	// Test fetch element type
 	{
-		// Make sure the `query_element_t` is able to fetch always the correct
-		// type, basing on the given `Search` (the first number in the template
-		// list).
 		int xx = 30;
 		int jj = 10;
 		float gg = 20;
 		bool bb = 30;
-		query_element_t<0, 0, int, Any<int, float>, bool> ptr_xx = &xx;
-		query_element_t<1, 0, int, Any<int, float>, bool> ptr_jj = &jj;
-		query_element_t<2, 0, int, Any<int, float>, bool> ptr_gg = &gg;
-		query_element_t<3, 0, int, Any<int, float>, bool> ptr_bb = &bb;
+		fetch_element_type<0, 0, int, Any<int, float>, bool> ptr_xx = &xx;
+		fetch_element_type<1, 0, int, Any<int, float>, bool> ptr_jj = &jj;
+		fetch_element_type<2, 0, int, Any<int, float>, bool> ptr_gg = &gg;
+		fetch_element_type<3, 0, int, Any<int, float>, bool> ptr_bb = &bb;
 		CHECK(ptr_xx == &xx);
 		CHECK(ptr_jj == &jj);
 		CHECK(ptr_gg == &gg);
 		CHECK(ptr_bb == &bb);
 	}
 
+	// Test fetch element type with filters.
+	{
+		int xx = 30;
+		int jj = 10;
+		float gg = 20;
+		bool bb = 30;
+		EntityID ee;
+		fetch_element_type<0, 0, Without<int>, Any<int, Changed<float>>, Maybe<bool>, EntityID> ptr_xx = &xx;
+		fetch_element_type<1, 0, Without<int>, Any<int, Changed<float>>, Maybe<bool>, EntityID> ptr_jj = &jj;
+		fetch_element_type<2, 0, Without<int>, Any<int, Changed<float>>, Maybe<bool>, EntityID> ptr_gg = &gg;
+		fetch_element_type<3, 0, Without<int>, Any<int, Changed<float>>, Maybe<bool>, EntityID> ptr_bb = &bb;
+		fetch_element_type<4, 0, Without<int>, Any<int, Changed<float>>, Maybe<bool>, EntityID> entity = ee;
+		CHECK(ptr_xx == &xx);
+		CHECK(ptr_jj == &jj);
+		CHECK(ptr_gg == &gg);
+		CHECK(ptr_bb == &bb);
+		CHECK(entity == ee);
+	}
+
+	// Test fetch element type with filters batch deep.
+	{
+		int xx = 30;
+		int jj = 10;
+		float gg = 20;
+		bool bb = 30;
+		EntityID ee;
+		fetch_element_type<0, 0, Without<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> ptr_xx = &xx;
+		fetch_element_type<1, 0, Without<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> ptr_jj = &jj;
+		fetch_element_type<2, 0, Without<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> ptr_gg(&gg, 1);
+		fetch_element_type<3, 0, Without<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> ptr_bb = &bb;
+		fetch_element_type<4, 0, Without<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> entity = ee;
+		CHECK(ptr_xx == &xx);
+		CHECK(ptr_jj == &jj);
+		CHECK(ptr_gg.is_empty() == false);
+		CHECK(ptr_gg.get_size() == 1);
+		CHECK(ptr_gg[0] == &gg);
+		CHECK(ptr_bb == &bb);
+		CHECK(entity == ee);
+	}
+
+	// Test fetch element type with filters Without & Maybe deep.
+	{
+		int xx = 30;
+		int jj = 10;
+		float gg = 20;
+		bool bb = 30;
+		EntityID ee;
+		fetch_element_type<0, 0, Without<int>, Any<Without<Changed<int>>, Batch<Maybe<Changed<float>>>>, Maybe<bool>, EntityID> ptr_xx = &xx;
+		fetch_element_type<1, 0, Without<int>, Any<Without<Changed<int>>, Batch<Maybe<Changed<float>>>>, Maybe<bool>, EntityID> ptr_jj = &jj;
+		fetch_element_type<2, 0, Without<int>, Any<Without<Changed<int>>, Batch<Maybe<Changed<float>>>>, Maybe<bool>, EntityID> batch_gg(&gg, 1);
+		fetch_element_type<3, 0, Without<int>, Any<Without<Changed<int>>, Batch<Maybe<Changed<float>>>>, Maybe<bool>, EntityID> ptr_bb = &bb;
+		fetch_element_type<4, 0, Without<int>, Any<Without<Changed<int>>, Batch<Maybe<Changed<float>>>>, Maybe<bool>, EntityID> entity = ee;
+		CHECK(ptr_xx == &xx);
+		CHECK(ptr_jj == &jj);
+		CHECK(batch_gg.is_empty() == false);
+		CHECK(batch_gg.get_size() == 1);
+		CHECK(batch_gg[0] == &gg);
+		CHECK(ptr_bb == &bb);
+		CHECK(entity == ee);
+	}
+
+	// Test fetch element type with filters Any and Join
+	{
+		int xx = 30;
+		TagA gg;
+		bool bb = 30;
+		EntityID ee;
+		fetch_element_type<0, 0, Without<int>, Join<Any<Without<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>, Maybe<bool>, EntityID> ptr_xx = &xx;
+		fetch_element_type<1, 0, Without<int>, Join<Any<Without<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>, Maybe<bool>, EntityID> ptr_join(&gg, TagA::get_component_id(), false);
+		fetch_element_type<2, 0, Without<int>, Join<Any<Without<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>, Maybe<bool>, EntityID> ptr_bb = &bb;
+		fetch_element_type<3, 0, Without<int>, Join<Any<Without<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>, Maybe<bool>, EntityID> entity = ee;
+		CHECK(ptr_xx == &xx);
+		CHECK(ptr_join.is_null() == false);
+		CHECK(ptr_join.is<TagA>());
+		CHECK(ptr_join.as<TagA>() == &gg);
+		CHECK(ptr_bb == &bb);
+		CHECK(entity == ee);
+	}
+
+	// Test fetch element type with filters Any and Join deep
+	{
+		int xx = 30;
+		TagA gg;
+		bool bb = 30;
+		EntityID ee;
+		fetch_element_type<0, 0, Any<Without<Changed<int>>, Join<Any<Without<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>>, Maybe<bool>, EntityID> ptr_xx = &xx;
+		fetch_element_type<1, 0, Any<Without<Changed<int>>, Join<Any<Without<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>>, Maybe<bool>, EntityID> ptr_join(&gg, TagA::get_component_id(), false);
+		fetch_element_type<2, 0, Any<Without<Changed<int>>, Join<Any<Without<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>>, Maybe<bool>, EntityID> ptr_bb = &bb;
+		fetch_element_type<3, 0, Any<Without<Changed<int>>, Join<Any<Without<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>>, Maybe<bool>, EntityID> entity = ee;
+		CHECK(ptr_xx == &xx);
+		CHECK(ptr_join.is_null() == false);
+		CHECK(ptr_join.is<TagA>());
+		CHECK(ptr_join.as<TagA>() == &gg);
+		CHECK(ptr_bb == &bb);
+		CHECK(entity == ee);
+	}
+}
+
+TEST_CASE("[Modules][ECS] Test QueryResultTuple.") {
 	TagA a;
 	TagB b;
 	TagC c;

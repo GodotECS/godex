@@ -113,7 +113,7 @@ public:
 template <class... Cs>
 struct Any {};
 
-// TODO conver this to `Flat`
+// TODO Remove this
 struct AnyData {
 	void *const ptr;
 	const godex::component_id id;
@@ -164,8 +164,60 @@ struct AnyData {
 };
 
 template <class... Cs>
+struct Join {
+	void *const ptr;
+	const godex::component_id id;
+	const bool is_const;
+
+	Join(void *p_ptr, godex::component_id p_id, bool p_const) :
+			ptr(p_ptr), id(p_id), is_const(p_const) {}
+
+	/// Returns `true` when the wrapped ptr is `nullptr`.
+	bool is_null() const {
+		return ptr == nullptr;
+	}
+
+	/// Returns `true` if `T` is a valid conversion. This function take into
+	/// account mutability.
+	/// ```
+	/// Join join;
+	/// if( join.is<TestComponent>() ){
+	/// 	join.as<TestComponent>();
+	/// } else
+	/// if ( join.is<const TestComponent>() ) {
+	/// 	join.as<const TestComponent>();
+	/// }
+	/// ```
+	template <class T>
+	bool is() const {
+		return id == T::get_component_id() &&
+			   std::is_const<T>::value == is_const;
+	}
+
+	/// Unwrap the pointer, and cast it to T.
+	/// It's possible to check the type using `is<TypeHere>()`.
+	template <class T>
+	T *as() {
+#ifdef DEBUG_ENABLED
+		// Just check the mutability here, no need to check the type also, so
+		// it's possible to cast it easily to other types (like the base type).
+		CRASH_COND_MSG(std::is_const<T>::value != is_const, "Please retrieve this data with the correct mutability.");
+#endif
+		return static_cast<T *>(ptr);
+	}
+
+	/// If the data is const, never return the pointer as non const.
+	template <class T>
+	const T *as() const {
+		return static_cast<const std::remove_const_t<T> *>(ptr);
+	}
+};
+
+// TODO remove this.
+template <class... Cs>
 struct Group {};
 
+// TODO remove all these
 // ~~ Utility to remove the filter from the query. ~~
 template <typename T>
 struct to_query_return_type {
@@ -210,38 +262,97 @@ struct to_query_return_type<Batch<T>> {
 	typedef Batch<to_query_return_type_t<T>> type;
 };
 
-/// Base type: if arrives here, the compiler fails because the search index
-/// is out of bounds.
+/// This is an utility that is used by the `QueryResultTuple` to fetch the
+/// variable type for a specific element of the query.
+/// The first template parameter `S`, stands for `Search`, and can be used to
+/// point a specific Query element.
+/// The following templates are just the `Query` definition.
+///
+/// ```cpp
+/// fetch_element_type<0, 0, int, Any<int, float>, bool> // This is int*
+/// fetch_element_type<1, 0, int, Any<int, float>, bool> // This is float*
+///
+/// fetch_element_type<0, 0, Without<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> // This is int*
+/// fetch_element_type<1, 0, Without<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> // This is int*
+/// fetch_element_type<2, 0, Without<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> // This is Batch<float*>
+/// fetch_element_type<3, 0, Without<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> // This is float*
+/// fetch_element_type<4, 0, Without<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> // This is bool*
+/// ```
+///
+/// # How it works
+/// When you call `fetch_element_type`, as shown, the compiler fetches the `type`
+/// of the element where `S` and `I` are the same.
 ///
 /// @param S stands for `Search`
-/// @param I stands for `Index`
+/// @param I stands for `Index`, this must always be 0 when you define it.
+/// @param ...Cs The Query type.
 template <std::size_t S, std::size_t I, class... Cs>
-struct query_element {};
-
-/// Query element type found: It's just a pointer.
-template <std::size_t S, class C, class... Cs>
-struct query_element<S, S, C, Cs...> : query_element<S, S + 1, Cs...> {
-	using type = C *;
-};
-
-/// Query element using `Any`. This is called when we want totake the first
-/// parameter of `Any` (notice what `Search` is set also on the `Index`).
-/// Here we are just flattening `Any` the type will be resolved later.
-template <std::size_t S, class... C, class... Cs>
-struct query_element<S, S, Any<C...>, Cs...> : query_element<S, S, C..., Cs...> {
-};
-
-/// Query element using `Any`: Make it flat and keep searching it.
-template <std::size_t S, std::size_t I, class... C, class... Cs>
-struct query_element<S, I, Any<C...>, Cs...> : query_element<S, I, C..., Cs...> {};
-
-/// Query element not yet found, keep going.
-template <std::size_t S, std::size_t I, class C, class... Cs>
-struct query_element<S, I, C, Cs...> : query_element<S, I + 1, Cs...> {};
+struct fetch_element {};
 
 /// Just an utility.
 template <std::size_t S, std::size_t B, class... Cs>
-using query_element_t = typename query_element<S, B, Cs...>::type;
+using fetch_element_type = typename fetch_element<S, B, Cs...>::type;
+
+/// Query element type found: It's just a pointer.
+template <std::size_t S, class C, class... Cs>
+struct fetch_element<S, S, C, Cs...> : fetch_element<S, S + 1, Cs...> {
+	using type = C *;
+};
+
+/// We found the `Changed` filter, fetch the type now.
+template <std::size_t S, class C, class... Cs>
+struct fetch_element<S, S, Changed<C>, Cs...> : fetch_element<S, S + 1, Cs...> {
+	// Keep search the sub type: so we can nest with other filters.
+	using type = fetch_element_type<0, 0, C>;
+};
+
+/// We found the `Without` filter, fetch the type now.
+template <std::size_t S, class C, class... Cs>
+struct fetch_element<S, S, Without<C>, Cs...> : fetch_element<S, S + 1, Cs...> {
+	// Keep search the sub type: so we can nest with other filters.
+	using type = fetch_element_type<0, 0, C>;
+};
+
+/// We found the `Maybe` filter, fetch the type now.
+template <std::size_t S, class C, class... Cs>
+struct fetch_element<S, S, Maybe<C>, Cs...> : fetch_element<S, S + 1, Cs...> {
+	// Keep search the sub type: so we can nest with other filters.
+	using type = fetch_element_type<0, 0, C>;
+};
+
+/// We found the `Batch` filter, fetch the type now.
+template <std::size_t S, class C, class... Cs>
+struct fetch_element<S, S, Batch<C>, Cs...> : fetch_element<S, S + 1, Cs...> {
+	// Append `Batch` but also keep search the sub type: so we can nest other filters.
+	using type = Batch<fetch_element_type<0, 0, C>>;
+};
+
+/// We found the `Join` filter, fetch the type now.
+template <std::size_t S, class... C, class... Cs>
+struct fetch_element<S, S, Join<C...>, Cs...> : fetch_element<S, S + 1, Cs...> {
+	// Append `Join` but also keep search the sub type: so we can nest other filters.
+	using type = Join<fetch_element_type<0, 0, C>...>;
+};
+
+/// We found the `EntityID` filter, fetch the type now.
+template <std::size_t S, class... Cs>
+struct fetch_element<S, S, EntityID, Cs...> : fetch_element<S, S + 1, Cs...> {
+	// The type is just an `EntityID`.
+	using type = EntityID;
+};
+
+/// Found specialization `Any` where `S` and `I` are the same: Flatten it as usual.
+template <std::size_t S, class... C, class... Cs>
+struct fetch_element<S, S, Any<C...>, Cs...> : fetch_element<S, S, C..., Cs...> {
+};
+
+/// Found specialization `Any`: Just flatten its sub types.
+template <std::size_t S, std::size_t I, class... C, class... Cs>
+struct fetch_element<S, I, Any<C...>, Cs...> : fetch_element<S, I, C..., Cs...> {};
+
+/// `S` and `I` are not yet the same: Just check the next `I`.
+template <std::size_t S, std::size_t I, class C, class... Cs>
+struct fetch_element<S, I, C, Cs...> : fetch_element<S, I + 1, Cs...> {};
 
 /// This class is the base query result tuple.
 /// `I` stands for `Index` and it's used to index the types.
@@ -262,7 +373,7 @@ struct QueryResultTuple_Impl<I, C, Cs...> : public QueryResultTuple_Impl<I + 1, 
 
 	QueryResultTuple_Impl(
 			C *p_value,
-			query_element_t<0, 0, Cs>... p_rest) :
+			fetch_element_type<0, 0, Cs>... p_rest) :
 			QueryResultTuple_Impl<I + 1, Cs...>(p_rest...),
 			value(p_value) {}
 
@@ -300,8 +411,8 @@ struct QueryResultTuple_Impl<I, Any<C...>, Cs...> : public QueryResultTuple_Impl
 	static constexpr std::size_t INDEX = I;
 
 	QueryResultTuple_Impl(
-			query_element_t<0, 0, C>... p_values,
-			query_element_t<0, 0, Cs>... p_rest) :
+			fetch_element_type<0, 0, C>... p_values,
+			fetch_element_type<0, 0, Cs>... p_rest) :
 			QueryResultTuple_Impl<I, C..., Cs...>(p_values..., p_rest...) {}
 
 	QueryResultTuple_Impl() = default;
@@ -336,7 +447,7 @@ struct tuple_size<QueryResultTuple_Impl<0, Cs...>> : std::integral_constant<int,
 
 template <size_t S, class... Cs>
 struct tuple_element<S, QueryResultTuple_Impl<0, Cs...>> {
-	using type = typename query_element<S, 0, Cs...>::type;
+	using type = typename fetch_element<S, 0, Cs...>::type;
 };
 } // namespace std
 
@@ -378,12 +489,12 @@ constexpr auto get_impl(const QueryResultTuple_Impl<S, Any<C...>, Cs...> &tuple)
 }
 
 template <std::size_t S, class... Cs>
-constexpr query_element_t<S, 0, Cs...> get(QueryResultTuple_Impl<0, Cs...> &tuple) noexcept {
+constexpr fetch_element_type<S, 0, Cs...> get(QueryResultTuple_Impl<0, Cs...> &tuple) noexcept {
 	return get_impl<S>(tuple);
 }
 
 template <std::size_t S, class... Cs>
-constexpr const query_element_t<S, 0, Cs...> get(const QueryResultTuple_Impl<0, Cs...> &tuple) noexcept {
+constexpr const fetch_element_type<S, 0, Cs...> get(const QueryResultTuple_Impl<0, Cs...> &tuple) noexcept {
 	return get_impl<S>(tuple);
 }
 
