@@ -41,13 +41,14 @@ struct Changed {};
 /// ```
 template <class C>
 class Batch {
-	C data;
-	uint32_t size;
+	C data = nullptr;
+	uint32_t size = 0;
 
 public:
+	Batch() = default;
+	Batch(const Batch &) = default;
 	Batch(C p_data, uint32_t p_size) :
 			data(p_data), size(p_size) {}
-	Batch(const Batch &) = default;
 
 	// Get the component at position `index`.
 	C operator[](uint32_t p_index) {
@@ -164,13 +165,19 @@ struct AnyData {
 };
 
 template <class... Cs>
-struct Join {
-	void *const ptr;
-	const godex::component_id id;
-	const bool is_const;
+struct Join {};
 
-	Join(void *p_ptr, godex::component_id p_id, bool p_const) :
+struct JoinData {
+private:
+	void *ptr = nullptr;
+	godex::component_id id = godex::COMPONENT_NONE;
+	bool is_const = true;
+
+public:
+	JoinData(void *p_ptr, godex::component_id p_id, bool p_const) :
 			ptr(p_ptr), id(p_id), is_const(p_const) {}
+	JoinData() = default;
+	JoinData(const JoinData &) = default;
 
 	/// Returns `true` when the wrapped ptr is `nullptr`.
 	bool is_null() const {
@@ -262,6 +269,8 @@ struct to_query_return_type<Batch<T>> {
 	typedef Batch<to_query_return_type_t<T>> type;
 };
 
+// ---------------------------------------------------------- Fetch Elements Type
+
 /// This is an utility that is used by the `QueryResultTuple` to fetch the
 /// variable type for a specific element of the query.
 /// The first template parameter `S`, stands for `Search`, and can be used to
@@ -330,8 +339,8 @@ struct fetch_element<S, S, Batch<C>, Cs...> : fetch_element<S, S + 1, Cs...> {
 /// We found the `Join` filter, fetch the type now.
 template <std::size_t S, class... C, class... Cs>
 struct fetch_element<S, S, Join<C...>, Cs...> : fetch_element<S, S + 1, Cs...> {
-	// Append `Join` but also keep search the sub type: so we can nest other filters.
-	using type = Join<fetch_element_type<0, 0, C>...>;
+	// Just JoinData.
+	using type = JoinData;
 };
 
 /// We found the `EntityID` filter, fetch the type now.
@@ -353,6 +362,8 @@ struct fetch_element<S, I, Any<C...>, Cs...> : fetch_element<S, I, C..., Cs...> 
 /// `S` and `I` are not yet the same: Just check the next `I`.
 template <std::size_t S, std::size_t I, class C, class... Cs>
 struct fetch_element<S, I, C, Cs...> : fetch_element<S, I + 1, Cs...> {};
+
+// ----------------------------------------------------------- Query Result Tuple
 
 /// This class is the base query result tuple.
 /// `I` stands for `Index` and it's used to index the types.
@@ -406,10 +417,106 @@ struct QueryResultTuple_Impl<I, C, Cs...> : public QueryResultTuple_Impl<I + 1, 
 //			values(p_values) {}
 //};
 
-template <std::size_t I, class... C, class... Cs>
-struct QueryResultTuple_Impl<I, Any<C...>, Cs...> : public QueryResultTuple_Impl<I, C..., Cs...> {
-	static constexpr std::size_t INDEX = I;
+// TODO remove
+//template <std::size_t I, class C, class... Cs>
+//struct QueryResultTuple_Impl<I, Changed<C>, Cs...> : public QueryResultTuple_Impl<I, C, Cs...> {
+//	QueryResultTuple_Impl(
+//			fetch_element_type<0, 0, C> p_value,
+//			fetch_element_type<0, 0, Cs>... p_rest) :
+//			QueryResultTuple_Impl<I, C, Cs...>(p_value, p_rest...) {}
+//
+//	QueryResultTuple_Impl() = default;
+//};
+//
+//template <std::size_t I, class C, class... Cs>
+//struct QueryResultTuple_Impl<I, Without<C>, Cs...> : public QueryResultTuple_Impl<I, C, Cs...> {
+//	QueryResultTuple_Impl(
+//			fetch_element_type<0, 0, C> p_value,
+//			fetch_element_type<0, 0, Cs>... p_rest) :
+//			QueryResultTuple_Impl<I, C, Cs...>(p_value, p_rest...) {}
+//
+//	QueryResultTuple_Impl() = default;
+//};
+//
+//template <std::size_t I, class C, class... Cs>
+//struct QueryResultTuple_Impl<I, Maybe<C>, Cs...> : public QueryResultTuple_Impl<I, C, Cs...> {
+//	QueryResultTuple_Impl(
+//			fetch_element_type<0, 0, C> p_value,
+//			fetch_element_type<0, 0, Cs>... p_rest) :
+//			QueryResultTuple_Impl<I, C, Cs...>(p_value, p_rest...) {}
+//
+//	QueryResultTuple_Impl() = default;
+//};
+//
+//template <std::size_t I, class... C, class... Cs>
+//struct QueryResultTuple_Impl<I, Any<C...>, Cs...> : public QueryResultTuple_Impl<I, C..., Cs...> {
+//	static constexpr std::size_t INDEX = I;
+//
+//	QueryResultTuple_Impl(
+//			fetch_element_type<0, 0, C>... p_values,
+//			fetch_element_type<0, 0, Cs>... p_rest) :
+//			QueryResultTuple_Impl<I, C..., Cs...>(p_values..., p_rest...) {}
+//
+//	QueryResultTuple_Impl() = default;
+//};
 
+template <std::size_t I, class C, class... Cs>
+struct QueryResultTuple_Impl<I, Batch<C>, Cs...> : public QueryResultTuple_Impl<I + 1, Cs...> {
+	Batch<fetch_element_type<0, 0, C>> value;
+
+	QueryResultTuple_Impl(
+			Batch<fetch_element_type<0, 0, C>> p_value,
+			fetch_element_type<0, 0, Cs>... p_rest) :
+			QueryResultTuple_Impl<I + 1, Cs...>(p_rest...),
+			value(p_value) {}
+
+	QueryResultTuple_Impl() = default;
+};
+
+template <std::size_t I, class... C, class... Cs>
+struct QueryResultTuple_Impl<I, Join<C...>, Cs...> : public QueryResultTuple_Impl<I + 1, Cs...> {
+	JoinData value;
+
+	QueryResultTuple_Impl(
+			const JoinData &p_value,
+			fetch_element_type<0, 0, Cs>... p_rest) :
+			QueryResultTuple_Impl<I + 1, Cs...>(p_rest...),
+			value(p_value) {}
+
+	QueryResultTuple_Impl() = default;
+};
+
+template <std::size_t I, class... Cs>
+struct QueryResultTuple_Impl<I, EntityID, Cs...> : public QueryResultTuple_Impl<I + 1, Cs...> {
+	EntityID value;
+
+	QueryResultTuple_Impl(
+			EntityID p_value,
+			fetch_element_type<0, 0, Cs>... p_rest) :
+			QueryResultTuple_Impl<I + 1, Cs...>(p_rest...),
+			value(p_value) {}
+
+	QueryResultTuple_Impl() = default;
+};
+
+/// Flatten all the Filter, so we can store the data on the same level.
+/// This template is able to flatten the filters: `Changed`, `Without`, `Maybe`, `Any`, `Join`
+///
+/// Notice: This is just forwarding the declaration, indeed this has the same
+/// index the flattened data has.
+///
+/// ```
+/// This:
+/// QeryResultTuple_Impl<0, int, Without<float>>
+///
+/// Is compiled as:
+/// `ResultTuple<0, int> :
+/// 		 ResultTuple<1, Without<>> :
+/// 				ResultTuple<1, float>
+/// ```
+/// The `set` and `get` functions are able to fetch the data anyway.
+template <std::size_t I, class... C, class... Cs, template <class> class Filter>
+struct QueryResultTuple_Impl<I, Filter<C...>, Cs...> : public QueryResultTuple_Impl<I, C..., Cs...> {
 	QueryResultTuple_Impl(
 			fetch_element_type<0, 0, C>... p_values,
 			fetch_element_type<0, 0, Cs>... p_rest) :
@@ -439,6 +546,8 @@ struct QueryResultTuple_Impl<I, Any<C...>, Cs...> : public QueryResultTuple_Impl
 //			QueryResultTuple_Impl<0, Cs...>(p_values...) {}
 //};
 
+// ---------------------------------------------------------- Structured Bindings
+
 /// Bindings to allow use structured bidnings.
 /// These are necessary to tell the compiler how to decompose the custom class.
 namespace std {
@@ -451,52 +560,94 @@ struct tuple_element<S, QueryResultTuple_Impl<0, Cs...>> {
 };
 } // namespace std
 
-// -- QueryResultTuple Setter
+// ----------------------------------------------------------------- Tuple Setter
+
+/// Set the data inside the tuple at give index `S`.
 template <std::size_t S, class T, class C, class... Cs>
 constexpr void set_impl(T p_val, QueryResultTuple_Impl<S, C, Cs...> &tuple) noexcept {
 	tuple.value = p_val;
 }
 
-template <std::size_t S, class T, class... C, class... Cs>
-constexpr void set_impl(T p_val, QueryResultTuple_Impl<S, Any<C...>, Cs...> &tuple) noexcept {
-	set_impl<S>(p_val, static_cast<QueryResultTuple_Impl<tuple.INDEX, C..., Cs...> &>(tuple));
+/// Set the batched data inside the tuple at give index `S`.
+template <std::size_t S, class T, class C, class... Cs>
+constexpr void set_impl(T p_val, QueryResultTuple_Impl<S, Batch<C>, Cs...> &tuple) noexcept {
+	tuple.value = p_val;
 }
 
+/// Set the joined data inside the tuple at give index `S`.
+template <std::size_t S, class T, class... C, class... Cs>
+constexpr void set_impl(T p_val, QueryResultTuple_Impl<S, Join<C...>, Cs...> &tuple) noexcept {
+	tuple.value = p_val;
+}
+
+/// Skip the filters, and foward the call to the subfilters.
+/// This template is able to handle all filters: `Changed`, `Without`, `Maybe`.
+///
+/// Note: this is necessary becase the filters have the same `Index` of the
+/// actual data, so we need to skip it to extract the data.
+template <std::size_t S, class T, class... C, class... Cs, template <class> class Filter>
+constexpr void set_impl(T p_val, QueryResultTuple_Impl<S, Filter<C...>, Cs...> &tuple) noexcept {
+	// Forward to subfilters.
+	set_impl<S>(p_val, static_cast<QueryResultTuple_Impl<S, C..., Cs...> &>(tuple));
+}
+
+/// Skip the filter `Any`.
+template <std::size_t S, class T, class... C, class... Cs>
+constexpr void set_impl(T p_val, QueryResultTuple_Impl<S, Any<C...>, Cs...> &tuple) noexcept {
+	// Forward to subfilters.
+	set_impl<S>(p_val, static_cast<QueryResultTuple_Impl<S, C..., Cs...> &>(tuple));
+}
+
+/// Can be used to set the data inside a tuple.
 template <std::size_t S, class T, class... Cs>
 constexpr void set(QueryResultTuple_Impl<0, Cs...> &tuple, T p_val) noexcept {
 	set_impl<S>(p_val, tuple);
 }
 
-// -- QueryResultTuple Getter
-template <std::size_t S, class C, class... Cs>
-constexpr auto get_impl(QueryResultTuple_Impl<S, C, Cs...> &tuple) noexcept {
-	return tuple.value;
-}
+// ----------------------------------------------------------------- Tuple Getter
 
+/// Fetches the data from the the tuple, because `Search` is equal to the element `Index`.
 template <std::size_t S, class C, class... Cs>
 constexpr auto get_impl(const QueryResultTuple_Impl<S, C, Cs...> &tuple) noexcept {
 	return tuple.value;
 }
 
+/// Fetches the batched data from the tuple.
+template <std::size_t S, class C, class... Cs>
+constexpr auto get_impl(const QueryResultTuple_Impl<S, Batch<C>, Cs...> &tuple) noexcept {
+	return tuple.value;
+}
+
+/// Fetches the joined data from the tuple.
 template <std::size_t S, class... C, class... Cs>
-constexpr auto get_impl(QueryResultTuple_Impl<S, Any<C...>, Cs...> &tuple) noexcept {
-	return get_impl<S>(static_cast<QueryResultTuple_Impl<tuple.INDEX, C..., Cs...> &>(tuple));
+constexpr auto get_impl(const QueryResultTuple_Impl<S, Join<C...>, Cs...> &tuple) noexcept {
+	return tuple.value;
+}
+
+/// Skip the filter and fetches the inner data.
+/// This template is able to handle all filters: `Changed`, `Without`, `Maybe`.
+///
+/// Note: this is necessary becase the filters have the same `Index` of the
+/// actual data, so we need to skip it to extract the data.
+template <std::size_t S, class... C, class... Cs, template <class...> class Filter>
+constexpr auto get_impl(const QueryResultTuple_Impl<S, Filter<C...>, Cs...> &tuple) noexcept {
+	// Forward to subfilters.
+	return get_impl<S>(static_cast<const QueryResultTuple_Impl<S, C..., Cs...> &>(tuple));
 }
 
 template <std::size_t S, class... C, class... Cs>
 constexpr auto get_impl(const QueryResultTuple_Impl<S, Any<C...>, Cs...> &tuple) noexcept {
-	return get_impl<S>(static_cast<const QueryResultTuple_Impl<tuple.INDEX, C..., Cs...> &>(tuple));
+	// Forward to subfilters.
+	return get_impl<S>(static_cast<const QueryResultTuple_Impl<S, C..., Cs...> &>(tuple));
 }
 
+/// Can be used to fetch the data from a tuple.
 template <std::size_t S, class... Cs>
-constexpr fetch_element_type<S, 0, Cs...> get(QueryResultTuple_Impl<0, Cs...> &tuple) noexcept {
+constexpr fetch_element_type<S, 0, Cs...> get(const QueryResultTuple_Impl<0, Cs...> &tuple) noexcept {
 	return get_impl<S>(tuple);
 }
 
-template <std::size_t S, class... Cs>
-constexpr const fetch_element_type<S, 0, Cs...> get(const QueryResultTuple_Impl<0, Cs...> &tuple) noexcept {
-	return get_impl<S>(tuple);
-}
+// --------------------------------------------------------------- Query Storages
 
 /// `QueryStorage` specialization with 0 template arguments.
 template <class... Cs>

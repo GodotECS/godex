@@ -139,13 +139,13 @@ TEST_CASE("[Modules][ECS] Test fetch element type using fetch_element_type.") {
 		bool bb = 30;
 		EntityID ee;
 		fetch_element_type<0, 0, Without<int>, Join<Any<Without<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>, Maybe<bool>, EntityID> ptr_xx = &xx;
-		fetch_element_type<1, 0, Without<int>, Join<Any<Without<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>, Maybe<bool>, EntityID> ptr_join(&gg, TagA::get_component_id(), false);
+		fetch_element_type<1, 0, Without<int>, Join<Any<Without<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>, Maybe<bool>, EntityID> join(&gg, TagA::get_component_id(), false);
 		fetch_element_type<2, 0, Without<int>, Join<Any<Without<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>, Maybe<bool>, EntityID> ptr_bb = &bb;
 		fetch_element_type<3, 0, Without<int>, Join<Any<Without<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>, Maybe<bool>, EntityID> entity = ee;
 		CHECK(ptr_xx == &xx);
-		CHECK(ptr_join.is_null() == false);
-		CHECK(ptr_join.is<TagA>());
-		CHECK(ptr_join.as<TagA>() == &gg);
+		CHECK(join.is_null() == false);
+		CHECK(join.is<TagA>());
+		CHECK(join.as<TagA>() == &gg);
 		CHECK(ptr_bb == &bb);
 		CHECK(entity == ee);
 	}
@@ -157,19 +157,19 @@ TEST_CASE("[Modules][ECS] Test fetch element type using fetch_element_type.") {
 		bool bb = 30;
 		EntityID ee;
 		fetch_element_type<0, 0, Any<Without<Changed<int>>, Join<Any<Without<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>>, Maybe<bool>, EntityID> ptr_xx = &xx;
-		fetch_element_type<1, 0, Any<Without<Changed<int>>, Join<Any<Without<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>>, Maybe<bool>, EntityID> ptr_join(&gg, TagA::get_component_id(), false);
+		fetch_element_type<1, 0, Any<Without<Changed<int>>, Join<Any<Without<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>>, Maybe<bool>, EntityID> join(&gg, TagA::get_component_id(), false);
 		fetch_element_type<2, 0, Any<Without<Changed<int>>, Join<Any<Without<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>>, Maybe<bool>, EntityID> ptr_bb = &bb;
 		fetch_element_type<3, 0, Any<Without<Changed<int>>, Join<Any<Without<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>>, Maybe<bool>, EntityID> entity = ee;
 		CHECK(ptr_xx == &xx);
-		CHECK(ptr_join.is_null() == false);
-		CHECK(ptr_join.is<TagA>());
-		CHECK(ptr_join.as<TagA>() == &gg);
+		CHECK(join.is_null() == false);
+		CHECK(join.is<TagA>());
+		CHECK(join.as<TagA>() == &gg);
 		CHECK(ptr_bb == &bb);
 		CHECK(entity == ee);
 	}
 }
 
-TEST_CASE("[Modules][ECS] Test QueryResultTuple.") {
+TEST_CASE("[Modules][ECS] Test QueryResultTuple: packing and unpaking following the Query rules.") {
 	TagA a;
 	TagB b;
 	TagC c;
@@ -276,6 +276,248 @@ TEST_CASE("[Modules][ECS] Test QueryResultTuple.") {
 			CHECK(ABS(transform_ptr->transform.origin.x - transf.transform.origin.x) <= CMP_EPSILON);
 		}
 	}
+
+	// Test other filters
+	{
+		QueryResultTuple_Impl<0, Without<TagA>, Maybe<TagB>, Changed<TagC>> tuple(&a, &b, &c);
+
+		static_assert(tuple.SIZE == 3);
+
+		{
+			TagA *ptr_a = get<0>(tuple);
+			TagB *ptr_b = get<1>(tuple);
+			TagC *ptr_c = get<2>(tuple);
+
+			CHECK(ptr_a == &a);
+			CHECK(ptr_b == &b);
+			CHECK(ptr_c == &c);
+		}
+
+		{
+			auto [ptr_a, ptr_b, ptr_c] = tuple;
+
+			CHECK(ptr_a == &a);
+			CHECK(ptr_b == &b);
+			CHECK(ptr_c == &c);
+		}
+	}
+
+	// Test `Batch` filter.
+	{
+		QueryResultTuple_Impl<0, Batch<TagA>, Maybe<const TagB>> tuple(Batch(&a, 1), &b);
+
+		static_assert(tuple.SIZE == 2);
+
+		{
+			Batch<TagA *> batch_a = get<0>(tuple);
+			const TagB *ptr_b = get<1>(tuple);
+
+			CHECK(batch_a.is_empty() == false);
+			CHECK(batch_a[0] == &a);
+			CHECK(ptr_b == &b);
+		}
+
+		{
+			auto [batch_a, ptr_b] = tuple;
+
+			CHECK(batch_a.is_empty() == false);
+			CHECK(batch_a[0] == &a);
+			CHECK(ptr_b == &b);
+		}
+	}
+
+	// Test `EntityID` filter.
+	{
+		QueryResultTuple_Impl<0, Batch<TagA>, EntityID, Maybe<const TagB>> tuple(Batch(&a, 1), EntityID(2), &b);
+
+		static_assert(tuple.SIZE == 3);
+
+		{
+			Batch<TagA *> batch_a = get<0>(tuple);
+			EntityID entity = get<1>(tuple);
+			const TagB *ptr_b = get<2>(tuple);
+
+			CHECK(batch_a.is_empty() == false);
+			CHECK(batch_a[0] == &a);
+			CHECK(entity == EntityID(2));
+			CHECK(ptr_b == &b);
+		}
+
+		{
+			auto [batch_a, entity, ptr_b] = tuple;
+
+			CHECK(batch_a.is_empty() == false);
+			CHECK(batch_a[0] == &a);
+			CHECK(entity == EntityID(2));
+			CHECK(ptr_b == &b);
+		}
+
+		// Try set.
+
+		TagA another_tag_a;
+		set<0>(tuple, Batch(&another_tag_a, 1));
+		set<1>(tuple, EntityID(4));
+
+		{
+			auto [batch_a, entity, ptr_b] = tuple;
+
+			CHECK(batch_a.is_empty() == false);
+			CHECK(batch_a[0] == &another_tag_a);
+			CHECK(entity == EntityID(4));
+			CHECK(ptr_b == &b);
+		}
+	}
+
+	// Test `Join` filter.
+	{
+		QueryResultTuple_Impl<0, Join<Any<TagA, Changed<TagB>>>, EntityID> tuple(JoinData(&a, TagA::get_component_id(), false), EntityID(5));
+
+		static_assert(tuple.SIZE == 2);
+
+		{
+			JoinData join = get<0>(tuple);
+			EntityID entity = get<1>(tuple);
+
+			CHECK(join.is<TagA>());
+			CHECK(join.as<TagA>() == &a);
+			CHECK(entity == EntityID(5));
+		}
+
+		{
+			auto [join, entity] = tuple;
+
+			CHECK(join.is<TagA>());
+			CHECK(join.as<TagA>() == &a);
+			CHECK(entity == EntityID(5));
+		}
+
+		// Try set.
+
+		TagA another_tag_a;
+		set<0>(tuple, JoinData(&another_tag_a, TagA::get_component_id(), false));
+		set<1>(tuple, EntityID(10));
+
+		{
+			auto [join, entity] = tuple;
+
+			CHECK(join.is<TagA>());
+			CHECK(join.as<TagA>() == &another_tag_a);
+			CHECK(entity == EntityID(10));
+		}
+	}
+
+	// Test deep all filters.
+	{
+		QueryResultTuple_Impl<0, EntityID, Any<Maybe<Changed<TagC>>, Batch<Maybe<Changed<TagB>>>>, Join<Any<Without<TagA>, Changed<TagB>>>> tuple;
+
+		static_assert(tuple.SIZE == 4);
+
+		set<0>(tuple, EntityID(10));
+		set<1>(tuple, &c);
+		set<2>(tuple, Batch(&b, 1));
+		set<3>(tuple, JoinData(&b, TagB::get_component_id(), false));
+
+		{
+			EntityID entity = get<0>(tuple);
+			TagC *ptr_c = get<1>(tuple);
+			Batch<TagB *> batch_b = get<2>(tuple);
+			JoinData join = get<3>(tuple);
+
+			CHECK(entity == EntityID(10));
+			CHECK(ptr_c == &c);
+			CHECK(batch_b.is_empty() == false);
+			CHECK(batch_b[0] == &b);
+			CHECK(join.is<TagB>());
+			CHECK(join.as<TagB>() == &b);
+		}
+
+		{
+			auto [entity, ptr_c, batch_b, join] = tuple;
+
+			CHECK(entity == EntityID(10));
+			CHECK(ptr_c == &c);
+			CHECK(batch_b.is_empty() == false);
+			CHECK(batch_b[0] == &b);
+			CHECK(join.is<TagB>());
+			CHECK(join.as<TagB>() == &b);
+		}
+	}
+
+	// Test multiple nested Any filters.
+	{
+		QueryResultTuple_Impl<0,
+				EntityID,
+				Any<
+						Maybe<Changed<TagC>>,
+						Batch<Maybe<Changed<TagB>>>,
+						Join<Any<Without<TagA>, Changed<TagB>>>,
+						Any<
+								Without<TagA>,
+								Changed<TagB>>>,
+				EntityID,
+				TransformComponent>
+				tuple;
+
+		static_assert(tuple.SIZE == 8);
+
+		TagA another_tag_a;
+		TagB another_tag_b;
+		TransformComponent transf(Transform(Basis(), Vector3(1, 0, 0)));
+
+		set<0>(tuple, EntityID(10));
+		set<1>(tuple, &c);
+		set<2>(tuple, Batch(&b, 1));
+		set<3>(tuple, JoinData(&a, TagA::get_component_id(), false));
+		set<4>(tuple, &another_tag_a);
+		set<5>(tuple, &another_tag_b);
+		set<6>(tuple, EntityID(100));
+		set<7>(tuple, &transf);
+
+		// Test GET
+		{
+			EntityID entity = get<0>(tuple);
+			TagC *ptr_c = get<1>(tuple);
+			Batch<TagB *> batch = get<2>(tuple);
+			JoinData join = get<3>(tuple);
+			TagA *ptr_another_a = get<4>(tuple);
+			TagB *ptr_another_b = get<5>(tuple);
+			EntityID another_entity = get<6>(tuple);
+			TransformComponent *ptr_transf = get<7>(tuple);
+
+			CHECK(entity == EntityID(10));
+			CHECK(ptr_c == &c);
+			CHECK(batch.is_empty() == false);
+			CHECK(batch[0] == &b);
+			CHECK(join.is<TagA>());
+			CHECK(join.as<TagA>() == &a);
+			CHECK(ptr_another_a == &another_tag_a);
+			CHECK(ptr_another_b == &another_tag_b);
+			CHECK(another_entity == EntityID(100));
+			CHECK(ptr_transf == &transf);
+		}
+
+		// Test Structured bindings.
+		{
+			auto [entity, ptr_c, batch, join, ptr_another_a, ptr_another_b, another_entity, ptr_transf] = tuple;
+
+			CHECK(entity == EntityID(10));
+			CHECK(ptr_c == &c);
+			CHECK(batch.is_empty() == false);
+			CHECK(batch[0] == &b);
+			CHECK(join.is<TagA>());
+			CHECK(join.as<TagA>() == &a);
+			CHECK(ptr_another_a == &another_tag_a);
+			CHECK(ptr_another_b == &another_tag_b);
+			CHECK(another_entity == EntityID(100));
+			CHECK(ptr_transf == &transf);
+		}
+	}
+}
+
+TEST_CASE("[Modules][ECS] Test static query") {
+	ECS::register_component<TagQueryTestComponent>();
+
+	// TODO test deep nesting
 }
 
 TEST_CASE("[Modules][ECS] Test static query") {
