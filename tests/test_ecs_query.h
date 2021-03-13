@@ -178,7 +178,7 @@ TEST_CASE("[Modules][ECS] Test QueryResultTuple: packing and unpaking following 
 	// Make sure it's possible to compose a tuple and the stored data
 	// can be correctly retrieved.
 	{
-		QueryResultTuple_Impl<0, TagA, TagB> tuple;
+		QueryResultTuple<TagA, TagB> tuple;
 
 		static_assert(tuple.SIZE == 2);
 
@@ -205,7 +205,7 @@ TEST_CASE("[Modules][ECS] Test QueryResultTuple: packing and unpaking following 
 	// all in 1 dimention and can be easily accessed with just 1 structured
 	// bindings as below.
 	{
-		QueryResultTuple_Impl<0, Any<TagA, TagB>, TagC> tuple;
+		QueryResultTuple<Any<TagA, TagB>, TagC> tuple;
 
 		static_assert(tuple.SIZE == 3);
 
@@ -236,7 +236,7 @@ TEST_CASE("[Modules][ECS] Test QueryResultTuple: packing and unpaking following 
 	{
 		TransformComponent transf;
 
-		QueryResultTuple_Impl<0, TransformComponent, Any<TagA, TagB>, TagC> tuple;
+		QueryResultTuple<TransformComponent, Any<TagA, TagB>, TagC> tuple;
 
 		static_assert(tuple.SIZE == 4);
 
@@ -273,7 +273,7 @@ TEST_CASE("[Modules][ECS] Test QueryResultTuple: packing and unpaking following 
 
 	// Test other filters
 	{
-		QueryResultTuple_Impl<0, Without<TagA>, Maybe<TagB>, Changed<TagC>> tuple;
+		QueryResultTuple<Without<TagA>, Maybe<TagB>, Changed<TagC>> tuple;
 
 		set<0>(tuple, &a);
 		set<1>(tuple, &b);
@@ -302,7 +302,7 @@ TEST_CASE("[Modules][ECS] Test QueryResultTuple: packing and unpaking following 
 
 	// Test `Batch` filter.
 	{
-		QueryResultTuple_Impl<0, Batch<TagA>, Maybe<const TagB>> tuple;
+		QueryResultTuple<Batch<TagA>, Maybe<const TagB>> tuple;
 
 		set<0>(tuple, Batch(&a, 1));
 		set<1>(tuple, &b);
@@ -329,7 +329,7 @@ TEST_CASE("[Modules][ECS] Test QueryResultTuple: packing and unpaking following 
 
 	// Test `EntityID` filter.
 	{
-		QueryResultTuple_Impl<0, Batch<TagA>, EntityID, Maybe<const TagB>> tuple;
+		QueryResultTuple<Batch<TagA>, EntityID, Maybe<const TagB>> tuple;
 
 		static_assert(tuple.SIZE == 3);
 
@@ -375,7 +375,7 @@ TEST_CASE("[Modules][ECS] Test QueryResultTuple: packing and unpaking following 
 
 	// Test `Join` filter.
 	{
-		QueryResultTuple_Impl<0, Join<Any<TagA, Changed<TagB>>>, EntityID> tuple;
+		QueryResultTuple<Join<Any<TagA, Changed<TagB>>>, EntityID> tuple;
 
 		static_assert(tuple.SIZE == 2);
 
@@ -416,7 +416,7 @@ TEST_CASE("[Modules][ECS] Test QueryResultTuple: packing and unpaking following 
 
 	// Test deep all filters.
 	{
-		QueryResultTuple_Impl<0, EntityID, Any<Maybe<Changed<TagC>>, Batch<Maybe<Changed<TagB>>>>, Join<Any<Without<TagA>, Changed<TagB>>>> tuple;
+		QueryResultTuple<EntityID, Any<Maybe<Changed<TagC>>, Batch<Maybe<Changed<TagB>>>>, Join<Any<Without<TagA>, Changed<TagB>>>> tuple;
 
 		static_assert(tuple.SIZE == 4);
 
@@ -453,7 +453,7 @@ TEST_CASE("[Modules][ECS] Test QueryResultTuple: packing and unpaking following 
 
 	// Test multiple nested Any filters.
 	{
-		QueryResultTuple_Impl<0,
+		QueryResultTuple<
 				EntityID,
 				Any<
 						Maybe<Changed<TagC>>,

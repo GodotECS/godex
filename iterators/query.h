@@ -369,33 +369,34 @@ struct fetch_element<S, I, C, Cs...> : fetch_element<S, I + 1, Cs...> {};
 ///
 /// `I` stands for `Index` and it's used to index the types.
 ///
-/// When you use it, you must always set `I = 0` (so it can correctly index
-/// the types); or just use `QueryResultTuple`
+/// `I` must be always 0 when you define a new tuple so it can index all the
+/// components correctly.
+/// However, never use this directly rather use `QueryResultTuple`.
 template <std::size_t I, class... Cs>
 struct QueryResultTuple_Impl {
 	/// The count of elements in this tuple.
 	static constexpr std::size_t SIZE = I;
 };
 
-// No filter specialization.
+/// No filter specialization.
 template <std::size_t I, class C, class... Cs>
 struct QueryResultTuple_Impl<I, C, Cs...> : public QueryResultTuple_Impl<I + 1, Cs...> {
 	C *value;
 };
 
-// `Batch` filter specialization.
+/// `Batch` filter specialization.
 template <std::size_t I, class C, class... Cs>
 struct QueryResultTuple_Impl<I, Batch<C>, Cs...> : public QueryResultTuple_Impl<I + 1, Cs...> {
 	Batch<fetch_element_type<0, 0, C>> value;
 };
 
-// `Join` filter specialization.
+/// `Join` filter specialization.
 template <std::size_t I, class... C, class... Cs>
 struct QueryResultTuple_Impl<I, Join<C...>, Cs...> : public QueryResultTuple_Impl<I + 1, Cs...> {
 	JoinData value;
 };
 
-// `EntityID` filter specialization.
+/// `EntityID` filter specialization.
 template <std::size_t I, class... Cs>
 struct QueryResultTuple_Impl<I, EntityID, Cs...> : public QueryResultTuple_Impl<I + 1, Cs...> {
 	EntityID value;
@@ -420,7 +421,7 @@ struct QueryResultTuple_Impl<I, EntityID, Cs...> : public QueryResultTuple_Impl<
 template <std::size_t I, class... C, class... Cs, template <class> class Filter>
 struct QueryResultTuple_Impl<I, Filter<C...>, Cs...> : public QueryResultTuple_Impl<I, C..., Cs...> {};
 
-/// `QueryResult` is the tuple returned by the `Query`. You can fetch the
+/// `QueryResultTuple` is the tuple returned by the `Query`. You can fetch the
 /// data using the `get` function:
 /// ```cpp
 /// Query<Transform, Mesh> query;
@@ -434,12 +435,8 @@ struct QueryResultTuple_Impl<I, Filter<C...>, Cs...> : public QueryResultTuple_I
 /// QueryResult result = query.get();
 /// auto [transform, mesh] = result;
 /// ```
-// TODO
-//template <class... Cs>
-//struct QueryResultTuple : public QueryResultTuple_Impl<0, Cs...> {
-//	QueryResultTuple(QueryResultTuple_Impl<0, Cs>... p_values) :
-//			QueryResultTuple_Impl<0, Cs...>(p_values...) {}
-//};
+template <class... Cs>
+struct QueryResultTuple : public QueryResultTuple_Impl<0, Cs...> {};
 
 // ---------------------------------------------------------- Structured Bindings
 
@@ -447,10 +444,10 @@ struct QueryResultTuple_Impl<I, Filter<C...>, Cs...> : public QueryResultTuple_I
 /// These are necessary to tell the compiler how to decompose the custom class.
 namespace std {
 template <class... Cs>
-struct tuple_size<QueryResultTuple_Impl<0, Cs...>> : std::integral_constant<int, QueryResultTuple_Impl<0, Cs...>::SIZE> {};
+struct tuple_size<QueryResultTuple<Cs...>> : std::integral_constant<int, QueryResultTuple<Cs...>::SIZE> {};
 
 template <size_t S, class... Cs>
-struct tuple_element<S, QueryResultTuple_Impl<0, Cs...>> {
+struct tuple_element<S, QueryResultTuple<Cs...>> {
 	using type = typename fetch_element<S, 0, Cs...>::type;
 };
 } // namespace std
@@ -495,7 +492,7 @@ constexpr void set_impl(T p_val, QueryResultTuple_Impl<S, Any<C...>, Cs...> &tup
 
 /// Can be used to set the data inside a tuple.
 template <std::size_t S, class T, class... Cs>
-constexpr void set(QueryResultTuple_Impl<0, Cs...> &tuple, T p_val) noexcept {
+constexpr void set(QueryResultTuple<Cs...> &tuple, T p_val) noexcept {
 	set_impl<S>(p_val, tuple);
 }
 
@@ -538,7 +535,7 @@ constexpr auto get_impl(const QueryResultTuple_Impl<S, Any<C...>, Cs...> &tuple)
 
 /// Can be used to fetch the data from a tuple.
 template <std::size_t S, class... Cs>
-constexpr fetch_element_type<S, 0, Cs...> get(const QueryResultTuple_Impl<0, Cs...> &tuple) noexcept {
+constexpr fetch_element_type<S, 0, Cs...> get(const QueryResultTuple<Cs...> &tuple) noexcept {
 	return get_impl<S>(tuple);
 }
 
