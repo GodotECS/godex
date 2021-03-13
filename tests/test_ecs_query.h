@@ -178,8 +178,12 @@ TEST_CASE("[Modules][ECS] Test QueryResultTuple: packing and unpaking following 
 	// Make sure it's possible to compose a tuple and the stored data
 	// can be correctly retrieved.
 	{
-		QueryResultTuple_Impl<0, TagA, TagB> tuple(&a, &b);
+		QueryResultTuple_Impl<0, TagA, TagB> tuple;
+
 		static_assert(tuple.SIZE == 2);
+
+		set<0>(tuple, &a);
+		set<1>(tuple, &b);
 
 		{
 			TagA *ptr_a = get<0>(tuple);
@@ -201,9 +205,13 @@ TEST_CASE("[Modules][ECS] Test QueryResultTuple: packing and unpaking following 
 	// all in 1 dimention and can be easily accessed with just 1 structured
 	// bindings as below.
 	{
-		QueryResultTuple_Impl<0, Any<TagA, TagB>, TagC> tuple(&a, &b, &c);
+		QueryResultTuple_Impl<0, Any<TagA, TagB>, TagC> tuple;
 
 		static_assert(tuple.SIZE == 3);
+
+		set<0>(tuple, &a);
+		set<1>(tuple, &b);
+		set<2>(tuple, &c);
 
 		{
 			TagC *ptr_c = get<2>(tuple);
@@ -232,35 +240,21 @@ TEST_CASE("[Modules][ECS] Test QueryResultTuple: packing and unpaking following 
 
 		static_assert(tuple.SIZE == 4);
 
+		set<0>(tuple, &transf);
+		set<1>(tuple, &a);
+		set<2>(tuple, &b);
+		set<3>(tuple, &c);
+
 		{
-			{
-				TransformComponent *transform_ptr = get<0>(tuple);
-				TagA *ptr_a = get<1>(tuple);
-				TagB *ptr_b = get<2>(tuple);
-				TagC *ptr_c = get<3>(tuple);
+			TransformComponent *transform_ptr = get<0>(tuple);
+			TagA *ptr_a = get<1>(tuple);
+			TagB *ptr_b = get<2>(tuple);
+			TagC *ptr_c = get<3>(tuple);
 
-				CHECK(transform_ptr == nullptr);
-				CHECK(ptr_a == nullptr);
-				CHECK(ptr_b == nullptr);
-				CHECK(ptr_c == nullptr);
-			}
-
-			{
-				set<0>(tuple, &transf);
-				set<1>(tuple, &a);
-				set<2>(tuple, &b);
-				set<3>(tuple, &c);
-
-				TransformComponent *transform_ptr = get<0>(tuple);
-				TagA *ptr_a = get<1>(tuple);
-				TagB *ptr_b = get<2>(tuple);
-				TagC *ptr_c = get<3>(tuple);
-
-				CHECK(transform_ptr == &transf);
-				CHECK(ptr_a == &a);
-				CHECK(ptr_b == &b);
-				CHECK(ptr_c == &c);
-			}
+			CHECK(transform_ptr == &transf);
+			CHECK(ptr_a == &a);
+			CHECK(ptr_b == &b);
+			CHECK(ptr_c == &c);
 		}
 
 		transf.transform.origin.x = -50;
@@ -279,7 +273,11 @@ TEST_CASE("[Modules][ECS] Test QueryResultTuple: packing and unpaking following 
 
 	// Test other filters
 	{
-		QueryResultTuple_Impl<0, Without<TagA>, Maybe<TagB>, Changed<TagC>> tuple(&a, &b, &c);
+		QueryResultTuple_Impl<0, Without<TagA>, Maybe<TagB>, Changed<TagC>> tuple;
+
+		set<0>(tuple, &a);
+		set<1>(tuple, &b);
+		set<2>(tuple, &c);
 
 		static_assert(tuple.SIZE == 3);
 
@@ -304,7 +302,10 @@ TEST_CASE("[Modules][ECS] Test QueryResultTuple: packing and unpaking following 
 
 	// Test `Batch` filter.
 	{
-		QueryResultTuple_Impl<0, Batch<TagA>, Maybe<const TagB>> tuple(Batch(&a, 1), &b);
+		QueryResultTuple_Impl<0, Batch<TagA>, Maybe<const TagB>> tuple;
+
+		set<0>(tuple, Batch(&a, 1));
+		set<1>(tuple, &b);
 
 		static_assert(tuple.SIZE == 2);
 
@@ -328,9 +329,13 @@ TEST_CASE("[Modules][ECS] Test QueryResultTuple: packing and unpaking following 
 
 	// Test `EntityID` filter.
 	{
-		QueryResultTuple_Impl<0, Batch<TagA>, EntityID, Maybe<const TagB>> tuple(Batch(&a, 1), EntityID(2), &b);
+		QueryResultTuple_Impl<0, Batch<TagA>, EntityID, Maybe<const TagB>> tuple;
 
 		static_assert(tuple.SIZE == 3);
+
+		set<0>(tuple, Batch(&a, 1));
+		set<1>(tuple, EntityID(2));
+		set<2>(tuple, &b);
 
 		{
 			Batch<TagA *> batch_a = get<0>(tuple);
@@ -370,9 +375,12 @@ TEST_CASE("[Modules][ECS] Test QueryResultTuple: packing and unpaking following 
 
 	// Test `Join` filter.
 	{
-		QueryResultTuple_Impl<0, Join<Any<TagA, Changed<TagB>>>, EntityID> tuple(JoinData(&a, TagA::get_component_id(), false), EntityID(5));
+		QueryResultTuple_Impl<0, Join<Any<TagA, Changed<TagB>>>, EntityID> tuple;
 
 		static_assert(tuple.SIZE == 2);
+
+		set<0>(tuple, JoinData(&a, TagA::get_component_id(), false));
+		set<1>(tuple, EntityID(5));
 
 		{
 			JoinData join = get<0>(tuple);

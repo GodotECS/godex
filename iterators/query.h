@@ -41,8 +41,8 @@ struct Changed {};
 /// ```
 template <class C>
 class Batch {
-	C data = nullptr;
-	uint32_t size = 0;
+	C data;
+	uint32_t size;
 
 public:
 	Batch() = default;
@@ -169,9 +169,9 @@ struct Join {};
 
 struct JoinData {
 private:
-	void *ptr = nullptr;
-	godex::component_id id = godex::COMPONENT_NONE;
-	bool is_const = true;
+	void *ptr;
+	godex::component_id id;
+	bool is_const;
 
 public:
 	JoinData(void *p_ptr, godex::component_id p_id, bool p_const) :
@@ -366,6 +366,7 @@ struct fetch_element<S, I, C, Cs...> : fetch_element<S, I + 1, Cs...> {};
 // ----------------------------------------------------------- Query Result Tuple
 
 /// This class is the base query result tuple.
+///
 /// `I` stands for `Index` and it's used to index the types.
 ///
 /// When you use it, you must always set `I = 0` (so it can correctly index
@@ -374,129 +375,30 @@ template <std::size_t I, class... Cs>
 struct QueryResultTuple_Impl {
 	/// The count of elements in this tuple.
 	static constexpr std::size_t SIZE = I;
-
-	QueryResultTuple_Impl() = default;
 };
 
+// No filter specialization.
 template <std::size_t I, class C, class... Cs>
 struct QueryResultTuple_Impl<I, C, Cs...> : public QueryResultTuple_Impl<I + 1, Cs...> {
-	C *value = nullptr;
-
-	QueryResultTuple_Impl(
-			C *p_value,
-			fetch_element_type<0, 0, Cs>... p_rest) :
-			QueryResultTuple_Impl<I + 1, Cs...>(p_rest...),
-			value(p_value) {}
-
-	QueryResultTuple_Impl() = default;
+	C *value;
 };
 
-/// Stores the filters inside `Any` as a sub tuple.
-///
-/// NOTICE: that the sub tuple elements indices follows the main tuple, so
-/// they are flattened and can be extracted directly, like if it was one
-/// dimensional tuple.
-/// ```cpp
-/// QueryResultTuple_Impl<0, TagC, Any<TagA, TagB>> tuple(
-/// 		&c,
-/// 		QueryResultTuple_Impl<0, TagA, TagB>(&a, &b));
-///
-/// static_assert(tuple.SIZE == 3);
-///
-/// auto [ptr_c, ptr_a, ptr_b] = tuple;
-/// ```
-//template <std::size_t I, class... C, class... Cs>
-//struct QueryResultTuple_Impl<I, Any<C...>, Cs...> : public QueryResultTuple_Impl<I + QueryResultTuple_Impl<0, C...>::SIZE, Cs...> {
-//	static constexpr std::size_t INDEX = I;
-//	QueryResultTuple_Impl<0, C...> values;
-//
-//	QueryResultTuple_Impl(
-//			QueryResultTuple_Impl<0, C...> p_values,
-//			QueryResultTuple_Impl<I + QueryResultTuple_Impl<0, C...>::SIZE, Cs>... p_rest) :
-//			QueryResultTuple_Impl<I + QueryResultTuple_Impl<0, C...>::SIZE, Cs...>(p_rest...),
-//			values(p_values) {}
-//};
-
-// TODO remove
-//template <std::size_t I, class C, class... Cs>
-//struct QueryResultTuple_Impl<I, Changed<C>, Cs...> : public QueryResultTuple_Impl<I, C, Cs...> {
-//	QueryResultTuple_Impl(
-//			fetch_element_type<0, 0, C> p_value,
-//			fetch_element_type<0, 0, Cs>... p_rest) :
-//			QueryResultTuple_Impl<I, C, Cs...>(p_value, p_rest...) {}
-//
-//	QueryResultTuple_Impl() = default;
-//};
-//
-//template <std::size_t I, class C, class... Cs>
-//struct QueryResultTuple_Impl<I, Without<C>, Cs...> : public QueryResultTuple_Impl<I, C, Cs...> {
-//	QueryResultTuple_Impl(
-//			fetch_element_type<0, 0, C> p_value,
-//			fetch_element_type<0, 0, Cs>... p_rest) :
-//			QueryResultTuple_Impl<I, C, Cs...>(p_value, p_rest...) {}
-//
-//	QueryResultTuple_Impl() = default;
-//};
-//
-//template <std::size_t I, class C, class... Cs>
-//struct QueryResultTuple_Impl<I, Maybe<C>, Cs...> : public QueryResultTuple_Impl<I, C, Cs...> {
-//	QueryResultTuple_Impl(
-//			fetch_element_type<0, 0, C> p_value,
-//			fetch_element_type<0, 0, Cs>... p_rest) :
-//			QueryResultTuple_Impl<I, C, Cs...>(p_value, p_rest...) {}
-//
-//	QueryResultTuple_Impl() = default;
-//};
-//
-//template <std::size_t I, class... C, class... Cs>
-//struct QueryResultTuple_Impl<I, Any<C...>, Cs...> : public QueryResultTuple_Impl<I, C..., Cs...> {
-//	static constexpr std::size_t INDEX = I;
-//
-//	QueryResultTuple_Impl(
-//			fetch_element_type<0, 0, C>... p_values,
-//			fetch_element_type<0, 0, Cs>... p_rest) :
-//			QueryResultTuple_Impl<I, C..., Cs...>(p_values..., p_rest...) {}
-//
-//	QueryResultTuple_Impl() = default;
-//};
-
+// `Batch` filter specialization.
 template <std::size_t I, class C, class... Cs>
 struct QueryResultTuple_Impl<I, Batch<C>, Cs...> : public QueryResultTuple_Impl<I + 1, Cs...> {
 	Batch<fetch_element_type<0, 0, C>> value;
-
-	QueryResultTuple_Impl(
-			Batch<fetch_element_type<0, 0, C>> p_value,
-			fetch_element_type<0, 0, Cs>... p_rest) :
-			QueryResultTuple_Impl<I + 1, Cs...>(p_rest...),
-			value(p_value) {}
-
-	QueryResultTuple_Impl() = default;
 };
 
+// `Join` filter specialization.
 template <std::size_t I, class... C, class... Cs>
 struct QueryResultTuple_Impl<I, Join<C...>, Cs...> : public QueryResultTuple_Impl<I + 1, Cs...> {
 	JoinData value;
-
-	QueryResultTuple_Impl(
-			const JoinData &p_value,
-			fetch_element_type<0, 0, Cs>... p_rest) :
-			QueryResultTuple_Impl<I + 1, Cs...>(p_rest...),
-			value(p_value) {}
-
-	QueryResultTuple_Impl() = default;
 };
 
+// `EntityID` filter specialization.
 template <std::size_t I, class... Cs>
 struct QueryResultTuple_Impl<I, EntityID, Cs...> : public QueryResultTuple_Impl<I + 1, Cs...> {
 	EntityID value;
-
-	QueryResultTuple_Impl(
-			EntityID p_value,
-			fetch_element_type<0, 0, Cs>... p_rest) :
-			QueryResultTuple_Impl<I + 1, Cs...>(p_rest...),
-			value(p_value) {}
-
-	QueryResultTuple_Impl() = default;
 };
 
 /// Flatten all the Filter, so we can store the data on the same level.
@@ -516,14 +418,7 @@ struct QueryResultTuple_Impl<I, EntityID, Cs...> : public QueryResultTuple_Impl<
 /// ```
 /// The `set` and `get` functions are able to fetch the data anyway.
 template <std::size_t I, class... C, class... Cs, template <class> class Filter>
-struct QueryResultTuple_Impl<I, Filter<C...>, Cs...> : public QueryResultTuple_Impl<I, C..., Cs...> {
-	QueryResultTuple_Impl(
-			fetch_element_type<0, 0, C>... p_values,
-			fetch_element_type<0, 0, Cs>... p_rest) :
-			QueryResultTuple_Impl<I, C..., Cs...>(p_values..., p_rest...) {}
-
-	QueryResultTuple_Impl() = default;
-};
+struct QueryResultTuple_Impl<I, Filter<C...>, Cs...> : public QueryResultTuple_Impl<I, C..., Cs...> {};
 
 /// `QueryResult` is the tuple returned by the `Query`. You can fetch the
 /// data using the `get` function:
