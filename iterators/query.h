@@ -188,9 +188,9 @@ public:
 /// When you call `fetch_element_type`, as shown, the compiler fetches the `type`
 /// of the element where `S` and `I` are the same.
 ///
-/// @param S stands for `Search`
-/// @param I stands for `Index`, this must always be 0 when you define it.
-/// @param ...Cs The Query type.
+/// @tparam S stands for `Search`
+/// @tparam I stands for `Index`, this must always be 0 when you define it.
+/// @tparam ...Cs The Query type.
 template <std::size_t S, std::size_t I, class... Cs>
 struct fetch_element {};
 
@@ -756,13 +756,33 @@ struct QueryStorage<I, Batch<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 	}
 };
 
-// ------------------------------------------------------------------------- Any
+// ----------------------------------------------------- Any-Join Storage Utility
 
-template <std::size_t I, class... Cs>
-struct AnyStorage {
+/// *** Any-Join Storage Utility ***
+///
+/// This class is used by the filters `Any` and `Join`.
+/// We need this because those two filters allow to have multiple components:
+/// `Query<Any<TagA, TagB>>` and `Query<Join<TagA, TagB>>`
+/// this class deal with the sub components.
+///
+/// @tparam `I`: 			Stands for `INDEX`, and it's always set to the
+/// 						given filter `I` by the `Any` filter or 0 by `Join`.
+///
+/// @tparam `INCREMENT`: 	This paramenter is used to control if we want to
+/// 						index (or not) the sub storages.
+/// 						- The filter `Any` set it to 1, so the sub storages
+/// 						  can directly set the data inside the tuple.
+/// 						- The filter `Join` instead, before to insert the
+/// 						  data inside the tuple, has to manipulate it,
+/// 						  so it's more convienient keep the storage index
+/// 						  to 0.
+///
+template <std::size_t I, std::size_t INCREMENT, class... Cs>
+struct AJUtility {
+	/// Used by the `Any` filter, to know how many components there are.
 	static constexpr std::size_t LAST_INDEX = I;
 
-	AnyStorage(World *p_world) {}
+	AJUtility(World *p_world) {}
 
 	/// At this point, it's sure all filters are determinant.
 	constexpr static bool all_determinant() {
@@ -781,22 +801,25 @@ struct AnyStorage {
 	}
 
 	template <class... Qs>
-	void fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {}
+	void any_fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {}
+	JoinData join_fetch(EntityID p_id, Space p_mode) const {
+		return JoinData(nullptr, godex::COMPONENT_NONE, true);
+	}
 };
 
-template <std::size_t I, class C, class... Cs>
-struct AnyStorage<I, C, Cs...> : AnyStorage<I + 1, Cs...> {
+template <std::size_t I, std::size_t INCREMENT, class C, class... Cs>
+struct AJUtility<I, INCREMENT, C, Cs...> : AJUtility<I + INCREMENT, INCREMENT, Cs...> {
 	QueryStorage<I, C> storage;
 
-	AnyStorage(World *p_world) :
-			AnyStorage<I + 1, Cs...>(p_world),
+	AJUtility(World *p_world) :
+			AJUtility<I + INCREMENT, INCREMENT, Cs...>(p_world),
 			storage(p_world) {
 	}
 
 	/// Return `true` when all subfilters are terminant.
 	constexpr static bool all_determinant() {
 		if constexpr (QueryStorage<I, C>::is_filter_derminant()) {
-			return AnyStorage<I + 1, Cs...>::all_determinant();
+			return AJUtility<I + INCREMENT, INCREMENT, Cs...>::all_determinant();
 		} else {
 			return false;
 		}
@@ -808,7 +831,7 @@ struct AnyStorage<I, C, Cs...> : AnyStorage<I + 1, Cs...> {
 			return true;
 		} else {
 			// Keep search
-			return AnyStorage<I + 1, Cs...>::any_determinant();
+			return AJUtility<I + INCREMENT, INCREMENT, Cs...>::any_determinant();
 		}
 	}
 
@@ -819,38 +842,63 @@ struct AnyStorage<I, C, Cs...> : AnyStorage<I + 1, Cs...> {
 				r_entities.insert(storage.get_entities().entities[i]);
 			}
 		}
-		AnyStorage<I + 1, Cs...>::get_entities(r_entities);
+		AJUtility<I + INCREMENT, INCREMENT, Cs...>::get_entities(r_entities);
 	}
 
 	bool filter_satisfied(EntityID p_entity) const {
 		if (storage.filter_satisfied(p_entity)) {
-			// Found in storage, stop here.
+			// Satisfied.
 			return true;
 		} else {
 			// Not in storage, try the next one.
-			return AnyStorage<I + 1, Cs...>::filter_satisfied(p_entity);
+			return AJUtility<I + INCREMENT, INCREMENT, Cs...>::filter_satisfied(p_entity);
 		}
 	}
 
+	/// Used by `Any` to fetch the data.
+	/// Fetches all the components if there is something to fetch.
 	template <class... Qs>
-	void fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
+	void any_fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
 		if (storage.can_fetch(p_id)) {
 			// There is something to fetch, fetch it.
 			storage.fetch(p_id, p_mode, r_result);
 		}
-		AnyStorage<I + 1, Cs...>::fetch(p_id, p_mode, r_result);
+		AJUtility<I + INCREMENT, INCREMENT, Cs...>::any_fetch(p_id, p_mode, r_result);
+	}
+
+	/// Used by `Join` to fetch the data.
+	/// Fetches just the first one that satisfy the filter.
+	JoinData join_fetch(EntityID p_id, Space p_mode) const {
+		if (storage.filter_satisfied(p_id)) {
+			// There is something to fetch, fetch it.
+			QueryResultTuple<C> tuple;
+			storage.fetch(p_id, p_mode, tuple);
+			return JoinData(
+					(void *)get<0>(tuple),
+					std::remove_pointer_t<fetch_element_type<0, 0, C>>::get_component_id(),
+					std::is_const_v<std::remove_pointer_t<fetch_element_type<0, 0, C>>>);
+		} else {
+			return AJUtility<0, 0, Cs...>::join_fetch(p_id, p_mode);
+		}
 	}
 };
 
-/// `QueryStorage` `Any` immutable filter specialization.
+// -------------------------------------------------------------------------- Any
+
+/// `QueryStorage` `Any` filter specialization.
+///
+/// Returns all the components if at least one satisfy the sub filter.
+///
+/// Notice: You can't specify `Any` as sub component: `Query<Any<Any<Transform>>>`
+/// though, you can specify `Join`: `Query<Any<Join<TagA, TagB>>>`
 template <std::size_t I, class... C, class... Cs>
-struct QueryStorage<I, Any<C...>, Cs...> : QueryStorage<AnyStorage<I, C...>::LAST_INDEX, Cs...> {
-	AnyStorage<I, C...> sub_storages;
+struct QueryStorage<I, Any<C...>, Cs...> : QueryStorage<AJUtility<I, 1, C...>::LAST_INDEX, Cs...> {
+	AJUtility<I, 1, C...> sub_storages;
 
 	EntityList entities;
 
 	QueryStorage(World *p_world) :
-			QueryStorage<AnyStorage<I, C...>::LAST_INDEX, Cs...>(p_world),
+			QueryStorage<AJUtility<I, 1, C...>::LAST_INDEX, Cs...>(p_world),
 			sub_storages(p_world) {
 		// TODO Exist a way to cache this?
 		// TODO Exist a way to at least keep the memory to avoid reallocations each frame?
@@ -863,16 +911,20 @@ struct QueryStorage<I, Any<C...>, Cs...> : QueryStorage<AnyStorage<I, C...>::LAS
 
 	constexpr static bool is_filter_derminant() {
 		// The `Any` storage is a determinant filter if at least one subfilter is.
-		return AnyStorage<I, C...>::any_determinant();
+		return AJUtility<I, 1, C...>::any_determinant();
 	}
 
 	EntitiesBuffer get_entities() const {
-		return EntitiesBuffer(entities.size(), entities.get_entities_ptr());
+		if constexpr (is_filter_derminant()) {
+			return EntitiesBuffer(entities.size(), entities.get_entities_ptr());
+		} else {
+			return EntitiesBuffer(UINT32_MAX, nullptr);
+		}
 	}
 
 	bool filter_satisfied(EntityID p_entity) const {
 		// Just check if we have this entity.
-		if constexpr (AnyStorage<I, C...>::all_determinant()) {
+		if constexpr (AJUtility<I, 1, C...>::all_determinant()) {
 			// Since all the filters are determinant, we can just check this:
 			return entities.has(p_entity);
 		} else {
@@ -885,10 +937,86 @@ struct QueryStorage<I, Any<C...>, Cs...> : QueryStorage<AnyStorage<I, C...>::LAS
 	template <class... Qs>
 	void fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
 		// Fetch the data from the sub storages.
-		sub_storages.fetch(p_id, p_mode, r_result);
+		sub_storages.any_fetch(p_id, p_mode, r_result);
 
 		// Keep going.
-		QueryStorage<AnyStorage<I, C...>::LAST_INDEX, Cs...>::fetch(p_id, p_mode, r_result);
+		QueryStorage<AJUtility<I, 1, C...>::LAST_INDEX, Cs...>::fetch(p_id, p_mode, r_result);
+	}
+
+	// TODO how? here we have multiple storages.
+	//auto get_inner_storage() const {
+	//	return query_storage.get_inner_storage();
+	//}
+
+	static void get_components(SystemExeInfo &r_info, const bool p_force_immutable = false) {
+		// Take the components storages used, taking advantage of the
+		// get_components function.
+		QueryStorage<0, C...>::get_components(r_info, p_force_immutable);
+		QueryStorage<0, Cs...>::get_components(r_info);
+	}
+};
+
+// ------------------------------------------------------------------------- Join
+
+/// `QueryStorage` `Join`.
+///
+/// Returns the first component that satisfy the sub filters.
+///
+/// Notice: You can't specify `Any` as sub filter: `Query<Join<Any<Transform>>>`
+template <std::size_t I, class... C, class... Cs>
+struct QueryStorage<I, Join<C...>, Cs...> : QueryStorage<I + 1, Cs...> {
+	AJUtility<0, 0, C...> sub_storages;
+
+	EntityList entities;
+
+	QueryStorage(World *p_world) :
+			QueryStorage<I + 1, Cs...>(p_world),
+			sub_storages(p_world) {
+		// TODO Exist a way to cache this?
+		// TODO Exist a way to at least keep the memory to avoid reallocations each frame?
+		// TODO An idea could be add a mechanism on the `EntityList` that keeps
+		// 	track of the biggest `EntityID` it has.
+		// 	So the `entities` list we have here could be prepared, and a lot of
+		// 	reallocation can be avoided.
+		sub_storages.get_entities(entities);
+	}
+
+	constexpr static bool is_filter_derminant() {
+		// The `Join` storage is a determinant filter if at least one subfilter is.
+		return AJUtility<0, 0, C...>::any_determinant();
+	}
+
+	EntitiesBuffer get_entities() const {
+		if constexpr (is_filter_derminant()) {
+			return EntitiesBuffer(entities.size(), entities.get_entities_ptr());
+		} else {
+			return EntitiesBuffer(UINT32_MAX, nullptr);
+		}
+	}
+
+	bool filter_satisfied(EntityID p_entity) const {
+		// Just check if we have this entity.
+		if constexpr (AJUtility<0, 0, C...>::all_determinant()) {
+			// Since all the filters are determinant, we can just check this:
+			return entities.has(p_entity);
+		} else {
+			// Not all filters are determinant, so we need to check one by one,
+			// because even a not determinant filter may satisfy the process.
+			return sub_storages.filter_satisfied(p_entity);
+		}
+	}
+
+	bool can_fetch(EntityID p_entity) const {
+		return filter_satisfied(p_entity);
+	}
+
+	template <class... Qs>
+	void fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
+		// Fetch the data from the sub storages.
+		set<I>(r_result, sub_storages.join_fetch(p_id, p_mode));
+
+		// Keep going.
+		QueryStorage<I + 1, Cs...>::fetch(p_id, p_mode, r_result);
 	}
 
 	// TODO how? here we have multiple storages.

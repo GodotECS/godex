@@ -732,9 +732,73 @@ TEST_CASE("[Modules][ECS] Test static query deep nesting") {
 		// is marked as changed.
 		CHECK(query.has(entity_2));
 		CHECK(query.count() == 1);
+
+		{
+			auto [entity, transf, event] = query[entity_2];
+			CHECK(entity == entity_2);
+			CHECK(transf != nullptr);
+			CHECK(event.is_empty() == false);
+			CHECK(event.get_size() == 2);
+			CHECK(event[0]->number == 25);
+			CHECK(event[1]->number == 30);
+		}
 	}
 
-	// TODO test Join
+	// Test deep nesting `Join`.
+	{
+		Query<EntityID, Join<Changed<const TagA>, Changed<const TagB>, Changed<const TagC>>> query(&world);
+
+		// Make sure it has only the Entity2, which is taken because the `Event`
+		// is marked as changed.
+		CHECK(query.has(entity_1));
+		CHECK(query.count() == 1);
+
+		{
+			auto [entity, tag] = query[entity_1];
+			CHECK(entity == entity_1);
+			CHECK(tag.is<const TagA>() == false);
+			CHECK(tag.is<const TagB>() == false);
+			CHECK(tag.is<const TagC>()); // TagC is marked as changed.
+			CHECK(tag.is<TagA>() == false);
+			CHECK(tag.is<TagB>() == false);
+			CHECK(tag.is<TagC>() == false); // Though, it's not const.
+
+			const TagC *c = tag.as<const TagC>();
+			CHECK(c != nullptr);
+		}
+	}
+
+	// Test Any + Join
+	{
+		Query<EntityID, Any<TagA, Join<Changed<const TagA>, Changed<const TagB>, Changed<const TagC>>>> query(&world);
+
+		// Both Entity1 and Entity2 satisfy `Any` because of the `Any` filter.
+		CHECK(query.has(entity_1));
+		CHECK(query.has(entity_2));
+		CHECK(query.count() == 2);
+
+		{
+			auto [entity, tag_a, tag] = query[entity_1];
+			CHECK(entity == entity_1);
+			CHECK(tag_a != nullptr);
+			CHECK(tag.is<const TagA>() == false);
+			CHECK(tag.is<const TagB>() == false);
+			CHECK(tag.is<const TagC>()); // TagC is marked as changed.
+			CHECK(tag.is<TagA>() == false);
+			CHECK(tag.is<TagB>() == false);
+			CHECK(tag.is<TagC>() == false); // Though, it's not const.
+
+			const TagC *c = tag.as<const TagC>();
+			CHECK(c != nullptr);
+		}
+
+		{
+			auto [entity, tag_a, tag] = query[entity_2];
+			CHECK(entity == entity_2);
+			CHECK(tag_a != nullptr);
+			CHECK(tag.is_null());
+		}
+	}
 }
 } // namespace godex_tests
 
@@ -1834,7 +1898,6 @@ TEST_CASE("[Modules][ECS] Test static query Any filter.") {
 }
 
 TEST_CASE("[Modules][ECS] Test static query Join filter.") {
-	/*
 	World world;
 
 	EntityID entity_1 = world
@@ -1857,7 +1920,7 @@ TEST_CASE("[Modules][ECS] Test static query Join filter.") {
 								.with(TransformComponent());
 
 	{
-		Query<TransformComponent, Any<const TagA, const TagB, TagC>> query(&world);
+		Query<TransformComponent, Join<const TagA, const TagB, TagC>> query(&world);
 
 		CHECK(query.has(entity_1));
 		CHECK(query.has(entity_2) == false);
@@ -1924,9 +1987,9 @@ TEST_CASE("[Modules][ECS] Test static query Join filter.") {
 	world.get_storage<TagC>()->set_tracing_change(true);
 	world.get_storage<TagC>()->notify_changed(entity_4);
 
-	// Test `Any` with `Changed` filter.
+	// Test `Join` with `Changed` filter.
 	{
-		Query<Changed<TransformComponent>, Any<Changed<const TagA>, Changed<const TagB>, Changed<TagC>>> query(&world);
+		Query<Changed<TransformComponent>, Join<Changed<const TagA>, Changed<const TagB>, Changed<TagC>>> query(&world);
 
 		CHECK(query.has(entity_1) == false);
 		CHECK(query.has(entity_2) == false);
@@ -1944,9 +2007,9 @@ TEST_CASE("[Modules][ECS] Test static query Join filter.") {
 		}
 	}
 
-	// Test `Any` with and without `Changed` filter.
+	// Test `Join` with and without `Changed` filter.
 	{
-		Query<Changed<TransformComponent>, Any<const TagA, Changed<const TagB>, Changed<TagC>>> query(&world);
+		Query<Changed<TransformComponent>, Join<const TagA, Changed<const TagB>, Changed<TagC>>> query(&world);
 
 		CHECK(query.has(entity_1));
 		CHECK(query.has(entity_2) == false);
@@ -1969,12 +2032,12 @@ TEST_CASE("[Modules][ECS] Test static query Join filter.") {
 		}
 	}
 
-	// Test `Any` with `Without` filter.
+	// Test `Join` with `Without` filter.
 	// Note: This test is here just for validation, but doesn't make much sense.
 	{
-		Query<Changed<TransformComponent>, Any<Without<TagA>, Without<const TagB>, Without<TagC>>> query(&world);
+		Query<Changed<TransformComponent>, Join<Without<TagA>, Without<const TagB>, Without<TagC>>> query(&world);
 
-		// Since `Any` needs just one filter to be satisfied, all are valid.
+		// Since `Join` needs just one filter to be satisfied, all are valid.
 		CHECK(query.has(entity_1));
 		CHECK(query.has(entity_2));
 		CHECK(query.has(entity_3));
@@ -2001,7 +2064,6 @@ TEST_CASE("[Modules][ECS] Test static query Join filter.") {
 			CHECK(tag.is_null());
 		}
 	}
-	*/
 }
 } // namespace godex_tests
 
