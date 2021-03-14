@@ -1,9 +1,5 @@
 #pragma once
 
-/**
-	@author AndreaCatania
-*/
-
 #include "../databags/databag.h"
 #include "../ecs_types.h"
 #include "../storage/storage.h"

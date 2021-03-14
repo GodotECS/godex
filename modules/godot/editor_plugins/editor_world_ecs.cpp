@@ -1,5 +1,3 @@
-/* Author: AndreaCatania */
-
 #include "editor_world_ecs.h"
 
 #include "../../../ecs.h"

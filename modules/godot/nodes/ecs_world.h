@@ -1,7 +1,5 @@
 #pragma once
 
-/* Author: AndreaCatania */
-
 #include "../../../components/component.h"
 #include "../../../ecs_types.h"
 #include "scene/main/node.h"

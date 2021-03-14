@@ -1,7 +1,5 @@
 #pragma once
 
-/* Author: AndreaCatania */
-
 #include "../ecs.h"
 #include "../storage/batch_storage.h"
 #include "../storage/dense_vector_storage.h"

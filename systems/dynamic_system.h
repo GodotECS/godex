@@ -1,5 +1,3 @@
-/** @author AndreaCatania */
-
 #pragma once
 
 #include "../iterators/dynamic_query.h"

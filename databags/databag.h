@@ -1,7 +1,5 @@
 #pragma once
 
-/* Author: AndreaCatania */
-
 #include "../ecs_types.h"
 #include "core/object/class_db.h"
 #include "core/object/object.h"

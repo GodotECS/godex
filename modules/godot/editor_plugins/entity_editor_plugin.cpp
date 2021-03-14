@@ -1,5 +1,3 @@
-/* Author: AndreaCatania */
-
 #include "entity_editor_plugin.h"
 #include "../nodes/ecs_utilities.h"
 #include "../nodes/entity.h"
