@@ -639,7 +639,7 @@ TEST_CASE("[Modules][ECS] Test static query deep nesting") {
 		// The `TagC` on the `Entity2` is not changed, so the query fetches it.
 		CHECK(query.has(entity_2));
 
-		auto [entity, tag_a, tag_b, tag_c] = query.new_get(entity_2);
+		auto [entity, tag_a, tag_b, tag_c] = query[entity_2];
 		CHECK(entity == entity_2);
 		CHECK(tag_a != nullptr);
 		CHECK(tag_b != nullptr);
@@ -656,7 +656,7 @@ TEST_CASE("[Modules][ECS] Test static query deep nesting") {
 
 		// In Entity1 the tag is changed, we expect it.
 		{
-			auto [entity, tag_a, tag_c] = query.new_get(entity_1);
+			auto [entity, tag_a, tag_c] = query[entity_1];
 			CHECK(entity == entity_1);
 			CHECK(tag_a != nullptr);
 			CHECK(tag_c != nullptr);
@@ -664,10 +664,22 @@ TEST_CASE("[Modules][ECS] Test static query deep nesting") {
 
 		// In Entity2 the tag is NOT changed, we expect nullptr.
 		{
-			auto [entity, tag_a, tag_c] = query.new_get(entity_2);
+			auto [entity, tag_a, tag_c] = query[entity_2];
 			CHECK(entity == entity_2);
 			CHECK(tag_a != nullptr);
 			CHECK(tag_c == nullptr);
+		}
+
+		// Fetch using the for loop.
+		for (auto [entity, tag_a, tag_c] : query) {
+			if (entity == entity_1) {
+				CHECK(tag_a != nullptr);
+				CHECK(tag_c != nullptr);
+			} else {
+				CHECK(entity == entity_2);
+				CHECK(tag_a != nullptr);
+				CHECK(tag_c == nullptr);
+			}
 		}
 	}
 
@@ -677,10 +689,11 @@ TEST_CASE("[Modules][ECS] Test static query deep nesting") {
 
 		CHECK(query.has(entity_1));
 		CHECK(query.has(entity_2));
+		CHECK(query.count() == 2);
 
 		// In Entity1 the event is NOT changed, we expect nullptr.
 		{
-			auto [entity, transf, event] = query.new_get(entity_1);
+			auto [entity, transf, event] = query[entity_1];
 			CHECK(entity == entity_1);
 			CHECK(transf != nullptr);
 			CHECK(event.is_empty());
@@ -688,13 +701,26 @@ TEST_CASE("[Modules][ECS] Test static query deep nesting") {
 
 		// In Entity2 the tag is NOT changed, we expect nullptr.
 		{
-			auto [entity, transf, event] = query.new_get(entity_2);
+			auto [entity, transf, event] = query[entity_2];
 			CHECK(entity == entity_2);
 			CHECK(transf != nullptr);
 			CHECK(event.is_empty() == false);
 			CHECK(event.get_size() == 2);
 			CHECK(event[0]->number == 25);
 			CHECK(event[1]->number == 30);
+		}
+
+		// Fetch using the for loop.
+		for (auto [entity, transf, event] : query) {
+			CHECK((entity == entity_1 || entity == entity_2));
+			CHECK(transf != nullptr);
+			if (entity == entity_1) {
+				CHECK(event.is_empty());
+			} else {
+				CHECK(event.get_size() == 2);
+				CHECK(event[0]->number == 25);
+				CHECK(event[1]->number == 30);
+			}
 		}
 	}
 

@@ -7,7 +7,8 @@
 #include "../world/world.h"
 #include <tuple>
 
-// ~~ Query filters. ~~
+// ---------------------------------------------------------------- Query filters
+
 template <class C>
 struct Without {};
 
@@ -157,50 +158,6 @@ public:
 	const T *as() const {
 		return static_cast<const std::remove_const_t<T> *>(ptr);
 	}
-};
-
-// TODO remove this.
-template <class... Cs>
-struct Group {};
-
-// TODO remove all these
-// ~~ Utility to remove the filter from the query. ~~
-template <typename T>
-struct to_query_return_type {
-	typedef T *type;
-};
-
-template <typename T>
-struct to_query_return_type<Without<T>> {
-	typedef T *type;
-};
-
-template <typename T>
-struct to_query_return_type<Maybe<T>> {
-	typedef T *type;
-};
-
-template <typename T>
-struct to_query_return_type<Changed<T>> {
-	typedef T *type;
-};
-
-template <>
-struct to_query_return_type<EntityID> {
-	typedef EntityID type;
-};
-
-template <typename T>
-using to_query_return_type_t = typename to_query_return_type<T>::type;
-
-template <typename... Ts>
-struct to_query_return_type<Group<Ts...>> {
-	typedef std::tuple<to_query_return_type_t<Ts>...> type;
-};
-
-template <typename T>
-struct to_query_return_type<Batch<T>> {
-	typedef Batch<to_query_return_type_t<T>> type;
 };
 
 // ---------------------------------------------------------- Fetch Elements Type
@@ -514,15 +471,6 @@ constexpr fetch_element_type<S, 0, Cs...> get(const QueryResultTuple<Cs...> &tup
 	return get_impl<S>(tuple);
 }
 
-// TODO remove this once the Query is refactored
-namespace REMOVE_THIS_NS {
-/// Can be used to fetch the data from a tuple.
-template <std::size_t S, class... Cs>
-constexpr fetch_element_type<S, 0, Cs...> get(const QueryResultTuple<Cs...> &tuple) noexcept {
-	return get_impl<S>(tuple);
-}
-} // namespace REMOVE_THIS_NS
-
 // --------------------------------------------------------------- Query Storages
 
 /// `QueryStorage` specialization with 0 template arguments.
@@ -536,10 +484,9 @@ struct QueryStorage {
 	}
 
 	bool filter_satisfied(EntityID p_entity) const { return true; }
-	std::tuple<to_query_return_type_t<Cs>...> get(EntityID p_id, Space p_mode) const { return std::tuple(); }
 
 	template <class... Qs>
-	void new_fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
+	void fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
 		// Nothing to fetch.
 	}
 
@@ -562,18 +509,12 @@ struct QueryStorage<I, EntityID, Cs...> : public QueryStorage<I + 1, Cs...> {
 		return QueryStorage<I + 1, Cs...>::filter_satisfied(p_entity);
 	}
 
-	std::tuple<EntityID, to_query_return_type_t<Cs>...> get(EntityID p_id, Space p_mode) {
-		return std::tuple_cat(
-				std::tuple<EntityID>(p_id),
-				QueryStorage<I + 1, Cs...>::get(p_id, p_mode));
-	}
-
 	template <class... Qs>
-	void new_fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
+	void fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
 		// Set the `EntityID` at position `I`.
 		set<I>(r_result, p_id);
 		// Keep going.
-		QueryStorage<I + 1, Cs...>::new_fetch(p_id, p_mode, r_result);
+		QueryStorage<I + 1, Cs...>::fetch(p_id, p_mode, r_result);
 	}
 
 	static void get_components(SystemExeInfo &r_info, const bool p_force_immutable = false) {
@@ -603,29 +544,15 @@ struct QueryStorage<I, Maybe<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 		return QueryStorage<I + 1, Cs...>::filter_satisfied(p_entity);
 	}
 
-	std::tuple<C *, to_query_return_type_t<Cs>...> get(EntityID p_id, Space p_mode) const {
-		if (query_storage.filter_satisfied(p_id)) {
-			// TODO assume it's correct, but this is not nesting.
-			return std::tuple_cat(
-					std::tuple<C *>(query_storage.get(p_id, p_mode)),
-					QueryStorage<I + 1, Cs...>::get(p_id, p_mode));
-		} else {
-			// Nothing to fetch, just set nullptr.
-			return std::tuple_cat(
-					std::tuple<C *>(nullptr),
-					QueryStorage<I + 1, Cs...>::get(p_id, p_mode));
-		}
-	}
-
 	template <class... Qs>
-	void new_fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
+	void fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
 		if (query_storage.filter_satisfied(p_id)) {
 			// Ask the sub storage to fetch the data.
-			query_storage.new_fetch(p_id, p_mode, r_result);
+			query_storage.fetch(p_id, p_mode, r_result);
 		}
 
 		// Keep going.
-		QueryStorage<I + 1, Cs...>::new_fetch(p_id, p_mode, r_result);
+		QueryStorage<I + 1, Cs...>::fetch(p_id, p_mode, r_result);
 	}
 
 	auto get_inner_storage() const {
@@ -662,16 +589,11 @@ struct QueryStorage<I, Without<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 			   QueryStorage<I + 1, Cs...>::filter_satisfied(p_entity);
 	}
 
-	std::tuple<C *, to_query_return_type_t<Cs>...> get(EntityID p_id, Space p_mode) const {
-		// Just keep going, the `Without` filter doesn't collect data.
-		return std::tuple_cat(std::tuple<C *>(nullptr), QueryStorage<I + 1, Cs...>::get(p_id, p_mode));
-	}
-
 	template <class... Qs>
-	void new_fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
+	void fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
 		// Nothing to do, the `Without` filter doesn't fetches.
 		// Just keep going.
-		QueryStorage<I + 1, Cs...>::new_fetch(p_id, p_mode, r_result);
+		QueryStorage<I + 1, Cs...>::fetch(p_id, p_mode, r_result);
 	}
 
 	auto get_inner_storage() const {
@@ -718,25 +640,8 @@ struct QueryStorage<I, Changed<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 		return storage->is_changed(p_entity) && QueryStorage<I + 1, Cs...>::filter_satisfied(p_entity);
 	}
 
-	std::tuple<C *, to_query_return_type_t<Cs>...> get(EntityID p_id, Space p_mode) const {
-#ifdef DEBUG_ENABLED
-		// This can't happen because `is_done` returns true.
-		CRASH_COND_MSG(storage == nullptr, "The storage" + String(typeid(Storage<C>).name()) + " is null.");
-#endif
-
-		if constexpr (std::is_const<C>::value) {
-			return std::tuple_cat(
-					std::tuple<C *>(const_cast<const Storage<C> *>(storage)->get(p_id, p_mode)),
-					QueryStorage<I + 1, Cs...>::get(p_id, p_mode));
-		} else {
-			return std::tuple_cat(
-					std::tuple<C *>(storage->get(p_id, p_mode)),
-					QueryStorage<I + 1, Cs...>::get(p_id, p_mode));
-		}
-	}
-
 	template <class... Qs>
-	void new_fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
+	void fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
 #ifdef DEBUG_ENABLED
 		// This can't happen because `is_done` returns true.
 		CRASH_COND_MSG(storage == nullptr, "The storage" + String(typeid(Storage<C>).name()) + " is null.");
@@ -749,7 +654,7 @@ struct QueryStorage<I, Changed<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 		}
 
 		// Keep going
-		QueryStorage<I + 1, Cs...>::new_fetch(p_id, p_mode, r_result);
+		QueryStorage<I + 1, Cs...>::fetch(p_id, p_mode, r_result);
 	}
 
 	auto get_inner_storage() const {
@@ -789,25 +694,12 @@ struct QueryStorage<I, Batch<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 		return query_storage.filter_satisfied(p_entity);
 	}
 
-	std::tuple<Batch<to_query_return_type_t<C>>, to_query_return_type_t<Cs>...> get(EntityID p_id, Space p_mode) const {
-		Batch<to_query_return_type_t<C>> ret(nullptr, 0);
-		if (query_storage.storage != nullptr) {
-			auto [d] = query_storage.get(p_id, p_mode);
-			ret = Batch(
-					d,
-					query_storage.storage->get_batch_size(p_id));
-		}
-		return std::tuple_cat(
-				std::tuple<Batch<to_query_return_type_t<C>>>(ret),
-				QueryStorage<I + 1, Cs...>::get(p_id, p_mode));
-	}
-
 	template <class... Qs>
-	void new_fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
+	void fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
 		// Fetch the batched data.
 		QueryResultTuple<C> tuple;
-		query_storage.new_fetch(p_id, p_mode, tuple);
-		fetch_element_type<0, 0, C> data = REMOVE_THIS_NS::get<0>(tuple);
+		query_storage.fetch(p_id, p_mode, tuple);
+		fetch_element_type<0, 0, C> data = get<0>(tuple);
 
 		if (query_storage.get_inner_storage() != nullptr && data != nullptr) {
 			set<I>(r_result, Batch<fetch_element_type<0, 0, C>>(
@@ -816,7 +708,7 @@ struct QueryStorage<I, Batch<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 		}
 
 		// Keep going
-		QueryStorage<I + 1, Cs...>::new_fetch(p_id, p_mode, r_result);
+		QueryStorage<I + 1, Cs...>::fetch(p_id, p_mode, r_result);
 	}
 
 	auto get_inner_storage() const {
@@ -957,7 +849,7 @@ struct QueryStorage<I, Any<C...>, Cs...> : QueryStorage<I + 1, Cs...> {
 	}
 
 	//template <std::size_t I, class... Qs>
-	//void new_fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
+	//void fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
 	//	// TODO
 	//}
 
@@ -1006,25 +898,8 @@ struct QueryStorage<I, C, Cs...> : QueryStorage<I + 1, Cs...> {
 		return storage->has(p_entity) && QueryStorage<I + 1, Cs...>::filter_satisfied(p_entity);
 	}
 
-	std::tuple<C *, to_query_return_type_t<Cs>...> get(EntityID p_id, Space p_mode) const {
-#ifdef DEBUG_ENABLED
-		// This can't happen because `is_done` returns true.
-		CRASH_COND_MSG(storage == nullptr, "The storage" + String(typeid(Storage<C>).name()) + " is null.");
-#endif
-
-		if constexpr (std::is_const<C>::value) {
-			return std::tuple_cat(
-					std::tuple<C *>(const_cast<const Storage<C> *>(storage)->get(p_id, p_mode)),
-					QueryStorage<I + 1, Cs...>::get(p_id, p_mode));
-		} else {
-			return std::tuple_cat(
-					std::tuple<C *>(storage->get(p_id, p_mode)),
-					QueryStorage<I + 1, Cs...>::get(p_id, p_mode));
-		}
-	}
-
 	template <class... Qs>
-	void new_fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
+	void fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
 #ifdef DEBUG_ENABLED
 		// This can't happen because `is_done` returns true.
 		CRASH_COND_MSG(storage == nullptr, "The storage" + String(typeid(Storage<C>).name()) + " is null.");
@@ -1038,7 +913,7 @@ struct QueryStorage<I, C, Cs...> : QueryStorage<I + 1, Cs...> {
 		}
 
 		// Keep going.
-		QueryStorage<I + 1, Cs...>::new_fetch(p_id, p_mode, r_result);
+		QueryStorage<I + 1, Cs...>::fetch(p_id, p_mode, r_result);
 	}
 
 	auto get_inner_storage() const {
@@ -1086,7 +961,7 @@ public:
 	struct Iterator {
 		using iterator_category = std::forward_iterator_tag;
 		using difference_type = std::ptrdiff_t;
-		using value_type = std::tuple<to_query_return_type_t<Cs>...>;
+		using value_type = QueryResultTuple<Cs...>;
 
 		Iterator(Query<Cs...> *p_query, const EntityID *p_entity) :
 				query(p_query), entity(p_entity) {}
@@ -1096,7 +971,9 @@ public:
 		}
 
 		value_type operator*() const {
-			return query->q.get(*entity, query->m_space);
+			QueryResultTuple<Cs...> result;
+			query->q.fetch(*entity, query->m_space, result);
+			return result;
 		}
 
 		Iterator &operator++() {
@@ -1176,13 +1053,9 @@ public:
 	/// 	auto [component1, component2] = query[1];
 	/// }
 	/// ```
-	std::tuple<to_query_return_type_t<Cs>...> operator[](EntityID p_entity) {
-		return q.get(p_entity, m_space);
-	}
-
-	QueryResultTuple<Cs...> new_get(EntityID p_entity) {
+	QueryResultTuple<Cs...> operator[](EntityID p_entity) {
 		QueryResultTuple<Cs...> result;
-		q.new_fetch(p_entity, m_space, result);
+		q.fetch(p_entity, m_space, result);
 		return result;
 	}
 
