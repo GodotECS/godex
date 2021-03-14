@@ -77,15 +77,24 @@ public:
 	}
 };
 
-/// With the `Any` filter you can specify many components, and it returns
-/// the first valid. The `Any` filter, fetches the data if at least one of
-/// its own filters is satisfied.
+/// The `Any` filter is satisfied if at least 1 sub filter is satisfied:
+/// in such cases all are ruturned or `nullptr` instead.
 ///
-/// For example, this `Query<Any<TagA, TagB>>` returns all the entities
+/// ```
+/// Query<Any<Changed<Transform>, Changed<Active>> query;
+/// ```
+template <class... Cs>
+struct Any {};
+
+/// The `Join` filter is just an utility that collapse the sub components
+/// to one, taking the first `satisfied`.
+///
+/// For example, this `Query<Join<TagA, TagB>>` returns all the entities
 /// that contains TagA or TagB.
 /// The syntax to extract the data is the following:
 /// ```
-/// Query<Any<TagA, TagB>> query;
+/// Query<Join<TagA, TagB>> query;
+///
 /// auto [tag] = query[entity_1];
 /// if( tag.is<TagA>() ){
 /// 	TagA* tag_a = tag.as<TagA>();
@@ -94,76 +103,6 @@ public:
 /// 	TagB* tag_b = tag.as<TagB>();
 /// }
 /// ```
-///
-/// Note:
-/// The `Any` filter, supports nesting. For example, you can use
-/// the `Changed` filter in this way:
-/// `Query<Any<const TagA, Changed<const TagB>>> query;`
-/// Remember that the fist valid filter is returned.
-/// The mutability is also important.
-///
-/// Known limitations:
-/// `Query<Any<TagA, TagB>>` if you have an `Entity` that satisfy more
-/// filters, like in the below case (**Entity 2**):
-/// 	[Entity 0, TagA, ___]
-/// 	[Entity 1, ___, TagB]
-/// 	[Entity 2, TagA,TagB]
-/// the query fetches the **Entity 2** twice, but the first specified component
-/// is always taken (in this case the `TagA`).
-/// _Remove this limitation would be a lot more expensinve than useful._
-template <class... Cs>
-struct Any {};
-
-// TODO Remove this
-struct AnyData {
-	void *const ptr;
-	const godex::component_id id;
-	const bool is_const;
-
-	AnyData(void *p_ptr, godex::component_id p_id, bool p_const) :
-			ptr(p_ptr), id(p_id), is_const(p_const) {}
-
-	/// Returns `true` when the wrapped ptr is `nullptr`.
-	bool is_null() const {
-		return ptr == nullptr;
-	}
-
-	/// Returns `true` if `T` is a valid conversion. This function take into
-	/// account mutability.
-	/// ```
-	/// AnyData flat;
-	/// if( flat.is<TestComponent>() ){
-	/// 	flat.as<TestComponent>();
-	/// } else
-	/// if ( flat.is<const TestComponent>() ) {
-	/// 	flat.as<const TestComponent>();
-	/// }
-	/// ```
-	template <class T>
-	bool is() const {
-		return id == T::get_component_id() &&
-			   std::is_const<T>::value == is_const;
-	}
-
-	/// Unwrap the pointer, and cast it to T.
-	/// It's possible to check the type using `is<TypeHere>()`.
-	template <class T>
-	T *as() {
-#ifdef DEBUG_ENABLED
-		// Just check the mutability here, no need to check the type also, so
-		// it's possible to cast it easily to other types (like the base type).
-		CRASH_COND_MSG(std::is_const<T>::value != is_const, "Please retrieve this data with the correct mutability.");
-#endif
-		return static_cast<T *>(ptr);
-	}
-
-	/// If the data is const, never return the pointer as non const.
-	template <class T>
-	const T *as() const {
-		return static_cast<const std::remove_const_t<T> *>(ptr);
-	}
-};
-
 template <class... Cs>
 struct Join {};
 
@@ -249,11 +188,6 @@ struct to_query_return_type<Changed<T>> {
 template <>
 struct to_query_return_type<EntityID> {
 	typedef EntityID type;
-};
-
-template <typename... Ts>
-struct to_query_return_type<Any<Ts...>> {
-	typedef AnyData type;
 };
 
 template <typename T>
@@ -897,6 +831,7 @@ struct QueryStorage<I, Batch<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 
 // ------------------------------------------------------------------------- Any
 
+/*
 template <class... Cs>
 struct AnyStorage {
 	AnyStorage(World *p_world) {}
@@ -1037,6 +972,7 @@ struct QueryStorage<I, Any<C...>, Cs...> : QueryStorage<I + 1, Cs...> {
 		QueryStorage<I + 1, Cs...>::get_components(r_info);
 	}
 };
+*/
 
 // -------------------------------------------------------------------- No filter
 

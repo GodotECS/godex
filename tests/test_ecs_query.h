@@ -1588,6 +1588,7 @@ TEST_CASE("[Modules][ECS] Test static query count.") {
 }
 
 TEST_CASE("[Modules][ECS] Test static query Any filter.") {
+	/* TODO enble this back
 	World world;
 
 	EntityID entity_1 = world
@@ -1754,55 +1755,11 @@ TEST_CASE("[Modules][ECS] Test static query Any filter.") {
 			CHECK(tag.is_null());
 		}
 	}
+	*/
 }
 
-TEST_CASE("[Modules][ECS] Test static query Group filter.") {
-	//World world;
-
-	///*EntityID entity_1 =*/world
-	//		.create_entity()
-	//		.with(TagA())
-	//		.with(TransformComponent());
-
-	///*EntityID entity_2 =*/world
-	//		.create_entity()
-	//		.with(TransformComponent());
-
-	//EntityID entity_3 = world
-	//							.create_entity()
-	//							.with(TagB())
-	//							.with(TransformComponent());
-
-	//EntityID entity_4 = world
-	//							.create_entity()
-	//							.with(TagC())
-	//							.with(TransformComponent());
-
-	//world.get_storage<TagA>()->set_tracing_change(true);
-	//world.get_storage<TagB>()->set_tracing_change(true);
-	//world.get_storage<TagC>()->set_tracing_change(true);
-	//world.get_storage<TransformComponent>()->set_tracing_change(true);
-
-	//world.get_storage<TagC>()->notify_changed(entity_4);
-	//world.get_storage<TransformComponent>()->notify_changed(entity_3);
-
-	//{
-	//	//Query<EntityID, Group<TransformComponent, Any<TagA, TagB, TagC>>> query(&world);
-	//	Query<EntityID, Group<Changed<TransformComponent>, Any<Changed<TagA>, Changed<TagB>, Changed<TagC>>>> query(&world);
-
-	//	auto it = query.begin();
-	//	{
-	//		auto [entity, group] = it.operator*();
-	//		auto [transf, tag] = group;
-	//		CHECK(entity == entity_3);
-	//	}
-
-	//	{
-	//		auto [entity, group] = it.operator*();
-	//		auto [transf, tag] = group;
-	//		CHECK(entity == entity_4);
-	//	}
-	//}
+TEST_CASE("[Modules][ECS] Test static query Join filter.") {
+	// TODO add `Join` tests.
 }
 } // namespace godex_tests
 
