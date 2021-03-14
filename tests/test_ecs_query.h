@@ -50,6 +50,10 @@ struct TestEvent {
 namespace godex_tests {
 
 TEST_CASE("[Modules][ECS] Test fetch element type using fetch_element_type.") {
+	ECS::register_component<TagA>();
+	ECS::register_component<TagB>();
+	ECS::register_component<TagC>();
+
 	// Make sure the `fetch_element_type` is able to fetch always the correct
 	// type, basing on the given `Search` (the first number in the template
 	// list) and the following parameters.
@@ -300,6 +304,16 @@ TEST_CASE("[Modules][ECS] Test QueryResultTuple: packing and unpaking following 
 		}
 	}
 
+	// Test Filters deep
+	{
+		QueryResultTuple<Maybe<Changed<TagC>>> tuple;
+
+		set<0>(tuple, &c);
+
+		TagC *ptr_c = get<0>(tuple);
+		CHECK(ptr_c == &c);
+	}
+
 	// Test `Batch` filter.
 	{
 		QueryResultTuple<Batch<TagA>, Maybe<const TagB>> tuple;
@@ -460,7 +474,7 @@ TEST_CASE("[Modules][ECS] Test QueryResultTuple: packing and unpaking following 
 						Batch<Maybe<Changed<TagB>>>,
 						Join<Any<Without<TagA>, Changed<TagB>>>,
 						Any<
-								Without<TagA>,
+								Without<Changed<TagA>>,
 								Changed<TagB>>>,
 				EntityID,
 				TransformComponent>
@@ -525,12 +539,6 @@ TEST_CASE("[Modules][ECS] Test QueryResultTuple: packing and unpaking following 
 TEST_CASE("[Modules][ECS] Test static query") {
 	ECS::register_component<TagQueryTestComponent>();
 
-	// TODO test deep nesting
-}
-
-TEST_CASE("[Modules][ECS] Test static query") {
-	ECS::register_component<TagQueryTestComponent>();
-
 	World world;
 
 	EntityID entity_1 = world
@@ -590,6 +598,108 @@ TEST_CASE("[Modules][ECS] Test static query") {
 			CHECK(tag != nullptr);
 		}
 	}
+}
+
+TEST_CASE("[Modules][ECS] Test static query deep nesting") {
+	ECS::register_component<TestFixedSizeEvent>();
+
+	World world;
+
+	EntityID entity_1 = world
+								.create_entity()
+								.with(TagA())
+								.with(TagB())
+								.with(TagC())
+								.with(TestFixedSizeEvent(20))
+								.with(TransformComponent());
+
+	EntityID entity_2 = world
+								.create_entity()
+								.with(TagA())
+								.with(TagB())
+								.with(TagC())
+								.with(TestFixedSizeEvent(25))
+								.with(TestFixedSizeEvent(30))
+								.with(TransformComponent());
+
+	world.get_storage<TagC>()->set_tracing_change(true);
+	world.get_storage<TagC>()->notify_changed(entity_1);
+
+	world.get_storage<TestFixedSizeEvent>()->set_tracing_change(true);
+	world.get_storage<TestFixedSizeEvent>()->notify_changed(entity_2);
+
+	// Test `EntityID`, `With` `Maybe`, `Without + Changed`.
+	{
+		// Take this only if `TagC` DOESN'T changed.
+		Query<EntityID, TagA, Maybe<TagB>, Without<Changed<TagC>>> query(&world);
+
+		// The `TagC` on the `Entity1` is changed, so the query doesn't fetches it.
+		CHECK(query.has(entity_1) == false);
+
+		// The `TagC` on the `Entity2` is not changed, so the query fetches it.
+		CHECK(query.has(entity_2));
+
+		auto [entity, tag_a, tag_b, tag_c] = query.new_get(entity_2);
+		CHECK(entity == entity_2);
+		CHECK(tag_a != nullptr);
+		CHECK(tag_b != nullptr);
+		CHECK(tag_c == nullptr);
+	}
+
+	// Test `EntityID`, `With`, `Maybe + Changed`.
+	{
+		// Take this only if `TagC` DOESN'T changed.
+		Query<EntityID, TagA, Maybe<Changed<TagC>>> query(&world);
+
+		CHECK(query.has(entity_1));
+		CHECK(query.has(entity_2));
+
+		// In Entity1 the tag is changed, we expect it.
+		{
+			auto [entity, tag_a, tag_c] = query.new_get(entity_1);
+			CHECK(entity == entity_1);
+			CHECK(tag_a != nullptr);
+			CHECK(tag_c != nullptr);
+		}
+
+		// In Entity2 the tag is NOT changed, we expect nullptr.
+		{
+			auto [entity, tag_a, tag_c] = query.new_get(entity_2);
+			CHECK(entity == entity_2);
+			CHECK(tag_a != nullptr);
+			CHECK(tag_c == nullptr);
+		}
+	}
+
+	// Test nested Batch
+	{
+		Query<EntityID, TransformComponent, Batch<Maybe<Changed<TestFixedSizeEvent>>>> query(&world);
+
+		CHECK(query.has(entity_1));
+		CHECK(query.has(entity_2));
+
+		// In Entity1 the event is NOT changed, we expect nullptr.
+		{
+			auto [entity, transf, event] = query.new_get(entity_1);
+			CHECK(entity == entity_1);
+			CHECK(transf != nullptr);
+			CHECK(event.is_empty());
+		}
+
+		// In Entity2 the tag is NOT changed, we expect nullptr.
+		{
+			auto [entity, transf, event] = query.new_get(entity_2);
+			CHECK(entity == entity_2);
+			CHECK(transf != nullptr);
+			CHECK(event.is_empty() == false);
+			CHECK(event.get_size() == 2);
+			CHECK(event[0]->number == 25);
+			CHECK(event[1]->number == 30);
+		}
+	}
+
+	// TODO test Join
+	// TODO test Any
 }
 } // namespace godex_tests
 
@@ -1284,7 +1394,6 @@ TEST_CASE("[Modules][ECS] Test invalid dynamic query.") {
 
 TEST_CASE("[Modules][ECS] Test query with event.") {
 	ECS::register_component<TestEvent>();
-	ECS::register_component<TestFixedSizeEvent>();
 
 	World world;
 
@@ -1479,10 +1588,6 @@ TEST_CASE("[Modules][ECS] Test static query count.") {
 }
 
 TEST_CASE("[Modules][ECS] Test static query Any filter.") {
-	ECS::register_component<TagA>();
-	ECS::register_component<TagB>();
-	ECS::register_component<TagC>();
-
 	World world;
 
 	EntityID entity_1 = world

@@ -1,4 +1,4 @@
-/** @author AndreaCatania */
+﻿/** @author AndreaCatania */
 
 #pragma once
 
@@ -381,19 +381,19 @@ struct QueryResultTuple_Impl {
 /// No filter specialization.
 template <std::size_t I, class C, class... Cs>
 struct QueryResultTuple_Impl<I, C, Cs...> : public QueryResultTuple_Impl<I + 1, Cs...> {
-	C *value;
+	C *value = nullptr;
 };
 
 /// `Batch` filter specialization.
 template <std::size_t I, class C, class... Cs>
 struct QueryResultTuple_Impl<I, Batch<C>, Cs...> : public QueryResultTuple_Impl<I + 1, Cs...> {
-	Batch<fetch_element_type<0, 0, C>> value;
+	Batch<fetch_element_type<0, 0, C>> value = Batch<fetch_element_type<0, 0, C>>(nullptr, 0);
 };
 
 /// `Join` filter specialization.
 template <std::size_t I, class... C, class... Cs>
 struct QueryResultTuple_Impl<I, Join<C...>, Cs...> : public QueryResultTuple_Impl<I + 1, Cs...> {
-	JoinData value;
+	JoinData value = JoinData(nullptr, godex::COMPONENT_NONE, true);
 };
 
 /// `EntityID` filter specialization.
@@ -472,15 +472,35 @@ constexpr void set_impl(T p_val, QueryResultTuple_Impl<S, Join<C...>, Cs...> &tu
 	tuple.value = p_val;
 }
 
-/// Skip the filters, and foward the call to the subfilters.
-/// This template is able to handle all filters: `Changed`, `Without`, `Maybe`.
-///
-/// Note: this is necessary becase the filters have the same `Index` of the
-/// actual data, so we need to skip it to extract the data.
-template <std::size_t S, class T, class... C, class... Cs, template <class> class Filter>
-constexpr void set_impl(T p_val, QueryResultTuple_Impl<S, Filter<C...>, Cs...> &tuple) noexcept {
+/**
+ * NOTE: I tried to use this:
+ * ```
+ * template <std::size_t S, class T, class... C, class... Cs, template <class> class Filter>
+ * constexpr void set_impl(T p_val, QueryResultTuple_Impl<S, Filter<C>, Cs...> &tuple) noexcept {}
+ * ```
+ * but it doesn't recursivelly calls itself when there are more than 1 nested
+ * level. So I've separated these.
+ */
+
+/// Skip the filter `Changed`.
+template <std::size_t S, class T, class C, class... Cs>
+constexpr void set_impl(T p_val, QueryResultTuple_Impl<S, Changed<C>, Cs...> &tuple) noexcept {
 	// Forward to subfilters.
-	set_impl<S>(p_val, static_cast<QueryResultTuple_Impl<S, C..., Cs...> &>(tuple));
+	set_impl<S>(p_val, static_cast<QueryResultTuple_Impl<S, C, Cs...> &>(tuple));
+}
+
+/// Skip the filter `Without`.
+template <std::size_t S, class T, class C, class... Cs>
+constexpr void set_impl(T p_val, QueryResultTuple_Impl<S, Without<C>, Cs...> &tuple) noexcept {
+	// Forward to subfilters.
+	set_impl<S>(p_val, static_cast<QueryResultTuple_Impl<S, C, Cs...> &>(tuple));
+}
+
+/// Skip the filter `Maybe`.
+template <std::size_t S, class T, class C, class... Cs>
+constexpr void set_impl(T p_val, QueryResultTuple_Impl<S, Maybe<C>, Cs...> &tuple) noexcept {
+	// Forward to subfilters.
+	set_impl<S>(p_val, static_cast<QueryResultTuple_Impl<S, C, Cs...> &>(tuple));
 }
 
 /// Skip the filter `Any`.
@@ -516,17 +536,38 @@ constexpr auto get_impl(const QueryResultTuple_Impl<S, Join<C...>, Cs...> &tuple
 	return tuple.value;
 }
 
-/// Skip the filter and fetches the inner data.
-/// This template is able to handle all filters: `Changed`, `Without`, `Maybe`.
-///
-/// Note: this is necessary becase the filters have the same `Index` of the
-/// actual data, so we need to skip it to extract the data.
-template <std::size_t S, class... C, class... Cs, template <class...> class Filter>
-constexpr auto get_impl(const QueryResultTuple_Impl<S, Filter<C...>, Cs...> &tuple) noexcept {
+/**
+ * NOTE: I tried to use this:
+ * ```
+ * template <std::size_t S, class... C, class... Cs, template <class...> class Filter>
+ * constexpr auto get_impl(const QueryResultTuple_Impl<S, Filter<C...>, Cs...> &tuple) noexcept {
+ * ```
+ * but it doesn't recursivelly calls itself when there are more than 1 nested
+ * level. So I've separated these.
+ */
+
+/// Skip the filter `Changed`.
+template <std::size_t S, class C, class... Cs>
+constexpr auto get_impl(const QueryResultTuple_Impl<S, Changed<C>, Cs...> &tuple) noexcept {
 	// Forward to subfilters.
-	return get_impl<S>(static_cast<const QueryResultTuple_Impl<S, C..., Cs...> &>(tuple));
+	return get_impl<S>(static_cast<const QueryResultTuple_Impl<S, C, Cs...> &>(tuple));
 }
 
+/// Skip the filter `Without`.
+template <std::size_t S, class C, class... Cs>
+constexpr auto get_impl(const QueryResultTuple_Impl<S, Without<C>, Cs...> &tuple) noexcept {
+	// Forward to subfilters.
+	return get_impl<S>(static_cast<const QueryResultTuple_Impl<S, C, Cs...> &>(tuple));
+}
+
+/// Skip the filter `Maybe`.
+template <std::size_t S, class C, class... Cs>
+constexpr auto get_impl(const QueryResultTuple_Impl<S, Maybe<C>, Cs...> &tuple) noexcept {
+	// Forward to subfilters.
+	return get_impl<S>(static_cast<const QueryResultTuple_Impl<S, C, Cs...> &>(tuple));
+}
+
+/// Skip the filter `Any`.
 template <std::size_t S, class... C, class... Cs>
 constexpr auto get_impl(const QueryResultTuple_Impl<S, Any<C...>, Cs...> &tuple) noexcept {
 	// Forward to subfilters.
@@ -539,10 +580,19 @@ constexpr fetch_element_type<S, 0, Cs...> get(const QueryResultTuple<Cs...> &tup
 	return get_impl<S>(tuple);
 }
 
+// TODO remove this once the Query is refactored
+namespace REMOVE_THIS_NS {
+/// Can be used to fetch the data from a tuple.
+template <std::size_t S, class... Cs>
+constexpr fetch_element_type<S, 0, Cs...> get(const QueryResultTuple<Cs...> &tuple) noexcept {
+	return get_impl<S>(tuple);
+}
+} // namespace REMOVE_THIS_NS
+
 // --------------------------------------------------------------- Query Storages
 
 /// `QueryStorage` specialization with 0 template arguments.
-template <class... Cs>
+template <std::size_t I, class... Cs>
 struct QueryStorage {
 	QueryStorage(World *p_world) {}
 
@@ -554,141 +604,170 @@ struct QueryStorage {
 	bool filter_satisfied(EntityID p_entity) const { return true; }
 	std::tuple<to_query_return_type_t<Cs>...> get(EntityID p_id, Space p_mode) const { return std::tuple(); }
 
-	static void get_components(SystemExeInfo &r_info) {}
+	template <class... Qs>
+	void new_fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
+		// Nothing to fetch.
+	}
+
+	static void get_components(SystemExeInfo &r_info, const bool p_force_immutable = false) {}
 };
 
 // -------------------------------------------------------------------- EntityID
 
 /// Fetch the `EntityID`.
-template <class... Cs>
-struct QueryStorage<EntityID, Cs...> : QueryStorage<Cs...> {
+template <std::size_t I, class... Cs>
+struct QueryStorage<I, EntityID, Cs...> : public QueryStorage<I + 1, Cs...> {
 	QueryStorage(World *p_world) :
-			QueryStorage<Cs...>(p_world) {}
+			QueryStorage<I + 1, Cs...>(p_world) {}
 
 	EntitiesBuffer get_entities() const {
-		return QueryStorage<Cs...>::get_entities();
+		return QueryStorage<I + 1, Cs...>::get_entities();
 	}
 
 	bool filter_satisfied(EntityID p_entity) const {
-		return QueryStorage<Cs...>::filter_satisfied(p_entity);
+		return QueryStorage<I + 1, Cs...>::filter_satisfied(p_entity);
 	}
 
 	std::tuple<EntityID, to_query_return_type_t<Cs>...> get(EntityID p_id, Space p_mode) {
 		return std::tuple_cat(
 				std::tuple<EntityID>(p_id),
-				QueryStorage<Cs...>::get(p_id, p_mode));
+				QueryStorage<I + 1, Cs...>::get(p_id, p_mode));
 	}
 
-	static void get_components(SystemExeInfo &r_info) {
-		QueryStorage<Cs...>::get_components(r_info);
+	template <class... Qs>
+	void new_fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
+		// Set the `EntityID` at position `I`.
+		set<I>(r_result, p_id);
+		// Keep going.
+		QueryStorage<I + 1, Cs...>::new_fetch(p_id, p_mode, r_result);
+	}
+
+	static void get_components(SystemExeInfo &r_info, const bool p_force_immutable = false) {
+		QueryStorage<I + 1, Cs...>::get_components(r_info);
 	}
 };
 
 // ----------------------------------------------------------------------- Maybe
 
 /// `QueryStorage` `Maybe` filter specialization.
-template <class C, class... Cs>
-struct QueryStorage<Maybe<C>, Cs...> : QueryStorage<Cs...> {
-	Storage<C> *storage = nullptr;
+template <std::size_t I, class C, class... Cs>
+struct QueryStorage<I, Maybe<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
+	QueryStorage<I, C> query_storage;
 
 	QueryStorage(World *p_world) :
-			QueryStorage<Cs...>(p_world),
-			storage(p_world->get_storage<C>()) {
+			QueryStorage<I + 1, Cs...>(p_world),
+			query_storage(p_world) {
 	}
 
 	EntitiesBuffer get_entities() const {
 		// This is a NON determinant filter, so just return the other filter.
-		return QueryStorage<Cs...>::get_entities();
+		return QueryStorage<I + 1, Cs...>::get_entities();
 	}
 
 	bool filter_satisfied(EntityID p_entity) const {
 		// The `Maybe` filter never stops the execution.
-		return QueryStorage<Cs...>::filter_satisfied(p_entity);
+		return QueryStorage<I + 1, Cs...>::filter_satisfied(p_entity);
 	}
 
 	std::tuple<C *, to_query_return_type_t<Cs>...> get(EntityID p_id, Space p_mode) const {
-		if (likely(storage != nullptr) && storage->has(p_id)) {
-			if constexpr (std::is_const<C>::value) {
-				return std::tuple_cat(
-						std::tuple<C *>(const_cast<const Storage<C> *>(storage)->get(p_id, p_mode)),
-						QueryStorage<Cs...>::get(p_id, p_mode));
-			} else {
-				return std::tuple_cat(
-						std::tuple<C *>(storage->get(p_id, p_mode)),
-						QueryStorage<Cs...>::get(p_id, p_mode));
-			}
+		if (query_storage.filter_satisfied(p_id)) {
+			// TODO assume it's correct, but this is not nesting.
+			return std::tuple_cat(
+					std::tuple<C *>(query_storage.get(p_id, p_mode)),
+					QueryStorage<I + 1, Cs...>::get(p_id, p_mode));
 		} else {
 			// Nothing to fetch, just set nullptr.
 			return std::tuple_cat(
 					std::tuple<C *>(nullptr),
-					QueryStorage<Cs...>::get(p_id, p_mode));
+					QueryStorage<I + 1, Cs...>::get(p_id, p_mode));
 		}
 	}
 
-	static void get_components(SystemExeInfo &r_info) {
-		if constexpr (std::is_const<C>::value) {
-			r_info.immutable_components.insert(C::get_component_id());
-		} else {
-			r_info.mutable_components.insert(C::get_component_id());
+	template <class... Qs>
+	void new_fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
+		if (query_storage.filter_satisfied(p_id)) {
+			// Ask the sub storage to fetch the data.
+			query_storage.new_fetch(p_id, p_mode, r_result);
 		}
-		QueryStorage<Cs...>::get_components(r_info);
+
+		// Keep going.
+		QueryStorage<I + 1, Cs...>::new_fetch(p_id, p_mode, r_result);
+	}
+
+	auto get_inner_storage() const {
+		return query_storage.get_inner_storage();
+	}
+
+	static void get_components(SystemExeInfo &r_info, const bool p_force_immutable = false) {
+		QueryStorage<0, C>::get_components(r_info, p_force_immutable);
+		QueryStorage<I + 1, Cs...>::get_components(r_info);
 	}
 };
 
 // --------------------------------------------------------------------- Without
 
 /// `QueryStorage` `Without` filter specialization.
-template <class C, class... Cs>
-struct QueryStorage<Without<C>, Cs...> : QueryStorage<Cs...> {
-	Storage<C> *storage = nullptr;
+template <std::size_t I, class C, class... Cs>
+struct QueryStorage<I, Without<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
+	QueryStorage<I, C> query_storage;
 
 	QueryStorage(World *p_world) :
-			QueryStorage<Cs...>(p_world),
-			storage(p_world->get_storage<C>()) {
+			QueryStorage<I + 1, Cs...>(p_world),
+			query_storage(p_world) {
 	}
 
 	EntitiesBuffer get_entities() const {
 		// This is a NON determinant filter, so just return the other filter.
-		return QueryStorage<Cs...>::get_entities();
+		return QueryStorage<I + 1, Cs...>::get_entities();
 	}
 
 	bool filter_satisfied(EntityID p_entity) const {
-		if (unlikely(storage == nullptr)) {
-			// When the storage is null the `Without` is always `true` though
-			// we have to keep check the other storages.
-			return QueryStorage<Cs...>::filter_satisfied(p_entity);
-		}
-		return storage->has(p_entity) == false && QueryStorage<Cs...>::filter_satisfied(p_entity);
+		// The `Without` filter is satisfied if the sub filter is not satisfied:
+		// it's a lot similar to a `Not` or `!`.
+		return query_storage.filter_satisfied(p_entity) == false &&
+			   QueryStorage<I + 1, Cs...>::filter_satisfied(p_entity);
 	}
 
 	std::tuple<C *, to_query_return_type_t<Cs>...> get(EntityID p_id, Space p_mode) const {
 		// Just keep going, the `Without` filter doesn't collect data.
-		return std::tuple_cat(std::tuple<C *>(nullptr), QueryStorage<Cs...>::get(p_id, p_mode));
+		return std::tuple_cat(std::tuple<C *>(nullptr), QueryStorage<I + 1, Cs...>::get(p_id, p_mode));
 	}
 
-	static void get_components(SystemExeInfo &r_info) {
-		// The `Without` collects the data always immutable.
-		r_info.immutable_components.insert(C::get_component_id());
-		QueryStorage<Cs...>::get_components(r_info);
+	template <class... Qs>
+	void new_fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
+		// Nothing to do, the `Without` filter doesn't fetches.
+		// Just keep going.
+		QueryStorage<I + 1, Cs...>::new_fetch(p_id, p_mode, r_result);
+	}
+
+	auto get_inner_storage() const {
+		return query_storage.get_inner_storage();
+	}
+
+	static void get_components(SystemExeInfo &r_info, const bool p_force_immutable = false) {
+		// The `Without` collects the data always immutable, so force take it
+		// immutably.
+		QueryStorage<I, C>::get_components(r_info, true);
+		QueryStorage<I + 1, Cs...>::get_components(r_info);
 	}
 };
 
 // --------------------------------------------------------------------- Changed
 
 /// `QueryStorage` `Changed` filter specialization.
-template <class C, class... Cs>
-struct QueryStorage<Changed<C>, Cs...> : QueryStorage<Cs...> {
+template <std::size_t I, class C, class... Cs>
+struct QueryStorage<I, Changed<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 	Storage<C> *storage = nullptr;
 
 	QueryStorage(World *p_world) :
-			QueryStorage<Cs...>(p_world),
+			QueryStorage<I + 1, Cs...>(p_world),
 			storage(p_world->get_storage<C>()) {
 	}
 
 	EntitiesBuffer get_entities() const {
 		// This is a determinant filter, that iterates over the changed
 		// components of this storage.
-		const EntitiesBuffer o_entities = QueryStorage<Cs...>::get_entities();
+		const EntitiesBuffer o_entities = QueryStorage<I + 1, Cs...>::get_entities();
 		if (unlikely(storage == nullptr)) {
 			return o_entities;
 		}
@@ -702,7 +781,7 @@ struct QueryStorage<Changed<C>, Cs...> : QueryStorage<Cs...> {
 			// immediately.
 			return false;
 		}
-		return storage->is_changed(p_entity) && QueryStorage<Cs...>::filter_satisfied(p_entity);
+		return storage->is_changed(p_entity) && QueryStorage<I + 1, Cs...>::filter_satisfied(p_entity);
 	}
 
 	std::tuple<C *, to_query_return_type_t<Cs>...> get(EntityID p_id, Space p_mode) const {
@@ -714,34 +793,57 @@ struct QueryStorage<Changed<C>, Cs...> : QueryStorage<Cs...> {
 		if constexpr (std::is_const<C>::value) {
 			return std::tuple_cat(
 					std::tuple<C *>(const_cast<const Storage<C> *>(storage)->get(p_id, p_mode)),
-					QueryStorage<Cs...>::get(p_id, p_mode));
+					QueryStorage<I + 1, Cs...>::get(p_id, p_mode));
 		} else {
 			return std::tuple_cat(
 					std::tuple<C *>(storage->get(p_id, p_mode)),
-					QueryStorage<Cs...>::get(p_id, p_mode));
+					QueryStorage<I + 1, Cs...>::get(p_id, p_mode));
 		}
 	}
 
-	static void get_components(SystemExeInfo &r_info) {
+	template <class... Qs>
+	void new_fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
+#ifdef DEBUG_ENABLED
+		// This can't happen because `is_done` returns true.
+		CRASH_COND_MSG(storage == nullptr, "The storage" + String(typeid(Storage<C>).name()) + " is null.");
+#endif
+
 		if constexpr (std::is_const<C>::value) {
+			set<I>(r_result, const_cast<const Storage<C> *>(storage)->get(p_id, p_mode));
+		} else {
+			set<I>(r_result, storage->get(p_id, p_mode));
+		}
+
+		// Keep going
+		QueryStorage<I + 1, Cs...>::new_fetch(p_id, p_mode, r_result);
+	}
+
+	auto get_inner_storage() const {
+		return storage;
+	}
+
+	static void get_components(SystemExeInfo &r_info, const bool p_force_immutable = false) {
+		if (std::is_const<C>::value || p_force_immutable) {
 			r_info.immutable_components.insert(C::get_component_id());
 		} else {
 			r_info.mutable_components.insert(C::get_component_id());
 		}
 		r_info.need_changed.insert(C::get_component_id());
-		QueryStorage<Cs...>::get_components(r_info);
+		QueryStorage<I + 1, Cs...>::get_components(r_info);
 	}
 };
 
 // ----------------------------------------------------------------------- Batch
 
 /// `QueryStorage` `Batch` filter specialization.
-template <class C, class... Cs>
-struct QueryStorage<Batch<C>, Cs...> : QueryStorage<Cs...> {
-	QueryStorage<C> query_storage;
+template <std::size_t I, class C, class... Cs>
+struct QueryStorage<I, Batch<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
+	// Here I'm using `0` (instead of `I`) because the data is fetched locally
+	// and then parsed by this storage.
+	QueryStorage<0, C> query_storage;
 
 	QueryStorage(World *p_world) :
-			QueryStorage<Cs...>(p_world),
+			QueryStorage<I + 1, Cs...>(p_world),
 			query_storage(p_world) {
 	}
 
@@ -763,12 +865,33 @@ struct QueryStorage<Batch<C>, Cs...> : QueryStorage<Cs...> {
 		}
 		return std::tuple_cat(
 				std::tuple<Batch<to_query_return_type_t<C>>>(ret),
-				QueryStorage<Cs...>::get(p_id, p_mode));
+				QueryStorage<I + 1, Cs...>::get(p_id, p_mode));
 	}
 
-	static void get_components(SystemExeInfo &r_info) {
-		QueryStorage<C>::get_components(r_info);
-		QueryStorage<Cs...>::get_components(r_info);
+	template <class... Qs>
+	void new_fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
+		// Fetch the batched data.
+		QueryResultTuple<C> tuple;
+		query_storage.new_fetch(p_id, p_mode, tuple);
+		fetch_element_type<0, 0, C> data = REMOVE_THIS_NS::get<0>(tuple);
+
+		if (query_storage.get_inner_storage() != nullptr && data != nullptr) {
+			set<I>(r_result, Batch<fetch_element_type<0, 0, C>>(
+									 data,
+									 query_storage.get_inner_storage()->get_batch_size(p_id)));
+		}
+
+		// Keep going
+		QueryStorage<I + 1, Cs...>::new_fetch(p_id, p_mode, r_result);
+	}
+
+	auto get_inner_storage() const {
+		return query_storage.get_inner_storage();
+	}
+
+	static void get_components(SystemExeInfo &r_info, const bool p_force_immutable = false) {
+		QueryStorage<I + 1, C>::get_components(r_info, p_force_immutable);
+		QueryStorage<I + 1, Cs...>::get_components(r_info);
 	}
 };
 
@@ -785,7 +908,7 @@ struct AnyStorage {
 
 template <class C, class... Cs>
 struct AnyStorage<C, Cs...> : AnyStorage<Cs...> {
-	QueryStorage<C> storage;
+	QueryStorage<0, C> storage;
 
 	AnyStorage(World *p_world) :
 			AnyStorage<Cs...>(p_world),
@@ -828,8 +951,8 @@ struct AnyStorage<C, Cs...> : AnyStorage<Cs...> {
 };
 
 /// `QueryStorage` `Any` immutable filter specialization.
-template <class... C, class... Cs>
-struct QueryStorage<Any<C...>, Cs...> : QueryStorage<Cs...> {
+template <std::size_t I, class... C, class... Cs>
+struct QueryStorage<I, Any<C...>, Cs...> : QueryStorage<I + 1, Cs...> {
 	constexpr static std::size_t storages_count = sizeof...(C);
 	AnyStorage<C...> flat_storages;
 
@@ -837,7 +960,7 @@ struct QueryStorage<Any<C...>, Cs...> : QueryStorage<Cs...> {
 	EntitiesBuffer entities_buffer;
 
 	QueryStorage(World *p_world) :
-			QueryStorage<Cs...>(p_world),
+			QueryStorage<I + 1, Cs...>(p_world),
 			flat_storages(p_world) {
 		// Fetch the entities from the storages, and creates a contiguous
 		// memory that the query can fetch.
@@ -895,66 +1018,42 @@ struct QueryStorage<Any<C...>, Cs...> : QueryStorage<Cs...> {
 	std::tuple<AnyData, to_query_return_type_t<Cs>...> get(EntityID p_id, Space p_mode) const {
 		return std::tuple_cat(
 				std::tuple<AnyData>(flat_storages.get(p_id, p_mode)),
-				QueryStorage<Cs...>::get(p_id, p_mode));
+				QueryStorage<I + 1, Cs...>::get(p_id, p_mode));
 	}
 
-	static void get_components(SystemExeInfo &r_info) {
+	//template <std::size_t I, class... Qs>
+	//void new_fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
+	//	// TODO
+	//}
+
+	//auto get_inner_storage() const {
+	//	return query_storage.get_inner_storage();
+	//}
+
+	static void get_components(SystemExeInfo &r_info, const bool p_force_immutable = false) {
 		// Take the components storages used, taking advantage of the
 		// get_components function.
-		QueryStorage<C...>::get_components(r_info);
-		QueryStorage<Cs...>::get_components(r_info);
+		QueryStorage<0, C...>::get_components(r_info, p_force_immutable);
+		QueryStorage<I + 1, Cs...>::get_components(r_info);
 	}
 };
-
-// ------------------------------------------------------------------------ Group
-
-//template <class... Cs>
-//struct GroupStorage {
-//	GroupStorage(World *p_world) {}
-//
-//	void get_entities(EntitiesBuffer r_buffers[], uint32_t p_index = 0) const {}
-//	bool filter_satisfied(EntityID p_entity) const { return false; }
-//	AnyData get(EntityID p_id, Space p_mode) const { return AnyData(nullptr, godex::COMPONENT_NONE, true); }
-//};
-
-/// `QueryStorage` `Any` immutable filter specialization.
-//template <class... C, class... Cs>
-//struct QueryStorage<Group<C...>, Cs...> : QueryStorage<Cs...> {
-//	QueryStorage(World *p_world) :
-//			QueryStorage<Cs...>(p_world) {
-//	}
-//
-//	EntitiesBuffer get_entities() const {
-//		return EntitiesBuffer(0, nullptr);
-//	}
-//
-//	bool filter_satisfied(EntityID p_entity) const {
-//		return false;
-//	}
-//
-//	std::tuple<to_query_return_type_t<C>..., to_query_return_type_t<Cs>...> get(EntityID p_id, Space p_mode) const {
-//	}
-//
-//	static void get_components(SystemExeInfo &r_info) {
-//	}
-//};
 
 // -------------------------------------------------------------------- No filter
 
 /// `QueryStorage` no filter specialization.
-template <class C, class... Cs>
-struct QueryStorage<C, Cs...> : QueryStorage<Cs...> {
+template <std::size_t I, class C, class... Cs>
+struct QueryStorage<I, C, Cs...> : QueryStorage<I + 1, Cs...> {
 	Storage<C> *storage = nullptr;
 
 	QueryStorage(World *p_world) :
-			QueryStorage<Cs...>(p_world),
+			QueryStorage<I + 1, Cs...>(p_world),
 			storage(p_world->get_storage<C>()) {
 	}
 
 	EntitiesBuffer get_entities() const {
 		// This is a determinant filter, that iterates over the existing
 		// components of this storage.
-		const EntitiesBuffer o_entities = QueryStorage<Cs...>::get_entities();
+		const EntitiesBuffer o_entities = QueryStorage<I + 1, Cs...>::get_entities();
 		if (unlikely(storage == nullptr)) {
 			return o_entities;
 		}
@@ -968,7 +1067,7 @@ struct QueryStorage<C, Cs...> : QueryStorage<Cs...> {
 			// immediately.
 			return false;
 		}
-		return storage->has(p_entity) && QueryStorage<Cs...>::filter_satisfied(p_entity);
+		return storage->has(p_entity) && QueryStorage<I + 1, Cs...>::filter_satisfied(p_entity);
 	}
 
 	std::tuple<C *, to_query_return_type_t<Cs>...> get(EntityID p_id, Space p_mode) const {
@@ -980,21 +1079,43 @@ struct QueryStorage<C, Cs...> : QueryStorage<Cs...> {
 		if constexpr (std::is_const<C>::value) {
 			return std::tuple_cat(
 					std::tuple<C *>(const_cast<const Storage<C> *>(storage)->get(p_id, p_mode)),
-					QueryStorage<Cs...>::get(p_id, p_mode));
+					QueryStorage<I + 1, Cs...>::get(p_id, p_mode));
 		} else {
 			return std::tuple_cat(
 					std::tuple<C *>(storage->get(p_id, p_mode)),
-					QueryStorage<Cs...>::get(p_id, p_mode));
+					QueryStorage<I + 1, Cs...>::get(p_id, p_mode));
 		}
 	}
 
-	static void get_components(SystemExeInfo &r_info) {
+	template <class... Qs>
+	void new_fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
+#ifdef DEBUG_ENABLED
+		// This can't happen because `is_done` returns true.
+		CRASH_COND_MSG(storage == nullptr, "The storage" + String(typeid(Storage<C>).name()) + " is null.");
+#endif
+
+		// Set the `Component` inside th tuple.
 		if constexpr (std::is_const<C>::value) {
+			set<I>(r_result, const_cast<const Storage<C> *>(storage)->get(p_id, p_mode));
+		} else {
+			set<I>(r_result, storage->get(p_id, p_mode));
+		}
+
+		// Keep going.
+		QueryStorage<I + 1, Cs...>::new_fetch(p_id, p_mode, r_result);
+	}
+
+	auto get_inner_storage() const {
+		return storage;
+	}
+
+	static void get_components(SystemExeInfo &r_info, const bool p_force_immutable = false) {
+		if (std::is_const<C>::value || p_force_immutable) {
 			r_info.immutable_components.insert(C::get_component_id());
 		} else {
 			r_info.mutable_components.insert(C::get_component_id());
 		}
-		QueryStorage<Cs...>::get_components(r_info);
+		QueryStorage<I + 1, Cs...>::get_components(r_info);
 	}
 };
 
@@ -1011,7 +1132,7 @@ class Query {
 	EntitiesBuffer entities = EntitiesBuffer(0, nullptr);
 
 	// Storages
-	QueryStorage<Cs...> q;
+	QueryStorage<0, Cs...> q;
 
 public:
 	Query(World *p_world) :
@@ -1123,6 +1244,12 @@ public:
 		return q.get(p_entity, m_space);
 	}
 
+	QueryResultTuple<Cs...> new_get(EntityID p_entity) {
+		QueryResultTuple<Cs...> result;
+		q.new_fetch(p_entity, m_space, result);
+		return result;
+	}
+
 	/// Counts the Entities that meets the requirements of this `Query`.
 	/// IMPORTANT: Don't use this function to create C like loop: instead rely
 	/// on the iterator.
@@ -1135,7 +1262,7 @@ public:
 	}
 
 	static void get_components(SystemExeInfo &r_info) {
-		QueryStorage<Cs...>::get_components(r_info);
+		QueryStorage<0, Cs...>::get_components(r_info);
 	}
 
 private:
