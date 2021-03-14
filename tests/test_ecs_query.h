@@ -82,11 +82,11 @@ TEST_CASE("[Modules][ECS] Test fetch element type using fetch_element_type.") {
 		float gg = 20;
 		bool bb = 30;
 		EntityID ee;
-		fetch_element_type<0, 0, Without<int>, Any<int, Changed<float>>, Maybe<bool>, EntityID> ptr_xx = &xx;
-		fetch_element_type<1, 0, Without<int>, Any<int, Changed<float>>, Maybe<bool>, EntityID> ptr_jj = &jj;
-		fetch_element_type<2, 0, Without<int>, Any<int, Changed<float>>, Maybe<bool>, EntityID> ptr_gg = &gg;
-		fetch_element_type<3, 0, Without<int>, Any<int, Changed<float>>, Maybe<bool>, EntityID> ptr_bb = &bb;
-		fetch_element_type<4, 0, Without<int>, Any<int, Changed<float>>, Maybe<bool>, EntityID> entity = ee;
+		fetch_element_type<0, 0, Not<int>, Any<int, Changed<float>>, Maybe<bool>, EntityID> ptr_xx = &xx;
+		fetch_element_type<1, 0, Not<int>, Any<int, Changed<float>>, Maybe<bool>, EntityID> ptr_jj = &jj;
+		fetch_element_type<2, 0, Not<int>, Any<int, Changed<float>>, Maybe<bool>, EntityID> ptr_gg = &gg;
+		fetch_element_type<3, 0, Not<int>, Any<int, Changed<float>>, Maybe<bool>, EntityID> ptr_bb = &bb;
+		fetch_element_type<4, 0, Not<int>, Any<int, Changed<float>>, Maybe<bool>, EntityID> entity = ee;
 		CHECK(ptr_xx == &xx);
 		CHECK(ptr_jj == &jj);
 		CHECK(ptr_gg == &gg);
@@ -101,11 +101,11 @@ TEST_CASE("[Modules][ECS] Test fetch element type using fetch_element_type.") {
 		float gg = 20;
 		bool bb = 30;
 		EntityID ee;
-		fetch_element_type<0, 0, Without<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> ptr_xx = &xx;
-		fetch_element_type<1, 0, Without<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> ptr_jj = &jj;
-		fetch_element_type<2, 0, Without<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> ptr_gg(&gg, 1);
-		fetch_element_type<3, 0, Without<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> ptr_bb = &bb;
-		fetch_element_type<4, 0, Without<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> entity = ee;
+		fetch_element_type<0, 0, Not<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> ptr_xx = &xx;
+		fetch_element_type<1, 0, Not<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> ptr_jj = &jj;
+		fetch_element_type<2, 0, Not<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> ptr_gg(&gg, 1);
+		fetch_element_type<3, 0, Not<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> ptr_bb = &bb;
+		fetch_element_type<4, 0, Not<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> entity = ee;
 		CHECK(ptr_xx == &xx);
 		CHECK(ptr_jj == &jj);
 		CHECK(ptr_gg.is_empty() == false);
@@ -122,11 +122,11 @@ TEST_CASE("[Modules][ECS] Test fetch element type using fetch_element_type.") {
 		float gg = 20;
 		bool bb = 30;
 		EntityID ee;
-		fetch_element_type<0, 0, Without<int>, Any<Without<Changed<int>>, Batch<Maybe<Changed<float>>>>, Maybe<bool>, EntityID> ptr_xx = &xx;
-		fetch_element_type<1, 0, Without<int>, Any<Without<Changed<int>>, Batch<Maybe<Changed<float>>>>, Maybe<bool>, EntityID> ptr_jj = &jj;
-		fetch_element_type<2, 0, Without<int>, Any<Without<Changed<int>>, Batch<Maybe<Changed<float>>>>, Maybe<bool>, EntityID> batch_gg(&gg, 1);
-		fetch_element_type<3, 0, Without<int>, Any<Without<Changed<int>>, Batch<Maybe<Changed<float>>>>, Maybe<bool>, EntityID> ptr_bb = &bb;
-		fetch_element_type<4, 0, Without<int>, Any<Without<Changed<int>>, Batch<Maybe<Changed<float>>>>, Maybe<bool>, EntityID> entity = ee;
+		fetch_element_type<0, 0, Not<int>, Any<Not<Changed<int>>, Batch<Maybe<Changed<float>>>>, Maybe<bool>, EntityID> ptr_xx = &xx;
+		fetch_element_type<1, 0, Not<int>, Any<Not<Changed<int>>, Batch<Maybe<Changed<float>>>>, Maybe<bool>, EntityID> ptr_jj = &jj;
+		fetch_element_type<2, 0, Not<int>, Any<Not<Changed<int>>, Batch<Maybe<Changed<float>>>>, Maybe<bool>, EntityID> batch_gg(&gg, 1);
+		fetch_element_type<3, 0, Not<int>, Any<Not<Changed<int>>, Batch<Maybe<Changed<float>>>>, Maybe<bool>, EntityID> ptr_bb = &bb;
+		fetch_element_type<4, 0, Not<int>, Any<Not<Changed<int>>, Batch<Maybe<Changed<float>>>>, Maybe<bool>, EntityID> entity = ee;
 		CHECK(ptr_xx == &xx);
 		CHECK(ptr_jj == &jj);
 		CHECK(batch_gg.is_empty() == false);
@@ -142,10 +142,10 @@ TEST_CASE("[Modules][ECS] Test fetch element type using fetch_element_type.") {
 		TagA gg;
 		bool bb = 30;
 		EntityID ee;
-		fetch_element_type<0, 0, Without<int>, Join<Any<Without<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>, Maybe<bool>, EntityID> ptr_xx = &xx;
-		fetch_element_type<1, 0, Without<int>, Join<Any<Without<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>, Maybe<bool>, EntityID> join(&gg, TagA::get_component_id(), false);
-		fetch_element_type<2, 0, Without<int>, Join<Any<Without<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>, Maybe<bool>, EntityID> ptr_bb = &bb;
-		fetch_element_type<3, 0, Without<int>, Join<Any<Without<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>, Maybe<bool>, EntityID> entity = ee;
+		fetch_element_type<0, 0, Not<int>, Join<Any<Not<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>, Maybe<bool>, EntityID> ptr_xx = &xx;
+		fetch_element_type<1, 0, Not<int>, Join<Any<Not<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>, Maybe<bool>, EntityID> join(&gg, TagA::get_component_id(), false);
+		fetch_element_type<2, 0, Not<int>, Join<Any<Not<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>, Maybe<bool>, EntityID> ptr_bb = &bb;
+		fetch_element_type<3, 0, Not<int>, Join<Any<Not<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>, Maybe<bool>, EntityID> entity = ee;
 		CHECK(ptr_xx == &xx);
 		CHECK(join.is_null() == false);
 		CHECK(join.is<TagA>());
@@ -160,10 +160,10 @@ TEST_CASE("[Modules][ECS] Test fetch element type using fetch_element_type.") {
 		TagA gg;
 		bool bb = 30;
 		EntityID ee;
-		fetch_element_type<0, 0, Any<Without<Changed<int>>, Join<Any<Without<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>>, Maybe<bool>, EntityID> ptr_xx = &xx;
-		fetch_element_type<1, 0, Any<Without<Changed<int>>, Join<Any<Without<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>>, Maybe<bool>, EntityID> join(&gg, TagA::get_component_id(), false);
-		fetch_element_type<2, 0, Any<Without<Changed<int>>, Join<Any<Without<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>>, Maybe<bool>, EntityID> ptr_bb = &bb;
-		fetch_element_type<3, 0, Any<Without<Changed<int>>, Join<Any<Without<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>>, Maybe<bool>, EntityID> entity = ee;
+		fetch_element_type<0, 0, Any<Not<Changed<int>>, Join<Any<Not<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>>, Maybe<bool>, EntityID> ptr_xx = &xx;
+		fetch_element_type<1, 0, Any<Not<Changed<int>>, Join<Any<Not<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>>, Maybe<bool>, EntityID> join(&gg, TagA::get_component_id(), false);
+		fetch_element_type<2, 0, Any<Not<Changed<int>>, Join<Any<Not<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>>, Maybe<bool>, EntityID> ptr_bb = &bb;
+		fetch_element_type<3, 0, Any<Not<Changed<int>>, Join<Any<Not<Changed<TagA>>, Batch<Maybe<Changed<TagB>>>>>>, Maybe<bool>, EntityID> entity = ee;
 		CHECK(ptr_xx == &xx);
 		CHECK(join.is_null() == false);
 		CHECK(join.is<TagA>());
@@ -277,7 +277,7 @@ TEST_CASE("[Modules][ECS] Test QueryResultTuple: packing and unpaking following 
 
 	// Test other filters
 	{
-		QueryResultTuple<Without<TagA>, Maybe<TagB>, Changed<TagC>> tuple;
+		QueryResultTuple<Not<TagA>, Maybe<TagB>, Changed<TagC>> tuple;
 
 		set<0>(tuple, &a);
 		set<1>(tuple, &b);
@@ -430,7 +430,7 @@ TEST_CASE("[Modules][ECS] Test QueryResultTuple: packing and unpaking following 
 
 	// Test deep all filters.
 	{
-		QueryResultTuple<EntityID, Any<Maybe<Changed<TagC>>, Batch<Maybe<Changed<TagB>>>>, Join<Any<Without<TagA>, Changed<TagB>>>> tuple;
+		QueryResultTuple<EntityID, Any<Maybe<Changed<TagC>>, Batch<Maybe<Changed<TagB>>>>, Join<Any<Not<TagA>, Changed<TagB>>>> tuple;
 
 		static_assert(tuple.SIZE == 4);
 
@@ -472,9 +472,9 @@ TEST_CASE("[Modules][ECS] Test QueryResultTuple: packing and unpaking following 
 				Any<
 						Maybe<Changed<TagC>>,
 						Batch<Maybe<Changed<TagB>>>,
-						Join<Any<Without<TagA>, Changed<TagB>>>,
+						Join<Any<Not<TagA>, Changed<TagB>>>,
 						Any<
-								Without<Changed<TagA>>,
+								Not<Changed<TagA>>,
 								Changed<TagB>>>,
 				EntityID,
 				TransformComponent>
@@ -557,7 +557,7 @@ TEST_CASE("[Modules][ECS] Test static query") {
 
 	// Test `Without` filter.
 	{
-		Query<const TransformComponent, Without<TagQueryTestComponent>> query(&world);
+		Query<const TransformComponent, Not<TagQueryTestComponent>> query(&world);
 
 		// This query fetches the entity that have only the `TransformComponent`.
 		CHECK(query.has(entity_1) == false);
@@ -631,7 +631,7 @@ TEST_CASE("[Modules][ECS] Test static query deep nesting") {
 	// Test `EntityID`, `With` `Maybe`, `Without + Changed`.
 	{
 		// Take this only if `TagC` DOESN'T changed.
-		Query<EntityID, TagA, Maybe<TagB>, Without<Changed<TagC>>> query(&world);
+		Query<EntityID, TagA, Maybe<TagB>, Not<Changed<TagC>>> query(&world);
 
 		// The `TagC` on the `Entity1` is changed, so the query doesn't fetches it.
 		CHECK(query.has(entity_1) == false);
@@ -643,8 +643,11 @@ TEST_CASE("[Modules][ECS] Test static query deep nesting") {
 		CHECK(entity == entity_2);
 		CHECK(tag_a != nullptr);
 		CHECK(tag_b != nullptr);
-		CHECK(tag_c == nullptr);
+		CHECK(tag_c != nullptr); // It's not changed, but exist.
 	}
+
+	// Needed because the above fetches mutably.
+	world.get_storage<TagC>()->notify_updated(entity_2);
 
 	// Test `EntityID`, `With`, `Maybe + Changed`.
 	{
@@ -662,7 +665,7 @@ TEST_CASE("[Modules][ECS] Test static query deep nesting") {
 			CHECK(tag_c != nullptr);
 		}
 
-		// In Entity2 the tag is NOT changed, we expect nullptr.
+		// In Entity2 the tag is NOT changed, nullptr expected.
 		{
 			auto [entity, tag_a, tag_c] = query[entity_2];
 			CHECK(entity == entity_2);
@@ -906,7 +909,7 @@ TEST_CASE("[Modules][ECS] Test query mutability.") {
 	CHECK(storage1->count_get_mut == 1);
 	CHECK(storage2->count_get_mut == 0);
 
-	Query<Without<TestAccessMutabilityComponent1>, TestAccessMutabilityComponent2> query_test_without_mut(&world);
+	Query<Not<TestAccessMutabilityComponent1>, TestAccessMutabilityComponent2> query_test_without_mut(&world);
 	query_test_without_mut.begin().operator*(); //Fetch the data.
 
 	CHECK(storage1->count_get_mut == 1);
@@ -933,7 +936,7 @@ TEST_CASE("[Modules][ECS] Test query mutability.") {
 	CHECK(storage1->count_get_immut == 1);
 	CHECK(storage2->count_get_immut == 0);
 
-	Query<Without<const TestAccessMutabilityComponent1>, const TestAccessMutabilityComponent2> query_test_without_immut(&world);
+	Query<Not<const TestAccessMutabilityComponent1>, const TestAccessMutabilityComponent2> query_test_without_immut(&world);
 	query_test_without_immut.begin().operator*(); //Fetch the data.
 
 	CHECK(storage1->count_get_mut == 3);
@@ -1168,7 +1171,7 @@ TEST_CASE("[Modules][ECS] Test static query check query type fetch.") {
 	}
 
 	{
-		Query<Without<TransformComponent>, Maybe<const TagQueryTestComponent>> query(&world);
+		Query<Not<TransformComponent>, Maybe<const TagQueryTestComponent>> query(&world);
 
 		SystemExeInfo info;
 		query.get_components(info);
@@ -1197,7 +1200,7 @@ TEST_CASE("[Modules][ECS] Test static query filter no storage.") {
 	World world;
 
 	{
-		Query<Without<TagQueryTestComponent>, TransformComponent> query(&world);
+		Query<Not<TagQueryTestComponent>, TransformComponent> query(&world);
 
 		// No storage, make sure this returns immediately.
 		CHECK(query.count() == 0);
@@ -1672,7 +1675,7 @@ TEST_CASE("[Modules][ECS] Test static query count.") {
 		CHECK(query.count() == 1);
 	}
 	{
-		Query<const TransformComponent, Without<TagQueryTestComponent>, Without<TestFixedSizeEvent>> query(&world);
+		Query<const TransformComponent, Not<TagQueryTestComponent>, Not<TestFixedSizeEvent>> query(&world);
 		CHECK(query.count() == 1);
 		CHECK(query.has(entity_2));
 	}
@@ -1848,7 +1851,7 @@ TEST_CASE("[Modules][ECS] Test static query Any filter.") {
 	// Test `Any` with `Without` filter.
 	// Note: This test is here just for validation, but doesn't make much sense.
 	{
-		Query<EntityID, Changed<TransformComponent>, Any<Without<TagA>, Without<const TagB>, Without<TagC>>> query(&world);
+		Query<EntityID, Changed<TransformComponent>, Any<Not<TagA>, Not<const TagB>, Not<TagC>>> query(&world);
 
 		// Since `Any` needs just one filter to be satisfied, all are valid.
 		CHECK(query.has(entity_1));
@@ -1861,7 +1864,7 @@ TEST_CASE("[Modules][ECS] Test static query Any filter.") {
 		{
 			auto [entity, transform, tag_a, tag_b, tag_c] = query[entity_1];
 			CHECK(transform != nullptr);
-			CHECK(tag_a == nullptr);
+			CHECK(tag_a != nullptr);
 			CHECK(tag_b == nullptr);
 			CHECK(tag_c == nullptr);
 		}
@@ -1878,7 +1881,7 @@ TEST_CASE("[Modules][ECS] Test static query Any filter.") {
 			auto [entity, transform, tag_a, tag_b, tag_c] = query[entity_3];
 			CHECK(transform != nullptr);
 			CHECK(tag_a == nullptr);
-			CHECK(tag_b == nullptr);
+			CHECK(tag_b != nullptr);
 			CHECK(tag_c == nullptr);
 		}
 
@@ -1887,7 +1890,7 @@ TEST_CASE("[Modules][ECS] Test static query Any filter.") {
 			CHECK(transform != nullptr);
 			CHECK(tag_a == nullptr);
 			CHECK(tag_b == nullptr);
-			CHECK(tag_c == nullptr);
+			CHECK(tag_c != nullptr);
 		}
 
 		for (auto [entity, transform, tag_a, tag_b, tag_c] : query) {
@@ -2035,7 +2038,7 @@ TEST_CASE("[Modules][ECS] Test static query Join filter.") {
 	// Test `Join` with `Without` filter.
 	// Note: This test is here just for validation, but doesn't make much sense.
 	{
-		Query<Changed<TransformComponent>, Join<Without<TagA>, Without<const TagB>, Without<TagC>>> query(&world);
+		Query<Changed<TransformComponent>, Join<Not<TagA>, Not<const TagB>, Not<TagC>>> query(&world);
 
 		// Since `Join` needs just one filter to be satisfied, all are valid.
 		CHECK(query.has(entity_1));

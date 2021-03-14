@@ -9,7 +9,7 @@
 // ---------------------------------------------------------------- Query filters
 
 template <class C>
-struct Without {};
+struct Not {};
 
 template <class C>
 struct Maybe {};
@@ -177,11 +177,11 @@ public:
 /// fetch_element_type<0, 0, int, Any<int, float>, bool> // This is int*
 /// fetch_element_type<1, 0, int, Any<int, float>, bool> // This is float*
 ///
-/// fetch_element_type<0, 0, Without<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> // This is int*
-/// fetch_element_type<1, 0, Without<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> // This is int*
-/// fetch_element_type<2, 0, Without<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> // This is Batch<float*>
-/// fetch_element_type<3, 0, Without<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> // This is float*
-/// fetch_element_type<4, 0, Without<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> // This is bool*
+/// fetch_element_type<0, 0, Not<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> // This is int*
+/// fetch_element_type<1, 0, Not<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> // This is int*
+/// fetch_element_type<2, 0, Not<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> // This is Batch<float*>
+/// fetch_element_type<3, 0, Not<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> // This is float*
+/// fetch_element_type<4, 0, Not<int>, Any<int, Batch<Changed<float>>>, Maybe<bool>, EntityID> // This is bool*
 /// ```
 ///
 /// # How it works
@@ -211,9 +211,9 @@ struct fetch_element<S, S, Changed<C>, Cs...> : fetch_element<S, S + 1, Cs...> {
 	using type = fetch_element_type<0, 0, C>;
 };
 
-/// We found the `Without` filter, fetch the type now.
+/// We found the `Not` filter, fetch the type now.
 template <std::size_t S, class C, class... Cs>
-struct fetch_element<S, S, Without<C>, Cs...> : fetch_element<S, S + 1, Cs...> {
+struct fetch_element<S, S, Not<C>, Cs...> : fetch_element<S, S + 1, Cs...> {
 	// Keep search the sub type: so we can nest with other filters.
 	using type = fetch_element_type<0, 0, C>;
 };
@@ -299,18 +299,18 @@ struct QueryResultTuple_Impl<I, EntityID, Cs...> : public QueryResultTuple_Impl<
 };
 
 /// Flatten all the Filter, so we can store the data on the same level.
-/// This template is able to flatten the filters: `Changed`, `Without`, `Maybe`, `Any`, `Join`
+/// This template is able to flatten the filters: `Changed`, `Not`, `Maybe`, `Any`, `Join`
 ///
 /// Notice: This is just forwarding the declaration, indeed this has the same
 /// index the flattened data has.
 ///
 /// ```
 /// This:
-/// QeryResultTuple_Impl<0, int, Without<float>>
+/// QeryResultTuple_Impl<0, int, Not<float>>
 ///
 /// Is compiled as:
 /// `ResultTuple<0, int> :
-/// 		 ResultTuple<1, Without<>> :
+/// 		 ResultTuple<1, Not<>> :
 /// 				ResultTuple<1, float>
 /// ```
 /// The `set` and `get` functions are able to fetch the data anyway.
@@ -385,9 +385,9 @@ constexpr void set_impl(T p_val, QueryResultTuple_Impl<S, Changed<C>, Cs...> &tu
 	set_impl<S>(p_val, static_cast<QueryResultTuple_Impl<S, C, Cs...> &>(tuple));
 }
 
-/// Skip the filter `Without`.
+/// Skip the filter `Not`.
 template <std::size_t S, class T, class C, class... Cs>
-constexpr void set_impl(T p_val, QueryResultTuple_Impl<S, Without<C>, Cs...> &tuple) noexcept {
+constexpr void set_impl(T p_val, QueryResultTuple_Impl<S, Not<C>, Cs...> &tuple) noexcept {
 	// Forward to subfilters.
 	set_impl<S>(p_val, static_cast<QueryResultTuple_Impl<S, C, Cs...> &>(tuple));
 }
@@ -449,9 +449,9 @@ constexpr auto get_impl(const QueryResultTuple_Impl<S, Changed<C>, Cs...> &tuple
 	return get_impl<S>(static_cast<const QueryResultTuple_Impl<S, C, Cs...> &>(tuple));
 }
 
-/// Skip the filter `Without`.
+/// Skip the filter `Not`.
 template <std::size_t S, class C, class... Cs>
-constexpr auto get_impl(const QueryResultTuple_Impl<S, Without<C>, Cs...> &tuple) noexcept {
+constexpr auto get_impl(const QueryResultTuple_Impl<S, Not<C>, Cs...> &tuple) noexcept {
 	// Forward to subfilters.
 	return get_impl<S>(static_cast<const QueryResultTuple_Impl<S, C, Cs...> &>(tuple));
 }
@@ -583,11 +583,11 @@ struct QueryStorage<I, Maybe<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 	}
 };
 
-// --------------------------------------------------------------------- Without
+// -------------------------------------------------------------------------- Not
 
-/// `QueryStorage` `Without` filter specialization.
+/// `QueryStorage` `Not` filter specialization.
 template <std::size_t I, class C, class... Cs>
-struct QueryStorage<I, Without<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
+struct QueryStorage<I, Not<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 	QueryStorage<I, C> query_storage;
 
 	QueryStorage(World *p_world) :
@@ -601,8 +601,8 @@ struct QueryStorage<I, Without<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 	}
 
 	bool filter_satisfied(EntityID p_entity) const {
-		// The `Without` filter is satisfied if the sub filter is not satisfied:
-		// it's a lot similar to a `Not` or `!`.
+		// The `Not` filter is satisfied if the sub filter is not satisfied:
+		// it's a lot similar to an `!true == false`.
 		return query_storage.filter_satisfied(p_entity) == false &&
 			   QueryStorage<I + 1, Cs...>::filter_satisfied(p_entity);
 	}
@@ -613,8 +613,12 @@ struct QueryStorage<I, Without<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 
 	template <class... Qs>
 	void fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
-		// Nothing to do, the `Without` filter doesn't fetches.
-		// Just keep going.
+		// If there is something to fetch, fetch it.
+		if (query_storage.can_fetch(p_id)) {
+			query_storage.fetch(p_id, p_mode, r_result);
+		}
+
+		// Keep going.
 		QueryStorage<I + 1, Cs...>::fetch(p_id, p_mode, r_result);
 	}
 
@@ -623,7 +627,7 @@ struct QueryStorage<I, Without<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 	}
 
 	static void get_components(SystemExeInfo &r_info, const bool p_force_immutable = false) {
-		// The `Without` collects the data always immutable, so force take it
+		// The `Not` collects the data always immutable, so force take it
 		// immutably.
 		QueryStorage<I, C>::get_components(r_info, true);
 		QueryStorage<I + 1, Cs...>::get_components(r_info);
@@ -1129,7 +1133,7 @@ public:
 		entities = q.get_entities();
 		if (unlikely(entities.count == UINT32_MAX)) {
 			entities.count = 0;
-			ERR_PRINT("This query is not valid, you are using only non determinant fileters (like `Without` and `Maybe`).");
+			ERR_PRINT("This query is not valid, you are using only non determinant fileters (like `Not` and `Maybe`).");
 		}
 	}
 
