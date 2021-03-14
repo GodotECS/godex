@@ -5,7 +5,6 @@
 #include "../storage/storage.h"
 #include "../systems/system.h"
 #include "../world/world.h"
-#include <tuple>
 
 // ---------------------------------------------------------------- Query filters
 
@@ -84,6 +83,12 @@ public:
 /// ```
 /// Query<Any<Changed<Transform>, Changed<Active>> query;
 /// ```
+///
+/// NOTICE: You can't nest `Any` twice like this:
+/// ```
+/// Query<Any<Any<Transform, Active>> query;
+/// ```
+/// (It doesn't make sense)
 template <class... Cs>
 struct Any {};
 
@@ -478,12 +483,17 @@ template <std::size_t I, class... Cs>
 struct QueryStorage {
 	QueryStorage(World *p_world) {}
 
+	constexpr static bool is_filter_derminant() {
+		// False by default.
+		return false;
+	}
 	EntitiesBuffer get_entities() const {
 		// This is a NON determinant filter, so just return UINT32_MAX.
 		return { UINT32_MAX, nullptr };
 	}
 
 	bool filter_satisfied(EntityID p_entity) const { return true; }
+	bool can_fetch(EntityID p_entity) const { return false; }
 
 	template <class... Qs>
 	void fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
@@ -507,6 +517,10 @@ struct QueryStorage<I, EntityID, Cs...> : public QueryStorage<I + 1, Cs...> {
 
 	bool filter_satisfied(EntityID p_entity) const {
 		return QueryStorage<I + 1, Cs...>::filter_satisfied(p_entity);
+	}
+
+	bool can_fetch(EntityID p_entity) const {
+		return true;
 	}
 
 	template <class... Qs>
@@ -542,6 +556,10 @@ struct QueryStorage<I, Maybe<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 	bool filter_satisfied(EntityID p_entity) const {
 		// The `Maybe` filter never stops the execution.
 		return QueryStorage<I + 1, Cs...>::filter_satisfied(p_entity);
+	}
+
+	bool can_fetch(EntityID p_entity) const {
+		return query_storage.can_fetch(p_entity);
 	}
 
 	template <class... Qs>
@@ -589,6 +607,10 @@ struct QueryStorage<I, Without<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 			   QueryStorage<I + 1, Cs...>::filter_satisfied(p_entity);
 	}
 
+	bool can_fetch(EntityID p_entity) const {
+		return query_storage.can_fetch(p_entity);
+	}
+
 	template <class... Qs>
 	void fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
 		// Nothing to do, the `Without` filter doesn't fetches.
@@ -620,6 +642,11 @@ struct QueryStorage<I, Changed<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 			storage(p_world->get_storage<C>()) {
 	}
 
+	constexpr static bool is_filter_derminant() {
+		// The `Changed` is a determinant filter.
+		return true;
+	}
+
 	EntitiesBuffer get_entities() const {
 		// This is a determinant filter, that iterates over the changed
 		// components of this storage.
@@ -638,6 +665,10 @@ struct QueryStorage<I, Changed<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 			return false;
 		}
 		return storage->is_changed(p_entity) && QueryStorage<I + 1, Cs...>::filter_satisfied(p_entity);
+	}
+
+	bool can_fetch(EntityID p_entity) const {
+		return storage && storage->has(p_entity);
 	}
 
 	template <class... Qs>
@@ -694,6 +725,10 @@ struct QueryStorage<I, Batch<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 		return query_storage.filter_satisfied(p_entity);
 	}
 
+	bool can_fetch(EntityID p_entity) const {
+		return query_storage.can_fetch(p_entity);
+	}
+
 	template <class... Qs>
 	void fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
 		// Fetch the batched data.
@@ -723,28 +758,68 @@ struct QueryStorage<I, Batch<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 
 // ------------------------------------------------------------------------- Any
 
-/*
-template <class... Cs>
+template <std::size_t I, class... Cs>
 struct AnyStorage {
+	static constexpr std::size_t LAST_INDEX = I;
+
 	AnyStorage(World *p_world) {}
 
-	void get_entities(EntitiesBuffer r_buffers[], uint32_t p_index = 0) const {}
-	bool filter_satisfied(EntityID p_entity) const { return false; }
-	AnyData get(EntityID p_id, Space p_mode) const { return AnyData(nullptr, godex::COMPONENT_NONE, true); }
+	/// At this point, it's sure all filters are determinant.
+	constexpr static bool all_determinant() {
+		return true;
+	}
+
+	/// At this point, it's sure no determinant filters.
+	constexpr static bool any_determinant() {
+		return false;
+	}
+
+	void get_entities(EntityList &r_entities) const {}
+	bool filter_satisfied(EntityID p_entity) const {
+		// Not satisfied.
+		return false;
+	}
+
+	template <class... Qs>
+	void fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {}
 };
 
-template <class C, class... Cs>
-struct AnyStorage<C, Cs...> : AnyStorage<Cs...> {
-	QueryStorage<0, C> storage;
+template <std::size_t I, class C, class... Cs>
+struct AnyStorage<I, C, Cs...> : AnyStorage<I + 1, Cs...> {
+	QueryStorage<I, C> storage;
 
 	AnyStorage(World *p_world) :
-			AnyStorage<Cs...>(p_world),
+			AnyStorage<I + 1, Cs...>(p_world),
 			storage(p_world) {
 	}
 
-	void get_entities(EntitiesBuffer r_buffers[], uint32_t p_index = 0) const {
-		r_buffers[p_index] = storage.get_entities();
-		AnyStorage<Cs...>::get_entities(r_buffers, p_index + 1);
+	/// Return `true` when all subfilters are terminant.
+	constexpr static bool all_determinant() {
+		if constexpr (QueryStorage<I, C>::is_filter_derminant()) {
+			return AnyStorage<I + 1, Cs...>::all_determinant();
+		} else {
+			return false;
+		}
+	}
+
+	/// Return `true` if at least one is determinant.
+	constexpr static bool any_determinant() {
+		if constexpr (QueryStorage<I, C>::is_filter_derminant()) {
+			return true;
+		} else {
+			// Keep search
+			return AnyStorage<I + 1, Cs...>::any_determinant();
+		}
+	}
+
+	void get_entities(EntityList &r_entities) const {
+		if (storage.get_entities().count != UINT32_MAX) {
+			// This is a determinant fitler, take the `Entities`.
+			for (uint32_t i = 0; i < storage.get_entities().count; i += 1) {
+				r_entities.insert(storage.get_entities().entities[i]);
+			}
+		}
+		AnyStorage<I + 1, Cs...>::get_entities(r_entities);
 	}
 
 	bool filter_satisfied(EntityID p_entity) const {
@@ -753,106 +828,70 @@ struct AnyStorage<C, Cs...> : AnyStorage<Cs...> {
 			return true;
 		} else {
 			// Not in storage, try the next one.
-			return AnyStorage<Cs...>::filter_satisfied(p_entity);
+			return AnyStorage<I + 1, Cs...>::filter_satisfied(p_entity);
 		}
 	}
 
-	AnyData get(EntityID p_id, Space p_mode) const {
-		if (storage.filter_satisfied(p_id)) {
-			auto [d] = storage.get(p_id, p_mode);
-			if constexpr (std::is_const<std::remove_pointer_t<to_query_return_type_t<C>>>::value) {
-				return AnyData(
-						const_cast<void *>(static_cast<const void *>(d)),
-						std::remove_pointer_t<to_query_return_type_t<C>>::get_component_id(),
-						true);
-			} else {
-				return AnyData(
-						static_cast<void *>(d),
-						std::remove_pointer_t<to_query_return_type_t<C>>::get_component_id(),
-						false);
-			}
-		} else {
-			return AnyStorage<Cs...>::get(p_id, p_mode);
+	template <class... Qs>
+	void fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
+		if (storage.can_fetch(p_id)) {
+			// There is something to fetch, fetch it.
+			storage.fetch(p_id, p_mode, r_result);
 		}
+		AnyStorage<I + 1, Cs...>::fetch(p_id, p_mode, r_result);
 	}
 };
 
 /// `QueryStorage` `Any` immutable filter specialization.
 template <std::size_t I, class... C, class... Cs>
-struct QueryStorage<I, Any<C...>, Cs...> : QueryStorage<I + 1, Cs...> {
-	constexpr static std::size_t storages_count = sizeof...(C);
-	AnyStorage<C...> flat_storages;
+struct QueryStorage<I, Any<C...>, Cs...> : QueryStorage<AnyStorage<I, C...>::LAST_INDEX, Cs...> {
+	AnyStorage<I, C...> sub_storages;
 
-	EntityID *entities_data = nullptr;
-	EntitiesBuffer entities_buffer;
+	EntityList entities;
 
 	QueryStorage(World *p_world) :
-			QueryStorage<I + 1, Cs...>(p_world),
-			flat_storages(p_world) {
-		// Fetch the entities from the storages, and creates a contiguous
-		// memory that the query can fetch.
-		EntitiesBuffer buffers[storages_count];
-		flat_storages.get_entities(buffers);
-
-		uint32_t sum = 0;
-		for (uint32_t i = 0; i < storages_count; i += 1) {
-			if (buffers[i].count == UINT32_MAX) {
-				// One of the used sub filters is not determinant
-				// (like `Without` and `Maybe`), so this filter can't drive
-				// the iteration.
-				// Just return `UINT32_MAX`.
-				sum = UINT32_MAX;
-				break;
-			} else {
-				sum += buffers[i].count;
-			}
-		}
-
-		if (sum > 0 && sum < UINT32_MAX) {
-			// This filter can drive the iteration.
-			// Put all the `Entities` in one single array.
-
-			// TODO Find a way to not allocate this memory!
-			entities_data = (EntityID *)memalloc(sizeof(EntityID) * sum);
-
-			// TODO Find a way to not copy this memory!
-			for (uint32_t i = 0, offset = 0; i < storages_count; i += 1) {
-				memcpy(entities_data + offset, buffers[i].entities, sizeof(EntityID) * buffers[i].count);
-				offset += buffers[i].count;
-			}
-
-			// TODO or at least, find a way to not do this each frame.
-		}
-
-		entities_buffer.count = sum;
-		entities_buffer.entities = entities_data;
+			QueryStorage<AnyStorage<I, C...>::LAST_INDEX, Cs...>(p_world),
+			sub_storages(p_world) {
+		// TODO Exist a way to cache this?
+		// TODO Exist a way to at least keep the memory to avoid reallocations each frame?
+		// TODO An idea could be add a mechanism on the `EntityList` that keeps
+		// 	track of the biggest `EntityID` it has.
+		// 	So the `entities` list we have here could be prepared, and a lot of
+		// 	reallocation can be avoided.
+		sub_storages.get_entities(entities);
 	}
 
-	~QueryStorage() {
-		if (entities_data != nullptr) {
-			memfree(entities_data);
-		}
+	constexpr static bool is_filter_derminant() {
+		// The `Any` storage is a determinant filter if at least one subfilter is.
+		return AnyStorage<I, C...>::any_determinant();
 	}
 
 	EntitiesBuffer get_entities() const {
-		return entities_buffer;
+		return EntitiesBuffer(entities.size(), entities.get_entities_ptr());
 	}
 
 	bool filter_satisfied(EntityID p_entity) const {
-		return flat_storages.filter_satisfied(p_entity);
+		// Just check if we have this entity.
+		if constexpr (AnyStorage<I, C...>::all_determinant()) {
+			// Since all the filters are determinant, we can just check this:
+			return entities.has(p_entity);
+		} else {
+			// Not all filters are determinant, so we need to check one by one,
+			// because even a not determinant filter may satisfy the process.
+			return sub_storages.filter_satisfied(p_entity);
+		}
 	}
 
-	std::tuple<AnyData, to_query_return_type_t<Cs>...> get(EntityID p_id, Space p_mode) const {
-		return std::tuple_cat(
-				std::tuple<AnyData>(flat_storages.get(p_id, p_mode)),
-				QueryStorage<I + 1, Cs...>::get(p_id, p_mode));
+	template <class... Qs>
+	void fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
+		// Fetch the data from the sub storages.
+		sub_storages.fetch(p_id, p_mode, r_result);
+
+		// Keep going.
+		QueryStorage<AnyStorage<I, C...>::LAST_INDEX, Cs...>::fetch(p_id, p_mode, r_result);
 	}
 
-	//template <std::size_t I, class... Qs>
-	//void fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
-	//	// TODO
-	//}
-
+	// TODO how? here we have multiple storages.
 	//auto get_inner_storage() const {
 	//	return query_storage.get_inner_storage();
 	//}
@@ -861,10 +900,9 @@ struct QueryStorage<I, Any<C...>, Cs...> : QueryStorage<I + 1, Cs...> {
 		// Take the components storages used, taking advantage of the
 		// get_components function.
 		QueryStorage<0, C...>::get_components(r_info, p_force_immutable);
-		QueryStorage<I + 1, Cs...>::get_components(r_info);
+		QueryStorage<0, Cs...>::get_components(r_info);
 	}
 };
-*/
 
 // -------------------------------------------------------------------- No filter
 
@@ -876,6 +914,11 @@ struct QueryStorage<I, C, Cs...> : QueryStorage<I + 1, Cs...> {
 	QueryStorage(World *p_world) :
 			QueryStorage<I + 1, Cs...>(p_world),
 			storage(p_world->get_storage<C>()) {
+	}
+
+	constexpr static bool is_filter_derminant() {
+		// The `With` is a determinant filter.
+		return true;
 	}
 
 	EntitiesBuffer get_entities() const {
@@ -896,6 +939,10 @@ struct QueryStorage<I, C, Cs...> : QueryStorage<I + 1, Cs...> {
 			return false;
 		}
 		return storage->has(p_entity) && QueryStorage<I + 1, Cs...>::filter_satisfied(p_entity);
+	}
+
+	bool can_fetch(EntityID p_entity) const {
+		return storage && storage->has(p_entity);
 	}
 
 	template <class... Qs>

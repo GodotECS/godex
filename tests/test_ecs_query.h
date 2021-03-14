@@ -724,8 +724,17 @@ TEST_CASE("[Modules][ECS] Test static query deep nesting") {
 		}
 	}
 
+	// Test deep nesting, Any fitler
+	{
+		Query<EntityID, Any<Changed<TransformComponent>, Batch<Changed<TestFixedSizeEvent>>>> query(&world);
+
+		// Make sure it has only the Entity2, which is taken because the `Event`
+		// is marked as changed.
+		CHECK(query.has(entity_2));
+		CHECK(query.count() == 1);
+	}
+
 	// TODO test Join
-	// TODO test Any
 }
 } // namespace godex_tests
 
@@ -1614,7 +1623,218 @@ TEST_CASE("[Modules][ECS] Test static query count.") {
 }
 
 TEST_CASE("[Modules][ECS] Test static query Any filter.") {
-	/* TODO enble this back
+	World world;
+
+	EntityID entity_1 = world
+								.create_entity()
+								.with(TagA())
+								.with(TransformComponent());
+
+	EntityID entity_2 = world
+								.create_entity()
+								.with(TransformComponent());
+
+	EntityID entity_3 = world
+								.create_entity()
+								.with(TagB())
+								.with(TransformComponent());
+
+	EntityID entity_4 = world
+								.create_entity()
+								.with(TagC())
+								.with(TransformComponent());
+
+	EntityID entity_5 = world
+								.create_entity()
+								.with(TagA())
+								.with(TagB())
+								.with(TagC())
+								.with(TransformComponent());
+
+	{
+		Query<Any<const TagA, const TagB, TagC>> query(&world);
+
+		CHECK(query.has(entity_1));
+		CHECK(query.has(entity_2) == false);
+		CHECK(query.has(entity_3));
+		CHECK(query.has(entity_4));
+
+		// Fetch entity_1
+		{
+			auto [tag_a, tag_b, tag_c] = query[entity_1];
+			CHECK(tag_a != nullptr);
+			CHECK(tag_b == nullptr);
+			CHECK(tag_c == nullptr);
+		}
+
+		// Fetch entity_2
+		{
+			CHECK(query.has(entity_2) == false);
+		}
+
+		// Fetch entity_3
+		{
+			auto [tag_a, tag_b, tag_c] = query[entity_3];
+			CHECK(tag_a == nullptr);
+			CHECK(tag_b != nullptr);
+			CHECK(tag_c == nullptr);
+		}
+
+		// Fetch entity_4
+		{
+			auto [tag_a, tag_b, tag_c] = query[entity_4];
+			CHECK(tag_a == nullptr);
+			CHECK(tag_b == nullptr);
+			CHECK(tag_c != nullptr);
+		}
+	}
+
+	world.get_storage<TransformComponent>()->set_tracing_change(true);
+	world.get_storage<TransformComponent>()->notify_changed(entity_1);
+	world.get_storage<TransformComponent>()->notify_changed(entity_2);
+	world.get_storage<TransformComponent>()->notify_changed(entity_3);
+	world.get_storage<TransformComponent>()->notify_changed(entity_4);
+	world.get_storage<TransformComponent>()->notify_changed(entity_5);
+
+	world.get_storage<TagB>()->set_tracing_change(true);
+	world.get_storage<TagB>()->notify_changed(entity_3);
+
+	world.get_storage<TagC>()->set_tracing_change(true);
+	world.get_storage<TagC>()->notify_changed(entity_4);
+	world.get_storage<TagC>()->notify_changed(entity_5);
+
+	// Test `Any` with `Changed` filter.
+	{
+		Query<Changed<TransformComponent>, Any<Changed<const TagA>, Changed<const TagB>, Changed<TagC>>> query(&world);
+
+		CHECK(query.has(entity_1) == false); // TagA not changed
+		CHECK(query.has(entity_2) == false); // No tags
+		CHECK(query.has(entity_3)); // TagB changed
+		CHECK(query.has(entity_4)); // TagC changed
+		CHECK(query.has(entity_5)); // TagC changed
+
+		{
+			auto [transform, tag_a, tag_b, tag_c] = query[entity_3];
+			CHECK(transform != nullptr);
+			CHECK(tag_a == nullptr);
+			CHECK(tag_b != nullptr);
+			CHECK(tag_c == nullptr);
+		}
+
+		{
+			auto [transform, tag_a, tag_b, tag_c] = query[entity_4];
+			CHECK(transform != nullptr);
+			CHECK(tag_a == nullptr);
+			CHECK(tag_b == nullptr);
+			CHECK(tag_c != nullptr);
+		}
+
+		{
+			auto [transform, tag_a, tag_b, tag_c] = query[entity_5];
+			CHECK(transform != nullptr);
+			CHECK(tag_a != nullptr);
+			CHECK(tag_b != nullptr);
+			CHECK(tag_c != nullptr);
+		}
+	}
+
+	// Test `Any` with and without `Changed` filter.
+	{
+		Query<Changed<TransformComponent>, Any<const TagA, Changed<const TagB>, Changed<TagC>>> query(&world);
+
+		CHECK(query.has(entity_1));
+		CHECK(query.has(entity_2) == false);
+		CHECK(query.has(entity_3));
+		CHECK(query.has(entity_4));
+		CHECK(query.has(entity_5));
+
+		{
+			auto [transform, tag_a, tag_b, tag_c] = query[entity_1];
+			CHECK(transform != nullptr);
+			CHECK(tag_a != nullptr);
+			CHECK(tag_b == nullptr);
+			CHECK(tag_c == nullptr);
+		}
+
+		{
+			auto [transform, tag_a, tag_b, tag_c] = query[entity_3];
+			CHECK(transform != nullptr);
+			CHECK(tag_a == nullptr);
+			CHECK(tag_b != nullptr);
+			CHECK(tag_c == nullptr);
+		}
+
+		{
+			auto [transform, tag_a, tag_b, tag_c] = query[entity_4];
+			CHECK(transform != nullptr);
+			CHECK(tag_a == nullptr);
+			CHECK(tag_b == nullptr);
+			CHECK(tag_c != nullptr);
+		}
+
+		{
+			auto [transform, tag_a, tag_b, tag_c] = query[entity_5];
+			CHECK(transform != nullptr);
+			CHECK(tag_a != nullptr);
+			CHECK(tag_b != nullptr);
+			CHECK(tag_c != nullptr);
+		}
+	}
+
+	// Test `Any` with `Without` filter.
+	// Note: This test is here just for validation, but doesn't make much sense.
+	{
+		Query<EntityID, Changed<TransformComponent>, Any<Without<TagA>, Without<const TagB>, Without<TagC>>> query(&world);
+
+		// Since `Any` needs just one filter to be satisfied, all are valid.
+		CHECK(query.has(entity_1));
+		CHECK(query.has(entity_2));
+		CHECK(query.has(entity_3));
+		CHECK(query.has(entity_4));
+		// Though, the Entity5 has all, so it's not fetched.
+		CHECK(query.has(entity_5) == false);
+
+		{
+			auto [entity, transform, tag_a, tag_b, tag_c] = query[entity_1];
+			CHECK(transform != nullptr);
+			CHECK(tag_a == nullptr);
+			CHECK(tag_b == nullptr);
+			CHECK(tag_c == nullptr);
+		}
+
+		{
+			auto [entity, transform, tag_a, tag_b, tag_c] = query[entity_2];
+			CHECK(transform != nullptr);
+			CHECK(tag_a == nullptr);
+			CHECK(tag_b == nullptr);
+			CHECK(tag_c == nullptr);
+		}
+
+		{
+			auto [entity, transform, tag_a, tag_b, tag_c] = query[entity_3];
+			CHECK(transform != nullptr);
+			CHECK(tag_a == nullptr);
+			CHECK(tag_b == nullptr);
+			CHECK(tag_c == nullptr);
+		}
+
+		{
+			auto [entity, transform, tag_a, tag_b, tag_c] = query[entity_4];
+			CHECK(transform != nullptr);
+			CHECK(tag_a == nullptr);
+			CHECK(tag_b == nullptr);
+			CHECK(tag_c == nullptr);
+		}
+
+		for (auto [entity, transform, tag_a, tag_b, tag_c] : query) {
+			// Make sure the Entity5 is not fetched.
+			CHECK(entity != entity_5);
+		}
+	}
+}
+
+TEST_CASE("[Modules][ECS] Test static query Join filter.") {
+	/*
 	World world;
 
 	EntityID entity_1 = world
@@ -1782,10 +2002,6 @@ TEST_CASE("[Modules][ECS] Test static query Any filter.") {
 		}
 	}
 	*/
-}
-
-TEST_CASE("[Modules][ECS] Test static query Join filter.") {
-	// TODO add `Join` tests.
 }
 } // namespace godex_tests
 
