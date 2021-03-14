@@ -14,7 +14,7 @@ void System::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("with_component", "component_id", "mutability"), &System::with_component);
 	ClassDB::bind_method(D_METHOD("maybe_component", "component_id", "mutability"), &System::maybe_component);
 	ClassDB::bind_method(D_METHOD("changed_component", "component_id", "mutability"), &System::changed_component);
-	ClassDB::bind_method(D_METHOD("without_component", "component_id"), &System::without_component);
+	ClassDB::bind_method(D_METHOD("not_component", "component_id"), &System::not_component);
 
 	ClassDB::bind_method(D_METHOD("get_current_entity_id"), &System::get_current_entity_id);
 
@@ -88,9 +88,9 @@ void System::changed_component(uint32_t p_component_id, Mutability p_mutability)
 	info->changed_component(p_component_id, p_mutability == MUTABLE);
 }
 
-void System::without_component(uint32_t p_component_id) {
+void System::not_component(uint32_t p_component_id) {
 	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
-	info->without_component(p_component_id);
+	info->not_component(p_component_id);
 }
 
 godex::system_id System::get_system_id() const {

@@ -987,7 +987,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery fetch mutability.") {
 	CHECK(storage2->count_get_mut == 0);
 
 	godex::DynamicQuery query_test_without_mut;
-	query_test_without_mut.without_component(TestAccessMutabilityComponent1::get_component_id());
+	query_test_without_mut.not_component(TestAccessMutabilityComponent1::get_component_id());
 	query_test_without_mut.with_component(TestAccessMutabilityComponent2::get_component_id(), true);
 	query_test_without_mut.begin(&world);
 
@@ -1013,7 +1013,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery fetch mutability.") {
 
 	CHECK(storage2->count_get_immut == 0);
 	godex::DynamicQuery query_test_without_immut;
-	query_test_without_immut.without_component(TestAccessMutabilityComponent1::get_component_id());
+	query_test_without_immut.not_component(TestAccessMutabilityComponent1::get_component_id());
 	query_test_without_immut.with_component(TestAccessMutabilityComponent2::get_component_id(), false);
 	query_test_without_immut.begin(&world);
 
@@ -1058,7 +1058,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery try fetch combination.") {
 		// Check `With`  and `Without`.
 		godex::DynamicQuery query;
 		query.with_component(TestAccessMutabilityComponent1::get_component_id(), false);
-		query.without_component(TestAccessMutabilityComponent2::get_component_id());
+		query.not_component(TestAccessMutabilityComponent2::get_component_id());
 		query.begin(&world);
 		CHECK(query.has(entity_1));
 	}
@@ -1085,7 +1085,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery try fetch combination.") {
 	{
 		// Check `Without`.
 		godex::DynamicQuery query;
-		query.without_component(TestAccessMutabilityComponent2::get_component_id());
+		query.not_component(TestAccessMutabilityComponent2::get_component_id());
 		query.begin(&world);
 		// Nothing to fetch, because `Without` alone is meaningless.
 		CHECK(query.is_not_done() == false);
@@ -1095,7 +1095,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery try fetch combination.") {
 		// Check `Maybe` and `Without`.
 		godex::DynamicQuery query;
 		query.maybe_component(TestAccessMutabilityComponent1::get_component_id());
-		query.without_component(TestAccessMutabilityComponent2::get_component_id());
+		query.not_component(TestAccessMutabilityComponent2::get_component_id());
 		query.begin(&world);
 		// Nothing to fetch, because `Maybe` and `Without` are meaningless alone.
 		CHECK(query.is_not_done() == false);
@@ -1322,10 +1322,10 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 	}
 
 	{
-		// Check the API `without_component()`.
+		// Check the API `not_component()`.
 		godex::DynamicQuery query;
 		query.with_component(TransformComponent::get_component_id());
-		query.without_component(TagQueryTestComponent::get_component_id());
+		query.not_component(TagQueryTestComponent::get_component_id());
 
 		query.begin(&world);
 

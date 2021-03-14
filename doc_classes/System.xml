@@ -64,7 +64,7 @@
 			<description>
 			</description>
 		</method>
-		<method name="without_component">
+		<method name="not_component">
 			<return type="void">
 			</return>
 			<argument index="0" name="component_id" type="int">

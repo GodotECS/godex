@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "../storage/storage.h"
 #include "../systems/system.h"
