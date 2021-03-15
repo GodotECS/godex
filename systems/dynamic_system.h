@@ -1,5 +1,3 @@
-/** @author AndreaCatania */
-
 #pragma once
 
 #include "../iterators/dynamic_query.h"
@@ -83,7 +81,7 @@ public:
 	void with_component(uint32_t p_component_id, bool p_mutable);
 	void maybe_component(uint32_t p_component_id, bool p_mutable);
 	void changed_component(uint32_t p_component_id, bool p_mutable);
-	void without_component(uint32_t p_component_id);
+	void not_component(uint32_t p_component_id);
 	void with_storage(godex::component_id p_component_id);
 
 	void set_target(func_system_execute_pipeline p_sub_pipeline_execite);

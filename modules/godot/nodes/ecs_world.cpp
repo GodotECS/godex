@@ -1,6 +1,4 @@
 
-/* Author: AndreaCatania */
-
 #include "ecs_world.h"
 
 #include "../../../ecs.h"

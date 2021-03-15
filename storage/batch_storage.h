@@ -1,5 +1,3 @@
-/* Author: AndreaCatania */
-
 #pragma once
 
 #include "../ecs.h"

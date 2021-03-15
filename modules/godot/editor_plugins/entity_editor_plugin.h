@@ -1,5 +1,3 @@
-/* Author: AndreaCatania */
-
 #ifndef ENTITY_EDITOR_PLUGIN_H
 #define ENTITY_EDITOR_PLUGIN_H
 

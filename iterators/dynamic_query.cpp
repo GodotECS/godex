@@ -10,7 +10,7 @@ void DynamicQuery::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("with_component", "component_id", "mutable"), &DynamicQuery::with_component);
 	ClassDB::bind_method(D_METHOD("maybe_component", "component_id", "mutable"), &DynamicQuery::maybe_component);
 	ClassDB::bind_method(D_METHOD("changed_component", "component_id", "mutable"), &DynamicQuery::changed_component);
-	ClassDB::bind_method(D_METHOD("without_component", "component_id"), &DynamicQuery::without_component);
+	ClassDB::bind_method(D_METHOD("not_component", "component_id"), &DynamicQuery::not_component);
 
 	ClassDB::bind_method(D_METHOD("is_valid"), &DynamicQuery::is_valid);
 	ClassDB::bind_method(D_METHOD("build"), &DynamicQuery::build);
@@ -49,7 +49,7 @@ void DynamicQuery::changed_component(uint32_t p_component_id, bool p_mutable) {
 	_with_component(p_component_id, p_mutable, CHANGED_MODE);
 }
 
-void DynamicQuery::without_component(uint32_t p_component_id) {
+void DynamicQuery::not_component(uint32_t p_component_id) {
 	_with_component(p_component_id, false, WITHOUT_MODE);
 }
 

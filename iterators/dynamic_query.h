@@ -52,7 +52,7 @@ public:
 	void changed_component(uint32_t p_component_id, bool p_mutable = false);
 
 	/// Excludes this component from the query.
-	void without_component(uint32_t p_component_id);
+	void not_component(uint32_t p_component_id);
 
 	void _with_component(uint32_t p_component_id, bool p_mutable, FetchMode p_mode);
 

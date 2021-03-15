@@ -1,7 +1,5 @@
 #include "transform_component.h"
 
-/* Author: AndreaCatania */
-
 void TransformComponent::_bind_methods() {
 	ECS_BIND_PROPERTY(TransformComponent, PropertyInfo(Variant::TRANSFORM, "transform"), transform);
 }

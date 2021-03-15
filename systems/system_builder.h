@@ -1,6 +1,3 @@
-
-/** @author AndreaCatania */
-
 #pragma once
 
 #include "../databags/databag.h"

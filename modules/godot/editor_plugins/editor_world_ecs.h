@@ -1,5 +1,3 @@
-/* Author: AndreaCatania */
-
 #ifndef EDITORWORLDECS_H
 #define EDITORWORLDECS_H
 
