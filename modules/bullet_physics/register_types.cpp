@@ -17,9 +17,7 @@ void ecs_register_bullet_physics_types() {
 	ECS::register_component<BtShapeSphere>();
 
 	// Register `System`s
-	ECS::register_system(bt_config_shape, "BtConfigShape", "Bullet Physics - Configure shape");
-	ECS::register_system(bt_config_body, "BtConfigBody", "Bullet Physics - Configure body");
-	ECS::register_system(bt_config_body_world, "BtConfigBodyWorld", "Bullet Physics - Put the body inside the proper Physical World.");
+	ECS::register_system(bt_body_config, "BtBodyConfig", "Bullet Physics - Manage the lifetime of the Bodies");
 }
 
 void ecs_unregister_bullet_physics_types() {

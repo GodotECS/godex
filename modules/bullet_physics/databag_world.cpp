@@ -63,7 +63,7 @@ void BtWorlds::init_space(BtWorldIndex p_id, bool p_soft_world) {
 
 	if (p_soft_world) {
 		spaces[p_id].dynamics_world =
-				new (spaces[p_id].dynamics_world) btSoftRigidDynamicsWorld(
+				new (world_mem) btSoftRigidDynamicsWorld(
 						spaces[p_id].dispatcher,
 						spaces[p_id].broadphase,
 						spaces[p_id].solver,
@@ -71,7 +71,7 @@ void BtWorlds::init_space(BtWorldIndex p_id, bool p_soft_world) {
 		spaces[p_id].soft_body_world_info = memnew(btSoftBodyWorldInfo);
 	} else {
 		spaces[p_id].dynamics_world =
-				new (spaces[p_id].dynamics_world) btDiscreteDynamicsWorld(
+				new (world_mem) btDiscreteDynamicsWorld(
 						spaces[p_id].dispatcher,
 						spaces[p_id].broadphase,
 						spaces[p_id].solver,

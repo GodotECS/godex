@@ -99,11 +99,9 @@ struct BtRigidBody {
 	static void _bind_methods();
 	static void _get_storage_config(Dictionary &r_config);
 
-public:
-	/// NOTE: Never use this, it's for internal use only.
+private:
 	BtWorldIndex current_world = BT_WOLRD_NONE;
 
-private:
 	real_t mass = 1.0;
 	GodexMotionState motion_state;
 	btRigidBody body = btRigidBody(0.0, &motion_state, nullptr, btVector3(0.0, 0.0, 0.0));
@@ -114,6 +112,12 @@ private:
 	uint32_t reload_flags = 0;
 
 public:
+	btRigidBody *get_body();
+	const btRigidBody *get_body() const;
+
+	void set_current_world(BtWorldIndex p_index);
+	BtWorldIndex get_current_world() const;
+
 	void script_set_body_mode(uint32_t p_mode);
 	void set_body_mode(RigidMode p_mode);
 	RigidMode get_body_mode() const;
@@ -135,4 +139,6 @@ public:
 	void reload_body();
 
 	void set_shape(btCollisionShape *p_shape);
+	btCollisionShape *get_shape();
+	const btCollisionShape *get_shape() const;
 };

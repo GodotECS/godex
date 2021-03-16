@@ -29,8 +29,8 @@ public:
 	btBroadphaseInterface *get_broadphase() { return broadphase; }
 	const btBroadphaseInterface *get_broadphase() const { return broadphase; }
 
-	btDefaultCollisionConfiguration *get_collisionConfiguration() { return collision_configuration; }
-	const btDefaultCollisionConfiguration *get_collisionConfiguration() const { return collision_configuration; }
+	btDefaultCollisionConfiguration *get_collision_configuration() { return collision_configuration; }
+	const btDefaultCollisionConfiguration *get_collision_configuration() const { return collision_configuration; }
 
 	btCollisionDispatcher *get_dispatcher() { return dispatcher; }
 	const btCollisionDispatcher *get_dispatcher() const { return dispatcher; }
@@ -38,14 +38,14 @@ public:
 	btConstraintSolver *get_solver() { return solver; }
 	const btConstraintSolver *get_solver() const { return solver; }
 
-	btDiscreteDynamicsWorld *get_dynamicsWorld() { return dynamics_world; }
-	const btDiscreteDynamicsWorld *get_dynamicsWorld() const { return dynamics_world; }
+	btDiscreteDynamicsWorld *get_dynamics_world() { return dynamics_world; }
+	const btDiscreteDynamicsWorld *get_dynamics_world() const { return dynamics_world; }
 
-	btGhostPairCallback *get_ghostPairCallback() { return ghost_pair_callback; }
-	const btGhostPairCallback *get_ghostPairCallback() const { return ghost_pair_callback; }
+	btGhostPairCallback *get_ghost_pair_callback() { return ghost_pair_callback; }
+	const btGhostPairCallback *get_ghost_pair_callback() const { return ghost_pair_callback; }
 
-	GodotFilterCallback *get_godotFilterCallback() { return godot_filter_callback; }
-	const GodotFilterCallback *get_godotFilterCallback() const { return godot_filter_callback; }
+	GodotFilterCallback *get_godot_filter_callback() { return godot_filter_callback; }
+	const GodotFilterCallback *get_godot_filter_callback() const { return godot_filter_callback; }
 };
 
 /// The `BtWorlds` is a databag that contains all the physics worlds

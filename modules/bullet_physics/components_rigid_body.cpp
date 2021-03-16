@@ -20,6 +20,23 @@ void BtRigidBody::_get_storage_config(Dictionary &r_config) {
 	r_config["page_size"] = 500;
 }
 
+btRigidBody *BtRigidBody::get_body() {
+	return &body;
+}
+
+const btRigidBody *BtRigidBody::get_body() const {
+	return &body;
+}
+
+void BtRigidBody::set_current_world(BtWorldIndex p_index) {
+	current_world = p_index;
+	reload_flags |= RELOAD_FLAGS_BODY;
+}
+
+BtWorldIndex BtRigidBody::get_current_world() const {
+	return current_world;
+}
+
 void BtRigidBody::script_set_body_mode(uint32_t p_mode) {
 	set_body_mode(static_cast<RigidMode>(p_mode));
 }
@@ -134,4 +151,12 @@ void BtRigidBody::reload_body() {
 
 void BtRigidBody::set_shape(btCollisionShape *p_shape) {
 	body.setCollisionShape(p_shape);
+}
+
+btCollisionShape *BtRigidBody::get_shape() {
+	return body.getCollisionShape();
+}
+
+const btCollisionShape *BtRigidBody::get_shape() const {
+	return body.getCollisionShape();
 }

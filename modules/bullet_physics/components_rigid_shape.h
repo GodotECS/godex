@@ -6,18 +6,26 @@
 #include <btBulletCollisionCommon.h>
 
 struct BtRigidShape {
-private:
-	btCollisionShape *shape = nullptr;
+	enum ShapeType {
+		TYPE_BOX,
+		TYPE_SPHERE
+	};
+
+protected:
+	/// This is used to know the type of the shape, so we know how to extract
+	/// the shape common info, like the `btCollisionShape`.
+	ShapeType type;
+
 	/// List of bodies where this shape is assigned.
 	/// TODO Do I really need this, can I take this infor from the storage instead??
 	LocalVector<EntityID> bodies;
 
 public:
-	BtRigidShape(btCollisionShape *p_shape) :
-			shape(p_shape) {}
+	BtRigidShape(ShapeType p_type) :
+			type(p_type) {}
 
-	btCollisionShape *get_shape() { return shape; }
-	const btCollisionShape *get_shape() const { return shape; }
+	btCollisionShape *get_shape();
+	const btCollisionShape *get_shape() const;
 
 	void add_body(EntityID p_entity) {
 		bodies.push_back(p_entity);
@@ -33,7 +41,7 @@ struct BtShapeBox : public BtRigidShape {
 	btBoxShape box = btBoxShape(btVector3(1.0, 1.0, 1.0));
 
 	BtShapeBox() :
-			BtRigidShape(&box) {}
+			BtRigidShape(TYPE_BOX) {}
 
 	void set_half_extents(const Vector3 &p_half_extends);
 	Vector3 get_half_extents() const;
@@ -48,7 +56,7 @@ struct BtShapeSphere : public BtRigidShape {
 	btSphereShape sphere = btSphereShape(1.0);
 
 	BtShapeSphere() :
-			BtRigidShape(&sphere) {}
+			BtRigidShape(TYPE_SPHERE) {}
 
 	// TODO finalize shape.
 };

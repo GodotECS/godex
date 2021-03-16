@@ -1,5 +1,21 @@
 #include "components_rigid_shape.h"
 
+btCollisionShape *BtRigidShape::get_shape() {
+	switch (type) {
+		case TYPE_BOX:
+			return &static_cast<BtShapeBox *>(this)->box;
+		case TYPE_SPHERE:
+			return &static_cast<BtShapeSphere *>(this)->sphere;
+	}
+
+	CRASH_NOW_MSG("Please support all shapes.");
+	return nullptr;
+}
+
+const btCollisionShape *BtRigidShape::get_shape() const {
+	return const_cast<BtRigidShape *>(this)->get_shape();
+}
+
 void BtShapeBox::_bind_methods() {
 	ECS_BIND_PROPERTY_FUNC(BtShapeBox, PropertyInfo(Variant::VECTOR3, "half_extents"), set_half_extents, get_half_extents);
 	ECS_BIND_PROPERTY_FUNC(BtShapeBox, PropertyInfo(Variant::FLOAT, "margin"), set_margin, get_margin);
