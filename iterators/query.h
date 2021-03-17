@@ -151,7 +151,9 @@ public:
 #ifdef DEBUG_ENABLED
 		// Just check the mutability here, no need to check the type also, so
 		// it's possible to cast it easily to other types (like the base type).
-		CRASH_COND_MSG(std::is_const<T>::value != is_const, "Please retrieve this data with the correct mutability.");
+		if (unlikely(ptr != nullptr)) {
+			ERR_FAIL_COND_V_MSG(std::is_const<T>::value != is_const, nullptr, "Please retrieve this JOINED data with the correct mutability.");
+		}
 #endif
 		return static_cast<T *>(ptr);
 	}
