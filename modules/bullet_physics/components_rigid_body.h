@@ -65,17 +65,21 @@ struct BtRigidBody {
 
 	enum ReloadFlags {
 		/// Reload the mass.
-		RELOAD_FLAGS_MASS,
+		RELOAD_FLAGS_MASS = 1 << 0,
 		/// Remove and insert the body into the world again.
-		RELOAD_FLAGS_BODY,
+		RELOAD_FLAGS_BODY = 1 << 1,
 	};
 
 	static void _bind_methods();
 	static void _get_storage_config(Dictionary &r_config);
 
-private:
-	BtWorldIndex current_world = BT_WOLRD_NONE;
+public:
+	/// The current world this body is. Do not modify this.
+	BtWorldIndex __current_world = BT_WOLRD_NONE;
+	/// The current mode this body has. Do not modify this.
+	RigidMode __current_mode = RIGID_MODE_STATIC;
 
+private:
 	real_t mass = 1.0;
 	btRigidBody body = btRigidBody(mass, nullptr, nullptr, btVector3(0.0, 0.0, 0.0));
 	GodexBtMotionState motion_state;
@@ -91,9 +95,6 @@ public:
 
 	GodexBtMotionState *get_motion_state();
 	const GodexBtMotionState *get_motion_state() const;
-
-	void set_current_world(BtWorldIndex p_index);
-	BtWorldIndex get_current_world() const;
 
 	void script_set_body_mode(uint32_t p_mode);
 	void set_body_mode(RigidMode p_mode);
@@ -113,7 +114,7 @@ public:
 	uint32_t get_mask() const;
 
 	bool need_body_reload() const;
-	void reload_body();
+	void reload_body(BtWorldIndex p_index);
 
 	void set_shape(btCollisionShape *p_shape);
 	btCollisionShape *get_shape();

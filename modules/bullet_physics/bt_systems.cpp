@@ -41,20 +41,31 @@ void bt_body_config(
 			}
 		}
 
-		// Search the world
-		const BtWorldIndex world_index = world_marker != nullptr ? static_cast<BtWorldIndex>(world_marker->world_index) : BT_WORLD_0;
-		if (body->get_current_world() != world_index) {
-			// Refresh world
-			body->set_current_world(world_index);
-		}
-
 		// Reload mass
 		if (body->need_mass_reload() && body->get_shape() != nullptr) {
 			body->reload_mass(body->get_shape());
 		}
 
+		// Take the world this body should be on.
+		const BtWorldIndex world_index = world_marker != nullptr ? static_cast<BtWorldIndex>(world_marker->world_index) : BT_WORLD_0;
+
 		// Reload world
-		if (body->need_body_reload() && p_worlds != nullptr) {
+		if ((body->need_body_reload() ||
+					body->__current_world != world_index) &&
+				p_worlds != nullptr) {
+			// This body needs a realod.
+
+			if (body->__current_world != BtWorldIndex::BT_WOLRD_NONE) {
+				// Assume the world is the body is currently on is initialized.
+				if (body->__current_mode == BtRigidBody::RIGID_MODE_STATIC) {
+					p_worlds->get_space(body->__current_world)->get_dynamics_world()->removeCollisionObject(body->get_body());
+				} else {
+					p_worlds->get_space(body->__current_world)->get_dynamics_world()->removeRigidBody(body->get_body());
+				}
+			}
+
+			// Now let's add it inside the world again.
+
 			// TODO support world initialization when the body want to stay in
 			// another world?
 			BtWorld *world = p_worlds->get_space(world_index);
@@ -71,6 +82,8 @@ void bt_body_config(
 						body->get_mask());
 			}
 
+			body->__current_mode = body->get_body_mode();
+
 			// Set transfrorm
 			if (transform != nullptr) {
 				btTransform t;
@@ -81,7 +94,8 @@ void bt_body_config(
 
 			body->get_body()->setMotionState(body->get_motion_state());
 			body->get_motion_state()->entity = entity;
-			body->reload_body();
+			body->get_motion_state()->world = world;
+			body->reload_body(world_index);
 		}
 	}
 }

@@ -47,15 +47,6 @@ const GodexBtMotionState *BtRigidBody::get_motion_state() const {
 	return &motion_state;
 }
 
-void BtRigidBody::set_current_world(BtWorldIndex p_index) {
-	current_world = p_index;
-	reload_flags |= RELOAD_FLAGS_BODY;
-}
-
-BtWorldIndex BtRigidBody::get_current_world() const {
-	return current_world;
-}
-
 void BtRigidBody::script_set_body_mode(uint32_t p_mode) {
 	set_body_mode(static_cast<RigidMode>(p_mode));
 }
@@ -68,14 +59,16 @@ void BtRigidBody::set_body_mode(RigidMode p_mode) {
 
 	if (p_mode == RIGID_MODE_DYNAMIC) {
 		body.setCollisionFlags(cleared_current_flags); // Just set the flags without Kin and Static
-		mass = body.getMass() == 0.0 ? 1.0 : body.getMass();
 		body.forceActivationState(ACTIVE_TAG);
+		body.setLinearFactor(btVector3(1, 1, 1));
+		body.setAngularFactor(btVector3(1, 1, 1));
 
 	} else if (p_mode == RIGID_MODE_CHARACTER) {
 		body.setCollisionFlags(cleared_current_flags |
 							   btCollisionObject::CF_CHARACTER_OBJECT);
-		mass = body.getMass() == 0.0 ? 1.0 : body.getMass();
 		body.forceActivationState(ACTIVE_TAG);
+		body.setLinearFactor(btVector3(1, 1, 1));
+		body.setAngularFactor(btVector3(0, 0, 0));
 
 	} else if (p_mode == RIGID_MODE_KINEMATIC) {
 		body.setCollisionFlags(cleared_current_flags |
@@ -164,7 +157,8 @@ bool BtRigidBody::need_body_reload() const {
 	return reload_flags & RELOAD_FLAGS_BODY;
 }
 
-void BtRigidBody::reload_body() {
+void BtRigidBody::reload_body(BtWorldIndex p_index) {
+	__current_world = p_index;
 	reload_flags &= (~RELOAD_FLAGS_BODY);
 }
 
