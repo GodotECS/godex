@@ -18,6 +18,10 @@ void ecs_register_bullet_physics_types() {
 
 	// Register `System`s
 	ECS::register_system(bt_body_config, "BtBodyConfig", "Bullet Physics - Manage the lifetime of the Bodies");
+	ECS::register_system(bt_world_step, "BtWorldsStep", "Bullet Physics - Steps the physics of the worlds.");
+	ECS::register_system(bt_body_sync, "BtBodySync", "Bullet Physics - Read the Physics Engine and update the Bodies");
+	//ECS::register_system(bt_area_sync, "BtBodySync", "Bullet Physics - Read the Physics Engine and update the Bodies");
+	//ECS::register_system(bt_area_sync, "BtBodySync", "Bullet Physics - Read the Physics Engine and update the Bodies");
 }
 
 void ecs_unregister_bullet_physics_types() {

@@ -1,5 +1,6 @@
 #include "bt_systems.h"
 
+#include "modules/bullet/bullet_types_converter.h"
 #include <BulletCollision/BroadphaseCollision/btBroadphaseProxy.h>
 #include <BulletCollision/CollisionDispatch/btCollisionObject.h>
 #include <BulletCollision/CollisionDispatch/btGhostObject.h>
@@ -13,12 +14,14 @@
 void bt_body_config(
 		BtWorlds *p_worlds,
 		Query<
+				EntityID,
 				Any<Changed<BtRigidBody>,
 						Changed<BtWorldMarker>,
 						Join<
 								Changed<BtShapeBox>,
-								Changed<BtShapeSphere>>>> &p_query) {
-	for (auto [body, world_marker, shape_container] : p_query) {
+								Changed<BtShapeSphere>>>,
+				Maybe<TransformComponent>> &p_query) {
+	for (auto [entity, body, world_marker, shape_container, transform] : p_query) {
 		if (body == nullptr) {
 			// Body not yet assigned, skip this.
 			continue;
@@ -68,7 +71,64 @@ void bt_body_config(
 						body->get_mask());
 			}
 
+			// Set transfrorm
+			if (transform != nullptr) {
+				btTransform t;
+				G_TO_B(transform->transform, t);
+				body->get_body()->setWorldTransform(t);
+				body->get_motion_state()->transf = t;
+			}
+
+			body->get_body()->setMotionState(body->get_motion_state());
+			body->get_motion_state()->entity = entity;
 			body->reload_body();
 		}
+	}
+}
+
+void bt_world_step(
+		BtWorlds *p_worlds,
+		const FrameTime *p_iterator_info,
+		// TODO this is not used, though we need it just to be sure they are not
+		// touched by anything else.
+		Query<BtRigidBody, BtShapeBox, BtShapeSphere> &p_query) {
+	const real_t physics_delta = p_iterator_info->get_physics_delta();
+
+	// TODO consider to create a system for each world? So it has much more control.
+	for (uint32_t i = 0; i < BtWorldIndex::BT_WOLRD_MAX; i += 1) {
+		BtWorldIndex w_i = (BtWorldIndex)i;
+
+		if (p_worlds->get_space(w_i)->get_dispatcher() == nullptr) {
+			// This world is disabled.
+			continue;
+		}
+
+		// Step bullet physics.
+		p_worlds->get_space(w_i)->get_dynamics_world()->stepSimulation(
+				physics_delta,
+				0,
+				0);
+	}
+}
+
+void bt_body_sync(
+		BtWorlds *p_worlds,
+		Query<BtRigidBody, TransformComponent> &p_query) {
+	for (uint32_t i = 0; i < BtWorldIndex::BT_WOLRD_MAX; i += 1) {
+		BtWorldIndex w_i = (BtWorldIndex)i;
+
+		if (p_worlds->get_space(w_i)->get_dispatcher() == nullptr) {
+			// This world is disabled.
+			continue;
+		}
+
+		p_worlds->get_space(w_i)->moved_bodies.for_each([&](EntityID p_entity_id) {
+			if (p_query.has(p_entity_id)) {
+				auto [body, transform] = p_query.space(GLOBAL)[p_entity_id];
+				B_TO_G(body->get_motion_state()->transf, transform->transform);
+			}
+		});
+
+		p_worlds->get_space(w_i)->moved_bodies.clear();
 	}
 }

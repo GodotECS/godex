@@ -24,62 +24,36 @@ struct BtWorldMarker {
 	uint32_t world_index = BT_WORLD_0;
 };
 
-/// This class is responsible to move a kinematic body and tell when a body
-/// transform changed
-/// DOC:
-/// http://www.bulletphysics.org/mediawiki-1.5.8/index.php/MotionStates#What.27s_a_MotionState.3F
-class GodexMotionState : public btMotionState {
-	/// This data is used to store the new world position for kinematic body
-	btTransform bodyKinematicWorldTransf;
-	/// This data is used to store last world position
-	btTransform bodyCurrentWorldTransform;
+/// This class is an utility Bullet physics uses to notify the RigidBody
+/// transform change.
+class GodexBtMotionState : public btMotionState {
+	friend struct BtRigidBody;
 
 public:
-	GodexMotionState() :
-			bodyKinematicWorldTransf(btMatrix3x3(1., 0., 0., 0., 1., 0., 0., 0., 1.), btVector3(0., 0., 0.)),
-			bodyCurrentWorldTransform(btMatrix3x3(1., 0., 0., 0., 1., 0., 0., 0., 1.), btVector3(0., 0., 0.)) {}
+	EntityID entity;
+	class BtWorld *world = nullptr;
+	btTransform transf = btTransform(
+			btMatrix3x3(1., 0., 0., 0., 1., 0., 0., 0., 1.),
+			btVector3(0., 0., 0.));
 
-	/// IMPORTANT DON'T USE THIS FUNCTION TO KNOW THE CURRENT BODY TRANSFORM
-	/// This class is used internally by Bullet
-	/// Use GodotMotionState::getCurrentWorldTransform to know current position
+	/// NEVER CALL THIS FUNCTION.
 	///
-	/// This function is used by Bullet to get the position of object in the world
-	/// if the body is kinematic Bullet will move the object to this location
-	/// if the body is static Bullet doesn't move at all
-	virtual void getWorldTransform(btTransform &worldTrans) const override {
-		worldTrans = bodyKinematicWorldTransf;
-	}
+	/// When the body is Kinematic, bullet calls this function to
+	/// set the body position, so it's possible to interpolate it.
+	virtual void getWorldTransform(btTransform &r_world_trans) const override;
 
-	/// IMPORTANT: to move the body use: moveBody
-	/// IMPORTANT: DON'T CALL THIS FUNCTION, IT IS CALLED BY BULLET TO UPDATE RENDERING ENGINE
-	///
-	/// This function is called each time by Bullet and set the current position of body
-	/// inside the physics world.
-	/// Don't allow Godot rendering scene takes world transform from this object because
-	/// the correct transform is set by Bullet only after the last step when there are sub steps
-	/// This function must update Godot transform rendering scene for this object.
-	virtual void setWorldTransform(const btTransform &worldTrans) override {
-		bodyCurrentWorldTransform = worldTrans;
-
-		//owner->notify_transform_changed();
-	}
-
-public:
-	/// Use this function to move kinematic body
-	/// -- or set initial transform before body creation.
-	void moveBody(const btTransform &newWorldTransform) {
-		bodyKinematicWorldTransf = newWorldTransform;
-	}
-
-	/// It returns the current body transform from last Bullet update
-	const btTransform &getCurrentWorldTransform() const {
-		return bodyCurrentWorldTransform;
-	}
+	/// Bullet physics call this function on active bodies to update the
+	/// position.
+	/// The given Transform is already interpolated by bullet, is substepping
+	/// is active.
+	virtual void setWorldTransform(const btTransform &worldTrans) override;
 };
 
 /// This Component represent a Bullet Physics RigidBody.
 /// The RigidBody can be STATIC, DYNAMIC, KINEMATIC.
 struct BtRigidBody {
+	friend class GodexBtMotionState;
+
 	COMPONENT(BtRigidBody, SteadyStorage)
 
 	enum RigidMode {
@@ -103,8 +77,8 @@ private:
 	BtWorldIndex current_world = BT_WOLRD_NONE;
 
 	real_t mass = 1.0;
-	GodexMotionState motion_state;
-	btRigidBody body = btRigidBody(0.0, &motion_state, nullptr, btVector3(0.0, 0.0, 0.0));
+	btRigidBody body = btRigidBody(mass, nullptr, nullptr, btVector3(0.0, 0.0, 0.0));
+	GodexBtMotionState motion_state;
 
 	uint32_t layer = 1;
 	uint32_t mask = 1;
@@ -114,6 +88,9 @@ private:
 public:
 	btRigidBody *get_body();
 	const btRigidBody *get_body() const;
+
+	GodexBtMotionState *get_motion_state();
+	const GodexBtMotionState *get_motion_state() const;
 
 	void set_current_world(BtWorldIndex p_index);
 	BtWorldIndex get_current_world() const;

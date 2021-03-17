@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../databags/databag.h"
+#include "../../storage/entity_list.h"
 #include "bt_def_type.h"
 
 class btBroadphaseInterface;
@@ -26,6 +27,8 @@ class BtWorld {
 	btSoftBodyWorldInfo *soft_body_world_info = nullptr;
 
 public:
+	EntityList moved_bodies;
+
 	btBroadphaseInterface *get_broadphase() { return broadphase; }
 	const btBroadphaseInterface *get_broadphase() const { return broadphase; }
 

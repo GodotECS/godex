@@ -1,7 +1,18 @@
 
 #include "components_rigid_body.h"
 
+#include "databag_world.h"
 #include <btBulletCollisionCommon.h>
+
+void GodexBtMotionState::getWorldTransform(btTransform &r_world_trans) const {
+	r_world_trans = transf;
+}
+
+void GodexBtMotionState::setWorldTransform(const btTransform &worldTrans) {
+	transf = worldTrans;
+	ERR_FAIL_COND_MSG(world == nullptr, "Body moved while no world is set, this is a bug!");
+	world->moved_bodies.insert(entity);
+}
 
 void BtWorldMarker::_bind_methods() {
 	ECS_BIND_PROPERTY(BtWorldMarker, PropertyInfo(Variant::INT, "world_index", PROPERTY_HINT_ENUM, "World 0 (main),World 1,World 2,World 3,None"), world_index);
@@ -26,6 +37,14 @@ btRigidBody *BtRigidBody::get_body() {
 
 const btRigidBody *BtRigidBody::get_body() const {
 	return &body;
+}
+
+GodexBtMotionState *BtRigidBody::get_motion_state() {
+	return &motion_state;
+}
+
+const GodexBtMotionState *BtRigidBody::get_motion_state() const {
+	return &motion_state;
 }
 
 void BtRigidBody::set_current_world(BtWorldIndex p_index) {
@@ -151,6 +170,7 @@ void BtRigidBody::reload_body() {
 
 void BtRigidBody::set_shape(btCollisionShape *p_shape) {
 	body.setCollisionShape(p_shape);
+	reload_flags |= RELOAD_FLAGS_MASS;
 }
 
 btCollisionShape *BtRigidBody::get_shape() {
