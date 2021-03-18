@@ -759,12 +759,14 @@ TEST_CASE("[Modules][ECS] Test static query deep nesting") {
 		{
 			auto [entity, tag] = query[entity_1];
 			CHECK(entity == entity_1);
-			CHECK(tag.is<const TagA>() == false);
-			CHECK(tag.is<const TagB>() == false);
-			CHECK(tag.is<const TagC>()); // TagC is marked as changed.
+			// One of these is valid
+			CHECK((tag.is<const TagA>() ||
+					tag.is<const TagB>() ||
+					tag.is<const TagC>()));
+			// The fetched data is `const`.
 			CHECK(tag.is<TagA>() == false);
 			CHECK(tag.is<TagB>() == false);
-			CHECK(tag.is<TagC>() == false); // Though, it's not const.
+			CHECK(tag.is<TagC>() == false);
 
 			const TagC *c = tag.as<const TagC>();
 			CHECK(c != nullptr);
@@ -784,12 +786,14 @@ TEST_CASE("[Modules][ECS] Test static query deep nesting") {
 			auto [entity, tag_a, tag] = query[entity_1];
 			CHECK(entity == entity_1);
 			CHECK(tag_a != nullptr);
-			CHECK(tag.is<const TagA>() == false);
-			CHECK(tag.is<const TagB>() == false);
-			CHECK(tag.is<const TagC>()); // TagC is marked as changed.
+			// One of these is valid
+			CHECK((tag.is<const TagA>() ||
+					tag.is<const TagB>() ||
+					tag.is<const TagC>()));
+			// The fetched data is `const`.
 			CHECK(tag.is<TagA>() == false);
 			CHECK(tag.is<TagB>() == false);
-			CHECK(tag.is<TagC>() == false); // Though, it's not const.
+			CHECK(tag.is<TagC>() == false);
 
 			const TagC *c = tag.as<const TagC>();
 			CHECK(c != nullptr);
@@ -799,7 +803,7 @@ TEST_CASE("[Modules][ECS] Test static query deep nesting") {
 			auto [entity, tag_a, tag] = query[entity_2];
 			CHECK(entity == entity_2);
 			CHECK(tag_a != nullptr);
-			CHECK(tag.is_null());
+			CHECK(tag.is_null() == false);
 		}
 	}
 }
@@ -1898,6 +1902,86 @@ TEST_CASE("[Modules][ECS] Test static query Any filter.") {
 			CHECK(entity != entity_5);
 		}
 	}
+
+	// Fetch using Any + Join.
+	// Any is not triggered by the `Join`
+	{
+		world.get_storage<TagB>()->notify_updated(entity_3);
+		world.get_storage<TagC>()->notify_updated(entity_4);
+		world.get_storage<TagC>()->notify_updated(entity_5);
+
+		Query<Any<Changed<TransformComponent>, Join<Changed<TagA>, Changed<TagB>, Changed<TagC>>>> query(&world);
+
+		// TransformComponent is always changed, so all are taken
+		CHECK(query.has(entity_1));
+		CHECK(query.has(entity_2));
+		CHECK(query.has(entity_3));
+		CHECK(query.has(entity_4));
+		CHECK(query.has(entity_5));
+
+		{
+			auto [transform, tag] = query[entity_1];
+			CHECK(transform != nullptr);
+			CHECK(tag.is<TagA>());
+		}
+		{
+			auto [transform, tag] = query[entity_2];
+			CHECK(transform != nullptr);
+			CHECK(tag.is_null());
+		}
+		{
+			auto [transform, tag] = query[entity_3];
+			CHECK(transform != nullptr);
+			CHECK(tag.is<TagB>());
+		}
+		{
+			auto [transform, tag] = query[entity_4];
+			CHECK(transform != nullptr);
+			CHECK(tag.is<TagC>());
+		}
+		{
+			auto [transform, tag] = query[entity_5];
+			CHECK(transform != nullptr);
+			CHECK((tag.is<TagA>() || tag.is<TagB>() || tag.is<TagC>()));
+		}
+	}
+
+	// Now, Any is triggered by the `Join`, make sure we can retrieve the same data.
+	{
+		world.get_storage<TransformComponent>()->notify_updated(entity_1);
+		world.get_storage<TransformComponent>()->notify_updated(entity_2);
+		world.get_storage<TransformComponent>()->notify_updated(entity_3);
+		world.get_storage<TransformComponent>()->notify_updated(entity_4);
+		world.get_storage<TransformComponent>()->notify_updated(entity_5);
+
+		world.get_storage<TagB>()->notify_changed(entity_3);
+		world.get_storage<TagC>()->notify_changed(entity_4);
+		world.get_storage<TagC>()->notify_changed(entity_5);
+
+		Query<Any<Changed<TransformComponent>, Join<Changed<TagA>, Changed<TagB>, Changed<TagC>>>> query(&world);
+
+		CHECK(query.has(entity_1) == false);
+		CHECK(query.has(entity_2) == false);
+		CHECK(query.has(entity_3));
+		CHECK(query.has(entity_4));
+		CHECK(query.has(entity_5));
+
+		{
+			auto [transform, tag] = query[entity_3];
+			CHECK(transform != nullptr);
+			CHECK(tag.is<TagB>());
+		}
+		{
+			auto [transform, tag] = query[entity_4];
+			CHECK(transform != nullptr);
+			CHECK(tag.is<TagC>());
+		}
+		{
+			auto [transform, tag] = query[entity_5];
+			CHECK(transform != nullptr);
+			CHECK((tag.is<TagA>() || tag.is<TagB>() || tag.is<TagC>()));
+		}
+	}
 }
 
 TEST_CASE("[Modules][ECS] Test static query Join filter.") {
@@ -2035,7 +2119,7 @@ TEST_CASE("[Modules][ECS] Test static query Join filter.") {
 		}
 	}
 
-	// Test `Join` with `Without` filter.
+	// Test `Join` with `Not` filter.
 	// Note: This test is here just for validation, but doesn't make much sense.
 	{
 		Query<Changed<TransformComponent>, Join<Not<TagA>, Not<const TagB>, Not<TagC>>> query(&world);
@@ -2049,7 +2133,8 @@ TEST_CASE("[Modules][ECS] Test static query Join filter.") {
 		{
 			auto [transform, tag] = query[entity_1];
 			CHECK(transform != nullptr);
-			CHECK(tag.is_null());
+			CHECK(tag.is_null() == false);
+			CHECK(tag.is<TagA>());
 		}
 		{
 			auto [transform, tag] = query[entity_2];
@@ -2059,12 +2144,14 @@ TEST_CASE("[Modules][ECS] Test static query Join filter.") {
 		{
 			auto [transform, tag] = query[entity_3];
 			CHECK(transform != nullptr);
-			CHECK(tag.is_null());
+			CHECK(tag.is_null() == false);
+			CHECK(tag.is<const TagB>());
 		}
 		{
 			auto [transform, tag] = query[entity_4];
 			CHECK(transform != nullptr);
-			CHECK(tag.is_null());
+			CHECK(tag.is_null() == false);
+			CHECK(tag.is<TagC>());
 		}
 	}
 }

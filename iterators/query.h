@@ -799,7 +799,13 @@ struct AJUtility {
 	}
 
 	void get_entities(EntityList &r_entities) const {}
+
 	bool filter_satisfied(EntityID p_entity) const {
+		// Not satisfied.
+		return false;
+	}
+
+	bool can_fetch(EntityID p_entity) const {
 		// Not satisfied.
 		return false;
 	}
@@ -850,12 +856,24 @@ struct AJUtility<I, INCREMENT, C, Cs...> : AJUtility<I + INCREMENT, INCREMENT, C
 	}
 
 	bool filter_satisfied(EntityID p_entity) const {
+		// Is someone able to satisfy the filter?
 		if (storage.filter_satisfied(p_entity)) {
 			// Satisfied.
 			return true;
 		} else {
 			// Not in storage, try the next one.
 			return AJUtility<I + INCREMENT, INCREMENT, Cs...>::filter_satisfied(p_entity);
+		}
+	}
+
+	bool can_fetch(EntityID p_entity) const {
+		// Is someone able to fetch?
+		if (storage.can_fetch(p_entity)) {
+			// Satisfied.
+			return true;
+		} else {
+			// Not in storage, try the next one.
+			return AJUtility<I + INCREMENT, INCREMENT, Cs...>::can_fetch(p_entity);
 		}
 	}
 
@@ -871,9 +889,9 @@ struct AJUtility<I, INCREMENT, C, Cs...> : AJUtility<I + INCREMENT, INCREMENT, C
 	}
 
 	/// Used by `Join` to fetch the data.
-	/// Fetches just the first one that satisfy the filter.
+	/// Fetches just the first one that exist.
 	JoinData join_fetch(EntityID p_id, Space p_mode) const {
-		if (storage.filter_satisfied(p_id)) {
+		if (storage.can_fetch(p_id)) {
 			// There is something to fetch, fetch it.
 			QueryResultTuple<C> tuple;
 			storage.fetch(p_id, p_mode, tuple);
@@ -936,6 +954,10 @@ struct QueryStorage<I, Any<C...>, Cs...> : QueryStorage<AJUtility<I, 1, C...>::L
 			// because even a not determinant filter may satisfy the process.
 			return sub_storages.filter_satisfied(p_entity);
 		}
+	}
+
+	bool can_fetch(EntityID p_entity) const {
+		return sub_storages.can_fetch(p_entity);
 	}
 
 	template <class... Qs>
@@ -1011,7 +1033,7 @@ struct QueryStorage<I, Join<C...>, Cs...> : QueryStorage<I + 1, Cs...> {
 	}
 
 	bool can_fetch(EntityID p_entity) const {
-		return filter_satisfied(p_entity);
+		return sub_storages.can_fetch(p_entity);
 	}
 
 	template <class... Qs>
