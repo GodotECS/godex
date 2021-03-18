@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../../components/component.h"
+#include "../../../storage/dense_vector_storage.h"
 
 // Tag component to mark `Disabled` things.
 struct Disabled {

@@ -1,5 +1,7 @@
 #include "dynamic_component.h"
 
+#include "../storage/dense_vector_storage.h"
+
 DynamicComponentInfo::DynamicComponentInfo() {
 }
 
