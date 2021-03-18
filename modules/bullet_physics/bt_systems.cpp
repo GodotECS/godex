@@ -47,7 +47,7 @@ void bt_body_config(
 		}
 
 		// Take the world this body should be on.
-		const BtWorldIndex world_index = world_marker != nullptr ? static_cast<BtWorldIndex>(world_marker->world_index) : BT_WORLD_0;
+		const BtWorldIndex world_index = body->get_shape() == nullptr ? BT_WOLRD_NONE : (world_marker != nullptr ? static_cast<BtWorldIndex>(world_marker->world_index) : BT_WORLD_0);
 
 		// Reload world
 		if ((body->need_body_reload() ||
