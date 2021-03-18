@@ -2118,6 +2118,42 @@ TEST_CASE("[Modules][ECS] Test static query Join filter.") {
 			CHECK(tag.is<TagC>());
 		}
 	}
+
+	// Test `Join` with `Not` filter.
+	// Note: This test is here just for validation, but doesn't make much sense.
+	{
+		Query<Changed<TransformComponent>, Join<Not<TagA>, Not<const TagB>, Not<TagC>>> query(&world);
+
+		// Since `Join` needs just one filter to be satisfied, all are valid.
+		CHECK(query.has(entity_1));
+		CHECK(query.has(entity_2));
+		CHECK(query.has(entity_3));
+		CHECK(query.has(entity_4));
+
+		{
+			auto [transform, tag] = query[entity_1];
+			CHECK(transform != nullptr);
+			CHECK(tag.is_null() == false);
+			CHECK(tag.is<TagA>());
+		}
+		{
+			auto [transform, tag] = query[entity_2];
+			CHECK(transform != nullptr);
+			CHECK(tag.is_null());
+		}
+		{
+			auto [transform, tag] = query[entity_3];
+			CHECK(transform != nullptr);
+			CHECK(tag.is_null() == false);
+			CHECK(tag.is<const TagB>());
+		}
+		{
+			auto [transform, tag] = query[entity_4];
+			CHECK(transform != nullptr);
+			CHECK(tag.is_null() == false);
+			CHECK(tag.is<TagC>());
+		}
+	}
 }
 } // namespace godex_tests
 
