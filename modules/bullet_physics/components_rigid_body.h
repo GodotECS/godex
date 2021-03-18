@@ -16,12 +16,12 @@ class btCollisionShape;
 /// space.
 ///
 /// Note, you have at max 4 spaces, and it's unlikely that you need more than 1.
-struct BtWorldMarker {
-	COMPONENT(BtWorldMarker, DenseVectorStorage)
+struct BtSpaceMarker {
+	COMPONENT(BtSpaceMarker, DenseVectorStorage)
 
 	static void _bind_methods();
 
-	uint32_t world_index = BT_WORLD_0;
+	uint32_t space_index = BT_SPACE_0;
 };
 
 /// This class is an utility Bullet physics uses to notify the RigidBody
@@ -31,7 +31,7 @@ class GodexBtMotionState : public btMotionState {
 
 public:
 	EntityID entity;
-	class BtWorld *world = nullptr;
+	class BtSpace *space = nullptr;
 	btTransform transf = btTransform(
 			btMatrix3x3(1., 0., 0., 0., 1., 0., 0., 0., 1.),
 			btVector3(0., 0., 0.));
@@ -74,8 +74,8 @@ struct BtRigidBody {
 	static void _get_storage_config(Dictionary &r_config);
 
 public:
-	/// The current world this body is. Do not modify this.
-	BtWorldIndex __current_world = BT_WOLRD_NONE;
+	/// The current space this body is. Do not modify this.
+	BtSpaceIndex __current_space = BT_SPACE_NONE;
 	/// The current mode this body has. Do not modify this.
 	RigidMode __current_mode = RIGID_MODE_STATIC;
 
@@ -114,7 +114,7 @@ public:
 	uint32_t get_mask() const;
 
 	bool need_body_reload() const;
-	void reload_body(BtWorldIndex p_index);
+	void reload_body(BtSpaceIndex p_index);
 
 	void set_shape(btCollisionShape *p_shape);
 	btCollisionShape *get_shape();

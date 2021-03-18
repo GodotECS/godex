@@ -1,7 +1,7 @@
 
 #include "components_rigid_body.h"
 
-#include "databag_world.h"
+#include "databag_space.h"
 #include <btBulletCollisionCommon.h>
 
 void GodexBtMotionState::getWorldTransform(btTransform &r_world_trans) const {
@@ -10,12 +10,12 @@ void GodexBtMotionState::getWorldTransform(btTransform &r_world_trans) const {
 
 void GodexBtMotionState::setWorldTransform(const btTransform &worldTrans) {
 	transf = worldTrans;
-	ERR_FAIL_COND_MSG(world == nullptr, "Body moved while no world is set, this is a bug!");
-	world->moved_bodies.insert(entity);
+	ERR_FAIL_COND_MSG(space == nullptr, "Body moved while no space is set, this is a bug!");
+	space->moved_bodies.insert(entity);
 }
 
-void BtWorldMarker::_bind_methods() {
-	ECS_BIND_PROPERTY(BtWorldMarker, PropertyInfo(Variant::INT, "world_index", PROPERTY_HINT_ENUM, "World 0 (main),World 1,World 2,World 3,None"), world_index);
+void BtSpaceMarker::_bind_methods() {
+	ECS_BIND_PROPERTY(BtSpaceMarker, PropertyInfo(Variant::INT, "space_index", PROPERTY_HINT_ENUM, "Space 0 (main),Space 1,Space 2,Space 3,None"), space_index);
 }
 
 void BtRigidBody::_bind_methods() {
@@ -157,8 +157,8 @@ bool BtRigidBody::need_body_reload() const {
 	return reload_flags & RELOAD_FLAGS_BODY;
 }
 
-void BtRigidBody::reload_body(BtWorldIndex p_index) {
-	__current_world = p_index;
+void BtRigidBody::reload_body(BtSpaceIndex p_index) {
+	__current_space = p_index;
 	reload_flags &= (~RELOAD_FLAGS_BODY);
 }
 

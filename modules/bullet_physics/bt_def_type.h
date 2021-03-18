@@ -1,11 +1,11 @@
 #pragma once
 
-enum BtWorldIndex {
-	BT_WORLD_0 = 0,
-	BT_WOLRD_1 = 1,
-	BT_WOLRD_2 = 2,
-	BT_WORLD_3 = 3,
+enum BtSpaceIndex {
+	BT_SPACE_0 = 0,
+	BT_SPACE_1 = 1,
+	BT_SPACE_2 = 2,
+	BT_SPACE_3 = 3,
 
-	BT_WOLRD_MAX = 4,
-	BT_WOLRD_NONE = BT_WOLRD_MAX,
+	BT_SPACE_MAX = 4,
+	BT_SPACE_NONE = BT_SPACE_MAX,
 };

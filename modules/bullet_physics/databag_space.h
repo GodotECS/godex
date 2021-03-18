@@ -12,10 +12,10 @@ class btDiscreteDynamicsWorld;
 struct btSoftBodyWorldInfo;
 class btGhostPairCallback;
 struct GodotFilterCallback;
-class BtWorlds;
+class BtPhysicsSpaces;
 
-class BtWorld {
-	friend class BtWorlds;
+class BtSpace {
+	friend class BtPhysicsSpaces;
 
 	btBroadphaseInterface *broadphase = nullptr;
 	btDefaultCollisionConfiguration *collision_configuration = nullptr;
@@ -51,38 +51,38 @@ public:
 	const GodotFilterCallback *get_godot_filter_callback() const { return godot_filter_callback; }
 };
 
-/// The `BtWorlds` is a databag that contains all the physics worlds
+/// The `BtPhysicsSpaces` is a databag that contains all the physics worlds
 /// (called spaces).
 /// You can have at max 4 spaces at the same time, but note that have more than
 /// one is not a common use case.
 ///
 /// You can specify to which `Space` an entity has to stay by using the
-/// optional `BtWorldMarker`. When the `BtWorldMarker` is not used the `Entity`
+/// optional `BtSpaceMarker`. When the `BtSpaceMarker` is not used the `Entity`
 /// is put to the main default world (ID 0).
-class BtWorlds : public godex::Databag {
-	DATABAG(BtWorlds)
+class BtPhysicsSpaces : public godex::Databag {
+	DATABAG(BtPhysicsSpaces)
 
 private:
-	BtWorld spaces[BT_WOLRD_MAX];
+	BtSpace spaces[BT_SPACE_MAX];
 
 public:
-	BtWorlds();
-	~BtWorlds();
+	BtPhysicsSpaces();
+	~BtPhysicsSpaces();
 
 	/// Returns `true` if the space is initialized.
-	bool is_space_initialized(BtWorldIndex p_id) const;
+	bool is_space_initialized(BtSpaceIndex p_id) const;
 
 	/// Initialize the space pointeed by this ID. If this space is already
 	/// initialize does nothing.
-	void init_space(BtWorldIndex p_id, bool p_soft_world);
+	void init_space(BtSpaceIndex p_id, bool p_soft_world);
 
 	/// Free the space pointed by this ID, or does nothing if the space is not
 	/// initialized.
-	void free_space(BtWorldIndex p_id);
+	void free_space(BtSpaceIndex p_id);
 
 	/// Returns the Space of this ID mutable.
-	BtWorld *get_space(BtWorldIndex p_id);
+	BtSpace *get_space(BtSpaceIndex p_id);
 
 	/// Returns the Space of this ID, not mutable.
-	const BtWorld *get_space(BtWorldIndex p_space_id) const;
+	const BtSpace *get_space(BtSpaceIndex p_space_id) const;
 };
