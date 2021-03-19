@@ -87,15 +87,20 @@ struct ScriptProperty {
 };
 
 namespace godex {
+
 typedef uint32_t component_id;
+constexpr component_id COMPONENT_NONE = UINT32_MAX;
+
 typedef uint32_t databag_id;
+constexpr databag_id DATABAG_NONE = UINT32_MAX;
+
 typedef uint32_t system_id;
+constexpr system_id SYSTEM_NONE = UINT32_MAX;
+
 /// Shared Component ID, used to identify a component.
 typedef uint32_t SID;
+constexpr SID SID_NONE = UINT32_MAX;
 
-const component_id COMPONENT_NONE = UINT32_MAX;
-const databag_id DATABAG_NONE = UINT32_MAX;
-const system_id SYSTEM_NONE = UINT32_MAX;
 } // namespace godex
 
 // ~~ PROPERTY MAPPER ~~

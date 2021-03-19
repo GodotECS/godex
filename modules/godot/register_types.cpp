@@ -14,6 +14,7 @@
 #include "nodes/ecs_utilities.h"
 #include "nodes/ecs_world.h"
 #include "nodes/entity.h"
+#include "nodes/shared_component_resource.h"
 #include "systems/mesh_updater_system.h"
 #include "systems/physics_process_system.h"
 
@@ -100,6 +101,8 @@ void ecs_register_godot_types() {
 		create_physics_system_dispatcher(ECS::get_dynamic_system_info(id));
 	}
 	ECS::register_system(step_physics_server_3d, "StepPhysicsServer3D", "Steps the PhysicsServer3D.");
+
+	ClassDB::register_class<SharedComponentResource>();
 }
 
 void ecs_unregister_godot_types() {

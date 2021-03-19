@@ -36,6 +36,7 @@ struct ComponentInfo {
 	DynamicComponentInfo *dynamic_component_info = nullptr;
 	bool notify_release_write = false;
 	bool is_event = false;
+	bool is_shareable = false;
 
 	DataAccessorFuncs accessor_funcs;
 };
@@ -122,6 +123,7 @@ public:
 	static godex::component_id get_component_id(StringName p_component_name);
 	static StringName get_component_name(godex::component_id p_component_id);
 	static bool is_component_events(godex::component_id p_component_id);
+	static bool is_component_sharable(godex::component_id p_component_id);
 	static bool storage_notify_release_write(godex::component_id p_component_id);
 
 	static const LocalVector<PropertyInfo> *get_component_properties(godex::component_id p_component_id);
@@ -275,26 +277,41 @@ void ECS::register_component() {
 
 template <class C>
 void ECS::register_component(StorageBase *(*create_storage)()) {
-	if (std::is_trivially_copyable<C>::value == false)
-		WARN_PRINT("The component " + C::get_class_static() + " is not trivial copyable");
-	if (std::is_trivially_destructible<C>::value == false)
-		WARN_PRINT("The component " + C::get_class_static() + " is not trivial destructible");
-	if (std::is_trivially_copy_assignable<C>::value == false)
-		WARN_PRINT("The component " + C::get_class_static() + " is not trivial copy assignable");
-	if (std::is_trivially_move_assignable<C>::value == false)
-		WARN_PRINT("The component " + C::get_class_static() + " is not trivial move assignable");
-	if (std::is_trivially_move_constructible<C>::value == false)
-		WARN_PRINT("The component " + C::get_class_static() + " is not trivial move constructible");
-
-	ERR_FAIL_COND_MSG(C::get_component_id() != UINT32_MAX, "This component is already registered.");
-
 	bool notify_release_write = false;
+	bool shared_component_storage = false;
+	bool steady = false;
 	{
 		// This storage wants to be notified once the write object is released?
 		StorageBase *s = create_storage();
 		notify_release_write = s->notify_release_write();
+
+		if (dynamic_cast<SharedStorage<C> *>(s) != nullptr) {
+			// This is a shared component storage
+			shared_component_storage = true;
+		}
+
+		steady = s->is_steady();
+
 		memdelete(s);
 	}
+
+	if (steady == false) {
+		// The comopnent is using a storage that is not steady; it moves the
+		// `Component` when it has to resize its internal memory.
+		// So better to notify the user if the `Component` is not trivial.
+		if (std::is_trivially_copyable<C>::value == false)
+			WARN_PRINT("The component " + C::get_class_static() + " is not trivial copyable");
+		if (std::is_trivially_destructible<C>::value == false)
+			WARN_PRINT("The component " + C::get_class_static() + " is not trivial destructible");
+		if (std::is_trivially_copy_assignable<C>::value == false)
+			WARN_PRINT("The component " + C::get_class_static() + " is not trivial copy assignable");
+		if (std::is_trivially_move_assignable<C>::value == false)
+			WARN_PRINT("The component " + C::get_class_static() + " is not trivial move assignable");
+		if (std::is_trivially_move_constructible<C>::value == false)
+			WARN_PRINT("The component " + C::get_class_static() + " is not trivial move constructible");
+	}
+
+	ERR_FAIL_COND_MSG(C::get_component_id() != UINT32_MAX, "This component is already registered.");
 
 	StringName component_name = C::get_class_static();
 	C::component_id = components.size();
@@ -316,6 +333,7 @@ void ECS::register_component(StorageBase *(*create_storage)()) {
 					nullptr,
 					notify_release_write,
 					false,
+					shared_component_storage,
 					DataAccessorFuncs{
 							C::get_properties,
 							C::get_property_default,

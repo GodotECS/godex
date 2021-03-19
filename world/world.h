@@ -190,13 +190,13 @@ public:
 	/// Retuns a databag pointer.
 	const godex::Databag *get_databag(godex::databag_id p_id) const;
 
-private:
 	/// Creates a new component storage into the world, if the storage
 	/// already exists, does nothing.
 	template <class C>
 	void create_storage();
 	void create_storage(uint32_t p_component_id);
 
+private:
 	/// Destroy a component storage if exists.
 	// TODO when this is called?
 	template <class C>
