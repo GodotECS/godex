@@ -69,7 +69,7 @@ void EntityEditor::update_editors() {
 		}
 
 		// Make sure to load all the components.
-		const LocalVector<Ref<Component>> &scripts = ScriptECS::get_components();
+		const LocalVector<Ref<Component>> &scripts = EditorEcs::get_components();
 		for (uint32_t i = 0; i < scripts.size(); i += 1) {
 			add_component_menu->get_popup()->add_item(scripts[i]->get_name());
 		}
@@ -109,18 +109,7 @@ void EntityEditor::update_editors() {
 void EntityEditor::create_component_inspector(StringName p_component_name, VBoxContainer *p_container) {
 	List<PropertyInfo> properties;
 
-	if (String(p_component_name).ends_with(".gd")) {
-		const uint32_t id = ScriptECS::get_component_id(p_component_name);
-		if (id != UINT32_MAX) {
-			Ref<Component> component = ScriptECS::get_component(id);
-			component->get_component_property_list(&properties);
-		}
-	} else {
-		const LocalVector<PropertyInfo> *props = ECS::get_component_properties(ECS::get_component_id(p_component_name));
-		for (uint32_t i = 0; i < props->size(); i += 1) {
-			properties.push_back((*props)[i]);
-		}
-	}
+	EditorEcs::component_get_properties(p_component_name, properties);
 
 	const float default_float_step = EDITOR_GET("interface/inspector/default_float_step");
 

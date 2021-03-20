@@ -41,7 +41,7 @@ public:
 			}
 		} else {
 			// Load the Scripted Components/Databags/Systems
-			ScriptECS::register_runtime_scripts();
+			EditorEcs::register_runtime_scripts();
 		}
 	}
 };
@@ -64,7 +64,7 @@ void ecs_register_godot_types() {
 	}
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Register engine components
-	ECS::register_component<Child>([]() -> StorageBase * { return memnew(Hierarchy); });
+	ECS::register_component<Child>([]() -> StorageBase * { return new Hierarchy; });
 	ECS::register_component<Disabled>();
 	ECS::register_component<MeshComponent>();
 	ECS::register_component<TransformComponent>();
@@ -107,7 +107,7 @@ void ecs_register_godot_types() {
 
 void ecs_unregister_godot_types() {
 	// Clear ScriptECS static memory.
-	ScriptECS::__static_destructor();
+	EditorEcs::__static_destructor();
 
 	memdelete(rep);
 	rep = nullptr;

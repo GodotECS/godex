@@ -2,7 +2,6 @@
 
 #include "../../components/component.h"
 #include "../../storage/shared_steady_storage.h"
-#include "../../storage/steady_storage.h"
 #include <btBulletCollisionCommon.h>
 
 struct BtRigidShape {
@@ -33,7 +32,7 @@ public:
 };
 
 struct BtShapeBox : public BtRigidShape {
-	COMPONENT_CUSTOM_CONSTRUCTOR(BtShapeBox, SteadyStorage) // TODO Please used the SharedComponent instead.
+	COMPONENT_CUSTOM_CONSTRUCTOR(BtShapeBox, SharedSteadyStorage) // TODO Please used the SharedComponent instead.
 
 	static void _bind_methods();
 	static void _get_storage_config(Dictionary &r_config);
@@ -51,7 +50,7 @@ struct BtShapeBox : public BtRigidShape {
 };
 
 struct BtShapeSphere : public BtRigidShape {
-	COMPONENT_CUSTOM_CONSTRUCTOR(BtShapeSphere, SteadyStorage) // TODO Please use SharedComponent
+	COMPONENT_CUSTOM_CONSTRUCTOR(BtShapeSphere, SharedSteadyStorage) // TODO Please use SharedComponent
 
 	btSphereShape sphere = btSphereShape(1.0);
 

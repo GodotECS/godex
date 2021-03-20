@@ -1136,44 +1136,25 @@ void EditorWorldECS::add_script_do() {
 
 	String err = "";
 	if ("System" == script->get_instance_base_type()) {
-		err = System::validate_script(script);
+		err = EditorEcs::system_save_script(script_path, script);
+
 	} else if ("Component" == script->get_instance_base_type()) {
-		err = Component::validate_script(script);
+		err = EditorEcs::component_save_script(script_path, script);
+
 	} else if ("Databag" == script->get_instance_base_type()) {
 		err = databag_validate_script(script);
+
 	} else {
 		err = TTR("The script must extend a `System` a `Component` or a `Databag`.");
 	}
 
 	if (err != "") {
-		add_script_error_lbl->set_text(String(TTR("The script [")) + script_path + String(TTR("] validation failed: ")) + err);
+		add_script_error_lbl->set_text(err);
 		add_script_error_lbl->show();
-		return;
+	} else {
+		add_script_path->set_text("");
+		add_script_window->set_visible(false);
 	}
-
-	// The script is valid, store it.
-	const String script_setting_path = "ECS/" + script->get_instance_base_type() + "/scripts";
-	Array scripts;
-	if (ProjectSettings::get_singleton()->has_setting(script_setting_path)) {
-		scripts = ProjectSettings::get_singleton()->get_setting(script_setting_path);
-	}
-
-	// Check if this system already exists.
-
-	if (scripts.find(script_path) >= 0) {
-		add_script_error_lbl->set_text(String(TTR("The")) + " " + String(script->get_instance_base_type()) + " [" + script_path + "] " + TTR("is already registered."));
-		add_script_error_lbl->show();
-		return;
-	}
-
-	scripts.push_back(script_path);
-
-	ProjectSettings::get_singleton()->set_setting(script_setting_path, scripts);
-	// Make this component available to the system.
-	ScriptECS::reload_component(script_path);
-
-	add_script_path->set_text("");
-	add_script_window->set_visible(false);
 }
 
 void EditorWorldECS::components_manage_show() {
