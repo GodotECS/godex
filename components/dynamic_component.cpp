@@ -2,6 +2,8 @@
 
 #include "../storage/dense_vector_storage.h"
 
+#define godex_new(clazz) new clazz
+
 DynamicComponentInfo::DynamicComponentInfo() {
 }
 
@@ -11,47 +13,47 @@ StorageBase *DynamicComponentInfo::create_storage() {
 			// Creates DynamicDenseVector storage.
 			switch (properties.size()) {
 				case 0:
-					return memnew(DynamicDenseVectorStorage<ZeroVariantComponent>(this));
+					return godex_new(DynamicDenseVectorStorage<ZeroVariantComponent>(this));
 				case 1:
-					return memnew(DynamicDenseVectorStorage<VariantComponent<1>>(this));
+					return godex_new(DynamicDenseVectorStorage<VariantComponent<1>>(this));
 				case 2:
-					return memnew(DynamicDenseVectorStorage<VariantComponent<2>>(this));
+					return godex_new(DynamicDenseVectorStorage<VariantComponent<2>>(this));
 				case 3:
-					return memnew(DynamicDenseVectorStorage<VariantComponent<3>>(this));
+					return godex_new(DynamicDenseVectorStorage<VariantComponent<3>>(this));
 				case 4:
-					return memnew(DynamicDenseVectorStorage<VariantComponent<4>>(this));
+					return godex_new(DynamicDenseVectorStorage<VariantComponent<4>>(this));
 				case 5:
-					return memnew(DynamicDenseVectorStorage<VariantComponent<5>>(this));
+					return godex_new(DynamicDenseVectorStorage<VariantComponent<5>>(this));
 				case 6:
-					return memnew(DynamicDenseVectorStorage<VariantComponent<6>>(this));
+					return godex_new(DynamicDenseVectorStorage<VariantComponent<6>>(this));
 				case 7:
-					return memnew(DynamicDenseVectorStorage<VariantComponent<7>>(this));
+					return godex_new(DynamicDenseVectorStorage<VariantComponent<7>>(this));
 				case 8:
-					return memnew(DynamicDenseVectorStorage<VariantComponent<8>>(this));
+					return godex_new(DynamicDenseVectorStorage<VariantComponent<8>>(this));
 				case 9:
-					return memnew(DynamicDenseVectorStorage<VariantComponent<9>>(this));
+					return godex_new(DynamicDenseVectorStorage<VariantComponent<9>>(this));
 				case 10:
-					return memnew(DynamicDenseVectorStorage<VariantComponent<10>>(this));
+					return godex_new(DynamicDenseVectorStorage<VariantComponent<10>>(this));
 				case 11:
-					return memnew(DynamicDenseVectorStorage<VariantComponent<11>>(this));
+					return godex_new(DynamicDenseVectorStorage<VariantComponent<11>>(this));
 				case 12:
-					return memnew(DynamicDenseVectorStorage<VariantComponent<12>>(this));
+					return godex_new(DynamicDenseVectorStorage<VariantComponent<12>>(this));
 				case 13:
-					return memnew(DynamicDenseVectorStorage<VariantComponent<13>>(this));
+					return godex_new(DynamicDenseVectorStorage<VariantComponent<13>>(this));
 				case 14:
-					return memnew(DynamicDenseVectorStorage<VariantComponent<14>>(this));
+					return godex_new(DynamicDenseVectorStorage<VariantComponent<14>>(this));
 				case 15:
-					return memnew(DynamicDenseVectorStorage<VariantComponent<15>>(this));
+					return godex_new(DynamicDenseVectorStorage<VariantComponent<15>>(this));
 				case 16:
-					return memnew(DynamicDenseVectorStorage<VariantComponent<16>>(this));
+					return godex_new(DynamicDenseVectorStorage<VariantComponent<16>>(this));
 				case 17:
-					return memnew(DynamicDenseVectorStorage<VariantComponent<17>>(this));
+					return godex_new(DynamicDenseVectorStorage<VariantComponent<17>>(this));
 				case 18:
-					return memnew(DynamicDenseVectorStorage<VariantComponent<18>>(this));
+					return godex_new(DynamicDenseVectorStorage<VariantComponent<18>>(this));
 				case 19:
-					return memnew(DynamicDenseVectorStorage<VariantComponent<19>>(this));
+					return godex_new(DynamicDenseVectorStorage<VariantComponent<19>>(this));
 				case 20:
-					return memnew(DynamicDenseVectorStorage<VariantComponent<20>>(this));
+					return godex_new(DynamicDenseVectorStorage<VariantComponent<20>>(this));
 			}
 			CRASH_NOW_MSG("Components with more than 20 variables are not suppported. Please open an issue https://github.com/GodotECS/godex/issues if you need to support more.");
 			break;

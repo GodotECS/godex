@@ -47,7 +47,7 @@ World::World() {
 World::~World() {
 	for (uint32_t i = 0; i < storages.size(); i += 1) {
 		if (storages[i]) {
-			memdelete(storages[i]);
+			delete storages[i];
 		}
 	}
 	for (uint32_t i = 0; i < databags.size(); i += 1) {
@@ -191,7 +191,7 @@ void World::destroy_storage(uint32_t p_component_id) {
 		return;
 	}
 
-	memdelete(storages[p_component_id]);
+	delete storages[p_component_id];
 	storages[p_component_id] = nullptr;
 }
 

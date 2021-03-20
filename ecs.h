@@ -292,7 +292,7 @@ void ECS::register_component(StorageBase *(*create_storage)()) {
 
 		steady = s->is_steady();
 
-		memdelete(s);
+		delete s;
 	}
 
 	if (steady == false) {

@@ -37,7 +37,7 @@ public:                                                         \
 private:                                                               \
 	/* Storages */                                                     \
 	static _FORCE_INLINE_ m_storage_class<m_class> *create_storage() { \
-		return memnew(m_storage_class<m_class>);                       \
+		return new m_storage_class<m_class>;                           \
 	}                                                                  \
 	static _FORCE_INLINE_ StorageBase *create_storage_no_type() {      \
 		/* Creates a storage but returns a generic component. */       \
@@ -70,8 +70,7 @@ private:                                  \
 private:                                                                                      \
 	/* Storages */                                                                            \
 	static _FORCE_INLINE_ BatchStorage<m_storage_class, m_batch, m_class> *create_storage() { \
-		/* mimics `memnew` that can't be used due to compile error with `memnew` macro.*/     \
-		return _post_initialize(new ("") BatchStorage<m_storage_class, m_batch, m_class>);    \
+		return new BatchStorage<m_storage_class, m_batch, m_class>;                           \
 	}                                                                                         \
 	static _FORCE_INLINE_ StorageBase *create_storage_no_type() {                             \
 		/* Creates a storage but returns a generic component. */                              \
