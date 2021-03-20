@@ -285,17 +285,17 @@ Ref<Component> EditorEcs::get_script_component(const StringName &p_name) {
 	return index < 0 ? Ref<Component>() : components[index];
 }
 
-void EditorEcs::component_get_properties(const StringName &p_component_name, List<PropertyInfo> &r_properties) {
+void EditorEcs::component_get_properties(const StringName &p_component_name, List<PropertyInfo> *r_properties) {
 	if (Engine::get_singleton()->is_editor_hint() &&
 			is_script_component(p_component_name)) {
 		Ref<Component> component = EditorEcs::get_script_component(p_component_name);
 		if (component.is_valid()) {
-			component->get_component_property_list(&r_properties);
+			component->get_component_property_list(r_properties);
 		}
 	} else {
 		const LocalVector<PropertyInfo> *props = ECS::get_component_properties(ECS::get_component_id(p_component_name));
 		for (uint32_t i = 0; i < props->size(); i += 1) {
-			r_properties.push_back((*props)[i]);
+			r_properties->push_back((*props)[i]);
 		}
 	}
 }
@@ -303,10 +303,16 @@ void EditorEcs::component_get_properties(const StringName &p_component_name, Lis
 bool EditorEcs::component_get_property_default_value(const StringName &p_component_name, const StringName &p_property_name, Variant &r_ret) {
 	if (Engine::get_singleton()->is_editor_hint() &&
 			is_script_component(p_component_name)) {
-		// This is a Script Component and we are on editor.
-		Ref<Component> c = get_script_component(p_component_name);
-		r_ret = c->get_property_default_value(p_property_name);
-		return true;
+		if (component_is_shared(p_component_name)) {
+			// TODO by default the shared component is null?
+			r_ret = Variant();
+			return true;
+		} else {
+			// This is a Script Component and we are on editor.
+			Ref<Component> c = get_script_component(p_component_name);
+			r_ret = c->get_property_default_value(p_property_name);
+			return true;
+		}
 	} else {
 		// We are not on editor or this is a native component.
 		const godex::component_id id = ECS::get_component_id(p_component_name);

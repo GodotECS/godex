@@ -123,7 +123,7 @@ public:
 	/// Returns a script component.
 	static Ref<Component> get_script_component(const StringName &p_name);
 
-	static void component_get_properties(const StringName &p_component_name, List<PropertyInfo> &r_properties);
+	static void component_get_properties(const StringName &p_component_name, List<PropertyInfo> *r_properties);
 	static bool component_get_property_default_value(const StringName &p_component_name, const StringName &p_property_name, Variant &r_ret);
 	static bool component_is_shared(const StringName &p_component_name);
 

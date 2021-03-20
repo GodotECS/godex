@@ -17,6 +17,9 @@ class SharedComponentResource : public Resource {
 	GDCLASS(SharedComponentResource, Resource)
 
 	static void _bind_methods();
+	bool _set(const StringName &p_name, const Variant &p_property);
+	bool _get(const StringName &p_name, Variant &r_property) const;
+	void _get_property_list(List<PropertyInfo> *p_list) const;
 
 	StringName component_name;
 
@@ -34,6 +37,7 @@ public:
 	/// This function must be called just after a new resource is created.
 	/// Note, no need to call this if you are duplicating the resource.
 	void init(const StringName &p_component_name);
+	bool is_init() const;
 
 	/// Returns the `SID` for this world. Creates one if it has none yet.
 	godex::SID get_sid(World *p_world);
