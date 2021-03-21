@@ -14,6 +14,7 @@
 #include "nodes/ecs_utilities.h"
 #include "nodes/ecs_world.h"
 #include "nodes/entity.h"
+#include "nodes/shared_component_resource.h"
 #include "systems/mesh_updater_system.h"
 #include "systems/physics_process_system.h"
 
@@ -40,7 +41,7 @@ public:
 			}
 		} else {
 			// Load the Scripted Components/Databags/Systems
-			ScriptECS::register_runtime_scripts();
+			EditorEcs::register_runtime_scripts();
 		}
 	}
 };
@@ -63,7 +64,7 @@ void ecs_register_godot_types() {
 	}
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Register engine components
-	ECS::register_component<Child>([]() -> StorageBase * { return memnew(Hierarchy); });
+	ECS::register_component<Child>([]() -> StorageBase * { return new Hierarchy; });
 	ECS::register_component<Disabled>();
 	ECS::register_component<MeshComponent>();
 	ECS::register_component<TransformComponent>();
@@ -100,11 +101,13 @@ void ecs_register_godot_types() {
 		create_physics_system_dispatcher(ECS::get_dynamic_system_info(id));
 	}
 	ECS::register_system(step_physics_server_3d, "StepPhysicsServer3D", "Steps the PhysicsServer3D.");
+
+	ClassDB::register_class<SharedComponentResource>();
 }
 
 void ecs_unregister_godot_types() {
 	// Clear ScriptECS static memory.
-	ScriptECS::__static_destructor();
+	EditorEcs::__static_destructor();
 
 	memdelete(rep);
 	rep = nullptr;

@@ -30,7 +30,15 @@ public:
 	virtual ~StorageBase() {}
 	virtual String get_type_name() const { return "Overload this function `get_type_name()` please."; }
 
+	/// If a `Storage` set this to true, Godex will notify it once the `System`
+	/// has finished using the storage.
 	virtual bool notify_release_write() const {
+		return false;
+	}
+
+	/// A storage return true when the component memory location never changes
+	/// once allocated.
+	virtual bool is_steady() const {
 		return false;
 	}
 
@@ -226,11 +234,11 @@ public:
 	}
 };
 
-/// Base storage for shared components.
-template <class T>
-class SharedStorage : public Storage<T> {
+class SharedStorageBase {
 public:
-	virtual godex::SID create_shared_component(const T &p_data) {
+	virtual ~SharedStorageBase() {}
+
+	virtual godex::SID create_shared_component_dynamic(const Dictionary &p_data) {
 		CRASH_NOW_MSG("Please override this function.");
 		return UINT32_MAX;
 	}
@@ -247,6 +255,16 @@ public:
 	virtual void insert(EntityID p_entity, godex::SID p_id) {
 		CRASH_NOW_MSG("Please override this function.");
 	}
+};
+
+/// Base storage for shared components.
+template <class T>
+class SharedStorage : public SharedStorageBase, public Storage<T> {
+public:
+	virtual godex::SID create_shared_component(const T &p_data) {
+		CRASH_NOW_MSG("Please override this function.");
+		return UINT32_MAX;
+	}
 
 	virtual T *get_shared_component(godex::SID p_id) {
 		CRASH_NOW_MSG("Please override this function.");
@@ -259,6 +277,20 @@ public:
 	}
 
 public:
+	// Override SharedStorageBase
+	virtual godex::SID create_shared_component_dynamic(const Dictionary &p_data) override final {
+		T insert_data;
+
+		// Set the custom data if any.
+		for (const Variant *key = p_data.next(); key; key = p_data.next(key)) {
+			T::set_by_name((void *)&insert_data, StringName(*key), *p_data.getptr(*key));
+		}
+
+		return create_shared_component(insert_data);
+	}
+
+public:
+	// Override Storage<T>
 	virtual void insert(EntityID, const T &) override final {
 		ERR_PRINT("This component is stored inside a SharedStorage, so you can't just insert the data using the normal `insert` function. Check the documentation.");
 	}

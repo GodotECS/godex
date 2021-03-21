@@ -14,7 +14,7 @@ class DynamicSystemInfo;
 class System : public Resource {
 	GDCLASS(System, Resource);
 
-	friend class ScriptECS;
+	friend class EditorEcs;
 
 	godex::DynamicSystemInfo *info = nullptr;
 	godex::system_id id = UINT32_MAX;
@@ -55,7 +55,7 @@ VARIANT_ENUM_CAST(System::Mutability);
 class Component : public Resource {
 	GDCLASS(Component, Resource);
 
-	friend class ScriptECS;
+	friend class EditorEcs;
 
 	StringName name;
 	Ref<Script> component_script;
@@ -81,9 +81,20 @@ public:
 
 String databag_validate_script(Ref<Script> p_script);
 
-/// Utility that allow to handle the godot scripted Component, Databags, Systems.
-class ScriptECS {
+/// This is an utility that is intended for in editor usage that allow:
+/// - Save script components.
+/// - Load script components.
+/// - Get script components properties.
+/// - Save script databags.
+/// - Load script databags.
+/// - Save script systems.
+/// - Load script systems.
+class EditorEcs {
+	/// Used to know if the previously stored `Component`s got loaded.
 	static bool component_loaded;
+	/// Used to know if the previously stored `System`s got loaded.
+	static bool systems_loaded;
+	/// Used to know if the ScriptedEcs components are registered.
 	static bool ecs_initialized;
 
 	static LocalVector<StringName> component_names;
@@ -93,6 +104,7 @@ class ScriptECS {
 	static LocalVector<Ref<System>> systems;
 
 public:
+	// ---------------------------------------------------------------- Component
 	/// Clear the internal memory before the complete shutdown.
 	static void __static_destructor();
 
@@ -100,18 +112,47 @@ public:
 	static void load_components();
 
 	/// Load or Reloads a component. Retuns the component id.
-	static uint32_t reload_component(const String &p_path);
+	static StringName reload_component(const String &p_path);
 
-	static uint32_t get_component_id(const StringName &p_name);
-
+	/// Returns all the scripted components.
 	static const LocalVector<Ref<Component>> &get_components();
 
-	static Ref<Component> get_component(uint32_t p_id);
+	/// Returns `true` if the given name points to a scripted component.
+	static bool is_script_component(const StringName &p_name);
+
+	/// Returns a script component.
+	static Ref<Component> get_script_component(const StringName &p_name);
+
+	static void component_get_properties(const StringName &p_component_name, List<PropertyInfo> *r_properties);
+	static bool component_get_property_default_value(const StringName &p_component_name, const StringName &p_property_name, Variant &r_ret);
+	static bool component_is_shared(const StringName &p_component_name);
+
+	/// Store this script as component.
+	/// Returns an empty string if succeede or the error message to disaply.
+	/// Must be used in editor.
+	static String component_save_script(const String &p_script_path, Ref<Script> p_script);
+
+	// ------------------------------------------------------------------ Databag
+
+	// ------------------------------------------------------------------- System
+
+	/// Loads systems.
+	static void load_systems();
+
+	static StringName reload_system(const String &p_path);
+	static bool is_script_system(const StringName &p_name);
+
+	/// Store this script as System.
+	/// Returns an empty string if succeede or the error message to disaply.
+	/// Must be used in editor.
+	static String system_save_script(const String &p_script_path, Ref<Script> p_script);
+
+	// ------------------------------------------------------------------ Runtime
 
 	static void register_runtime_scripts();
 	static void register_dynamic_components();
-
-	static uint32_t reload_system(const String &p_path);
-	static uint32_t get_system_id(const StringName &p_name);
 	static void register_dynamic_systems();
+
+private:
+	static bool save_script(const String &p_setting_list_name, const String &p_script_path);
 };

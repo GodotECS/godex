@@ -31,6 +31,10 @@ public:
 		return "SteadyStorage[" + String(typeid(T).name()) + "]";
 	}
 
+	virtual bool is_steady() const override {
+		return true;
+	}
+
 	virtual void insert(EntityID p_entity, const T &p_data) override {
 		T *d = allocator.alloc();
 		*d = p_data;

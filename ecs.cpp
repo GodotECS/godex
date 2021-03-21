@@ -90,6 +90,11 @@ bool ECS::is_component_events(godex::component_id p_component_id) {
 	return components_info[p_component_id].is_event;
 }
 
+bool ECS::is_component_sharable(godex::component_id p_component_id) {
+	ERR_FAIL_COND_V_MSG(verify_component_id(p_component_id) == false, false, "The component " + itos(p_component_id) + " is invalid.");
+	return components_info[p_component_id].is_shareable;
+}
+
 bool ECS::storage_notify_release_write(godex::component_id p_component_id) {
 	ERR_FAIL_COND_V_MSG(verify_component_id(p_component_id) == false, false, "The component " + itos(p_component_id) + " is invalid.");
 	return components_info[p_component_id].notify_release_write;
@@ -525,6 +530,7 @@ uint32_t ECS::register_script_component(const StringName &p_name, const LocalVec
 					info,
 					false,
 					false,
+					false, // is_shared_component_storage?
 					DataAccessorFuncs() });
 
 	// Add a new scripting constant, for fast and easy `component` access.

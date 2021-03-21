@@ -6,6 +6,7 @@
 #include "ecs_world.h"
 #include "scene/2d/node_2d.h"
 #include "scene/3d/node_3d.h"
+#include "shared_component_resource.h"
 
 class WorldECS;
 class World;
@@ -319,6 +320,7 @@ template <class C>
 bool EntityInternal<C>::_set(const StringName &p_name, const Variant &p_value) {
 	const Vector<String> names = String(p_name).split("/");
 	if (names.size() == 1) {
+		// Set the entire component.
 		return set_component(p_name, p_value);
 	} else {
 		ERR_FAIL_COND_V(names.size() < 2, false);
@@ -391,10 +393,17 @@ void EntityInternal<C>::_notification(int p_what) {
 template <class C>
 void EntityInternal<C>::add_component(const StringName &p_component_name, const Dictionary &p_values) {
 	if (entity_id.is_null()) {
-		components_data[p_component_name] = p_values.duplicate();
-		update_components_data();
-		owner->update_gizmo();
+		// We are on editor.
+		if (EditorEcs::component_is_shared(p_component_name)) {
+			// This is a shared component.
+			components_data[p_component_name] = Variant();
+		} else {
+			components_data[p_component_name] = p_values.duplicate();
+			update_components_data();
+			owner->update_gizmo();
+		}
 	} else {
+		// At runtime during game.
 		const godex::component_id id = ECS::get_component_id(p_component_name);
 		ERR_FAIL_COND_MSG(id == UINT32_MAX, "The component " + p_component_name + " doesn't exists.");
 		ERR_FAIL_COND_MSG(ECS::get_singleton()->has_active_world() == false, "The world is supposed to be active at this point.");
@@ -442,18 +451,42 @@ const Dictionary &EntityInternal<C>::get_components_data() const {
 template <class C>
 bool EntityInternal<C>::set_component_value(const StringName &p_component_name, const StringName &p_property_name, const Variant &p_value, Space p_space) {
 	if (entity_id.is_null()) {
-		ERR_FAIL_COND_V(components_data.has(p_component_name) == false, false);
-		if (components_data[p_component_name].get_type() != Variant::DICTIONARY) {
-			components_data[p_component_name] = Dictionary();
+		// We are on editor or the entity doesn't exist yet.
+
+		if (EditorEcs::component_is_shared(p_component_name)) {
+			// This is a shared component.
+
+			Ref<SharedComponentResource> shared = p_value;
+			if (shared.is_valid()) {
+				// Validate the shared component.
+				if (shared->is_init()) {
+					ERR_FAIL_COND_V_MSG(shared->get_component_name() != p_component_name, false, "The passed component is of type: " + shared->get_component_name() + " while the expected one is of type: " + p_component_name + ".");
+				} else {
+					// This component is new and not even init, so do it now.
+					shared->init(p_component_name);
+				}
+			}
+
+			components_data[p_component_name] = shared;
+
+		} else {
+			// This is a standard component.
+
+			ERR_FAIL_COND_V(components_data.has(p_component_name) == false, false);
+
+			if (components_data[p_component_name].get_type() != Variant::DICTIONARY) {
+				components_data[p_component_name] = Dictionary();
+			}
+			(components_data[p_component_name].operator Dictionary())[p_property_name] = p_value.duplicate();
+			print_line("Component " + p_component_name + " property " + p_property_name + " changed to " + p_value);
+			owner->update_gizmo();
+			// Hack to propagate `Node3D` transform change.
+			if (p_component_name == "TransformComponent" && p_property_name == "transform") {
+				owner->set_transform(p_value);
+			}
+			update_components_data();
 		}
-		(components_data[p_component_name].operator Dictionary())[p_property_name] = p_value.duplicate();
-		print_line("Component " + p_component_name + " property " + p_property_name + " changed to " + p_value);
-		owner->update_gizmo();
-		// Hack to propagate `Node3D` transform change.
-		if (p_component_name == "TransformComponent" && p_property_name == "transform") {
-			owner->set_transform(p_value);
-		}
-		update_components_data();
+
 		return true;
 	} else {
 		// This entity exist, so set it on the World.
@@ -487,30 +520,33 @@ bool EntityInternal<C>::_get_component_value(const StringName &p_component_name,
 		const Variant *component_properties = components_data.getptr(p_component_name);
 		ERR_FAIL_COND_V_MSG(component_properties == nullptr, false, "The component " + p_component_name + " doesn't exist on this entity: " + get_path());
 
-		if (component_properties->get_type() == Variant::DICTIONARY) {
-			const Variant *value = (component_properties->operator Dictionary()).getptr(p_property_name);
-			if (value != nullptr) {
-				// Property is stored, just return it.
-				r_ret = value->duplicate();
+		if (EditorEcs::component_is_shared(p_component_name)) {
+			// This is a shared component, so return it.
+			Ref<SharedComponentResource> shared = *component_properties;
+			if (shared.is_valid() && shared->is_init() && shared->get_component_name() != p_component_name) {
+				// There is something, still it's not valid, so return null.
+				r_ret = Variant();
 				return true;
+			} else {
+				r_ret = shared;
+				return true;
+			}
+		} else {
+			if (component_properties->get_type() == Variant::DICTIONARY) {
+				const Variant *value = (component_properties->operator Dictionary()).getptr(p_property_name);
+				if (value != nullptr) {
+					// Property is stored, just return it.
+					r_ret = value->duplicate();
+					return true;
+				}
 			}
 		}
 
 		// Property was not found, take the default one.
-		if (String(p_component_name).ends_with(".gd")) {
-			// This is a Script Component.
-			const uint32_t id = ScriptECS::get_component_id(p_component_name);
-			ERR_FAIL_COND_V_MSG(id == UINT32_MAX, false, "The script component " + p_component_name + " was not found.");
-			Ref<Component> c = ScriptECS::get_component(id);
-			r_ret = c->get_property_default_value(p_property_name);
-			return true;
-		} else {
-			// This is a native Component.
-			const godex::component_id id = ECS::get_component_id(p_component_name);
-			ERR_FAIL_COND_V_MSG(id == UINT32_MAX, false, "The component " + p_component_name + " doesn't exists.");
-			r_ret = ECS::get_component_property_default(id, p_property_name);
-			return true;
-		}
+		return EditorEcs::component_get_property_default_value(
+				p_component_name,
+				p_property_name,
+				r_ret);
 	} else {
 		// This entity exist on a world, check the value on the world storage.
 
@@ -560,19 +596,18 @@ bool EntityInternal<C>::set_component(const StringName &p_component_name, const 
 template <class C>
 bool EntityInternal<C>::_get_component(const StringName &p_component_name, Variant &r_ret, Space p_space) const {
 	if (entity_id.is_null()) {
-		// Entity is null, so take default or set what we have in `component_data`.
+		// Entity is null, so take default or get what we have in `component_data`.
 		Dictionary dic;
 
 		const Variant *component_properties = components_data.getptr(p_component_name);
 		ERR_FAIL_COND_V_MSG(component_properties == nullptr, Variant(), "The component " + p_component_name + " doesn't exist on this entity: " + get_path());
 
-		if (String(p_component_name).ends_with(".gd")) {
-			// TODO this is simply not optimal.
+		if (EditorEcs::is_script_component(p_component_name)) {
+			// This is a script component.
 
-			// This is a Script Component.
-			const uint32_t id = ScriptECS::get_component_id(p_component_name);
-			ERR_FAIL_COND_V_MSG(id == UINT32_MAX, false, "The script component " + p_component_name + " was not found.");
-			Ref<Component> c = ScriptECS::get_component(id);
+			Ref<Component> c = EditorEcs::get_script_component(p_component_name);
+			ERR_FAIL_COND_V_MSG(c.is_null(), false, "The script component " + p_component_name + " was not found.");
+
 			List<PropertyInfo> properties;
 			c->get_component_property_list(&properties);
 
@@ -582,8 +617,9 @@ bool EntityInternal<C>::_get_component(const StringName &p_component_name, Varia
 					// Just set the value in the data.
 					dic[e->get().name] = value->duplicate();
 				} else {
-					// TODO Instead this is extremely bad.
-					// Just take the default value.
+					// TODO Find a more optimal way to take the default value
+					// from the script component.
+					// Takes the default value.
 					dic[e->get().name] = c->get_property_default_value(e->get().name).duplicate();
 				}
 			}
@@ -600,7 +636,8 @@ bool EntityInternal<C>::_get_component(const StringName &p_component_name, Varia
 					// Just set the value in the data.
 					dic[(*properties)[i].name] = value->duplicate();
 				} else {
-					// TODO Instead this is extremely bad.
+					// TODO Find a more optimal way to take the default value
+					// from the script component.
 					// Just take the default value.
 					dic[(*properties)[i].name] = ECS::get_component_property_default(id, (*properties)[i].name).duplicate();
 				}
@@ -701,11 +738,20 @@ EntityID EntityInternal<C>::_create_entity(World *p_world) const {
 				key != nullptr;
 				key = components_data.next(key)) {
 			const uint32_t component_id = ECS::get_component_id(*key);
-			ERR_CONTINUE(component_id == UINT32_MAX);
-			p_world->add_component(
-					id,
-					component_id,
-					*components_data.getptr(*key));
+			ERR_CONTINUE(component_id == godex::COMPONENT_NONE);
+
+			if (ECS::is_component_sharable(component_id)) {
+				Ref<SharedComponentResource> shared = *components_data.getptr(*key);
+				if (shared.is_valid()) {
+					godex::SID sid = shared->get_sid(p_world);
+					p_world->add_shared_component(id, component_id, sid);
+				}
+			} else {
+				p_world->add_component(
+						id,
+						component_id,
+						*components_data.getptr(*key));
+			}
 		}
 	}
 	return id;
