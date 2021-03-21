@@ -2,6 +2,7 @@
 #define TEST_SHARED_STEADY_STORAGE_H
 
 #include "../components/component.h"
+#include "../ecs.h"
 #include "../storage/shared_steady_storage.h"
 #include "core/math/math_funcs.h"
 
@@ -294,6 +295,122 @@ TEST_CASE("[SharedSteadyStorage] Check memory steadness.") {
 	CHECK(storage.has_shared_component(shared_component_id_8) == false);
 	CHECK(storage.has_shared_component(shared_component_id_9) == false);
 	CHECK(storage.has_shared_component(shared_component_id_10) == false);
+}
+} // namespace godex_ecs_shared_steady_storage_tests
+
+struct SharedComponentTest2 {
+	COMPONENT(SharedComponentTest2, SharedSteadyStorage)
+
+	static void _bind_methods() {
+		ECS_BIND_PROPERTY(SharedComponentTest2, PropertyInfo(Variant::INT, "number"), number);
+	}
+
+	int number = 0;
+};
+
+namespace godex_ecs_shared_steady_storage_tests {
+TEST_CASE("[SharedSteadyStorage] Check World storage usage.") {
+	ECS::register_component<SharedComponentTest2>();
+
+	World world;
+
+	Dictionary sc_1;
+	sc_1["number"] = 10;
+	const godex::SID sid_1 = world.create_shared_component(SharedComponentTest2::get_component_id(), sc_1);
+
+	SharedComponentTest2 sct_2;
+	sct_2.number = 100;
+	const godex::SID sid_2 = world.create_shared_component<SharedComponentTest2>(sct_2);
+
+	const EntityID entity_1 = world
+									  .create_entity()
+									  .with<SharedComponentTest2>(sid_1);
+
+	const EntityID entity_2 = world
+									  .create_entity()
+									  .with<SharedComponentTest2>(sid_1);
+
+	const EntityID entity_3 = world
+									  .create_entity()
+									  .with<SharedComponentTest2>(sid_2);
+
+	const EntityID entity_4 = world
+									  .create_entity()
+									  .with<SharedComponentTest2>(sid_2);
+
+	// Verify the storage has the entities.
+	{
+		SharedStorage<SharedComponentTest2> *storage = world.get_shared_storage<SharedComponentTest2>();
+		CHECK(storage->has(entity_1));
+		CHECK(storage->has(entity_2));
+		CHECK(storage->has(entity_3));
+		CHECK(storage->has(entity_4));
+
+		CHECK(storage->has_shared_component(sid_1));
+		CHECK(storage->has_shared_component(sid_2));
+	}
+
+	// Use also the Base, so to confirm we can use it.
+	{
+		SharedStorageBase *storage = world.get_shared_storage(SharedComponentTest2::get_component_id());
+		CHECK(storage->has_shared_component(sid_1));
+		CHECK(storage->has_shared_component(sid_2));
+	}
+
+	// Make sure the shared component have the desired data.
+	{
+		SharedStorage<SharedComponentTest2> *storage = world.get_shared_storage<SharedComponentTest2>();
+		SharedComponentTest2 *shared_comp_1 = storage->get_shared_component(sid_1);
+		SharedComponentTest2 *shared_comp_2 = storage->get_shared_component(sid_2);
+
+		CHECK(shared_comp_1->number == 10);
+		CHECK(shared_comp_2->number == 100);
+	}
+
+	// Check if fetch works fine and the sharing works too.
+	{
+		Storage<SharedComponentTest2> *storage = world.get_storage<SharedComponentTest2>();
+		CHECK(storage->get(entity_1) == storage->get(entity_2));
+		CHECK(storage->get(entity_3) == storage->get(entity_4));
+		CHECK(storage->get(entity_3) == storage->get(entity_4));
+
+		CHECK(storage->get(entity_1)->number == 10);
+		CHECK(storage->get(entity_3)->number == 100);
+	}
+
+	// Try to mutate one and make sure the change is propagated.
+	{
+		Storage<SharedComponentTest2> *storage = world.get_storage<SharedComponentTest2>();
+		storage->get(entity_1)->number = 11;
+		storage->get(entity_3)->number = 101;
+
+		CHECK(storage->get(entity_1)->number == 11);
+		CHECK(storage->get(entity_2)->number == 11);
+		CHECK(storage->get(entity_3)->number == 101);
+		CHECK(storage->get(entity_4)->number == 101);
+	}
+
+	// Try to mutate using `SID`
+	{
+		SharedStorage<SharedComponentTest2> *storage = world.get_shared_storage<SharedComponentTest2>();
+		SharedComponentTest2 *shared_comp_1 = storage->get_shared_component(sid_1);
+		SharedComponentTest2 *shared_comp_2 = storage->get_shared_component(sid_2);
+
+		CHECK(shared_comp_1->number == 11);
+		CHECK(shared_comp_2->number == 101);
+
+		shared_comp_1->number = 12;
+		shared_comp_2->number = 102;
+	}
+
+	// Now validate the change is propagated.
+	{
+		Storage<SharedComponentTest2> *storage = world.get_storage<SharedComponentTest2>();
+		CHECK(storage->get(entity_1)->number == 12);
+		CHECK(storage->get(entity_2)->number == 12);
+		CHECK(storage->get(entity_3)->number == 102);
+		CHECK(storage->get(entity_4)->number == 102);
+	}
 }
 } // namespace godex_ecs_shared_steady_storage_tests
 

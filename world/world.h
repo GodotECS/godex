@@ -40,6 +40,12 @@ public:
 	const EntityBuilder &with(const C &p_data) const;
 	const EntityBuilder &with(uint32_t p_component_id, const Dictionary &p_data) const;
 
+	template <class C>
+	const EntityBuilder &with(godex::SID p_shared_component) const {
+		return with(C::get_component_id(), p_shared_component);
+	}
+	const EntityBuilder &with(uint32_t p_component_id, godex::SID p_shared_component) const;
+
 	operator EntityID() const {
 		return entity;
 	}
@@ -147,10 +153,15 @@ public:
 	void remove_component(EntityID p_entity, uint32_t p_component_id);
 	bool has_component(EntityID p_entity, uint32_t p_component_id) const;
 
+	template <class C>
+	godex::SID create_shared_component(const C &p_component);
+	godex::SID create_shared_component(uint32_t p_component_id, const Dictionary &p_component_data);
+	void add_shared_component(EntityID p_entity, uint32_t p_component_id, godex::SID p_shared_component_id);
+
 	/// Returns the const storage pointed by the give ID.
 	const StorageBase *get_storage(uint32_t p_storage_id) const;
 
-	/// Returns the storage pointed by the give ID.
+	/// Returns the storage pointed by the given component ID.
 	StorageBase *get_storage(uint32_t p_storage_id);
 
 	/// Returns the constant storage pointer.
@@ -164,6 +175,26 @@ public:
 	/// If the type is wrong, this function crashes.
 	template <class C>
 	Storage<C> *get_storage();
+
+	/// Returns the storage pointed by the given component ID.
+	/// If the storage doesn't exist, or it's not shared, returns null.
+	SharedStorageBase *get_shared_storage(uint32_t p_storage_id);
+
+	/// Returns the storage pointed by the given component ID.
+	/// If the storage doesn't exist, or it's not shared, returns null.
+	const SharedStorageBase *get_shared_storage(uint32_t p_storage_id) const;
+
+	/// Returns the storage pointer.
+	/// If the storage doesn't exist, returns null.
+	/// If the type is wrong, this function crashes.
+	template <class C>
+	SharedStorage<C> *get_shared_storage();
+
+	/// Returns the storage pointer.
+	/// If the storage doesn't exist, returns null.
+	/// If the type is wrong, this function crashes.
+	template <class C>
+	const SharedStorage<const C> *get_shared_storage() const;
 
 	/// Adds a new databag or does nothing.
 	template <class R>
@@ -190,13 +221,13 @@ public:
 	/// Retuns a databag pointer.
 	const godex::Databag *get_databag(godex::databag_id p_id) const;
 
+private:
 	/// Creates a new component storage into the world, if the storage
 	/// already exists, does nothing.
 	template <class C>
 	void create_storage();
 	void create_storage(uint32_t p_component_id);
 
-private:
 	/// Destroy a component storage if exists.
 	// TODO when this is called?
 	template <class C>
@@ -229,6 +260,14 @@ bool World::has_component(EntityID p_entity) const {
 }
 
 template <class C>
+godex::SID World::create_shared_component(const C &p_component_data) {
+	create_storage<C>();
+	SharedStorage<C> *storage = get_shared_storage<C>();
+	ERR_FAIL_COND_V_MSG(storage == nullptr, godex::SID_NONE, "The storage is not supposed to be `nullptr` at this point.");
+	return storage->create_shared_component(p_component_data);
+}
+
+template <class C>
 const Storage<const C> *World::get_storage() const {
 	const uint32_t id = C::get_component_id();
 
@@ -248,6 +287,28 @@ Storage<C> *World::get_storage() {
 	}
 
 	return static_cast<Storage<C> *>(storages[id]);
+}
+
+template <class C>
+SharedStorage<C> *World::get_shared_storage() {
+	const uint32_t id = C::get_component_id();
+
+	if (id >= storages.size()) {
+		return nullptr;
+	}
+
+	return static_cast<SharedStorage<C> *>(storages[id]);
+}
+
+template <class C>
+const SharedStorage<const C> *World::get_shared_storage() const {
+	const uint32_t id = C::get_component_id();
+
+	if (id >= storages.size()) {
+		return nullptr;
+	}
+
+	return static_cast<const SharedStorage<const C> *>(storages[id]);
 }
 
 template <class R>

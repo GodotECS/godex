@@ -240,16 +240,6 @@ public:
 		CRASH_NOW_MSG("Please override this function.");
 		return UINT32_MAX;
 	}
-};
-
-/// Base storage for shared components.
-template <class T>
-class SharedStorage : public SharedStorageBase, public Storage<T> {
-public:
-	virtual godex::SID create_shared_component(const T &p_data) {
-		CRASH_NOW_MSG("Please override this function.");
-		return UINT32_MAX;
-	}
 
 	virtual void free_shared_component(godex::SID p_id) {
 		CRASH_NOW_MSG("Please override this function.");
@@ -262,6 +252,16 @@ public:
 
 	virtual void insert(EntityID p_entity, godex::SID p_id) {
 		CRASH_NOW_MSG("Please override this function.");
+	}
+};
+
+/// Base storage for shared components.
+template <class T>
+class SharedStorage : public SharedStorageBase, public Storage<T> {
+public:
+	virtual godex::SID create_shared_component(const T &p_data) {
+		CRASH_NOW_MSG("Please override this function.");
+		return UINT32_MAX;
 	}
 
 	virtual T *get_shared_component(godex::SID p_id) {

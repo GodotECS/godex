@@ -64,18 +64,10 @@ godex::SID SharedComponentResource::get_sid(World *p_world) {
 		return sids[index].sid;
 	} else {
 		const godex::component_id component_id = ECS::get_component_id(component_name);
-		ERR_FAIL_COND_V_MSG(ECS::verify_component_id(component_id) == false, godex::SID_NONE, "You can't get a Shared ID from an invalid component. Component name: '" + component_name + "'");
-		ERR_FAIL_COND_V_MSG(ECS::is_component_sharable(component_id) == false, godex::SID_NONE, "This component is not sharable. You can't obtain a Shared ID. Component name: '" + component_name + "'");
+		const godex::SID sid = p_world->create_shared_component(component_id, component_data);
 
-		// Make sure the storage exist.
-		p_world->create_storage(component_id);
+		ERR_FAIL_COND_V(sid == godex::SID_NONE, godex::SID_NONE);
 
-		// Take the storage, we can use static_cast because `init` make sure
-		// this component is using a `SharedStorage`.
-		SharedStorageBase *storage = (SharedStorageBase *)p_world->get_storage(component_id);
-
-		// Create the component.
-		const godex::SID sid = storage->create_shared_component_dynamic(component_data);
 		sids.push_back({ p_world, sid });
 
 		return sid;

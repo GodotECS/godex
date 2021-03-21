@@ -738,11 +738,20 @@ EntityID EntityInternal<C>::_create_entity(World *p_world) const {
 				key != nullptr;
 				key = components_data.next(key)) {
 			const uint32_t component_id = ECS::get_component_id(*key);
-			ERR_CONTINUE(component_id == UINT32_MAX);
-			p_world->add_component(
-					id,
-					component_id,
-					*components_data.getptr(*key));
+			ERR_CONTINUE(component_id == godex::COMPONENT_NONE);
+
+			if (ECS::is_component_sharable(component_id)) {
+				Ref<SharedComponentResource> shared = *components_data.getptr(*key);
+				if (shared.is_valid()) {
+					godex::SID sid = shared->get_sid(p_world);
+					p_world->add_shared_component(id, component_id, sid);
+				}
+			} else {
+				p_world->add_component(
+						id,
+						component_id,
+						*components_data.getptr(*key));
+			}
 		}
 	}
 	return id;
