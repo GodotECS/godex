@@ -32,7 +32,6 @@ public:                                                         \
 #define COMPONENT_CUSTOM_CONSTRUCTOR(m_class, m_storage_class)         \
 	ECSCLASS(m_class)                                                  \
 	friend class World;                                                \
-	friend class Component;                                            \
                                                                        \
 private:                                                               \
 	/* Storages */                                                     \
@@ -55,7 +54,6 @@ private:                                                               \
 #define COMPONENT_CUSTOM_STORAGE(m_class) \
 	ECSCLASS(m_class)                     \
 	friend class World;                   \
-	friend class Component;               \
                                           \
 private:                                  \
 	COMPONENT_INTERNAL(m_class)           \
@@ -65,7 +63,6 @@ private:                                  \
 #define COMPONENT_BATCH(m_class, m_storage_class, m_batch)                                    \
 	ECSCLASS(m_class)                                                                         \
 	friend class World;                                                                       \
-	friend class Component;                                                                   \
                                                                                               \
 private:                                                                                      \
 	/* Storages */                                                                            \

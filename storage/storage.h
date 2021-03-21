@@ -236,6 +236,8 @@ public:
 
 class SharedStorageBase {
 public:
+	virtual ~SharedStorageBase() {}
+
 	virtual godex::SID create_shared_component_dynamic(const Dictionary &p_data) {
 		CRASH_NOW_MSG("Please override this function.");
 		return UINT32_MAX;

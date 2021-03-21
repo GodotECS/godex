@@ -100,7 +100,6 @@ constexpr system_id SYSTEM_NONE = UINT32_MAX;
 /// Shared Component ID, used to identify a component.
 typedef uint32_t SID;
 constexpr SID SID_NONE = UINT32_MAX;
-
 } // namespace godex
 
 // ~~ PROPERTY MAPPER ~~
