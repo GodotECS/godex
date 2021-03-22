@@ -32,7 +32,7 @@ public:
 };
 
 struct BtShapeBox : public BtRigidShape {
-	COMPONENT_CUSTOM_CONSTRUCTOR(BtShapeBox, SharedSteadyStorage) // TODO Please used the SharedComponent instead.
+	COMPONENT_CUSTOM_CONSTRUCTOR(BtShapeBox, SharedSteadyStorage)
 
 	static void _bind_methods();
 	static void _get_storage_config(Dictionary &r_config);
@@ -50,12 +50,16 @@ struct BtShapeBox : public BtRigidShape {
 };
 
 struct BtShapeSphere : public BtRigidShape {
-	COMPONENT_CUSTOM_CONSTRUCTOR(BtShapeSphere, SharedSteadyStorage) // TODO Please use SharedComponent
+	COMPONENT_CUSTOM_CONSTRUCTOR(BtShapeSphere, SharedSteadyStorage)
+
+	static void _bind_methods();
+	static void _get_storage_config(Dictionary &r_config);
 
 	btSphereShape sphere = btSphereShape(1.0);
 
 	BtShapeSphere() :
 			BtRigidShape(TYPE_SPHERE) {}
 
-	// TODO finalize shape.
+	void set_radius(real_t p_radius);
+	real_t get_radius() const;
 };

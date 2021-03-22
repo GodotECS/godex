@@ -24,7 +24,7 @@ void BtShapeBox::_bind_methods() {
 void BtShapeBox::_get_storage_config(Dictionary &r_config) {
 	/// Configure the storage of this component to have pages of 500 Physis Bodies
 	/// You can tweak this in editor.
-	r_config["page_size"] = 500;
+	r_config["page_size"] = 200;
 }
 
 void BtShapeBox::set_half_extents(const Vector3 &p_half_extends) {
@@ -42,4 +42,22 @@ void BtShapeBox::set_margin(real_t p_margin) {
 
 real_t BtShapeBox::get_margin() const {
 	return box.getMargin();
+}
+
+void BtShapeSphere::_bind_methods() {
+	ECS_BIND_PROPERTY_FUNC(BtShapeSphere, PropertyInfo(Variant::FLOAT, "radius"), set_radius, get_radius);
+}
+
+void BtShapeSphere::_get_storage_config(Dictionary &r_config) {
+	/// Configure the storage of this component to have pages of 500 Physis Bodies
+	/// You can tweak this in editor.
+	r_config["page_size"] = 200;
+}
+
+void BtShapeSphere::set_radius(real_t p_radius) {
+	sphere.setUnscaledRadius(p_radius);
+}
+
+real_t BtShapeSphere::get_radius() const {
+	return sphere.getRadius();
 }
