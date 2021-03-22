@@ -118,18 +118,19 @@ bool BtRigidBody::need_mass_reload() const {
 void BtRigidBody::reload_mass(const btCollisionShape *p_shape) {
 	// Change the mass depending on the Body Mode.
 	const RigidMode mode = get_body_mode();
-	real_t n_mass = mass;
+
+	real_t n_mass = 0;
+	btVector3 local_inertia(0, 0, 0);
+
 	if (mode == RIGID_MODE_DYNAMIC || mode == RIGID_MODE_CHARACTER) {
 		// If Dynamic the mass can't be less than 0.001
-		n_mass = MAX(0.001, n_mass);
-	} else {
-		n_mass = 0;
+		n_mass = MAX(0.001, mass);
+
+		if (p_shape) {
+			p_shape->calculateLocalInertia(n_mass, local_inertia);
+		}
 	}
 
-	btVector3 local_inertia(0, 0, 0);
-	if (p_shape) {
-		p_shape->calculateLocalInertia(n_mass, local_inertia);
-	}
 	body.setMassProps(n_mass, local_inertia);
 
 	reload_flags &= (~RELOAD_FLAGS_MASS);
