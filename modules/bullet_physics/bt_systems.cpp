@@ -19,7 +19,13 @@ void bt_body_config(
 						Changed<BtSpaceMarker>,
 						Join<
 								Changed<BtShapeBox>,
-								Changed<BtShapeSphere>>>,
+								Changed<BtShapeSphere>,
+								Changed<BtShapeCapsule>,
+								Changed<BtShapeCone>,
+								Changed<BtShapeCylinder>,
+								Changed<BtShapeWorldMargin>,
+								Changed<BtShapeConvex>,
+								Changed<BtShapeTrimesh>>>,
 				Maybe<TransformComponent>> &p_query) {
 	for (auto [entity, body, space_marker, shape_container, transform] : p_query) {
 		if (body == nullptr) {
@@ -105,7 +111,7 @@ void bt_spaces_step(
 		const FrameTime *p_iterator_info,
 		// TODO this is not used, though we need it just to be sure they are not
 		// touched by anything else.
-		Query<BtRigidBody, BtShapeBox, BtShapeSphere> &p_query) {
+		Query<BtRigidBody, BtShapeBox, BtShapeSphere, BtShapeCapsule, BtShapeCone, BtShapeCylinder, BtShapeWorldMargin, BtShapeConvex, BtShapeTrimesh> &p_query) {
 	const real_t physics_delta = p_iterator_info->get_physics_delta();
 
 	// TODO consider to create a system for each space? So it has much more control.

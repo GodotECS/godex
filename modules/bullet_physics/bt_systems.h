@@ -21,7 +21,13 @@ void bt_body_config(
 						Changed<BtSpaceMarker>,
 						Join<
 								Changed<BtShapeBox>,
-								Changed<BtShapeSphere>>>,
+								Changed<BtShapeSphere>,
+								Changed<BtShapeCapsule>,
+								Changed<BtShapeCone>,
+								Changed<BtShapeCylinder>,
+								Changed<BtShapeWorldMargin>,
+								Changed<BtShapeConvex>,
+								Changed<BtShapeTrimesh>>>,
 				Maybe<TransformComponent>> &p_query);
 
 // TODO Shape remove from `Entity`
@@ -33,7 +39,7 @@ void bt_spaces_step(
 		const FrameTime *p_iterator_info,
 		// TODO this is not used, though we need it just to be sure they are not
 		// touched by anything else.
-		Query<BtRigidBody, BtShapeBox, BtShapeSphere> &p_query);
+		Query<BtRigidBody, BtShapeBox, BtShapeSphere, BtShapeCapsule, BtShapeCone, BtShapeCylinder, BtShapeWorldMargin, BtShapeConvex, BtShapeTrimesh> &p_query);
 
 void bt_body_sync(
 		BtPhysicsSpaces *p_spaces,
