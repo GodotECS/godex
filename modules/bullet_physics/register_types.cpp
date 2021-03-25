@@ -15,6 +15,12 @@ void ecs_register_bullet_physics_types() {
 	// Shapes
 	ECS::register_component<BtShapeBox>();
 	ECS::register_component<BtShapeSphere>();
+	ECS::register_component<BtShapeCapsule>();
+	ECS::register_component<BtShapeCone>();
+	ECS::register_component<BtShapeCylinder>();
+	ECS::register_component<BtShapeWorldMargin>();
+	ECS::register_component<BtShapeConvex>();
+	ECS::register_component<BtShapeTrimesh>();
 
 	// Register `System`s
 	ECS::register_system(bt_body_config, "BtBodyConfig", "Bullet Physics - Manage the lifetime of the Bodies");
