@@ -199,7 +199,7 @@ public:
 
 		// Set the custom data if any.
 		for (const Variant *key = p_data.next(); key; key = p_data.next(key)) {
-			T::set_by_name((void *)&insert_data, StringName(*key), *p_data.getptr(*key));
+			T::set_by_name((void *)&insert_data, key->operator StringName(), *p_data.getptr(*key));
 		}
 
 		insert(p_entity, insert_data);
@@ -279,14 +279,19 @@ public:
 public:
 	// Override SharedStorageBase
 	virtual godex::SID create_shared_component_dynamic(const Dictionary &p_data) override final {
-		T insert_data;
+		// Create a new data inside the storage and take it back.
+		const godex::SID sid = create_shared_component(T());
+		T *data = get_shared_component(sid);
 
 		// Set the custom data if any.
+		// Setting it at this point because the SharedComponents are likely be
+		// big storages, so it's better to assigne the data after its creation
+		// and so avoid useless copy.
 		for (const Variant *key = p_data.next(); key; key = p_data.next(key)) {
-			T::set_by_name((void *)&insert_data, StringName(*key), *p_data.getptr(*key));
+			T::set_by_name((void *)data, key->operator StringName(), *p_data.getptr(*key));
 		}
 
-		return create_shared_component(insert_data);
+		return sid;
 	}
 
 public:
