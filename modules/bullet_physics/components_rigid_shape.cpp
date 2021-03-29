@@ -1,5 +1,8 @@
 #include "components_rigid_shape.h"
 
+#include "modules/bullet/bullet_types_converter.h"
+#include <stdio.h>
+
 btCollisionShape *BtRigidShape::get_shape() {
 	switch (type) {
 		case TYPE_BOX:
@@ -185,13 +188,72 @@ void BtShapeWorldMargin::_get_storage_config(Dictionary &r_config) {
 	r_config["page_size"] = 4;
 }
 
+BtShapeConvex::BtShapeConvex(const BtShapeConvex &p_other) :
+		BtRigidShape(TYPE_CONVEX) {
+	operator=(p_other);
+}
+
+BtShapeConvex &BtShapeConvex::operator=(const BtShapeConvex &p_other) {
+	point_count = p_other.point_count;
+
+	if (point_count > 0) {
+		points = (btVector3 *)memrealloc(points, point_count * sizeof(btVector3));
+		memcpy(points, p_other.points, point_count * sizeof(btVector3));
+	}
+
+	update_internal_shape();
+	return *this;
+}
+
+BtShapeConvex::~BtShapeConvex() {
+	if (points != nullptr) {
+		memdelete(points);
+	}
+}
+
 void BtShapeConvex::_bind_methods() {
+	ECS_BIND_PROPERTY_FUNC(BtShapeConvex, PropertyInfo(Variant::ARRAY, "points"), set_points, get_points);
 }
 
 void BtShapeConvex::_get_storage_config(Dictionary &r_config) {
 	/// Configure the storage of this component to have pages of 500 Physis Bodies
 	/// You can tweak this in editor.
 	r_config["page_size"] = 200;
+}
+
+void BtShapeConvex::set_points(const Vector<Vector3> &p_points) {
+	point_count = p_points.size();
+	if (point_count == 0 && points != nullptr) {
+		memdelete(points);
+		points = nullptr;
+	} else {
+		points = (btVector3 *)memrealloc(points, point_count * sizeof(btVector3));
+
+		for (int i = 0; i < p_points.size(); i += 1) {
+			G_TO_B(p_points[i], points[i]);
+		}
+	}
+
+	update_internal_shape();
+}
+
+Vector<Vector3> BtShapeConvex::get_points() const {
+	Vector<Vector3> ret;
+	ret.resize(point_count);
+	Vector3 *ptrw = ret.ptrw();
+	for (uint32_t i = 0; i < point_count; i += 1) {
+		B_TO_G(points[i], ptrw[i]);
+	}
+	return ret;
+}
+
+void BtShapeConvex::update_internal_shape() {
+	const btVector3 local_scaling(1.0, 1.0, 1.0);
+	if (point_count == 0) {
+		convex.setPoints(nullptr, 0, true, local_scaling);
+	} else {
+		convex.setPoints(points, point_count, true, local_scaling);
+	}
 }
 
 void BtShapeTrimesh::_bind_methods() {

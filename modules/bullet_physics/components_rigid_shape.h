@@ -149,10 +149,21 @@ struct BtShapeConvex : public BtRigidShape {
 	static void _bind_methods();
 	static void _get_storage_config(Dictionary &r_config);
 
+	btVector3 *points = nullptr;
+	uint32_t point_count = 0;
 	btConvexPointCloudShape convex = btConvexPointCloudShape();
 
 	BtShapeConvex() :
 			BtRigidShape(TYPE_CONVEX) {}
+	// Copy constructor is needed because I'm dealing with pointers here.
+	BtShapeConvex(const BtShapeConvex &p_other);
+	BtShapeConvex &operator=(const BtShapeConvex &p_other);
+	~BtShapeConvex();
+
+	void set_points(const Vector<Vector3> &p_points);
+	Vector<Vector3> get_points() const;
+
+	void update_internal_shape();
 };
 
 struct BtShapeTrimesh : public BtRigidShape {
