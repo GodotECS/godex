@@ -5,6 +5,7 @@ on: [push, pull_request]
 # SCONS_CACHE for windows must be set in the build environment
 env:
   GODOT_BASE_BRANCH: master
+  CACHE_VERSION: 2
   SCONSFLAGS: platform=windows verbose=yes warnings=all werror=yes --jobs=2 module_text_server_fb_enabled=yes
   SCONS_CACHE_MSVC_CONFIG: true
   SCONS_CACHE_LIMIT: 3072
@@ -41,7 +42,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: /.scons_cache/
-        key: ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+        key: ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{env.CACHE_VERSION}}-${{github.ref}}-${{github.sha}}
         restore-keys: |
           ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
           ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}
