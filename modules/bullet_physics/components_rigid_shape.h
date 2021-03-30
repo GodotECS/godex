@@ -172,9 +172,14 @@ struct BtShapeTrimesh : public BtRigidShape {
 	static void _bind_methods();
 	static void _get_storage_config(Dictionary &r_config);
 
-	// TODO can we don't use a pointer here?
+	Vector<Vector3> faces;
+	btTriangleMesh mesh_interface;
+	btTriangleInfoMap triangle_info_map;
 	btBvhTriangleMeshShape *trimesh = nullptr;
 
 	BtShapeTrimesh() :
 			BtRigidShape(TYPE_TRIMESH) {}
+
+	void set_faces(const Vector<Vector3> &p_faces);
+	Vector<Vector3> get_faces() const;
 };

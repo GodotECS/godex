@@ -1,6 +1,7 @@
 #include "components_rigid_shape.h"
 
 #include "modules/bullet/bullet_types_converter.h"
+#include <BulletCollision/CollisionDispatch/btInternalEdgeUtility.h>
 #include <stdio.h>
 
 btCollisionShape *BtRigidShape::get_shape() {
@@ -199,6 +200,9 @@ BtShapeConvex &BtShapeConvex::operator=(const BtShapeConvex &p_other) {
 	if (point_count > 0) {
 		points = (btVector3 *)memrealloc(points, point_count * sizeof(btVector3));
 		memcpy(points, p_other.points, point_count * sizeof(btVector3));
+	} else if (points != nullptr) {
+		memdelete(points);
+		points = nullptr;
 	}
 
 	update_internal_shape();
@@ -257,10 +261,58 @@ void BtShapeConvex::update_internal_shape() {
 }
 
 void BtShapeTrimesh::_bind_methods() {
+	ECS_BIND_PROPERTY_FUNC(BtShapeTrimesh, PropertyInfo(Variant::ARRAY, "faces"), set_faces, get_faces);
 }
 
 void BtShapeTrimesh::_get_storage_config(Dictionary &r_config) {
 	/// Configure the storage of this component to have pages of 500 Physis Bodies
 	/// You can tweak this in editor.
 	r_config["page_size"] = 200;
+}
+
+void BtShapeTrimesh::set_faces(const Vector<Vector3> &p_faces) {
+	faces = p_faces;
+
+	delete trimesh;
+	trimesh = nullptr;
+
+	mesh_interface = btTriangleMesh();
+
+	if (p_faces.size() > 0) {
+		// It counts the faces and assert the array contains the correct number of vertices.
+		ERR_FAIL_COND_MSG((p_faces.size() % 3) != 0, "The sent arrays doesn't contains faces because the sent array is not a multiple of 3.");
+
+		const int face_count = p_faces.size() / 3;
+
+		mesh_interface.preallocateVertices(p_faces.size());
+
+		const bool remove_duplicate = false;
+
+		const Vector3 *facesr = p_faces.ptr();
+
+		btVector3 supVec_0;
+		btVector3 supVec_1;
+		btVector3 supVec_2;
+		for (int i = 0; i < face_count; i += 1) {
+			G_TO_B(facesr[i * 3 + 0], supVec_0);
+			G_TO_B(facesr[i * 3 + 1], supVec_1);
+			G_TO_B(facesr[i * 3 + 2], supVec_2);
+
+			// Inverted from standard godot otherwise btGenerateInternalEdgeInfo
+			// generates wrong edge info.
+			mesh_interface.addTriangle(supVec_2, supVec_1, supVec_0, remove_duplicate);
+		}
+
+		// Using `new` because Bullet Physics doesn't allow this to be constructed
+		// elsewhere. Some data can't be set, so it's necessary set this at
+		// constructor time.
+		trimesh = new btBvhTriangleMeshShape(&mesh_interface, true);
+
+		// Generate info map for better collision report.
+		btGenerateInternalEdgeInfo(trimesh, &triangle_info_map);
+	}
+}
+
+Vector<Vector3> BtShapeTrimesh::get_faces() const {
+	return faces;
 }
