@@ -25,8 +25,7 @@ public:                                                         \
 		methods.reset();                                        \
 	}                                                           \
                                                                 \
-public:                                                         \
-	m_class(const m_class &) = default;
+public:
 
 /// Register a component and allow to use a custom constructor.
 #define COMPONENT_CUSTOM_CONSTRUCTOR(m_class, m_storage_class)         \
@@ -47,7 +46,8 @@ private:                                                               \
 /// Register a component.
 #define COMPONENT(m_class, m_storage_class)                \
 	COMPONENT_CUSTOM_CONSTRUCTOR(m_class, m_storage_class) \
-	m_class() = default;
+	m_class() = default;                                   \
+	m_class(const m_class &) = default;
 
 /// Register a component using custom create storage function. The function is
 /// specified on `ECS::register_component<Component>([]() -> StorageBase * { /* Create the storage and return it. */ });`.
