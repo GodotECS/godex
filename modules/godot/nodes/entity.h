@@ -524,12 +524,15 @@ bool EntityInternal<C>::_get_component_value(const StringName &p_component_name,
 			// This is a shared component, so return it.
 			Ref<SharedComponentResource> shared = *component_properties;
 			if (shared.is_valid() && shared->is_init() && shared->get_component_name() != p_component_name) {
-				// There is something, still it's not valid, so return null.
-				r_ret = Variant();
-				return true;
+				// There is something, still it's not valid. Take default.
 			} else {
-				r_ret = shared;
-				return true;
+				const Variant *val = shared->get_component_data().getptr(p_property_name);
+				if (val) {
+					r_ret = *val;
+					return true;
+				} else {
+					// The component property is not set, so take the default.
+				}
 			}
 		} else {
 			if (component_properties->get_type() == Variant::DICTIONARY) {
