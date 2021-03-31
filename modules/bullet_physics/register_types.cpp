@@ -1,7 +1,9 @@
 #include "register_types.h"
 
 #include "../../ecs.h"
+#include "../godot/editor_plugins/components_gizmo_3d.h"
 #include "bt_systems.h"
+#include "components_gizmos.h"
 #include "components_rigid_body.h"
 #include "components_rigid_shape.h"
 #include "databag_space.h"
@@ -28,6 +30,8 @@ void ecs_register_bullet_physics_types() {
 	ECS::register_system(bt_body_sync, "BtBodySync", "Bullet Physics - Read the Physics Engine and update the Bodies");
 	//ECS::register_system(bt_area_sync, "BtBodySync", "Bullet Physics - Read the Physics Engine and update the Bodies");
 	//ECS::register_system(bt_area_sync, "BtBodySync", "Bullet Physics - Read the Physics Engine and update the Bodies");
+
+	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtShapeComponentsGizmo));
 }
 
 void ecs_unregister_bullet_physics_types() {
