@@ -428,7 +428,17 @@ void EntityInternal<C>::remove_component(const StringName &p_component_name) {
 template <class C>
 bool EntityInternal<C>::has_component(const StringName &p_component_name) const {
 	if (entity_id.is_null()) {
-		return components_data.has(p_component_name);
+		if (EditorEcs::component_is_shared(p_component_name)) {
+			const Variant *val = components_data.getptr(p_component_name);
+			if (val) {
+				Ref<SharedComponentResource> shared = *val;
+				return shared.is_valid() && shared->is_init() && shared->get_component_name() == p_component_name && shared->get_component_data().is_empty() == false;
+			}
+			return false;
+		} else {
+			return components_data.has(p_component_name);
+		}
+
 	} else {
 		const godex::component_id id = ECS::get_component_id(p_component_name);
 		ERR_FAIL_COND_V_MSG(id == UINT32_MAX, false, "The component " + p_component_name + " doesn't exists.");
@@ -465,9 +475,8 @@ bool EntityInternal<C>::set_component_value(const StringName &p_component_name, 
 					// This component is new and not even init, so do it now.
 					shared->init(p_component_name);
 				}
+				components_data[p_component_name] = shared;
 			}
-
-			components_data[p_component_name] = shared;
 
 		} else {
 			// This is a standard component.
@@ -484,8 +493,9 @@ bool EntityInternal<C>::set_component_value(const StringName &p_component_name, 
 			if (p_component_name == "TransformComponent" && p_property_name == "transform") {
 				owner->set_transform(p_value);
 			}
-			update_components_data();
 		}
+
+		update_components_data();
 
 		return true;
 	} else {
@@ -523,9 +533,7 @@ bool EntityInternal<C>::_get_component_value(const StringName &p_component_name,
 		if (EditorEcs::component_is_shared(p_component_name)) {
 			// This is a shared component, so return it.
 			Ref<SharedComponentResource> shared = *component_properties;
-			if (shared.is_valid() && shared->is_init() && shared->get_component_name() != p_component_name) {
-				// There is something, still it's not valid. Take default.
-			} else {
+			if (shared.is_valid() && shared->is_init() && shared->get_component_name() == p_component_name) {
 				const Variant *val = shared->get_component_data().getptr(p_property_name);
 				if (val) {
 					r_ret = *val;
@@ -533,6 +541,8 @@ bool EntityInternal<C>::_get_component_value(const StringName &p_component_name,
 				} else {
 					// The component property is not set, so take the default.
 				}
+			} else {
+				// Can't extract the data from the shared component, take the default.
 			}
 		} else {
 			if (component_properties->get_type() == Variant::DICTIONARY) {

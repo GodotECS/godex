@@ -63,6 +63,10 @@ public:
 		owner->create_material(p_name, p_color, p_billboard, p_on_top, p_use_vertex_color);
 	}
 
+	void create_handle_material(const String &p_name, bool p_billboard = false, const Ref<Texture2D> &p_texture = nullptr) {
+		owner->create_handle_material(p_name, p_billboard, p_texture);
+	}
+
 	Ref<StandardMaterial3D> get_material(const String &p_name, const Ref<EditorNode3DGizmo> &p_gizmo = Ref<EditorNode3DGizmo>()) {
 		return owner->get_material(p_name, p_gizmo);
 	}

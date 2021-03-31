@@ -4,6 +4,7 @@
 
 class BtShapeComponentsGizmo : public ComponentGizmo {
 	StringName box_component_name = "BtShapeBox";
+	StringName half_extents_name = "half_extents";
 
 public:
 	virtual void init() override;
