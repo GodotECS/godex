@@ -8,7 +8,8 @@
 #include "databags/godot_engine_databags.h"
 #include "databags/input_databag.h"
 #include "databags/visual_servers_databags.h"
-#include "editor_plugins/components_gizmo_3d.h"
+#include "editor_plugins/components_mesh_gizmo_3d.h"
+#include "editor_plugins/components_transform_gizmo_3d.h"
 #include "editor_plugins/editor_world_ecs.h"
 #include "editor_plugins/entity_editor_plugin.h"
 #include "nodes/ecs_utilities.h"
@@ -31,13 +32,8 @@ public:
 				EditorNode::get_singleton()->add_editor_plugin(memnew(WorldECSEditorPlugin(EditorNode::get_singleton())));
 			}
 			if (Node3DEditor::get_singleton() != nullptr) {
-				Ref<Components3DGizmoPlugin> component_gizmo(memnew(Components3DGizmoPlugin));
-
 				// Add component gizmos:
-				component_gizmo->add_component_gizmo(memnew(TransformComponentGizmo));
-				component_gizmo->add_component_gizmo(memnew(MeshComponentGizmo));
-
-				Node3DEditor::get_singleton()->add_gizmo_plugin(component_gizmo);
+				Node3DEditor::get_singleton()->add_gizmo_plugin(Ref<Components3DGizmoPlugin>(Components3DGizmoPlugin::get_singleton()));
 			}
 		} else {
 			// Load the Scripted Components/Databags/Systems
@@ -51,12 +47,17 @@ REP *rep = nullptr;
 void ecs_register_godot_types() {
 	rep = memnew(REP);
 
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Nodes
 	ClassDB::register_class<WorldECS>();
 	ClassDB::register_class<PipelineECS>();
 	ClassDB::register_class<Entity3D>();
 	ClassDB::register_class<Entity2D>();
 	ClassDB::register_class<Component>();
 	ClassDB::register_class<System>();
+
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Gizmos
+	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(TransformComponentGizmo));
+	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(MeshComponentGizmo));
 
 	// Register in editor things.
 	if (MessageQueue::get_singleton()) {
