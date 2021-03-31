@@ -35,8 +35,6 @@ void register_godex_types() {
 }
 
 void unregister_godex_types() {
-	component_gizmo = Ref<Components3DGizmoPlugin>();
-
 	ecs_unregister_modules();
 
 	// Clear dynamic system static memory.
@@ -48,4 +46,6 @@ void unregister_godex_types() {
 	ECS *ecs = ECS::get_singleton();
 	ECS::__set_singleton(nullptr);
 	memdelete(ecs);
+
+	component_gizmo = Ref<Components3DGizmoPlugin>();
 }
