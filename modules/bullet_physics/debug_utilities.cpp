@@ -1,5 +1,6 @@
 #include "debug_utilities.h"
 
+#include "core/math/quick_hull.h"
 #include "scene/main/scene_tree.h"
 
 struct DrawEdge {
@@ -53,12 +54,33 @@ Ref<ArrayMesh> generate_mesh_from_lines(const Vector<Vector3> &p_lines) {
 	return mesh;
 }
 
+Ref<ArrayMesh> generate_mesh_from_points(const Vector<Vector3> &p_points) {
+	Vector<Vector3> lines;
+
+	// Extract the lines from the points cloud.
+	if (p_points.size() > 0) {
+		// Copy the vector.
+		Vector<Vector3> varr = Variant(p_points);
+		Geometry3D::MeshData md;
+		Error err = QuickHull::build(varr, md);
+		if (err == OK) {
+			lines.resize(md.edges.size() * 2);
+			for (int i = 0; i < md.edges.size(); i++) {
+				lines.write[i * 2 + 0] = md.vertices[md.edges[i].a];
+				lines.write[i * 2 + 1] = md.vertices[md.edges[i].b];
+			}
+		}
+	}
+
+	return generate_mesh_from_lines(lines);
+}
+
 Ref<ArrayMesh> generate_mesh_from_faces(const Vector<Vector3> &p_faces) {
 	ERR_FAIL_COND_V((p_faces.size() % 3) != 0, nullptr);
 
 	Vector<Vector3> lines;
 
-	// Extract the lines from the trimesh.
+	// Extract the lines from the faces.
 	Set<DrawEdge> edges;
 
 	const Vector3 *r = p_faces.ptr();

@@ -735,15 +735,68 @@ void BtShapeCylinderGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, 
 	}
 }
 
-void BtShapeTrimeshGizmo::init() {
+class DebugMeshComponentGizmoData : public ComponentGizmoData {
+public:
+	// Cache data.
+	Ref<ArrayMesh> mesh;
+};
+
+void BtShapeConvexGizmo::init() {
 	// No need to register the materials, everything we need is already
 	// registered by the box gizmo.
 }
 
-class TrimeshComponentGizmoData : public ComponentGizmoData {
-public:
-	Ref<ArrayMesh> mesh;
-};
+void BtShapeConvexGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	ERR_FAIL_COND(entity == nullptr);
+
+	if (entity->has_component(convex_component_name)) {
+		const Ref<Material> material = get_material("shape_material", p_gizmo);
+
+		// Check the cache.
+		Ref<ArrayMesh> mesh;
+		Ref<ComponentGizmoData> *d = entity->get_internal_entity().gizmo_data.lookup_ptr(convex_component_name);
+		if (d) {
+			Ref<DebugMeshComponentGizmoData> td = *d;
+			if (td.is_valid()) {
+				mesh = td->mesh;
+			}
+		}
+
+		if (mesh.is_null()) {
+			const Vector<Vector3> points = entity->get_component_value(convex_component_name, points_name);
+			mesh = generate_mesh_from_points(points);
+
+			// Cache this
+			entity->get_internal_entity().gizmo_data.insert(convex_component_name, mesh);
+		}
+
+		p_gizmo->add_mesh(mesh, false, Ref<SkinReference>(), material);
+	}
+}
+
+int BtShapeConvexGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {
+	return 0;
+}
+
+String BtShapeConvexGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
+	return "";
+}
+
+Variant BtShapeConvexGizmo::get_handle_value(EditorNode3DGizmo *p_gizmo, int p_idx) const {
+	return Variant();
+}
+
+void BtShapeConvexGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
+}
+
+void BtShapeConvexGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
+}
+
+void BtShapeTrimeshGizmo::init() {
+	// No need to register the materials, everything we need is already
+	// registered by the box gizmo.
+}
 
 void BtShapeTrimeshGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
@@ -756,7 +809,7 @@ void BtShapeTrimeshGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 		Ref<ArrayMesh> mesh;
 		Ref<ComponentGizmoData> *d = entity->get_internal_entity().gizmo_data.lookup_ptr(trimesh_component_name);
 		if (d) {
-			Ref<TrimeshComponentGizmoData> td = *d;
+			Ref<DebugMeshComponentGizmoData> td = *d;
 			if (td.is_valid()) {
 				mesh = td->mesh;
 			}
