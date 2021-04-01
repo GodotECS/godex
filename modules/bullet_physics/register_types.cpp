@@ -31,7 +31,8 @@ void ecs_register_bullet_physics_types() {
 	//ECS::register_system(bt_area_sync, "BtBodySync", "Bullet Physics - Read the Physics Engine and update the Bodies");
 	//ECS::register_system(bt_area_sync, "BtBodySync", "Bullet Physics - Read the Physics Engine and update the Bodies");
 
-	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtShapeComponentsGizmo));
+	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtShapeBoxGizmo));
+	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtShapeSphereGizmo));
 }
 
 void ecs_unregister_bullet_physics_types() {
