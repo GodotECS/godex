@@ -476,26 +476,40 @@ bool EntityInternal<C>::set_component_value(const StringName &p_component_name, 
 					shared->init(p_component_name);
 				}
 				components_data[p_component_name] = shared;
+			} else {
+				// Try to set the value inside the shared component instead
+				Variant *val = components_data.getptr(p_component_name);
+				if (val) {
+					shared = *val;
+				}
+
+				if (shared.is_null()) {
+					// The shared component is still null, so create it.
+					shared.instance();
+					set_component_value(p_component_name, "", shared);
+				}
+
+				shared->get_component_data_mut()[p_property_name] = p_value;
 			}
 
 		} else {
 			// This is a standard component.
-
 			ERR_FAIL_COND_V(components_data.has(p_component_name) == false, false);
 
 			if (components_data[p_component_name].get_type() != Variant::DICTIONARY) {
 				components_data[p_component_name] = Dictionary();
 			}
 			(components_data[p_component_name].operator Dictionary())[p_property_name] = p_value.duplicate();
-			print_line("Component " + p_component_name + " property " + p_property_name + " changed to " + p_value);
-			owner->update_gizmo();
+
 			// Hack to propagate `Node3D` transform change.
 			if (p_component_name == "TransformComponent" && p_property_name == "transform") {
 				owner->set_transform(p_value);
 			}
 		}
 
+		owner->update_gizmo();
 		update_components_data();
+		print_line("Component " + p_component_name + " property " + p_property_name + " changed to " + p_value);
 
 		return true;
 	} else {
@@ -534,6 +548,12 @@ bool EntityInternal<C>::_get_component_value(const StringName &p_component_name,
 			// This is a shared component, so return it.
 			Ref<SharedComponentResource> shared = *component_properties;
 			if (shared.is_valid() && shared->is_init() && shared->get_component_name() == p_component_name) {
+				if (p_property_name == StringName("resource")) {
+					// The caller want the entire resource, return it.
+					r_ret = shared;
+					return true;
+				}
+
 				const Variant *val = shared->get_component_data().getptr(p_property_name);
 				if (val) {
 					r_ret = *val;

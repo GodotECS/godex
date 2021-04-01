@@ -22,7 +22,7 @@ void BtShapeComponentsGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 		//const Ref<Material> material_disabled = get_material("shape_material_disabled", p_gizmo);
 		Ref<Material> handles_material = get_material("handles");
 
-		Vector3 half_extents = entity->get_component_value(box_component_name, "half_extents", Space::GLOBAL);
+		Vector3 half_extents = entity->get_component_value(box_component_name, half_extents_name);
 
 		Vector<Vector3> lines;
 		AABB aabb;
@@ -104,10 +104,10 @@ void BtShapeComponentsGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, C
 		d = 0.001;
 	}
 
-	Vector3 half_extents = entity->get_component_value(box_component_name, "half_extents", Space::GLOBAL);
+	Vector3 half_extents = entity->get_component_value(box_component_name, half_extents_name);
 	half_extents[p_idx] = d;
 
-	entity->set_component_value(box_component_name, half_extents_name, half_extents, Space::GLOBAL);
+	entity->set_component_value(box_component_name, half_extents_name, half_extents);
 }
 
 void BtShapeComponentsGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
@@ -115,15 +115,15 @@ void BtShapeComponentsGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx
 	ERR_FAIL_COND(entity == nullptr);
 	ERR_FAIL_COND(entity->has_component(box_component_name) == false);
 
-	Vector3 half_extents = entity->get_component_value(box_component_name, half_extents_name, Space::GLOBAL);
+	Vector3 half_extents = entity->get_component_value(box_component_name, half_extents_name);
 
 	if (p_cancel) {
-		entity->set_component_value(box_component_name, half_extents_name, p_restore, Space::GLOBAL);
+		entity->set_component_value(box_component_name, half_extents_name, p_restore);
 	} else {
 		UndoRedo *ur = Node3DEditor::get_singleton()->get_undo_redo();
 		ur->create_action(TTR("Change Shape Box Half Extent"));
-		ur->add_do_method(entity, "set_component_value", box_component_name, half_extents_name, half_extents, Space::GLOBAL);
-		ur->add_undo_method(entity, "set_component_value", box_component_name, half_extents_name, p_restore, Space::GLOBAL);
+		ur->add_do_method(entity, "set_component_value", box_component_name, half_extents_name, half_extents);
+		ur->add_undo_method(entity, "set_component_value", box_component_name, half_extents_name, p_restore);
 		ur->commit_action();
 	}
 }

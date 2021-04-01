@@ -46,6 +46,7 @@ public:
 	StringName get_component_name() const;
 
 	void set_component_data(const Dictionary &p_component);
+	Dictionary &get_component_data_mut(); // Using `_mut` so the bind method doesn't go crazy.
 	const Dictionary &get_component_data() const;
 
 	virtual Ref<Resource> duplicate(bool p_subresources = false) const override;
