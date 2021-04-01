@@ -1,6 +1,7 @@
 #include "components_gizmos.h"
 
 #include "../godot/nodes/entity.h"
+#include "debug_utilities.h"
 
 void BtShapeBoxGizmo::init() {
 	const Color gizmo_color = EDITOR_DEF("editors/3d_gizmos/gizmo_colors/shape", Color(0.5, 0.7, 1));
@@ -732,4 +733,61 @@ void BtShapeCylinderGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, 
 		ur->add_undo_method(entity, "set_component_value", cylinder_component_name, p_idx == 0 ? radius_name : height_name, p_restore);
 		ur->commit_action();
 	}
+}
+
+void BtShapeTrimeshGizmo::init() {
+	// No need to register the materials, everything we need is already
+	// registered by the box gizmo.
+}
+
+class TrimeshComponentGizmoData : public ComponentGizmoData {
+public:
+	Ref<ArrayMesh> mesh;
+};
+
+void BtShapeTrimeshGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	ERR_FAIL_COND(entity == nullptr);
+
+	if (entity->has_component(trimesh_component_name)) {
+		const Ref<Material> material = get_material("shape_material", p_gizmo);
+
+		// Check the cache.
+		Ref<ArrayMesh> mesh;
+		Ref<ComponentGizmoData> *d = entity->get_internal_entity().gizmo_data.lookup_ptr(trimesh_component_name);
+		if (d) {
+			Ref<TrimeshComponentGizmoData> td = *d;
+			if (td.is_valid()) {
+				mesh = td->mesh;
+			}
+		}
+
+		if (mesh.is_null()) {
+			const Vector<Vector3> faces = entity->get_component_value(trimesh_component_name, faces_name);
+			mesh = generate_mesh_from_faces(faces);
+
+			// Cache this
+			entity->get_internal_entity().gizmo_data.insert(trimesh_component_name, mesh);
+		}
+
+		p_gizmo->add_mesh(mesh, false, Ref<SkinReference>(), material);
+	}
+}
+
+int BtShapeTrimeshGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {
+	return 0;
+}
+
+String BtShapeTrimeshGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
+	return "";
+}
+
+Variant BtShapeTrimeshGizmo::get_handle_value(EditorNode3DGizmo *p_gizmo, int p_idx) const {
+	return Variant();
+}
+
+void BtShapeTrimeshGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
+}
+
+void BtShapeTrimeshGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
 }
