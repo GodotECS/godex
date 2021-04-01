@@ -424,3 +424,148 @@ void BtShapeCapsuleGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, c
 		ur->commit_action();
 	}
 }
+void BtShapeConeGizmo::init() {
+	// No need to register the materials, everything we need is already
+	// registered by the box gizmo.
+}
+
+void BtShapeConeGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	ERR_FAIL_COND(entity == nullptr);
+
+	if (entity->has_component(cone_component_name)) {
+		const Ref<Material> material = get_material("shape_material", p_gizmo);
+		//const Ref<Material> material_disabled = get_material("shape_material_disabled", p_gizmo);
+		Ref<Material> handles_material = get_material("handles");
+
+		const real_t radius = entity->get_component_value(cone_component_name, radius_name);
+		const real_t height = entity->get_component_value(cone_component_name, height_name);
+
+		Vector<Vector3> points;
+
+		Vector3 d(0, height * 0.5, 0);
+		for (int i = 0; i < 360; i++) {
+			float ra = Math::deg2rad((float)i);
+			float rb = Math::deg2rad((float)i + 1);
+			Point2 a = Vector2(Math::sin(ra), Math::cos(ra)) * radius;
+			Point2 b = Vector2(Math::sin(rb), Math::cos(rb)) * radius;
+
+			points.push_back(Vector3(a.x, 0, a.y) - d);
+			points.push_back(Vector3(b.x, 0, b.y) - d);
+
+			if (i % 90 == 0) {
+				points.push_back(Vector3(a.x, 0, a.y) - d);
+				points.push_back(d);
+			}
+		}
+
+		p_gizmo->add_lines(points, material);
+
+		Vector<Vector3> collision_segments;
+
+		for (int i = 0; i < 64; i++) {
+			float ra = i * (Math_TAU / 64.0);
+			float rb = (i + 1) * (Math_TAU / 64.0);
+			Point2 a = Vector2(Math::sin(ra), Math::cos(ra)) * radius;
+			Point2 b = Vector2(Math::sin(rb), Math::cos(rb)) * radius;
+
+			collision_segments.push_back(Vector3(a.x, 0, a.y) - d);
+			collision_segments.push_back(Vector3(b.x, 0, b.y) - d);
+
+			if (i % 16 == 0) {
+				collision_segments.push_back(Vector3(a.x, 0, a.y) - d);
+				collision_segments.push_back(d);
+			}
+		}
+
+		p_gizmo->add_collision_segments(collision_segments);
+
+		Vector<Vector3> handles;
+		handles.push_back(Vector3(radius, -height * 0.5, 0));
+		handles.push_back(Vector3(0, height * 0.5, 0));
+		p_gizmo->add_handles(handles, handles_material);
+	}
+}
+
+int BtShapeConeGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	ERR_FAIL_COND_V(entity == nullptr, 0);
+
+	if (entity->has_component(cone_component_name)) {
+		return 2;
+	}
+
+	return 0;
+}
+
+String BtShapeConeGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
+	if (p_idx == 0) {
+		return "radius";
+	} else {
+		return "height";
+	}
+}
+
+Variant BtShapeConeGizmo::get_handle_value(EditorNode3DGizmo *p_gizmo, int p_idx) const {
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	ERR_FAIL_COND_V(entity == nullptr, Variant());
+	ERR_FAIL_COND_V(entity->has_component(cone_component_name) == false, Variant());
+
+	if (p_idx == 0) {
+		return entity->get_component_value(cone_component_name, radius_name);
+	} else {
+		return entity->get_component_value(cone_component_name, height_name);
+	}
+}
+
+void BtShapeConeGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	ERR_FAIL_COND(entity == nullptr);
+	ERR_FAIL_COND(entity->has_component(cone_component_name) == false);
+
+	Transform gt = entity->get_global_transform();
+	Transform gi = gt.affine_inverse();
+
+	Vector3 ray_from = p_camera->project_ray_origin(p_point);
+	Vector3 ray_dir = p_camera->project_ray_normal(p_point);
+	Vector3 sg[2] = { gi.xform(ray_from), gi.xform(ray_from + ray_dir * 4096) };
+
+	// Extract the Handle value
+	Vector3 axis;
+	axis[p_idx == 0 ? 0 : 1] = 1.0;
+	Vector3 ra, rb;
+	Geometry3D::get_closest_points_between_segments(Vector3(), axis * 4096, sg[0], sg[1], ra, rb);
+	float d = axis.dot(ra);
+
+	if (Node3DEditor::get_singleton()->is_snap_enabled()) {
+		d = Math::snapped(d, Node3DEditor::get_singleton()->get_translate_snap());
+	}
+
+	if (d < 0.001) {
+		d = 0.001;
+	}
+
+	if (p_idx == 0) {
+		entity->set_component_value(cone_component_name, radius_name, d);
+	} else {
+		entity->set_component_value(cone_component_name, height_name, d * 2.0);
+	}
+}
+
+void BtShapeConeGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	ERR_FAIL_COND(entity == nullptr);
+	ERR_FAIL_COND(entity->has_component(cone_component_name) == false);
+
+	const real_t v = entity->get_component_value(cone_component_name, p_idx == 0 ? radius_name : height_name);
+
+	if (p_cancel) {
+		entity->set_component_value(cone_component_name, p_idx == 0 ? radius_name : height_name, p_restore);
+	} else {
+		UndoRedo *ur = Node3DEditor::get_singleton()->get_undo_redo();
+		ur->create_action(TTR("Change Shape Cone Radius"));
+		ur->add_do_method(entity, "set_component_value", cone_component_name, p_idx == 0 ? radius_name : height_name, v);
+		ur->add_undo_method(entity, "set_component_value", cone_component_name, p_idx == 0 ? radius_name : height_name, p_restore);
+		ur->commit_action();
+	}
+}

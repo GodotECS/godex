@@ -34,6 +34,7 @@ void ecs_register_bullet_physics_types() {
 	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtShapeBoxGizmo));
 	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtShapeSphereGizmo));
 	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtShapeCapsuleGizmo));
+	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtShapeConeGizmo));
 }
 
 void ecs_unregister_bullet_physics_types() {
