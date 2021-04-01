@@ -46,7 +46,7 @@ void Components3DGizmoPlugin::redraw(EditorNode3DGizmo *p_gizmo) {
 
 String Components3DGizmoPlugin::get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
 	// Find the gizmo ID.
-	RelativeHandle relative_handle = find_gizmo_by_handle(p_idx);
+	RelativeHandle relative_handle = find_gizmo_by_handle(p_gizmo, p_idx);
 
 	if (relative_handle.gizmo.is_valid()) {
 		// If the gizmo is valid, take the handle name.
@@ -58,7 +58,7 @@ String Components3DGizmoPlugin::get_handle_name(const EditorNode3DGizmo *p_gizmo
 
 Variant Components3DGizmoPlugin::get_handle_value(EditorNode3DGizmo *p_gizmo, int p_idx) const {
 	// Find the gizmo ID.
-	RelativeHandle relative_handle = find_gizmo_by_handle(p_idx);
+	RelativeHandle relative_handle = find_gizmo_by_handle(p_gizmo, p_idx);
 
 	if (relative_handle.gizmo.is_valid()) {
 		// If the gizmo is valid, take the handle name.
@@ -70,7 +70,7 @@ Variant Components3DGizmoPlugin::get_handle_value(EditorNode3DGizmo *p_gizmo, in
 
 void Components3DGizmoPlugin::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
 	// Find the gizmo ID.
-	RelativeHandle relative_handle = find_gizmo_by_handle(p_idx);
+	RelativeHandle relative_handle = find_gizmo_by_handle(p_gizmo, p_idx);
 
 	if (relative_handle.gizmo.is_valid()) {
 		// If the gizmo is valid, take the handle name.
@@ -79,7 +79,7 @@ void Components3DGizmoPlugin::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, 
 }
 
 void Components3DGizmoPlugin::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
-	RelativeHandle relative_handle = find_gizmo_by_handle(p_idx);
+	RelativeHandle relative_handle = find_gizmo_by_handle(p_gizmo, p_idx);
 
 	if (relative_handle.gizmo.is_valid()) {
 		// If the gizmo is valid, take the handle name.
@@ -87,7 +87,7 @@ void Components3DGizmoPlugin::commit_handle(EditorNode3DGizmo *p_gizmo, int p_id
 	}
 }
 
-RelativeHandle Components3DGizmoPlugin::find_gizmo_by_handle(int p_idx) const {
+RelativeHandle Components3DGizmoPlugin::find_gizmo_by_handle(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
 	if (p_idx < 0) {
 		return {};
 	}
@@ -96,11 +96,11 @@ RelativeHandle Components3DGizmoPlugin::find_gizmo_by_handle(int p_idx) const {
 	Ref<ComponentGizmo> giz;
 	for (uint32_t i = 0; i < gizmos.size(); i += 1) {
 		giz = gizmos[i];
-		if (bank + gizmos[i]->get_handle_count() > p_idx) {
+		if (bank + gizmos[i]->get_handle_count(p_gizmo) > p_idx) {
 			// The previous gizmo was able to handle this.
 			return { giz, p_idx - bank };
 		}
-		bank += gizmos[i]->get_handle_count();
+		bank += gizmos[i]->get_handle_count(p_gizmo);
 	}
 
 	return {};

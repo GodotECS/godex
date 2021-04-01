@@ -76,7 +76,7 @@ void MeshComponentGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 #endif
 }
 
-int MeshComponentGizmo::get_handle_count() const {
+int MeshComponentGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {
 	return 0;
 }
 

@@ -82,7 +82,7 @@ void TransformComponentGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 	}
 }
 
-int TransformComponentGizmo::get_handle_count() const {
+int TransformComponentGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {
 	return 0;
 }
 
