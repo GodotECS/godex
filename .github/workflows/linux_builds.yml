@@ -5,7 +5,7 @@ on: [push, pull_request]
 # Global Settings
 env:
   GODOT_BASE_BRANCH: master
-  SCONSFLAGS: platform=linuxbsd verbose=yes warnings=extra werror=yes --jobs=2
+  SCONSFLAGS: platform=linuxbsd verbose=yes warnings=extra werror=yes debug_symbols=no --jobs=2 module_text_server_fb_enabled=yes
   SCONS_CACHE_LIMIT: 4096
 
 jobs:
@@ -74,7 +74,9 @@ jobs:
        python --version
        scons --version
 
-    - name: Compile godex
+    - name: Compilation
+      env:
+        SCONS_CACHE: ${{github.workspace}}/.scons_cache/
       run: |
        cd godot
        scons tools=yes tests=yes target=release_debug custom_modules="../modules" -j2

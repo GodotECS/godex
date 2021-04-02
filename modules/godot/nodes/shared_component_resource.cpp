@@ -86,7 +86,11 @@ void SharedComponentResource::set_component_data(const Dictionary &p_component) 
 	component_data = p_component;
 }
 
-Dictionary SharedComponentResource::get_component_data() const {
+Dictionary &SharedComponentResource::get_component_data_mut() {
+	return component_data;
+}
+
+const Dictionary &SharedComponentResource::get_component_data() const {
 	return component_data;
 }
 
