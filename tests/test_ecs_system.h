@@ -8,6 +8,7 @@
 #include "../modules/godot/components/transform_component.h"
 #include "../modules/godot/nodes/ecs_utilities.h"
 #include "../pipeline/pipeline.h"
+#include "../storage/dense_vector_storage.h"
 #include "../systems/dynamic_system.h"
 #include "../world/world.h"
 #include "test_utilities.h"
