@@ -29,7 +29,7 @@ void bt_body_config(
 				Maybe<TransformComponent>> &p_query) {
 	for (auto [entity, body, space_marker, shape_container, transform] : p_query) {
 		if (body == nullptr) {
-			// Body not yet assigned, skip this.
+			// Body not yet assigned to this Entity, skip.
 			continue;
 		}
 
@@ -74,20 +74,26 @@ void bt_body_config(
 
 			// TODO support space initialization when the body want to stay in
 			// another space?
-			BtSpace *space = p_spaces->get_space(space_index);
+			if (space_index != BtSpaceIndex::BT_SPACE_NONE) {
+				BtSpace *space = p_spaces->get_space(space_index);
+				if (body->get_body_mode() == BtRigidBody::RIGID_MODE_STATIC) {
+					space->get_dynamics_world()->addCollisionObject(
+							body->get_body(),
+							body->get_layer(),
+							body->get_mask());
+				} else {
+					space->get_dynamics_world()->addRigidBody(
+							body->get_body(),
+							body->get_layer(),
+							body->get_mask());
+				}
 
-			if (body->get_body_mode() == BtRigidBody::RIGID_MODE_STATIC) {
-				space->get_dynamics_world()->addCollisionObject(
-						body->get_body(),
-						body->get_layer(),
-						body->get_mask());
-			} else {
-				space->get_dynamics_world()->addRigidBody(
-						body->get_body(),
-						body->get_layer(),
-						body->get_mask());
+				body->get_body()->setMotionState(body->get_motion_state());
+				body->get_motion_state()->entity = entity;
+				body->get_motion_state()->space = space;
 			}
 
+			body->reload_body(space_index);
 			body->__current_mode = body->get_body_mode();
 
 			// Set transfrorm
@@ -97,11 +103,78 @@ void bt_body_config(
 				body->get_body()->setWorldTransform(t);
 				body->get_motion_state()->transf = t;
 			}
+		}
+	}
+}
 
-			body->get_body()->setMotionState(body->get_motion_state());
-			body->get_motion_state()->entity = entity;
-			body->get_motion_state()->space = space;
-			body->reload_body(space_index);
+void bt_area_config(
+		BtPhysicsSpaces *p_spaces,
+		Query<
+				EntityID,
+				Any<Changed<BtArea>,
+						Changed<BtSpaceMarker>,
+						Join<
+								Changed<BtShapeBox>,
+								Changed<BtShapeSphere>,
+								Changed<BtShapeCapsule>,
+								Changed<BtShapeCone>,
+								Changed<BtShapeCylinder>,
+								Changed<BtShapeWorldMargin>,
+								Changed<BtShapeConvex>,
+								Changed<BtShapeTrimesh>>>,
+				Maybe<TransformComponent>> &p_query) {
+	for (auto [entity, area, space_marker, shape_container, transform] : p_query) {
+		if (area == nullptr) {
+			// Body not yet assigned to this Entity, skip.
+			continue;
+		}
+
+		// Config shape.
+		BtRigidShape *shape = shape_container.as<BtRigidShape>();
+		if (shape != nullptr) {
+			if (area->get_shape() != shape->get_shape()) {
+				// Area shape is different (or nullptr) form the shape, assign it.
+				area->set_shape(shape->get_shape());
+			}
+		} else {
+			if (area->get_shape() != nullptr) {
+				// Area has something, but the shape is null, so unassign it.
+				area->set_shape(nullptr);
+			}
+		}
+
+		// Take the space this area should be on.
+		const BtSpaceIndex space_index = area->get_shape() == nullptr ? BT_SPACE_NONE : (space_marker != nullptr ? static_cast<BtSpaceIndex>(space_marker->space_index) : BT_SPACE_0);
+
+		// Reload space
+		if ((area->need_body_reload() ||
+					area->__current_space != space_index) &&
+				p_spaces != nullptr) {
+			// This area needs a realod.
+			if (area->__current_space != BtSpaceIndex::BT_SPACE_NONE) {
+				// Assume the space the area is currently on is initialized.
+				p_spaces->get_space(area->__current_space)->get_dynamics_world()->removeCollisionObject(area->get_ghost());
+			}
+
+			// Now let's add it inside the space again.
+			if (space_index != BtSpaceIndex::BT_SPACE_NONE) {
+				// TODO support space initialization when the area want to stay in
+				// another space?
+				BtSpace *space = p_spaces->get_space(space_index);
+				space->get_dynamics_world()->addCollisionObject(
+						area->get_ghost(),
+						area->get_layer(),
+						area->get_mask());
+			}
+
+			// Set transfrorm
+			if (transform != nullptr) {
+				btTransform t;
+				G_TO_B(transform->transform, t);
+				area->get_ghost()->setWorldTransform(t);
+			}
+
+			area->reload_body(space_index);
 		}
 	}
 }

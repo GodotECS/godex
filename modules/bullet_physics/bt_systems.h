@@ -2,6 +2,7 @@
 
 #include "../godot/components/transform_component.h"
 #include "../godot/databags/godot_engine_databags.h"
+#include "components_area.h"
 #include "components_rigid_body.h"
 #include "components_rigid_shape.h"
 #include "databag_space.h"
@@ -18,6 +19,30 @@ void bt_body_config(
 		Query<
 				EntityID,
 				Any<Changed<BtRigidBody>,
+						Changed<BtSpaceMarker>,
+						Join<
+								Changed<BtShapeBox>,
+								Changed<BtShapeSphere>,
+								Changed<BtShapeCapsule>,
+								Changed<BtShapeCone>,
+								Changed<BtShapeCylinder>,
+								Changed<BtShapeWorldMargin>,
+								Changed<BtShapeConvex>,
+								Changed<BtShapeTrimesh>>>,
+				Maybe<TransformComponent>> &p_query);
+
+/// Configures the Area
+/// This `System` is responsible for the area lifetime.
+/// - Build the shape.
+/// - Build the area.
+/// - Assign the shape to the area.
+/// - Assigne the area to the world.
+/// - Re-fresh the area if something changed.
+void bt_area_config(
+		BtPhysicsSpaces *p_spaces,
+		Query<
+				EntityID,
+				Any<Changed<BtArea>,
 						Changed<BtSpaceMarker>,
 						Join<
 								Changed<BtShapeBox>,
