@@ -26,6 +26,10 @@ const btGhostObject *BtArea::get_ghost() const {
 	return &ghost;
 }
 
+const btTransform &BtArea::get_transform() const {
+	return ghost.getWorldTransform();
+}
+
 void BtArea::set_layer(uint32_t p_layer) {
 	layer = p_layer;
 	reload_flags |= RELOAD_FLAGS_BODY;
@@ -63,4 +67,23 @@ btCollisionShape *BtArea::get_shape() {
 
 const btCollisionShape *BtArea::get_shape() const {
 	return ghost.getCollisionShape();
+}
+
+void BtArea::add_new_overlap(btCollisionObject *p_object, int p_detect_frame, uint32_t p_index) {
+	overlaps.push_back({ p_detect_frame, p_object });
+	SWAP(overlaps[overlaps.size() - 1], overlaps[p_index]);
+}
+
+void BtArea::mark_still_overlapping(uint32_t p_overlap_index, int p_detect_frame) {
+	overlaps[p_overlap_index].detect_frame = p_detect_frame;
+}
+
+uint32_t BtArea::find_overlapping_object(btCollisionObject *p_col_obj, uint32_t p_search_from) {
+	for (uint32_t i = p_search_from; i < overlaps.size(); i += 1) {
+		if (overlaps[i].object == p_col_obj) {
+			SWAP(overlaps[p_search_from], overlaps[i]);
+			return p_search_from;
+		}
+	}
+	return UINT32_MAX;
 }

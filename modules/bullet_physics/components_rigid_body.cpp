@@ -47,6 +47,10 @@ const GodexBtMotionState *BtRigidBody::get_motion_state() const {
 	return &motion_state;
 }
 
+const btTransform &BtRigidBody::get_transform() const {
+	return motion_state.transf;
+}
+
 void BtRigidBody::script_set_body_mode(uint32_t p_mode) {
 	set_body_mode(static_cast<RigidMode>(p_mode));
 }

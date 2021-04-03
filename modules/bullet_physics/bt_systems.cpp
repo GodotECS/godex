@@ -1,6 +1,7 @@
 #include "bt_systems.h"
 
 #include "modules/bullet/bullet_types_converter.h"
+#include "overlap_check.h"
 #include <BulletCollision/BroadphaseCollision/btBroadphaseProxy.h>
 #include <BulletCollision/CollisionDispatch/btCollisionObject.h>
 #include <BulletCollision/CollisionDispatch/btGhostObject.h>
@@ -184,7 +185,7 @@ void bt_spaces_step(
 		const FrameTime *p_iterator_info,
 		// TODO this is not used, though we need it just to be sure they are not
 		// touched by anything else.
-		Query<BtRigidBody, BtShapeBox, BtShapeSphere, BtShapeCapsule, BtShapeCone, BtShapeCylinder, BtShapeWorldMargin, BtShapeConvex, BtShapeTrimesh> &p_query) {
+		Query<BtRigidBody, BtArea, BtShapeBox, BtShapeSphere, BtShapeCapsule, BtShapeCone, BtShapeCylinder, BtShapeWorldMargin, BtShapeConvex, BtShapeTrimesh> &p_query) {
 	const real_t physics_delta = p_iterator_info->get_physics_delta();
 
 	// TODO consider to create a system for each space? So it has much more control.
@@ -201,6 +202,100 @@ void bt_spaces_step(
 				physics_delta,
 				0,
 				0);
+	}
+}
+
+void bt_overlap_check(
+		BtCache *p_cache,
+		Query<EntityID, BtArea> &p_query) {
+	// Advance the counter.
+	p_cache->area_check_frame_counter += 1;
+	p_cache->area_check_frame_counter %= 100;
+	const int frame_id = p_cache->area_check_frame_counter;
+
+	LocalVector<btCollisionObject *> new_overlaps;
+
+	for (auto [entity, area_] : p_query) {
+		BtArea *area = area_;
+
+		btAlignedObjectArray<btCollisionObject *> &aabb_overlap =
+				area->get_ghost()->getOverlappingPairs();
+
+		uint32_t last_found_overlapped_index = 0;
+
+		const btTransform area_transform = area->get_transform() /* X (TODO area scale) */;
+
+		for (int i = 0; i < aabb_overlap.size(); i += 1) {
+			// TODO Check if transform changed, if not this overlap is still valid
+			// we don't need to check it.
+
+			// Check if this collider is already overlapping.
+			const uint32_t overlap_index = area->find_overlapping_object(
+					aabb_overlap[i],
+					last_found_overlapped_index);
+
+			const bool transform_changed = true;
+			bool overlapping = false;
+
+			if (overlap_index == UINT32_MAX || transform_changed == false) {
+				// Extract the other object transform.
+				btTransform aabb_overlap_transform;
+				if (aabb_overlap[i]->getInternalType() == btCollisionObject::CO_RIGID_BODY) {
+					// This is a rigidbody, extrac the transform from the motion_state
+					static_cast<btRigidBody *>(aabb_overlap[i])->getMotionState()->getWorldTransform(aabb_overlap_transform);
+				} else {
+#ifdef DEBUG_ENABLED
+					CRASH_COND_MSG(aabb_overlap[i]->getInternalType() != btCollisionObject::CO_GHOST_OBJECT, "Here we expect an area, if you are adding a new type, make sure to update this System.");
+#endif
+					// This is an area, extract normally.
+					aabb_overlap_transform = static_cast<btGhostObject *>(aabb_overlap[i])->getWorldTransform();
+				}
+
+				// aabb_overlap_transform TODO multiply the scale.
+
+				// Collision check is required, do it.
+				OverlappingFunc func = OverlapCheck::find_algorithm(area->get_shape()->getShapeType(), aabb_overlap[i]->getCollisionShape()->getShapeType());
+				ERR_CONTINUE_MSG(func == nullptr, "No Overlap check Algorithm for this shape pair. Shape type 1:" + itos(area->get_shape()->getShapeType()) + " Shape type 2:" + itos(aabb_overlap[i]->getCollisionShape()->getShapeType()));
+				overlapping = func(
+						area->get_shape(),
+						area_transform,
+						aabb_overlap[i]->getCollisionShape(),
+						aabb_overlap_transform);
+			} else {
+				// This object was overlapping and its transform didn't change,
+				// skip the collision check.
+				CRASH_COND(overlap_index == UINT32_MAX);
+				overlapping = true;
+			}
+
+			if (overlapping) {
+				if (overlap_index == UINT32_MAX) {
+					// This is a new overlap
+					area->add_new_overlap(aabb_overlap[i], frame_id, last_found_overlapped_index);
+					// We can increment this by one, so the next overlap can ignore this.
+					last_found_overlapped_index += 1;
+					new_overlaps.push_back(aabb_overlap[i]);
+				} else {
+					// This is a known overlap
+					area->mark_still_overlapping(overlap_index, frame_id);
+					last_found_overlapped_index += overlap_index;
+				}
+			}
+		}
+
+		for (int i = area->overlaps.size() - 1; i >= 0; i -= 1) {
+			if (area->overlaps[i].detect_frame != frame_id) {
+				// This object is no more overlapping
+				area->overlaps.remove_unordered(i);
+				// TODO emit the OUT event
+			}
+		}
+
+		for (uint32_t i = 0; i < new_overlaps.size(); i += 1) {
+			// TODO emit the IN event
+		}
+
+		new_overlaps.clear();
 	}
 }
 

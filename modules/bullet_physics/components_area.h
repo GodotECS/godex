@@ -5,6 +5,12 @@
 #include "bt_def_type.h"
 #include <BulletCollision/CollisionDispatch/btGhostObject.h>
 
+struct Overlap {
+	// Used to know if this object is Still overlapped or not.
+	int detect_frame;
+	btCollisionObject *object;
+};
+
 struct BtArea {
 	COMPONENT_CUSTOM_CONSTRUCTOR(BtArea, SteadyStorage)
 
@@ -22,6 +28,9 @@ private:
 	uint32_t reload_flags = 0;
 
 public:
+	/// List of overlapping objects.
+	LocalVector<Overlap> overlaps;
+
 	/// The current space this Area is. Do not modify this.
 	BtSpaceIndex __current_space = BT_SPACE_NONE;
 
@@ -35,6 +44,8 @@ public:
 	btGhostObject *get_ghost();
 	const btGhostObject *get_ghost() const;
 
+	const btTransform &get_transform() const;
+
 	void set_layer(uint32_t p_layer);
 	uint32_t get_layer() const;
 
@@ -47,4 +58,18 @@ public:
 	void set_shape(btCollisionShape *p_shape);
 	btCollisionShape *get_shape();
 	const btCollisionShape *get_shape() const;
+
+	/// Add new overlap.
+	/// You can pass the position at which the Overlap is added in the array.
+	/// The position may change
+	void add_new_overlap(btCollisionObject *p_object, int p_detect_frame, uint32_t p_index = 0);
+
+	/// Mark the overlap as still overlapping.
+	void mark_still_overlapping(uint32_t p_overlap_index, int p_detect_frame);
+
+	/// Find the overlapping object and returns its index.
+	/// This function re-organizes the list of overlapping objects so to speedup
+	/// the search.
+	/// Note: after call this function any previous Index is no more valid.
+	uint32_t find_overlapping_object(btCollisionObject *p_coll_obj, uint32_t p_search_from);
 };

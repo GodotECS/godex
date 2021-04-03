@@ -64,7 +64,12 @@ void bt_spaces_step(
 		const FrameTime *p_iterator_info,
 		// TODO this is not used, though we need it just to be sure they are not
 		// touched by anything else.
-		Query<BtRigidBody, BtShapeBox, BtShapeSphere, BtShapeCapsule, BtShapeCone, BtShapeCylinder, BtShapeWorldMargin, BtShapeConvex, BtShapeTrimesh> &p_query);
+		Query<BtRigidBody, BtArea, BtShapeBox, BtShapeSphere, BtShapeCapsule, BtShapeCone, BtShapeCylinder, BtShapeWorldMargin, BtShapeConvex, BtShapeTrimesh> &p_query);
+
+/// Perform the Areas overlap check.
+void bt_overlap_check(
+		BtCache *p_cache,
+		Query<EntityID, BtArea> &p_query);
 
 void bt_body_sync(
 		BtPhysicsSpaces *p_spaces,

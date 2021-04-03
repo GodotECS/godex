@@ -96,6 +96,8 @@ public:
 	GodexBtMotionState *get_motion_state();
 	const GodexBtMotionState *get_motion_state() const;
 
+	const btTransform &get_transform() const;
+
 	void script_set_body_mode(uint32_t p_mode);
 	void set_body_mode(RigidMode p_mode);
 	RigidMode get_body_mode() const;

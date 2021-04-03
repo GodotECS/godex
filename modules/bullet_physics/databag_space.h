@@ -86,3 +86,11 @@ public:
 	/// Returns the Space of this ID, not mutable.
 	const BtSpace *get_space(BtSpaceIndex p_space_id) const;
 };
+
+/// This databags is used to hold the bullet physics cache.
+class BtCache : public godex::Databag {
+	DATABAG(BtCache)
+
+	/// Counter used by the overlap check to detect the IN and OUT bodies.
+	uint32_t area_check_frame_counter = 0;
+};
