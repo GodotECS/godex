@@ -69,6 +69,9 @@ void bt_body_config(
 				} else {
 					p_spaces->get_space(body->__current_space)->get_dynamics_world()->removeRigidBody(body->get_body());
 				}
+
+				// Set the space this area is on.
+				body->get_body()->setUserIndex2(BtSpaceIndex::BT_SPACE_NONE);
 			}
 
 			// Now let's add it inside the space again.
@@ -92,18 +95,29 @@ void bt_body_config(
 				body->get_body()->setMotionState(body->get_motion_state());
 				body->get_motion_state()->entity = entity;
 				body->get_motion_state()->space = space;
+
+				// Set the space this area is on.
+				body->get_body()->setUserIndex2(space_index);
+
+				// Set the EntityID
+				body->get_body()->setUserIndex3(entity);
+
+				// Mark as moved
+				space->moved_bodies.insert(entity);
 			}
 
 			body->reload_body(space_index);
 			body->__current_mode = body->get_body_mode();
 
 			// Set transfrorm
+			btTransform t;
 			if (transform != nullptr) {
-				btTransform t;
 				G_TO_B(transform->transform, t);
-				body->get_body()->setWorldTransform(t);
-				body->get_motion_state()->transf = t;
+			} else {
+				t.setIdentity();
 			}
+			body->get_body()->setWorldTransform(t);
+			body->get_motion_state()->transf = t;
 		}
 	}
 }
@@ -155,6 +169,9 @@ void bt_area_config(
 			if (area->__current_space != BtSpaceIndex::BT_SPACE_NONE) {
 				// Assume the space the area is currently on is initialized.
 				p_spaces->get_space(area->__current_space)->get_dynamics_world()->removeCollisionObject(area->get_ghost());
+
+				// Set the space this area is on.
+				area->get_ghost()->setUserIndex2(BtSpaceIndex::BT_SPACE_NONE);
 			}
 
 			// Now let's add it inside the space again.
@@ -166,14 +183,25 @@ void bt_area_config(
 						area->get_ghost(),
 						area->get_layer(),
 						area->get_mask());
+
+				// Set the space this area is on.
+				area->get_ghost()->setUserIndex2(space_index);
+
+				// Set the EntityID
+				area->get_ghost()->setUserIndex3(entity);
+
+				// Mark as moved.
+				space->moved_bodies.insert(entity);
 			}
 
 			// Set transfrorm
+			btTransform t;
 			if (transform != nullptr) {
-				btTransform t;
 				G_TO_B(transform->transform, t);
-				area->get_ghost()->setWorldTransform(t);
+			} else {
+				t.setIdentity();
 			}
+			area->get_ghost()->setWorldTransform(t);
 
 			area->reload_body(space_index);
 		}
@@ -206,6 +234,7 @@ void bt_spaces_step(
 }
 
 void bt_overlap_check(
+		const BtPhysicsSpaces *p_spaces,
 		BtCache *p_cache,
 		Query<EntityID, BtArea> &p_query) {
 	// Advance the counter.
@@ -218,10 +247,19 @@ void bt_overlap_check(
 	for (auto [entity, area_] : p_query) {
 		BtArea *area = area_;
 
+		if (unlikely(area->__current_space == BT_SPACE_NONE)) {
+			// This Area is not in world, nothing to do.
+			continue;
+		}
+
 		btAlignedObjectArray<btCollisionObject *> &aabb_overlap =
 				area->get_ghost()->getOverlappingPairs();
 
 		uint32_t last_found_overlapped_index = 0;
+
+		// This area moved?
+		const bool area_is_move =
+				p_spaces->get_space(area->__current_space)->moved_bodies.has(entity);
 
 		const btTransform area_transform = area->get_transform() /* X (TODO area scale) */;
 
@@ -234,10 +272,14 @@ void bt_overlap_check(
 					aabb_overlap[i],
 					last_found_overlapped_index);
 
-			const bool transform_changed = true;
+			// This object moved?
+			const bool aabb_overlap_is_moved =
+					p_spaces->get_space(static_cast<BtSpaceIndex>(aabb_overlap[i]->getUserIndex2()))
+							->moved_bodies.has(aabb_overlap[i]->getUserIndex3());
+
 			bool overlapping = false;
 
-			if (overlap_index == UINT32_MAX || transform_changed == false) {
+			if (overlap_index == UINT32_MAX || area_is_move || aabb_overlap_is_moved) {
 				// Extract the other object transform.
 				btTransform aabb_overlap_transform;
 				if (aabb_overlap[i]->getInternalType() == btCollisionObject::CO_RIGID_BODY) {
@@ -254,8 +296,11 @@ void bt_overlap_check(
 				// aabb_overlap_transform TODO multiply the scale.
 
 				// Collision check is required, do it.
-				OverlappingFunc func = OverlapCheck::find_algorithm(area->get_shape()->getShapeType(), aabb_overlap[i]->getCollisionShape()->getShapeType());
-				ERR_CONTINUE_MSG(func == nullptr, "No Overlap check Algorithm for this shape pair. Shape type 1:" + itos(area->get_shape()->getShapeType()) + " Shape type 2:" + itos(aabb_overlap[i]->getCollisionShape()->getShapeType()));
+				OverlappingFunc func = OverlapCheck::find_algorithm(
+						area->get_shape()->getShapeType(),
+						aabb_overlap[i]->getCollisionShape()->getShapeType());
+				ERR_CONTINUE_MSG(func == nullptr, "No Overlap check Algorithm for this shape pair. Shape A type `" + itos(area->get_shape()->getShapeType()) + "` Shape B type `" + itos(aabb_overlap[i]->getCollisionShape()->getShapeType()) + "`");
+
 				overlapping = func(
 						area->get_shape(),
 						area_transform,
@@ -264,7 +309,6 @@ void bt_overlap_check(
 			} else {
 				// This object was overlapping and its transform didn't change,
 				// skip the collision check.
-				CRASH_COND(overlap_index == UINT32_MAX);
 				overlapping = true;
 			}
 
@@ -287,13 +331,19 @@ void bt_overlap_check(
 			if (area->overlaps[i].detect_frame != frame_id) {
 				// This object is no more overlapping
 				area->overlaps.remove_unordered(i);
+				//if (area->event_mode == BtArea::ADD_COMPONENT_ON_EXIT) {
 				// TODO emit the OUT event
+				//}
+				print_line("OUT");
 			}
 		}
 
+		//if (area->event_mode == BtArea::ADD_COMPONENT_ON_ENTER) {
 		for (uint32_t i = 0; i < new_overlaps.size(); i += 1) {
 			// TODO emit the IN event
+			print_line("IN");
 		}
+		//}
 
 		new_overlaps.clear();
 	}
@@ -303,7 +353,7 @@ void bt_body_sync(
 		BtPhysicsSpaces *p_spaces,
 		Query<BtRigidBody, TransformComponent> &p_query) {
 	for (uint32_t i = 0; i < BtSpaceIndex::BT_SPACE_MAX; i += 1) {
-		BtSpaceIndex w_i = (BtSpaceIndex)i;
+		const BtSpaceIndex w_i = (BtSpaceIndex)i;
 
 		if (p_spaces->get_space(w_i)->get_dispatcher() == nullptr) {
 			// This space is disabled.

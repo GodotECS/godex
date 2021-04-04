@@ -2,6 +2,8 @@
 #include "components_rigid_body.h"
 
 #include "databag_space.h"
+
+#include "modules/bullet/collision_object_bullet.h"
 #include <btBulletCollisionCommon.h>
 
 void GodexBtMotionState::getWorldTransform(btTransform &r_world_trans) const {
@@ -29,6 +31,12 @@ void BtRigidBody::_get_storage_config(Dictionary &r_config) {
 	/// Configure the storage of this component to have pages of 500 Physis Bodies
 	/// You can tweak this in editor.
 	r_config["page_size"] = 500;
+}
+
+BtRigidBody::BtRigidBody() {
+	body.setUserPointer(this);
+	// Used by `GodotCollisionDispatcher`
+	body.setUserIndex(CollisionObjectBullet::TYPE_RIGID_BODY);
 }
 
 btRigidBody *BtRigidBody::get_body() {

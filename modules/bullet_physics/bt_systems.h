@@ -68,6 +68,7 @@ void bt_spaces_step(
 
 /// Perform the Areas overlap check.
 void bt_overlap_check(
+		const BtPhysicsSpaces *p_spaces,
 		BtCache *p_cache,
 		Query<EntityID, BtArea> &p_query);
 

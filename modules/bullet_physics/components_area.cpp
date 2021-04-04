@@ -1,5 +1,7 @@
 #include "components_area.h"
 
+#include "modules/bullet/collision_object_bullet.h"
+
 void BtArea::_bind_methods() {
 	ECS_BIND_PROPERTY_FUNC(BtArea, PropertyInfo(Variant::INT, "layer", PROPERTY_HINT_LAYERS_3D_PHYSICS), set_layer, get_layer);
 	ECS_BIND_PROPERTY_FUNC(BtArea, PropertyInfo(Variant::INT, "mask", PROPERTY_HINT_LAYERS_3D_PHYSICS), set_mask, get_mask);
@@ -12,6 +14,11 @@ void BtArea::_get_storage_config(Dictionary &r_config) {
 }
 
 BtArea::BtArea() {
+	ghost.setUserPointer(this);
+
+	// Used by `GodotCollisionDispatcher`
+	ghost.setUserIndex(CollisionObjectBullet::TYPE_AREA);
+
 	// Collision objects with a callback still have collision response
 	// with dynamic rigid bodies. In order to use collision objects as
 	// trigger (Area), It's necessary to disable the collision response.

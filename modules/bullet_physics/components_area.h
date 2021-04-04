@@ -14,10 +14,21 @@ struct Overlap {
 struct BtArea {
 	COMPONENT_CUSTOM_CONSTRUCTOR(BtArea, SteadyStorage)
 
+	enum EventMode {
+		NOTHING,
+		ADD_COMPONENT_ON_ENTER,
+		ADD_COMPONENT_ON_EXIT,
+		KEEP_COMPONENT_WHILE_OVERLAP
+	};
+
 	enum ReloadFlags {
 		/// Remove and insert the body into the world again.
 		RELOAD_FLAGS_BODY = 1 << 1,
 	};
+
+	EventMode event_mode = ADD_COMPONENT_ON_ENTER;
+	godex::component_id event_component_id = godex::COMPONENT_NONE;
+	Dictionary event_component_data;
 
 private:
 	btGhostObject ghost;
