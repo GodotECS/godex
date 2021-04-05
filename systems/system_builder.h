@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../databags/databag.h"
+#include "../instigators/instigator.h"
 #include "../iterators/query.h"
 #include <type_traits>
 
@@ -14,7 +15,7 @@ struct InfoConstructor {
 	InfoConstructor(SystemExeInfo &r_info) {}
 };
 
-/// Fetches the component stoages: `Storage`s.
+/// Fetches the component used by this `Storage`.
 /// The component storage can be taken only as mutable (non const) pointer.
 /// ```
 /// void test_func(Storage<Component> *p_component_storage){}
@@ -24,6 +25,15 @@ struct InfoConstructor<Storage<C> *, Cs...> : InfoConstructor<Cs...> {
 	InfoConstructor(SystemExeInfo &r_info) :
 			InfoConstructor<Cs...>(r_info) {
 		r_info.mutable_components_storage.insert(C::get_component_id());
+	}
+};
+
+/// Fetches the components used by this Instigator.
+template <class I, class... Cs>
+struct InfoConstructor<Instigator<I> &, Cs...> : InfoConstructor<Cs...> {
+	InfoConstructor(SystemExeInfo &r_info) :
+			InfoConstructor<Cs...>(r_info) {
+		Instigator<I>::get_components(r_info);
 	}
 };
 
@@ -76,6 +86,15 @@ struct DataFetcher<Storage<C> *> {
 
 	DataFetcher(World *p_world) :
 			inner(p_world->get_storage<C>()) {}
+};
+
+/// Instigator
+template <class I>
+struct DataFetcher<Instigator<I> &> {
+	Instigator<I> inner;
+
+	DataFetcher(World *p_world) :
+			inner(p_world) {}
 };
 
 /// Query
