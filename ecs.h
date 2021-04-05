@@ -28,8 +28,8 @@ struct DataAccessorFuncs {
 	void (*call)(void *p_self, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) = nullptr;
 };
 
-struct InstigatorInfo {
-	/// List of components instigated by this Instigator.
+struct SpawnerInfo {
+	/// List of components spawner by this Spawner.
 	LocalVector<godex::component_id> components;
 };
 
@@ -42,7 +42,7 @@ struct ComponentInfo {
 	bool notify_release_write = false;
 	bool is_event = false;
 	bool is_shareable = false;
-	LocalVector<godex::instigator_id> instigators;
+	LocalVector<godex::spawner_id> spawners;
 
 	DataAccessorFuncs accessor_funcs;
 };
@@ -83,8 +83,8 @@ public:
 private:
 	static ECS *singleton;
 
-	static LocalVector<StringName> instigators;
-	static LocalVector<InstigatorInfo> instigators_info;
+	static LocalVector<StringName> spawners;
+	static LocalVector<SpawnerInfo> spawners_info;
 
 	static LocalVector<StringName> components;
 	static LocalVector<ComponentInfo> components_info;
@@ -109,17 +109,17 @@ public:
 	/// Clear the internal memory before the complete shutdown.
 	static void __static_destructor();
 
-	// ~~ Instigators ~~
+	// ~~ Spawner ~~
 	template <class I>
-	static void register_instigator();
+	static void register_spawner();
 
-	static uint32_t get_instigators_count();
-	static bool verify_instigator_id(godex::instigator_id p_instigator_id);
+	static uint32_t get_spawners_count();
+	static bool verify_spawner_id(godex::spawner_id p_spawner_id);
 
-	static godex::instigator_id get_instigator_id(const StringName &p_name);
-	static StringName get_instigator_name(godex::instigator_id p_instigator);
+	static godex::spawner_id get_spawner_id(const StringName &p_name);
+	static StringName get_spawner_name(godex::spawner_id p_spawner);
 
-	static const LocalVector<godex::component_id> &get_instigated_components(godex::instigator_id p_instigator);
+	static const LocalVector<godex::component_id> &get_spawnable_components(godex::spawner_id p_spawner);
 
 	// ~~ Components ~~
 	template <class C>
@@ -132,8 +132,8 @@ public:
 	static void register_component_event();
 
 	// TODO specify the storage here?
-	static uint32_t register_script_component(const StringName &p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type, Vector<StringName> p_instigators);
-	static uint32_t register_script_component_event(const StringName &p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type, Vector<StringName> p_instigators);
+	static uint32_t register_script_component(const StringName &p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type, Vector<StringName> p_spawners);
+	static uint32_t register_script_component_event(const StringName &p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type, Vector<StringName> p_spawners);
 
 	static uint32_t get_components_count();
 	static bool verify_component_id(uint32_t p_component_id);
@@ -150,7 +150,7 @@ public:
 	static const LocalVector<PropertyInfo> *get_component_properties(godex::component_id p_component_id);
 	static Variant get_component_property_default(godex::component_id p_component_id, StringName p_property_name);
 
-	static const LocalVector<godex::instigator_id> &get_instigators(godex::component_id p_component_id);
+	static const LocalVector<godex::spawner_id> &get_spawners(godex::component_id p_component_id);
 
 	static bool unsafe_component_set_by_name(godex::component_id p_component_id, void *p_component, const StringName &p_name, const Variant &p_data);
 	static bool unsafe_component_get_by_name(godex::component_id p_component_id, const void *p_component, const StringName &p_name, Variant &r_data);
@@ -264,12 +264,12 @@ public:
 
 	bool has_active_world_pipeline() const;
 
-	godex::component_id get_instigator_id_obj(StringName p_instigator_name) const {
-		return get_instigator_id(p_instigator_name);
+	godex::component_id get_spawner_id_obj(StringName p_spawner_name) const {
+		return get_spawner_id(p_spawner_name);
 	}
 
-	bool verify_instigator_id_obj(godex::instigator_id p_id) const {
-		return verify_instigator_id(p_id);
+	bool verify_spawner_id_obj(godex::spawner_id p_id) const {
+		return verify_spawner_id(p_id);
 	}
 
 	godex::component_id get_component_id_obj(StringName p_component_name) const {
@@ -302,19 +302,19 @@ private:
 };
 
 template <class I>
-void ECS::register_instigator() {
-	ERR_FAIL_COND_MSG(I::get_instigator_id() != UINT32_MAX, "This instigator is already registered.");
+void ECS::register_spawner() {
+	ERR_FAIL_COND_MSG(I::get_spawner_id() != UINT32_MAX, "This spawner is already registered.");
 
 	const StringName name = I::get_class_static();
-	I::instigator_id = instigators.size();
+	I::spawner_id = spawners.size();
 
-	instigators.push_back(name);
-	instigators_info.push_back({});
+	spawners.push_back(name);
+	spawners_info.push_back({});
 
-	// Add a new scripting constant, for fast and easy `instigator` access.
-	ClassDB::bind_integer_constant(get_class_static(), StringName(), name, I::instigator_id);
+	// Add a new scripting constant, for fast and easy `spawner` access.
+	ClassDB::bind_integer_constant(get_class_static(), StringName(), name, I::spawner_id);
 
-	print_line("Instigator: " + name + " registered with ID: " + itos(I::instigator_id));
+	print_line("Spawner: " + name + " registered with ID: " + itos(I::spawner_id));
 }
 
 template <class C>
@@ -372,11 +372,11 @@ void ECS::register_component(StorageBase *(*create_storage)()) {
 		get_storage_config = C::_get_storage_config;
 	}
 
-	LocalVector<godex::instigator_id> instigators;
-	if constexpr (godex_has_get_instigators<C>::value) {
-		instigators = C::get_instigators();
-		for (uint32_t i = 0; i < instigators.size(); i += 1) {
-			instigators_info[instigators[i]].components.push_back(C::component_id);
+	LocalVector<godex::spawner_id> spawners;
+	if constexpr (godex_has_get_spawners<C>::value) {
+		spawners = C::get_spawners();
+		for (uint32_t i = 0; i < spawners.size(); i += 1) {
+			spawners_info[spawners[i]].components.push_back(C::component_id);
 		}
 	}
 
@@ -389,7 +389,7 @@ void ECS::register_component(StorageBase *(*create_storage)()) {
 					notify_release_write,
 					false,
 					shared_component_storage,
-					instigators,
+					spawners,
 					DataAccessorFuncs{
 							C::get_properties,
 							C::get_property_default,

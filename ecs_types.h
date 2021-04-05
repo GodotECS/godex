@@ -9,10 +9,10 @@
 #include "modules/gdscript/gdscript.h"
 
 template <typename T, typename = void>
-struct godex_has_get_instigators : std::false_type {};
+struct godex_has_get_spawners : std::false_type {};
 
 template <typename T>
-struct godex_has_get_instigators<T, decltype(void(std::declval<T &>().get_instigators()))> : std::true_type {};
+struct godex_has_get_spawners<T, decltype(void(std::declval<T &>().get_spawners()))> : std::true_type {};
 
 template <typename T, typename = void>
 struct godex_has_bind_methods : std::false_type {};
@@ -94,8 +94,8 @@ struct ScriptProperty {
 
 namespace godex {
 
-typedef uint32_t instigator_id;
-constexpr instigator_id INSTIGATOR_NONE = UINT32_MAX;
+typedef uint32_t spawner_id;
+constexpr spawner_id SPAWNER_NONE = UINT32_MAX;
 
 typedef uint32_t component_id;
 constexpr component_id COMPONENT_NONE = UINT32_MAX;

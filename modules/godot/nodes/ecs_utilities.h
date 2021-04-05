@@ -74,7 +74,7 @@ public:
 	void get_component_property_list(List<PropertyInfo> *p_info);
 	Variant get_property_default_value(StringName p_property_name);
 
-	Vector<StringName> get_instigators();
+	Vector<StringName> get_spawners();
 
 	/// Validate the script and returns a void string if the validation success
 	/// or the error message.

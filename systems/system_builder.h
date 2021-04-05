@@ -1,8 +1,8 @@
 #pragma once
 
 #include "../databags/databag.h"
-#include "../instigators/instigator.h"
 #include "../iterators/query.h"
+#include "../spawners/spawner.h"
 #include <type_traits>
 
 // TODO put all this into a CPP or a namespace?
@@ -28,12 +28,12 @@ struct InfoConstructor<Storage<C> *, Cs...> : InfoConstructor<Cs...> {
 	}
 };
 
-/// Fetches the components used by this Instigator.
+/// Fetches the components used by this Spawner.
 template <class I, class... Cs>
-struct InfoConstructor<Instigator<I> &, Cs...> : InfoConstructor<Cs...> {
+struct InfoConstructor<Spawner<I> &, Cs...> : InfoConstructor<Cs...> {
 	InfoConstructor(SystemExeInfo &r_info) :
 			InfoConstructor<Cs...>(r_info) {
-		Instigator<I>::get_components(r_info);
+		Spawner<I>::get_components(r_info);
 	}
 };
 
@@ -88,10 +88,10 @@ struct DataFetcher<Storage<C> *> {
 			inner(p_world->get_storage<C>()) {}
 };
 
-/// Instigator
+/// Spawner
 template <class I>
-struct DataFetcher<Instigator<I> &> {
-	Instigator<I> inner;
+struct DataFetcher<Spawner<I> &> {
+	Spawner<I> inner;
 
 	DataFetcher(World *p_world) :
 			inner(p_world) {}

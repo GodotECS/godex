@@ -162,22 +162,22 @@ Variant Component::get_property_default_value(StringName p_property_name) {
 	return ret;
 }
 
-Vector<StringName> Component::get_instigators() {
+Vector<StringName> Component::get_spawners() {
 	ERR_FAIL_COND_V(component_script.is_null(), Vector<StringName>());
 
 	ScriptInstance *si = component_script->instance_create(this);
 	ERR_FAIL_COND_V(si == nullptr, Vector<StringName>());
 
-	Vector<StringName> instigators;
-	if (si->has_method("get_instigators")) {
-		instigators = si->call("get_instigators");
+	Vector<StringName> spawners;
+	if (si->has_method("get_spawners")) {
+		spawners = si->call("get_spawners");
 	}
 
 	// Make sure to clear the script, so it's correctly destroyed.
 	set_script_instance(nullptr);
 	set_script(Ref<Script>());
 
-	return instigators;
+	return spawners;
 }
 
 String Component::validate_script(Ref<Script> p_script) {
@@ -192,8 +192,8 @@ String Component::validate_script(Ref<Script> p_script) {
 	// Make sure this Component has the correct methods.
 	for (int i = 0; i < methods.size(); i += 1) {
 		// Only this method is allowed.
-		if (methods[i].name != "@implicit_new" && methods[i].name != "get_instigators") {
-			return TTR("The only method the Component can have is the `get_instigators()`.");
+		if (methods[i].name != "@implicit_new" && methods[i].name != "get_spawners") {
+			return TTR("The only method the Component can have is the `get_spawners()`.");
 		}
 	}
 
@@ -483,7 +483,7 @@ void EditorEcs::register_dynamic_component(Component *p_component) {
 			properties,
 			// TODO make the storage customizable.
 			StorageType::DENSE_VECTOR,
-			p_component->get_instigators());
+			p_component->get_spawners());
 }
 
 void EditorEcs::register_dynamic_systems() {

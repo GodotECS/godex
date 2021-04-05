@@ -12,8 +12,8 @@
 
 ECS *ECS::singleton = nullptr;
 LocalVector<func_notify_static_destructor> ECS::notify_static_destructor;
-LocalVector<StringName> ECS::instigators;
-LocalVector<InstigatorInfo> ECS::instigators_info;
+LocalVector<StringName> ECS::spawners;
+LocalVector<SpawnerInfo> ECS::spawners_info;
 LocalVector<StringName> ECS::components;
 LocalVector<ComponentInfo> ECS::components_info;
 LocalVector<StringName> ECS::databags;
@@ -24,8 +24,8 @@ LocalVector<SystemInfo> ECS::systems_info;
 void ECS::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_active_world"), &ECS::get_active_world_node);
 
-	ClassDB::bind_method(D_METHOD("get_instigator_id", "name"), &ECS::get_instigator_id_obj);
-	ClassDB::bind_method(D_METHOD("verify_instigator_id", "id"), &ECS::verify_instigator_id_obj);
+	ClassDB::bind_method(D_METHOD("get_spawner_id", "name"), &ECS::get_spawner_id_obj);
+	ClassDB::bind_method(D_METHOD("verify_spawner_id", "id"), &ECS::verify_spawner_id_obj);
 
 	ClassDB::bind_method(D_METHOD("get_component_id", "name"), &ECS::get_component_id_obj);
 	ClassDB::bind_method(D_METHOD("verify_component_id", "id"), &ECS::verify_component_id_obj);
@@ -52,8 +52,8 @@ void ECS::__static_destructor() {
 		notify_static_destructor[i]();
 	}
 
-	instigators.reset();
-	instigators_info.reset();
+	spawners.reset();
+	spawners_info.reset();
 
 	// Clear the components static data.
 	components.reset();
@@ -129,10 +129,10 @@ Variant ECS::get_component_property_default(uint32_t p_component_id, StringName 
 	}
 }
 
-const LocalVector<godex::instigator_id> &ECS::get_instigators(godex::component_id p_component_id) {
-	static const LocalVector<godex::instigator_id> invalid_return;
+const LocalVector<godex::spawner_id> &ECS::get_spawners(godex::component_id p_component_id) {
+	static const LocalVector<godex::spawner_id> invalid_return;
 	ERR_FAIL_COND_V_MSG(ECS::verify_component_id(p_component_id) == false, invalid_return, "This component_id " + itos(p_component_id) + " is not valid.");
-	return components_info[p_component_id].instigators;
+	return components_info[p_component_id].spawners;
 }
 
 bool ECS::unsafe_component_set_by_name(godex::component_id p_component_id, void *p_component, const StringName &p_name, const Variant &p_data) {
@@ -491,35 +491,35 @@ void ECS::dispatch_active_world() {
 void ECS::ecs_init() {
 }
 
-uint32_t ECS::get_instigators_count() {
-	return instigators.size();
+uint32_t ECS::get_spawners_count() {
+	return spawners.size();
 }
 
-bool ECS::verify_instigator_id(godex::instigator_id p_instigator_id) {
-	return p_instigator_id < instigators.size();
+bool ECS::verify_spawner_id(godex::spawner_id p_spawner_id) {
+	return p_spawner_id < spawners.size();
 }
 
-godex::instigator_id ECS::get_instigator_id(const StringName &p_name) {
-	const int64_t index = instigators.find(p_name);
-	return index >= 0 ? index : godex::INSTIGATOR_NONE;
+godex::spawner_id ECS::get_spawner_id(const StringName &p_name) {
+	const int64_t index = spawners.find(p_name);
+	return index >= 0 ? index : godex::SPAWNER_NONE;
 }
 
-StringName ECS::get_instigator_name(godex::instigator_id p_instigator) {
-	ERR_FAIL_COND_V_MSG(ECS::verify_instigator_id(p_instigator) == false, StringName(), "This instigator_id " + itos(p_instigator) + " is not valid.");
-	return instigators[p_instigator];
+StringName ECS::get_spawner_name(godex::spawner_id p_spawner) {
+	ERR_FAIL_COND_V_MSG(ECS::verify_spawner_id(p_spawner) == false, StringName(), "This spawner_id " + itos(p_spawner) + " is not valid.");
+	return spawners[p_spawner];
 }
 
-const LocalVector<godex::component_id> &ECS::get_instigated_components(godex::instigator_id p_instigator) {
+const LocalVector<godex::component_id> &ECS::get_spawnable_components(godex::spawner_id p_spawner) {
 	static const LocalVector<godex::component_id> invalid_return;
-	ERR_FAIL_COND_V_MSG(ECS::verify_instigator_id(p_instigator) == false, invalid_return, "This instigator_id " + itos(p_instigator) + " is not valid.");
-	return instigators_info[p_instigator].components;
+	ERR_FAIL_COND_V_MSG(ECS::verify_spawner_id(p_spawner) == false, invalid_return, "This spawner_id " + itos(p_spawner) + " is not valid.");
+	return spawners_info[p_spawner].components;
 }
 
 uint32_t ECS::register_script_component(
 		const StringName &p_name,
 		const LocalVector<ScriptProperty> &p_properties,
 		StorageType p_storage_type,
-		Vector<StringName> p_instigators) {
+		Vector<StringName> p_spawners) {
 	{
 		const uint32_t id = get_component_id(p_name);
 		ERR_FAIL_COND_V_MSG(id != UINT32_MAX, UINT32_MAX, "The script component " + p_name + " is already registered.");
@@ -564,14 +564,14 @@ uint32_t ECS::register_script_component(
 	info->component_id = components.size();
 	info->storage_type = p_storage_type;
 
-	// Extract the instigators.
-	LocalVector<godex::instigator_id> instigators;
-	for (int i = 0; i < p_instigators.size(); i += 1) {
-		const godex::instigator_id instigator = get_instigator_id(p_instigators[i]);
-		ERR_CONTINUE_MSG(ECS::verify_instigator_id(instigator) == false, "The script component " + p_name + " has an invalid instigator with name: " + p_instigators[i]);
+	// Extract the spawners.
+	LocalVector<godex::spawner_id> spawners;
+	for (int i = 0; i < p_spawners.size(); i += 1) {
+		const godex::spawner_id spawner = get_spawner_id(p_spawners[i]);
+		ERR_CONTINUE_MSG(ECS::verify_spawner_id(spawner) == false, "The script component " + p_name + " has an invalid spawner with name: " + p_spawners[i]);
 
-		instigators.push_back(instigator);
-		instigators_info[instigator].components.push_back(info->component_id);
+		spawners.push_back(spawner);
+		spawners_info[spawner].components.push_back(info->component_id);
 	}
 
 	components.push_back(p_name);
@@ -583,7 +583,7 @@ uint32_t ECS::register_script_component(
 					false,
 					false,
 					false, // is_shared_component_storage?
-					instigators,
+					spawners,
 					DataAccessorFuncs() });
 
 	// Add a new scripting constant, for fast and easy `component` access.
@@ -598,8 +598,8 @@ uint32_t ECS::register_script_component_event(
 		const StringName &p_name,
 		const LocalVector<ScriptProperty> &p_properties,
 		StorageType p_storage_type,
-		Vector<StringName> p_instigators) {
-	const uint32_t cid = register_script_component(p_name, p_properties, p_storage_type, p_instigators);
+		Vector<StringName> p_spawners) {
+	const uint32_t cid = register_script_component(p_name, p_properties, p_storage_type, p_spawners);
 	ERR_FAIL_COND_V(cid == UINT32_MAX, UINT32_MAX);
 
 	components_info[cid].is_event = true;
