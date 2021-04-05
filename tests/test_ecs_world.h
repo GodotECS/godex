@@ -54,7 +54,8 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 	const uint32_t test_world_component_id = ECS::register_script_component(
 			"TestWorldComponent1.gd",
 			props,
-			StorageType::DENSE_VECTOR);
+			StorageType::DENSE_VECTOR,
+			Vector<StringName>());
 
 	World world;
 

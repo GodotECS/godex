@@ -14,6 +14,7 @@ methods_ecs.generate_temporary_system_exe_funcs()
 # Module source files
 env_ecs.add_source_files(env.modules_sources, "memory/*.cpp")
 env_ecs.add_source_files(env.modules_sources, "components/*.cpp")
+env_ecs.add_source_files(env.modules_sources, "spawners/*.cpp")
 env_ecs.add_source_files(env.modules_sources, "iterators/*.cpp")
 env_ecs.add_source_files(env.modules_sources, "storage/*.cpp")
 env_ecs.add_source_files(env.modules_sources, "systems/*.cpp")

@@ -123,11 +123,11 @@ Component::Component() {}
 
 Component::~Component() {}
 
-void Component::set_name(StringName p_name) {
+void Component::internal_set_name(StringName p_name) {
 	name = p_name;
 }
 
-void Component::set_component_script(Ref<Script> p_script) {
+void Component::internal_set_component_script(Ref<Script> p_script) {
 	component_script = p_script;
 }
 
@@ -162,6 +162,24 @@ Variant Component::get_property_default_value(StringName p_property_name) {
 	return ret;
 }
 
+Vector<StringName> Component::get_spawners() {
+	ERR_FAIL_COND_V(component_script.is_null(), Vector<StringName>());
+
+	ScriptInstance *si = component_script->instance_create(this);
+	ERR_FAIL_COND_V(si == nullptr, Vector<StringName>());
+
+	Vector<StringName> spawners;
+	if (si->has_method("get_spawners")) {
+		spawners = si->call("get_spawners");
+	}
+
+	// Make sure to clear the script, so it's correctly destroyed.
+	set_script_instance(nullptr);
+	set_script(Ref<Script>());
+
+	return spawners;
+}
+
 String Component::validate_script(Ref<Script> p_script) {
 	ERR_FAIL_COND_V(p_script.is_null(), "Script is null.");
 	ERR_FAIL_COND_V(p_script->is_valid() == false, "Script has some errors.");
@@ -170,10 +188,12 @@ String Component::validate_script(Ref<Script> p_script) {
 	// Make sure doesn't have any function in it.
 	List<MethodInfo> methods;
 	p_script->get_script_method_list(&methods);
-	if (methods.size() > 0) {
+
+	// Make sure this Component has the correct methods.
+	for (int i = 0; i < methods.size(); i += 1) {
 		// Only this method is allowed.
-		if (methods.front()->get().name != "@implicit_new") {
-			return TTR("The component script can't have any method in it.");
+		if (methods[i].name != "@implicit_new" && methods[i].name != "get_spawners") {
+			return TTR("The only method the Component can have is the `get_spawners()`.");
 		}
 	}
 
@@ -258,8 +278,8 @@ StringName EditorEcs::reload_component(const String &p_path) {
 
 		Ref<Component> component;
 		component.instance();
-		component->set_name(name);
-		component->set_component_script(script);
+		component->internal_set_name(name);
+		component->internal_set_component_script(script);
 
 		component_names.push_back(name);
 		components.push_back(component);
@@ -441,23 +461,29 @@ void EditorEcs::register_dynamic_components() {
 	load_components();
 
 	for (uint32_t i = 0; i < components.size(); i += 1) {
-		List<PropertyInfo> raw_properties;
-		components[i]->get_component_property_list(&raw_properties);
-
-		LocalVector<ScriptProperty> properties;
-		properties.reserve(raw_properties.size());
-		for (List<PropertyInfo>::Element *e = raw_properties.front(); e; e = e->next()) {
-			properties.push_back({ e->get(),
-					// TODO use a way to get all the values at once.
-					components[i]->get_property_default_value(e->get().name) });
-		}
-
-		ECS::register_script_component(
-				component_names[i],
-				properties,
-				// TODO make the storage customizable.
-				StorageType::DENSE_VECTOR);
+		components[i]->internal_set_name(component_names[i]);
+		register_dynamic_component(components[i].ptr());
 	}
+}
+
+void EditorEcs::register_dynamic_component(Component *p_component) {
+	List<PropertyInfo> raw_properties;
+	p_component->get_component_property_list(&raw_properties);
+
+	LocalVector<ScriptProperty> properties;
+	properties.reserve(raw_properties.size());
+	for (List<PropertyInfo>::Element *e = raw_properties.front(); e; e = e->next()) {
+		properties.push_back({ e->get(),
+				// TODO use a way to get all the values at once.
+				p_component->get_property_default_value(e->get().name) });
+	}
+
+	ECS::register_script_component(
+			p_component->get_name(),
+			properties,
+			// TODO make the storage customizable.
+			StorageType::DENSE_VECTOR,
+			p_component->get_spawners());
 }
 
 void EditorEcs::register_dynamic_systems() {

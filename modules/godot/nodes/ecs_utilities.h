@@ -62,17 +62,19 @@ class Component : public Resource {
 
 	static void _bind_methods();
 
-	void set_name(StringName p_name);
-	void set_component_script(Ref<Script> p_script);
-
 public:
 	Component();
 	~Component();
+
+	void internal_set_name(StringName p_name);
+	void internal_set_component_script(Ref<Script> p_script);
 
 	StringName get_name() const;
 
 	void get_component_property_list(List<PropertyInfo> *p_info);
 	Variant get_property_default_value(StringName p_property_name);
+
+	Vector<StringName> get_spawners();
 
 	/// Validate the script and returns a void string if the validation success
 	/// or the error message.
@@ -151,6 +153,7 @@ public:
 
 	static void register_runtime_scripts();
 	static void register_dynamic_components();
+	static void register_dynamic_component(Component *p_component);
 	static void register_dynamic_systems();
 
 private:

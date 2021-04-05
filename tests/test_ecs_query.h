@@ -8,6 +8,7 @@
 #include "../iterators/dynamic_query.h"
 #include "../modules/godot/components/transform_component.h"
 #include "../storage/batch_storage.h"
+#include "../storage/dense_vector_storage.h"
 #include "../world/world.h"
 
 struct TagQueryTestComponent {
@@ -1389,7 +1390,8 @@ TEST_CASE("[Modules][ECS] Test dynamic query with dynamic storages.") {
 	const uint32_t test_dyn_component_id = ECS::register_script_component(
 			"TestDynamicQueryComponent1.gd",
 			props,
-			StorageType::DENSE_VECTOR);
+			StorageType::DENSE_VECTOR,
+			Vector<StringName>());
 
 	World world;
 

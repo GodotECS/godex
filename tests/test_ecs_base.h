@@ -26,7 +26,8 @@ TEST_CASE("[Modules][ECS] Test ECS dynamic component.") {
 	const uint32_t test_dyn_component_id = ECS::register_script_component(
 			"TestDynamicBaseComponent1.gd",
 			props,
-			StorageType::DENSE_VECTOR);
+			StorageType::DENSE_VECTOR,
+			Vector<StringName>());
 
 	// Make sure this component is created.
 	CHECK(test_dyn_component_id != UINT32_MAX);
@@ -41,7 +42,8 @@ TEST_CASE("[Modules][ECS] Test ECS dynamic component double registration.") {
 	const uint32_t second_test_dyn_component_id = ECS::register_script_component(
 			"TestDynamicBaseComponent1.gd",
 			props,
-			StorageType::DENSE_VECTOR);
+			StorageType::DENSE_VECTOR,
+			Vector<StringName>());
 
 	// Make sure this component was not created since it already exists.
 	CHECK(second_test_dyn_component_id == UINT32_MAX);
@@ -55,7 +57,8 @@ TEST_CASE("[Modules][ECS] Test ECS dynamic component with wrong default type.") 
 	const uint32_t test_dyn_component_id = ECS::register_script_component(
 			"TestDynamicBaseComponent2.gd",
 			props,
-			StorageType::DENSE_VECTOR);
+			StorageType::DENSE_VECTOR,
+			Vector<StringName>());
 
 	// Make sure this component was not created.
 	CHECK(test_dyn_component_id == UINT32_MAX);

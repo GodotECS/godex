@@ -12,6 +12,8 @@
 
 ECS *ECS::singleton = nullptr;
 LocalVector<func_notify_static_destructor> ECS::notify_static_destructor;
+LocalVector<StringName> ECS::spawners;
+LocalVector<SpawnerInfo> ECS::spawners_info;
 LocalVector<StringName> ECS::components;
 LocalVector<ComponentInfo> ECS::components_info;
 LocalVector<StringName> ECS::databags;
@@ -22,14 +24,17 @@ LocalVector<SystemInfo> ECS::systems_info;
 void ECS::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_active_world"), &ECS::get_active_world_node);
 
+	ClassDB::bind_method(D_METHOD("get_spawner_id", "name"), &ECS::get_spawner_id_obj);
+	ClassDB::bind_method(D_METHOD("verify_spawner_id", "id"), &ECS::verify_spawner_id_obj);
+
 	ClassDB::bind_method(D_METHOD("get_component_id", "name"), &ECS::get_component_id_obj);
-	ClassDB::bind_method(D_METHOD("verify_component_id", "name"), &ECS::verify_component_id_obj);
+	ClassDB::bind_method(D_METHOD("verify_component_id", "id"), &ECS::verify_component_id_obj);
 
 	ClassDB::bind_method(D_METHOD("get_databag_id", "name"), &ECS::get_databag_id_obj);
-	ClassDB::bind_method(D_METHOD("verify_databag_id", "name"), &ECS::verify_databag_id_obj);
+	ClassDB::bind_method(D_METHOD("verify_databag_id", "id"), &ECS::verify_databag_id_obj);
 
 	ClassDB::bind_method(D_METHOD("get_system_id", "name"), &ECS::get_system_id_obj);
-	ClassDB::bind_method(D_METHOD("verify_system_id", "name"), &ECS::verify_system_id_obj);
+	ClassDB::bind_method(D_METHOD("verify_system_id", "id"), &ECS::verify_system_id_obj);
 
 	BIND_CONSTANT(NOTIFICATION_ECS_WORLD_LOADED)
 	BIND_CONSTANT(NOTIFICATION_ECS_WORLD_PRE_UNLOAD)
@@ -46,6 +51,9 @@ void ECS::__static_destructor() {
 	for (uint32_t i = 0; i < notify_static_destructor.size(); i += 1) {
 		notify_static_destructor[i]();
 	}
+
+	spawners.reset();
+	spawners_info.reset();
 
 	// Clear the components static data.
 	components.reset();
@@ -119,6 +127,12 @@ Variant ECS::get_component_property_default(uint32_t p_component_id, StringName 
 		// Native
 		return components_info[p_component_id].accessor_funcs.get_property_default(p_property_name);
 	}
+}
+
+const LocalVector<godex::spawner_id> &ECS::get_spawners(godex::component_id p_component_id) {
+	static const LocalVector<godex::spawner_id> invalid_return;
+	ERR_FAIL_COND_V_MSG(ECS::verify_component_id(p_component_id) == false, invalid_return, "This component_id " + itos(p_component_id) + " is not valid.");
+	return components_info[p_component_id].spawners;
 }
 
 bool ECS::unsafe_component_set_by_name(godex::component_id p_component_id, void *p_component, const StringName &p_name, const Variant &p_data) {
@@ -477,7 +491,35 @@ void ECS::dispatch_active_world() {
 void ECS::ecs_init() {
 }
 
-uint32_t ECS::register_script_component(const StringName &p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type) {
+uint32_t ECS::get_spawners_count() {
+	return spawners.size();
+}
+
+bool ECS::verify_spawner_id(godex::spawner_id p_spawner_id) {
+	return p_spawner_id < spawners.size();
+}
+
+godex::spawner_id ECS::get_spawner_id(const StringName &p_name) {
+	const int64_t index = spawners.find(p_name);
+	return index >= 0 ? index : godex::SPAWNER_NONE;
+}
+
+StringName ECS::get_spawner_name(godex::spawner_id p_spawner) {
+	ERR_FAIL_COND_V_MSG(ECS::verify_spawner_id(p_spawner) == false, StringName(), "This spawner_id " + itos(p_spawner) + " is not valid.");
+	return spawners[p_spawner];
+}
+
+const LocalVector<godex::component_id> &ECS::get_spawnable_components(godex::spawner_id p_spawner) {
+	static const LocalVector<godex::component_id> invalid_return;
+	ERR_FAIL_COND_V_MSG(ECS::verify_spawner_id(p_spawner) == false, invalid_return, "This spawner_id " + itos(p_spawner) + " is not valid.");
+	return spawners_info[p_spawner].components;
+}
+
+uint32_t ECS::register_script_component(
+		const StringName &p_name,
+		const LocalVector<ScriptProperty> &p_properties,
+		StorageType p_storage_type,
+		Vector<StringName> p_spawners) {
 	{
 		const uint32_t id = get_component_id(p_name);
 		ERR_FAIL_COND_V_MSG(id != UINT32_MAX, UINT32_MAX, "The script component " + p_name + " is already registered.");
@@ -522,6 +564,16 @@ uint32_t ECS::register_script_component(const StringName &p_name, const LocalVec
 	info->component_id = components.size();
 	info->storage_type = p_storage_type;
 
+	// Extract the spawners.
+	LocalVector<godex::spawner_id> spawners;
+	for (int i = 0; i < p_spawners.size(); i += 1) {
+		const godex::spawner_id spawner = get_spawner_id(p_spawners[i]);
+		ERR_CONTINUE_MSG(ECS::verify_spawner_id(spawner) == false, "The script component " + p_name + " has an invalid spawner with name: " + p_spawners[i]);
+
+		spawners.push_back(spawner);
+		spawners_info[spawner].components.push_back(info->component_id);
+	}
+
 	components.push_back(p_name);
 	components_info.push_back(
 			ComponentInfo{
@@ -531,6 +583,7 @@ uint32_t ECS::register_script_component(const StringName &p_name, const LocalVec
 					false,
 					false,
 					false, // is_shared_component_storage?
+					spawners,
 					DataAccessorFuncs() });
 
 	// Add a new scripting constant, for fast and easy `component` access.
@@ -541,8 +594,12 @@ uint32_t ECS::register_script_component(const StringName &p_name, const LocalVec
 	return info->component_id;
 }
 
-uint32_t ECS::register_script_component_event(const StringName &p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type) {
-	const uint32_t cid = register_script_component(p_name, p_properties, p_storage_type);
+uint32_t ECS::register_script_component_event(
+		const StringName &p_name,
+		const LocalVector<ScriptProperty> &p_properties,
+		StorageType p_storage_type,
+		Vector<StringName> p_spawners) {
+	const uint32_t cid = register_script_component(p_name, p_properties, p_storage_type, p_spawners);
 	ERR_FAIL_COND_V(cid == UINT32_MAX, UINT32_MAX);
 
 	components_info[cid].is_event = true;
