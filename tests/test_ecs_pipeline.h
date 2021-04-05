@@ -6,6 +6,7 @@
 #include "../ecs.h"
 #include "../modules/godot/components/transform_component.h"
 #include "../pipeline/pipeline.h"
+#include "../storage/dense_vector_storage.h"
 #include "../systems/dynamic_system.h"
 
 class PipelineTestDatabag1 : public godex::Databag {

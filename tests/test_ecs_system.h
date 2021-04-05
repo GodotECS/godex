@@ -183,7 +183,8 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 	const uint32_t test_dyn_component_id = ECS::register_script_component(
 			"TestDynamicSystemComponent1.gd",
 			props,
-			StorageType::DENSE_VECTOR);
+			StorageType::DENSE_VECTOR,
+			Vector<StringName>());
 
 	World world;
 
