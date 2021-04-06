@@ -314,7 +314,10 @@ void EditorEcs::component_get_properties(const StringName &p_component_name, Lis
 			component->get_component_property_list(r_properties);
 		}
 	} else {
-		const LocalVector<PropertyInfo> *props = ECS::get_component_properties(ECS::get_component_id(p_component_name));
+		const godex::component_id component = ECS::get_component_id(p_component_name);
+		ERR_FAIL_COND_MSG(component == godex::COMPONENT_NONE, "The component " + p_component_name + " doesn't exists.");
+
+		const LocalVector<PropertyInfo> *props = ECS::get_component_properties(component);
 		for (uint32_t i = 0; i < props->size(); i += 1) {
 			r_properties->push_back((*props)[i]);
 		}
