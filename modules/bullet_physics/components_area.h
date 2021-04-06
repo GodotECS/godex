@@ -5,6 +5,10 @@
 #include "bt_def_type.h"
 #include <BulletCollision/CollisionDispatch/btGhostObject.h>
 
+struct OverlapEventSpawner {
+	SPAWNER(OverlapEventSpawner)
+};
+
 struct Overlap {
 	// Used to know if this object is Still overlapped or not.
 	int detect_frame;
@@ -26,8 +30,8 @@ struct BtArea {
 		RELOAD_FLAGS_BODY = 1 << 1,
 	};
 
-	EventMode event_mode = ADD_COMPONENT_ON_ENTER;
-	godex::component_id event_component_id = godex::COMPONENT_NONE;
+	int event_mode = ADD_COMPONENT_ON_ENTER;
+	StringName event_component = "";
 	Dictionary event_component_data;
 
 private:

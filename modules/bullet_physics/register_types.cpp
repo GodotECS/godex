@@ -14,6 +14,8 @@ void ecs_register_bullet_physics_types() {
 	// Initialize the Overlap check algorithms.
 	OverlapCheck::init();
 
+	ECS::register_spawner<OverlapEventSpawner>();
+
 	ECS::register_databag<BtPhysicsSpaces>();
 	ECS::register_databag<BtCache>();
 

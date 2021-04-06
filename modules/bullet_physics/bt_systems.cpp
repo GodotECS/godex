@@ -331,19 +331,17 @@ void bt_overlap_check(
 			if (area->overlaps[i].detect_frame != frame_id) {
 				// This object is no more overlapping
 				area->overlaps.remove_unordered(i);
-				//if (area->event_mode == BtArea::ADD_COMPONENT_ON_EXIT) {
-				// TODO emit the OUT event
-				//}
-				print_line("OUT");
+				if (area->event_mode == BtArea::ADD_COMPONENT_ON_EXIT) {
+					// TODO emit the OUT event
+				}
 			}
 		}
 
-		//if (area->event_mode == BtArea::ADD_COMPONENT_ON_ENTER) {
-		for (uint32_t i = 0; i < new_overlaps.size(); i += 1) {
-			// TODO emit the IN event
-			print_line("IN");
+		if (area->event_mode == BtArea::ADD_COMPONENT_ON_ENTER) {
+			for (uint32_t i = 0; i < new_overlaps.size(); i += 1) {
+				// TODO emit the IN event
+			}
 		}
-		//}
 
 		new_overlaps.clear();
 	}

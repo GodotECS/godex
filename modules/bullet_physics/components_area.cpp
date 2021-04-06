@@ -3,6 +3,10 @@
 #include "modules/bullet/collision_object_bullet.h"
 
 void BtArea::_bind_methods() {
+	ECS_BIND_PROPERTY(BtArea, PropertyInfo(Variant::INT, "event_mode", PROPERTY_HINT_ENUM, "Nothing,Add Component on enter,Add component on exit,Keep component while overlap"), event_mode);
+	ECS_BIND_PROPERTY(BtArea, PropertyInfo(Variant::STRING_NAME, "event_component", (PropertyHint)godex::PROPERTY_HINT_ECS_SPAWNER, "OverlapEventSpawner"), event_component);
+	ECS_BIND_PROPERTY(BtArea, PropertyInfo(Variant::DICTIONARY, "event_component_data"), event_component_data);
+
 	ECS_BIND_PROPERTY_FUNC(BtArea, PropertyInfo(Variant::INT, "layer", PROPERTY_HINT_LAYERS_3D_PHYSICS), set_layer, get_layer);
 	ECS_BIND_PROPERTY_FUNC(BtArea, PropertyInfo(Variant::INT, "mask", PROPERTY_HINT_LAYERS_3D_PHYSICS), set_mask, get_mask);
 }
