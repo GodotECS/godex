@@ -6,6 +6,7 @@
 #include "core/config/project_settings.h"
 #include "core/io/resource_loader.h"
 #include "core/object/script_language.h"
+#include "editor/editor_node.h"
 
 void System::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_space", "space"), &System::set_space);
@@ -498,6 +499,8 @@ void EditorEcs::register_dynamic_systems() {
 }
 
 bool EditorEcs::save_script(const String &p_setting_list_name, const String &p_script_path) {
+	ERR_FAIL_COND_V_MSG(EditorNode::get_singleton() == nullptr, false, "The editor is not defined.");
+
 	Array scripts;
 	if (ProjectSettings::get_singleton()->has_setting(p_setting_list_name)) {
 		scripts = ProjectSettings::get_singleton()->get_setting(p_setting_list_name);
@@ -507,8 +510,14 @@ bool EditorEcs::save_script(const String &p_setting_list_name, const String &p_s
 		// Script already stored.
 		return false;
 	} else {
+		Array prev_scripts = scripts.duplicate(true);
 		scripts.push_back(p_script_path);
-		ProjectSettings::get_singleton()->set_setting(p_setting_list_name, p_script_path);
+
+		EditorNode::get_undo_redo()->create_action(TTR("Save script " + p_setting_list_name));
+		EditorNode::get_undo_redo()->add_do_method(ProjectSettings::get_singleton(), "set_setting", p_setting_list_name, scripts);
+		EditorNode::get_undo_redo()->add_undo_method(ProjectSettings::get_singleton(), "set_setting", p_setting_list_name, prev_scripts);
+		EditorNode::get_undo_redo()->commit_action();
+
 		return true;
 	}
 }
