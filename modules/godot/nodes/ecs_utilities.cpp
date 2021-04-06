@@ -235,6 +235,7 @@ bool EditorEcs::component_loaded = false;
 bool EditorEcs::systems_loaded = false;
 bool EditorEcs::ecs_initialized = false;
 
+OAHashMap<StringName, Set<StringName>> EditorEcs::spawners;
 LocalVector<StringName> EditorEcs::component_names;
 LocalVector<Ref<Component>> EditorEcs::components;
 LocalVector<StringName> EditorEcs::system_names;
@@ -245,6 +246,31 @@ void EditorEcs::__static_destructor() {
 	components.reset();
 	system_names.reset();
 	systems.reset();
+}
+
+Vector<StringName> EditorEcs::spawner_get_components(const StringName &spawner_name) {
+	Vector<StringName> ret;
+
+	// If in editor, extracts the spawnable components.
+	if (Engine::get_singleton()->is_editor_hint()) {
+		Set<StringName> *spawnable_components = spawners.lookup_ptr(spawner_name);
+		if (spawnable_components != nullptr) {
+			for (Set<StringName>::Element *e = spawnable_components->front(); e; e = e->next()) {
+				ret.push_back(e->get());
+			}
+		}
+	}
+
+	// Now extract the C++ spawnable components.
+	const godex::spawner_id spawner = ECS::get_spawner_id(spawner_name);
+	if (spawner != godex::SPAWNER_NONE) {
+		const LocalVector<godex::component_id> &spawnable_components = ECS::get_spawnable_components(spawner);
+		for (uint32_t i = 0; i < spawnable_components.size(); i += 1) {
+			ret.push_back(ECS::get_component_name(spawnable_components[i]));
+		}
+	}
+
+	return ret;
 }
 
 void EditorEcs::load_components() {
@@ -283,6 +309,20 @@ StringName EditorEcs::reload_component(const String &p_path) {
 
 		component_names.push_back(name);
 		components.push_back(component);
+
+		if (Engine::get_singleton()->is_editor_hint()) {
+			// In editor, fetch the spawners.
+
+			Vector<StringName> comp_spawners = component->get_spawners();
+			for (int i = 0; i < comp_spawners.size(); i += 1) {
+				Set<StringName> *spawner_components = spawners.lookup_ptr(comp_spawners[i]);
+				if (spawner_components == nullptr) {
+					spawners.insert(comp_spawners[i], Set<StringName>());
+					spawner_components = spawners.lookup_ptr(comp_spawners[i]);
+				}
+				spawner_components->insert(name);
+			}
+		}
 	}
 	return name;
 }

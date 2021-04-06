@@ -99,6 +99,11 @@ class EditorEcs {
 	/// Used to know if the ScriptedEcs components are registered.
 	static bool ecs_initialized;
 
+	/// List of script components each spawner can spawn.
+	/// @Key: Spawner name
+	/// @Value: List of script components
+	static OAHashMap<StringName, Set<StringName>> spawners;
+
 	static LocalVector<StringName> component_names;
 	static LocalVector<Ref<Component>> components;
 
@@ -106,10 +111,14 @@ class EditorEcs {
 	static LocalVector<Ref<System>> systems;
 
 public:
-	// ---------------------------------------------------------------- Component
 	/// Clear the internal memory before the complete shutdown.
 	static void __static_destructor();
 
+	// ------------------------------------------------------------------ Spawner
+	/// Returns the components name this spawner can spawn.
+	static Vector<StringName> spawner_get_components(const StringName &spawner_name);
+
+	// ---------------------------------------------------------------- Component
 	/// Loads components.
 	static void load_components();
 

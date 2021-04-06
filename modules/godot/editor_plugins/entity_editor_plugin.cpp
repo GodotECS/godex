@@ -271,6 +271,24 @@ void EntityEditor::create_component_inspector(StringName p_component_name, VBoxC
 						editor->setup(options);
 						prop = editor;
 
+					} else if (e->get().hint == godex::PROPERTY_HINT_ECS_SPAWNER) {
+						const StringName spawner_name = e->get().hint_string;
+						const Vector<StringName> components = EditorEcs::spawner_get_components(spawner_name);
+
+						Vector<String> enum_component_list;
+						{
+							enum_component_list.resize(components.size() + 1);
+							String *r = enum_component_list.ptrw();
+							r[0] = "";
+							for (int i = 0; i < components.size(); i += 1) {
+								r[i + 1] = components[i];
+							}
+						}
+
+						EditorPropertyTextEnum *editor = memnew(EditorPropertyTextEnum);
+						editor->setup(enum_component_list, false);
+						prop = editor;
+
 					} else if (e->get().hint == PROPERTY_HINT_MULTILINE_TEXT) {
 						EditorPropertyMultilineText *editor = memnew(EditorPropertyMultilineText);
 						prop = editor;
@@ -453,6 +471,25 @@ void EntityEditor::create_component_inspector(StringName p_component_name, VBoxC
 						Vector<String> options = e->get().hint_string.split(",");
 						editor->setup(options, true);
 						prop = editor;
+
+					} else if (e->get().hint == godex::PROPERTY_HINT_ECS_SPAWNER) {
+						const StringName spawner_name = e->get().hint_string;
+						const Vector<StringName> components = EditorEcs::spawner_get_components(spawner_name);
+
+						Vector<String> enum_component_list;
+						{
+							enum_component_list.resize(components.size() + 1);
+							String *r = enum_component_list.ptrw();
+							r[0] = "";
+							for (int i = 0; i < components.size(); i += 1) {
+								r[i + 1] = components[i];
+							}
+						}
+
+						EditorPropertyTextEnum *editor = memnew(EditorPropertyTextEnum);
+						editor->setup(enum_component_list, true);
+						prop = editor;
+
 					} else {
 						EditorPropertyText *editor = memnew(EditorPropertyText);
 						if (e->get().hint == PROPERTY_HINT_PLACEHOLDER_TEXT) {
