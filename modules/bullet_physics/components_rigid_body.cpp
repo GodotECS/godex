@@ -2,7 +2,7 @@
 #include "components_rigid_body.h"
 
 #include "databag_space.h"
-
+#include "modules/bullet/bullet_types_converter.h"
 #include "modules/bullet/collision_object_bullet.h"
 #include <btBulletCollisionCommon.h>
 
@@ -25,6 +25,8 @@ void BtRigidBody::_bind_methods() {
 	ECS_BIND_PROPERTY_FUNC(BtRigidBody, PropertyInfo(Variant::FLOAT, "mass", PROPERTY_HINT_RANGE, "0,1000,0.01,1"), set_mass, get_mass);
 	ECS_BIND_PROPERTY_FUNC(BtRigidBody, PropertyInfo(Variant::INT, "layer", PROPERTY_HINT_LAYERS_3D_PHYSICS), set_layer, get_layer);
 	ECS_BIND_PROPERTY_FUNC(BtRigidBody, PropertyInfo(Variant::INT, "mask", PROPERTY_HINT_LAYERS_3D_PHYSICS), set_mask, get_mask);
+	ECS_BIND_PROPERTY_FUNC(BtRigidBody, PropertyInfo(Variant::VECTOR3, "linear_factor"), set_linear_factor, get_linear_factor);
+	ECS_BIND_PROPERTY_FUNC(BtRigidBody, PropertyInfo(Variant::VECTOR3, "angular_factor"), set_angular_factor, get_angular_factor);
 }
 
 void BtRigidBody::_get_storage_config(Dictionary &r_config) {
@@ -164,6 +166,30 @@ void BtRigidBody::set_mask(uint32_t p_mask) {
 
 uint32_t BtRigidBody::get_mask() const {
 	return mask;
+}
+
+void BtRigidBody::set_linear_factor(const Vector3 &p_factor) {
+	btVector3 f;
+	G_TO_B(p_factor, f);
+	body.setLinearFactor(f);
+}
+
+Vector3 BtRigidBody::get_linear_factor() const {
+	Vector3 f;
+	B_TO_G(body.getLinearFactor(), f);
+	return f;
+}
+
+void BtRigidBody::set_angular_factor(const Vector3 &p_factor) {
+	btVector3 f;
+	G_TO_B(p_factor, f);
+	body.setAngularFactor(f);
+}
+
+Vector3 BtRigidBody::get_angular_factor() const {
+	Vector3 f;
+	B_TO_G(body.getAngularFactor(), f);
+	return f;
 }
 
 bool BtRigidBody::need_body_reload() const {
