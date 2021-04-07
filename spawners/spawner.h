@@ -62,6 +62,18 @@ public:
 			world(p_world) {}
 
 	template <class C>
+	bool has(EntityID p_entity) {
+		return has(C::get_component_id(), p_entity);
+	}
+
+	bool has(godex::component_id p_component, EntityID p_entity) {
+		if (unlikely(godex::spawner_validate_insert(I::get_spawner_id(), p_component) == false)) {
+			return false;
+		}
+		return world->get_storage(p_component)->has(p_entity);
+	}
+
+	template <class C>
 	void insert(EntityID p_entity, const C &p_data) {
 		if (unlikely(godex::spawner_validate_insert(I::get_spawner_id(), C::get_component_id()) == false)) {
 			return;
@@ -79,6 +91,18 @@ public:
 			return;
 		}
 		world->get_storage(p_component)->insert_dynamic(p_entity, p_data);
+	}
+
+	template <class C>
+	void remove(EntityID p_entity) {
+		remove(C::get_component_id(), p_entity);
+	}
+
+	void remove(godex::component_id p_component, EntityID p_entity) {
+		if (unlikely(godex::spawner_validate_insert(I::get_spawner_id(), p_component) == false)) {
+			return;
+		}
+		world->get_storage(p_component)->remove(p_entity);
 	}
 
 	static void get_components(SystemExeInfo &r_info) {
