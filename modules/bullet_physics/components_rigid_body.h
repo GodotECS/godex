@@ -117,6 +117,12 @@ public:
 	void set_mask(uint32_t p_mask);
 	uint32_t get_mask() const;
 
+	void set_linear_factor(const Vector3 &p_factor);
+	Vector3 get_linear_factor() const;
+
+	void set_angular_factor(const Vector3 &p_factor);
+	Vector3 get_angular_factor() const;
+
 	bool need_body_reload() const;
 	void reload_body(BtSpaceIndex p_index);
 
