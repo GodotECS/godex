@@ -122,7 +122,7 @@ Variant ECS::get_component_property_default(uint32_t p_component_id, StringName 
 
 	if (components_info[p_component_id].dynamic_component_info != nullptr) {
 		// Script
-		return components_info[p_component_id].dynamic_component_info->get_property_default(p_property_name).duplicate();
+		return components_info[p_component_id].dynamic_component_info->get_property_default(p_property_name).duplicate(true);
 	} else {
 		// Native
 		return components_info[p_component_id].accessor_funcs.get_property_default(p_property_name);

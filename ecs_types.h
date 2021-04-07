@@ -93,11 +93,12 @@ struct ScriptProperty {
 };
 
 namespace godex {
-
 /// This is used to introduce a new editor hint: This hint is used to display
 /// the list of available spawners on editor.
 constexpr int PROPERTY_HINT_ECS_SPAWNER = PROPERTY_HINT_MAX + 1;
+} // namespace godex
 
+namespace godex {
 typedef uint32_t spawner_id;
 constexpr spawner_id SPAWNER_NONE = UINT32_MAX;
 

@@ -2,6 +2,7 @@
 
 #include "../godot/components/transform_component.h"
 #include "../godot/databags/godot_engine_databags.h"
+#include "components_area.h"
 #include "components_rigid_body.h"
 #include "components_rigid_shape.h"
 #include "databag_space.h"
@@ -30,6 +31,30 @@ void bt_body_config(
 								Changed<BtShapeTrimesh>>>,
 				Maybe<TransformComponent>> &p_query);
 
+/// Configures the Area
+/// This `System` is responsible for the area lifetime.
+/// - Build the shape.
+/// - Build the area.
+/// - Assign the shape to the area.
+/// - Assigne the area to the world.
+/// - Re-fresh the area if something changed.
+void bt_area_config(
+		BtPhysicsSpaces *p_spaces,
+		Query<
+				EntityID,
+				Any<Changed<BtArea>,
+						Changed<BtSpaceMarker>,
+						Join<
+								Changed<BtShapeBox>,
+								Changed<BtShapeSphere>,
+								Changed<BtShapeCapsule>,
+								Changed<BtShapeCone>,
+								Changed<BtShapeCylinder>,
+								Changed<BtShapeWorldMargin>,
+								Changed<BtShapeConvex>,
+								Changed<BtShapeTrimesh>>>,
+				Maybe<TransformComponent>> &p_query);
+
 // TODO Shape remove from `Entity`
 
 // TODO Body remove from `Entity`
@@ -39,7 +64,14 @@ void bt_spaces_step(
 		const FrameTime *p_iterator_info,
 		// TODO this is not used, though we need it just to be sure they are not
 		// touched by anything else.
-		Query<BtRigidBody, BtShapeBox, BtShapeSphere, BtShapeCapsule, BtShapeCone, BtShapeCylinder, BtShapeWorldMargin, BtShapeConvex, BtShapeTrimesh> &p_query);
+		Query<BtRigidBody, BtArea, BtShapeBox, BtShapeSphere, BtShapeCapsule, BtShapeCone, BtShapeCylinder, BtShapeWorldMargin, BtShapeConvex, BtShapeTrimesh> &p_query);
+
+/// Perform the Areas overlap check.
+void bt_overlap_check(
+		const BtPhysicsSpaces *p_spaces,
+		BtCache *p_cache,
+		Spawner<OverlapEventSpawner> &p_spawner,
+		Query<EntityID, BtArea> &p_query);
 
 void bt_body_sync(
 		BtPhysicsSpaces *p_spaces,

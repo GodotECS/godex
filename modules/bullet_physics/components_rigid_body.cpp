@@ -2,6 +2,8 @@
 #include "components_rigid_body.h"
 
 #include "databag_space.h"
+
+#include "modules/bullet/collision_object_bullet.h"
 #include <btBulletCollisionCommon.h>
 
 void GodexBtMotionState::getWorldTransform(btTransform &r_world_trans) const {
@@ -31,6 +33,12 @@ void BtRigidBody::_get_storage_config(Dictionary &r_config) {
 	r_config["page_size"] = 500;
 }
 
+BtRigidBody::BtRigidBody() {
+	body.setUserPointer(this);
+	// Used by `GodotCollisionDispatcher`
+	body.setUserIndex(CollisionObjectBullet::TYPE_RIGID_BODY);
+}
+
 btRigidBody *BtRigidBody::get_body() {
 	return &body;
 }
@@ -45,6 +53,10 @@ GodexBtMotionState *BtRigidBody::get_motion_state() {
 
 const GodexBtMotionState *BtRigidBody::get_motion_state() const {
 	return &motion_state;
+}
+
+const btTransform &BtRigidBody::get_transform() const {
+	return motion_state.transf;
 }
 
 void BtRigidBody::script_set_body_mode(uint32_t p_mode) {

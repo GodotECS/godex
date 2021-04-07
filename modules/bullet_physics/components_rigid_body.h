@@ -54,7 +54,7 @@ public:
 struct BtRigidBody {
 	friend class GodexBtMotionState;
 
-	COMPONENT(BtRigidBody, SteadyStorage)
+	COMPONENT_CUSTOM_CONSTRUCTOR(BtRigidBody, SteadyStorage)
 
 	enum RigidMode {
 		RIGID_MODE_DYNAMIC,
@@ -90,11 +90,15 @@ private:
 	uint32_t reload_flags = 0;
 
 public:
+	BtRigidBody();
+
 	btRigidBody *get_body();
 	const btRigidBody *get_body() const;
 
 	GodexBtMotionState *get_motion_state();
 	const GodexBtMotionState *get_motion_state() const;
+
+	const btTransform &get_transform() const;
 
 	void script_set_body_mode(uint32_t p_mode);
 	void set_body_mode(RigidMode p_mode);
