@@ -208,6 +208,54 @@ void bt_area_config(
 	}
 }
 
+void bt_apply_forces(
+		Query<BtRigidBody, Batch<Force>> &p_query_forces,
+		Query<BtRigidBody, Batch<Torque>> &p_query_torques,
+		Query<BtRigidBody, Batch<Impulse>> &p_query_impulses,
+		Query<BtRigidBody, Batch<TorqueImpulse>> &p_query_torque_impulses,
+		Storage<Impulse> *p_inpulses,
+		Storage<TorqueImpulse> *p_torque_inpulses) {
+	for (auto [body, forces] : p_query_forces) {
+		for (uint32_t i = 0; i < forces.get_size(); i += 1) {
+			btVector3 l;
+			btVector3 f;
+			G_TO_B(forces[i]->location, l);
+			G_TO_B(forces[i]->force, f);
+			body->get_body()->applyForce(f, l);
+		}
+	}
+
+	for (auto [body, torques] : p_query_torques) {
+		for (uint32_t i = 0; i < torques.get_size(); i += 1) {
+			btVector3 t;
+			G_TO_B(torques[i]->torque, t);
+			body->get_body()->applyTorque(t);
+		}
+	}
+
+	for (auto [body, impulses] : p_query_impulses) {
+		for (uint32_t i = 0; i < impulses.get_size(); i += 1) {
+			btVector3 l;
+			btVector3 imp;
+			G_TO_B(impulses[i]->location, l);
+			G_TO_B(impulses[i]->impulse, imp);
+			body->get_body()->applyImpulse(imp, l);
+		}
+	}
+
+	for (auto [body, torque_impulses] : p_query_torque_impulses) {
+		for (uint32_t i = 0; i < torque_impulses.get_size(); i += 1) {
+			btVector3 imp;
+			G_TO_B(torque_impulses[i]->impulse, imp);
+			body->get_body()->applyTorqueImpulse(imp);
+		}
+	}
+
+	// The impulses are impress just for 1 frame.
+	p_inpulses->clear();
+	p_torque_inpulses->clear();
+}
+
 void bt_spaces_step(
 		BtPhysicsSpaces *p_spaces,
 		const FrameTime *p_iterator_info,

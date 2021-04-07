@@ -4,6 +4,7 @@
 #include "../godot/editor_plugins/components_gizmo_3d.h"
 #include "bt_systems.h"
 #include "components_area.h"
+#include "components_generic.h"
 #include "components_gizmos.h"
 #include "components_rigid_body.h"
 #include "components_rigid_shape.h"
@@ -33,9 +34,17 @@ void ecs_register_bullet_physics_types() {
 	ECS::register_component<BtShapeConvex>();
 	ECS::register_component<BtShapeTrimesh>();
 
+	// Generics
+	// TODO move this inside `modules/godot`?
+	ECS::register_component<Force>();
+	ECS::register_component<Torque>();
+	ECS::register_component<Impulse>();
+	ECS::register_component<TorqueImpulse>();
+
 	// Register `System`s
 	ECS::register_system(bt_body_config, "BtBodyConfig", "Bullet Physics - Manage the lifetime of the Bodies");
 	ECS::register_system(bt_area_config, "BtAreaConfig", "Bullet Physics - Manage the lifetime of the Area");
+	ECS::register_system(bt_apply_forces, "BtApplyForces", "Bullet Physics - Apply `Forces` and `Impulses` to bodies.");
 	ECS::register_system(bt_spaces_step, "BtSpacesStep", "Bullet Physics - Steps the physics spaces.");
 	ECS::register_system(bt_overlap_check, "BtOverlapCheck", "Bullet Physics - Allow the areas to detect ovelapped bodies.");
 	ECS::register_system(bt_body_sync, "BtBodySync", "Bullet Physics - Read the Physics Engine and update the Bodies");
