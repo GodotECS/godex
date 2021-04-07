@@ -30,9 +30,10 @@ struct BtArea {
 		RELOAD_FLAGS_BODY = 1 << 1,
 	};
 
-	int event_mode = ADD_COMPONENT_ON_ENTER;
-	StringName event_component = "";
-	Dictionary event_component_data;
+	int overlap_event_mode = ADD_COMPONENT_ON_ENTER;
+	StringName overlap_add_component;
+	Dictionary overlap_data;
+	godex::component_id cache_overlap_add_component_id = godex::COMPONENT_NONE;
 
 private:
 	btGhostObject ghost;
@@ -87,4 +88,6 @@ public:
 	/// the search.
 	/// Note: after call this function any previous Index is no more valid.
 	uint32_t find_overlapping_object(btCollisionObject *p_coll_obj, uint32_t p_search_from);
+
+	godex::component_id get_overlap_event_component_id();
 };

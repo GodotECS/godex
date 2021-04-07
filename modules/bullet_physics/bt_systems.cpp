@@ -236,6 +236,7 @@ void bt_spaces_step(
 void bt_overlap_check(
 		const BtPhysicsSpaces *p_spaces,
 		BtCache *p_cache,
+		Spawner<OverlapEventSpawner> &p_spawner,
 		Query<EntityID, BtArea> &p_query) {
 	// Advance the counter.
 	p_cache->area_check_frame_counter += 1;
@@ -315,10 +316,15 @@ void bt_overlap_check(
 			if (overlapping) {
 				if (overlap_index == UINT32_MAX) {
 					// This is a new overlap
-					area->add_new_overlap(aabb_overlap[i], frame_id, last_found_overlapped_index);
+					area->add_new_overlap(
+							aabb_overlap[i],
+							frame_id,
+							last_found_overlapped_index);
+
 					// We can increment this by one, so the next overlap can ignore this.
 					last_found_overlapped_index += 1;
 					new_overlaps.push_back(aabb_overlap[i]);
+
 				} else {
 					// This is a known overlap
 					area->mark_still_overlapping(overlap_index, frame_id);
@@ -327,19 +333,55 @@ void bt_overlap_check(
 			}
 		}
 
-		for (int i = area->overlaps.size() - 1; i >= 0; i -= 1) {
-			if (area->overlaps[i].detect_frame != frame_id) {
-				// This object is no more overlapping
-				area->overlaps.remove_unordered(i);
-				if (area->event_mode == BtArea::ADD_COMPONENT_ON_EXIT) {
-					// TODO emit the OUT event
-				}
+		const godex::component_id component_to_spawn = area->get_overlap_event_component_id();
+
+		// Parse the Overlap data and replace the keywords:
+		//  @entity_id is changed with the Area entity_id
+		//  @transform is changed with the Area transform
+		Dictionary overlap_data = area->overlap_data.duplicate(true);
+		for (const Variant *key = overlap_data.next(); key != nullptr; key = overlap_data.next(key)) {
+			Variant *val = overlap_data.getptr(*key);
+			if (*val == Variant("@entity_id")) {
+				*val = entity;
+			} else if (*val == Variant("@transform")) {
+				Transform t;
+				B_TO_G(area->get_transform(), t);
+				*val = t;
 			}
 		}
 
-		if (area->event_mode == BtArea::ADD_COMPONENT_ON_ENTER) {
+		for (int i = int(area->overlaps.size()) - 1; i >= 0; i -= 1) {
+			if (area->overlaps[i].detect_frame != frame_id) {
+				// This object is no more overlapping
+
+				if (component_to_spawn != godex::COMPONENT_NONE) {
+					const EntityID other_entity = area->overlaps[i].object->getUserIndex3();
+					if (area->overlap_event_mode == BtArea::ADD_COMPONENT_ON_EXIT) {
+						p_spawner.insert_dynamic(
+								component_to_spawn,
+								other_entity,
+								overlap_data);
+					} else if (area->overlap_event_mode == BtArea::KEEP_COMPONENT_WHILE_OVERLAP) {
+						// We have to remove the component
+						p_spawner.remove(
+								component_to_spawn,
+								other_entity);
+					}
+				}
+
+				// Remove the object.
+				area->overlaps.remove_unordered(i);
+			}
+		}
+
+		if (area->overlap_event_mode == BtArea::ADD_COMPONENT_ON_ENTER ||
+				area->overlap_event_mode == BtArea::KEEP_COMPONENT_WHILE_OVERLAP) {
 			for (uint32_t i = 0; i < new_overlaps.size(); i += 1) {
-				// TODO emit the IN event
+				const EntityID other_entity = new_overlaps[i]->getUserIndex3();
+				p_spawner.insert_dynamic(
+						component_to_spawn,
+						other_entity,
+						overlap_data);
 			}
 		}
 

@@ -569,7 +569,7 @@ bool EntityInternal<C>::_get_component_value(const StringName &p_component_name,
 				const Variant *value = (component_properties->operator Dictionary()).getptr(p_property_name);
 				if (value != nullptr) {
 					// Property is stored, just return it.
-					r_ret = value->duplicate();
+					r_ret = value->duplicate(true);
 					return true;
 				}
 			}
