@@ -35,7 +35,7 @@ PipelineECS::~PipelineECS() {
 
 void PipelineECS::set_pipeline_name(StringName p_name) {
 	pipeline_name = p_name;
-	_change_notify("pipeline_name");
+	notify_property_list_changed();
 }
 
 StringName PipelineECS::get_pipeline_name() const {
@@ -44,7 +44,7 @@ StringName PipelineECS::get_pipeline_name() const {
 
 void PipelineECS::set_systems_name(Array p_system_names) {
 	systems_name = p_system_names;
-	_change_notify("systems_name");
+	notify_property_list_changed();
 }
 
 Array PipelineECS::get_systems_name() const {
@@ -64,12 +64,12 @@ void PipelineECS::insert_system(const StringName &p_system_name, uint32_t p_pos)
 		systems_name.insert(p_pos, p_system_name);
 	}
 
-	_change_notify("systems_name");
+	notify_property_list_changed();
 }
 
 void PipelineECS::remove_system(const StringName &p_system_name) {
 	systems_name.erase(p_system_name);
-	_change_notify("systems_name");
+	notify_property_list_changed();
 }
 
 void PipelineECS::fetch_used_databags(Set<godex::component_id> &r_databags) const {
@@ -349,12 +349,12 @@ Vector<Ref<PipelineECS>> &WorldECS::get_pipelines() {
 
 void WorldECS::add_pipeline(Ref<PipelineECS> p_pipeline) {
 	pipelines.push_back(p_pipeline);
-	_change_notify("pipelines");
+	notify_property_list_changed();
 }
 
 void WorldECS::remove_pipeline(Ref<PipelineECS> p_pipeline) {
 	pipelines.erase(p_pipeline);
-	_change_notify("pipelines");
+	notify_property_list_changed();
 }
 
 Ref<PipelineECS> WorldECS::find_pipeline(StringName p_name) {

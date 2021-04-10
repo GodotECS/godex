@@ -689,12 +689,12 @@ void EditorWorldECS::hide_editor() {
 
 void EditorWorldECS::set_world_ecs(WorldECS *p_world) {
 	if (world_ecs != nullptr) {
-		world_ecs->remove_change_receptor(this);
+		set_pipeline(Ref<PipelineECS>());
+		world_ecs->disconnect("property_list_changed", callable_mp(this, &EditorWorldECS::_changed_world_callback));
 	}
 
 	node_name_lbl->set_text("No world ECS selected.");
 	node_name_lbl->add_theme_color_override("font_color", Color(0.7, 0.7, 0.7));
-	set_pipeline(Ref<PipelineECS>());
 	world_ecs_sub_menu_wrap->hide();
 	workspace_container_hb->hide();
 
@@ -702,7 +702,7 @@ void EditorWorldECS::set_world_ecs(WorldECS *p_world) {
 	pipeline_panel_clear();
 
 	if (world_ecs != nullptr) {
-		world_ecs->add_change_receptor(this);
+		world_ecs->connect("property_list_changed", callable_mp(this, &EditorWorldECS::_changed_world_callback));
 		node_name_lbl->set_text(world_ecs->get_name());
 		node_name_lbl->add_theme_color_override("font_color", Color(0.0, 0.5, 1.0));
 		world_ecs_sub_menu_wrap->show();
@@ -714,13 +714,13 @@ void EditorWorldECS::set_world_ecs(WorldECS *p_world) {
 
 void EditorWorldECS::set_pipeline(Ref<PipelineECS> p_pipeline) {
 	if (pipeline.is_valid()) {
-		pipeline->remove_change_receptor(this);
+		pipeline->disconnect("property_list_changed", callable_mp(this, &EditorWorldECS::_changed_pipeline_callback));
 	}
 
 	pipeline = p_pipeline;
 
 	if (pipeline.is_valid()) {
-		pipeline->add_change_receptor(this);
+		pipeline->connect("property_list_changed", callable_mp(this, &EditorWorldECS::_changed_pipeline_callback));
 	}
 
 	pipeline_panel_update();
@@ -1089,7 +1089,7 @@ void EditorWorldECS::add_sys_add() {
 			def_pip.instance();
 			def_pip->set_pipeline_name("Default");
 			world_ecs->get_pipelines().push_back(def_pip);
-			world_ecs->_change_notify();
+			world_ecs->notify_property_list_changed();
 		}
 		set_pipeline(world_ecs->get_pipelines()[0]);
 		pipeline_list_update();
@@ -1167,22 +1167,13 @@ void EditorWorldECS::components_manage_show() {
 void EditorWorldECS::components_manage_on_component_select() {
 }
 
-void EditorWorldECS::_changed_callback(Object *p_changed, const char *p_prop) {
-	if (p_changed == world_ecs) {
-		// The world changed.
-		if (String("pipelines") == p_prop) {
-			pipeline_list_update();
-		}
-	} else if (pipeline.is_valid() && pipeline.ptr() == p_changed) {
-		// The selected pipeline changes.
-		if (String("pipeline_name") == p_prop) {
-			pipeline_list_update();
-		} else {
-			pipeline_panel_update();
-		}
-	} else {
-		// Not sure what changed, at this point.
-	}
+void EditorWorldECS::_changed_world_callback() {
+	pipeline_list_update();
+}
+
+void EditorWorldECS::_changed_pipeline_callback() {
+	pipeline_list_update();
+	pipeline_panel_update();
 }
 
 SystemInfoBox *EditorWorldECS::pipeline_panel_add_system() {

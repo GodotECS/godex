@@ -19,11 +19,11 @@ EntityEditor::EntityEditor(
 	// TODO Activating this make the gizmo movement really laggy. It's not due
 	// to FPS because it remains stable (2000FPS) so something else is going on.
 	// Leaving commented for now.
-	//entity->add_change_receptor(this);
+	//entity->connect("property_list_changed", callable_mp(this, &EntityEditor::_changed_callback));
 }
 
 EntityEditor::~EntityEditor() {
-	//entity->remove_change_receptor(this);
+	//entity->disconnect("property_list_changed", callable_mp(this, &EntityEditor::_changed_callback));
 }
 
 void EntityEditor::_notification(int p_what) {
@@ -666,10 +666,8 @@ void EntityEditor::_property_changed(const String &p_path, const Variant &p_valu
 	editor->get_undo_redo()->commit_action();
 }
 
-void EntityEditor::_changed_callback(Object *p_changed, const char *p_prop) {
-	if (String(p_prop) == "components_data") {
-		update_editors();
-	}
+void EntityEditor::_changed_callback() {
+	update_editors();
 }
 
 const Dictionary &EntityEditor::entity_get_components_data() const {

@@ -11,7 +11,7 @@ methods_ecs.generate_dynamic_system_funcs()
 methods_ecs.generate_system_exe_funcs()
 methods_ecs.generate_temporary_system_exe_funcs()
 
-# Module source files
+# Godex source files
 env_ecs.add_source_files(env.modules_sources, "memory/*.cpp")
 env_ecs.add_source_files(env.modules_sources, "components/*.cpp")
 env_ecs.add_source_files(env.modules_sources, "spawners/*.cpp")
@@ -22,8 +22,3 @@ env_ecs.add_source_files(env.modules_sources, "databags/*.cpp")
 env_ecs.add_source_files(env.modules_sources, "world/*.cpp")
 env_ecs.add_source_files(env.modules_sources, "pipeline/*.cpp")
 env_ecs.add_source_files(env.modules_sources, "*.cpp")
-
-Export("env_ecs")
-
-# Add modules files
-SConscript("modules/SCsub")

@@ -1,6 +1,6 @@
 #include "components_rigid_shape.h"
 
-#include "modules/bullet/bullet_types_converter.h"
+#include "bullet_types_converter.h"
 #include <BulletCollision/CollisionDispatch/btInternalEdgeUtility.h>
 #include <stdio.h>
 
