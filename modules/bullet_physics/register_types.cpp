@@ -11,7 +11,7 @@
 #include "databag_space.h"
 #include "overlap_check.h"
 
-void ecs_register_bullet_physics_types() {
+void register_bullet_physics_types() {
 	// Initialize the Overlap check algorithms.
 	OverlapCheck::init();
 
@@ -59,5 +59,5 @@ void ecs_register_bullet_physics_types() {
 	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtShapeTrimeshGizmo));
 }
 
-void ecs_unregister_bullet_physics_types() {
+void unregister_bullet_physics_types() {
 }

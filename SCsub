@@ -22,8 +22,3 @@ env_ecs.add_source_files(env.modules_sources, "databags/*.cpp")
 env_ecs.add_source_files(env.modules_sources, "world/*.cpp")
 env_ecs.add_source_files(env.modules_sources, "pipeline/*.cpp")
 env_ecs.add_source_files(env.modules_sources, "*.cpp")
-
-Export("env_ecs")
-
-# Add modules files
-SConscript("modules/SCsub")

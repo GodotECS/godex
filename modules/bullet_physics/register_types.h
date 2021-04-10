@@ -1,4 +1,4 @@
 #pragma once
 
-void ecs_register_bullet_physics_types();
-void ecs_unregister_bullet_physics_types();
+void register_bullet_physics_types();
+void unregister_bullet_physics_types();

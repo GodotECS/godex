@@ -6,7 +6,6 @@
 #include "ecs.h"
 #include "editor/plugins/node_3d_editor_plugin.h"
 #include "iterators/dynamic_query.h"
-#include "modules/ecs_modules_register.h"
 #include "modules/godot/editor_plugins/components_gizmo_3d.h"
 #include "systems/dynamic_system.h"
 
@@ -30,13 +29,9 @@ void register_godex_types() {
 
 	ECS::register_databag<WorldCommands>();
 	ECS::register_databag<World>();
-
-	ecs_register_modules();
 }
 
 void unregister_godex_types() {
-	ecs_unregister_modules();
-
 	// Clear dynamic system static memory.
 	godex::__dynamic_system_info_static_destructor();
 	godex::DynamicSystemInfo::for_each_name = StringName();

@@ -44,7 +44,7 @@ public:
 
 REP *rep = nullptr;
 
-void ecs_register_godot_types() {
+void register_godot_types() {
 	rep = memnew(REP);
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Nodes
@@ -106,7 +106,7 @@ void ecs_register_godot_types() {
 	ClassDB::register_class<SharedComponentResource>();
 }
 
-void ecs_unregister_godot_types() {
+void unregister_godot_types() {
 	// Clear ScriptECS static memory.
 	EditorEcs::__static_destructor();
 
