@@ -1,11 +1,11 @@
 #include "databag_space.h"
 
+#include "bullet_collision_dispatcher.h"
+#include "bullet_result_callbacks.h"
 #include "core/config/project_settings.h"
-#include "modules/bullet/godot_collision_configuration.h"
-#include "modules/bullet/godot_collision_dispatcher.h"
-#include "modules/bullet/godot_result_callbacks.h"
 #include <BulletCollision/BroadphaseCollision/btBroadphaseProxy.h>
 #include <BulletCollision/CollisionDispatch/btCollisionObject.h>
+#include <BulletCollision/CollisionDispatch/btDefaultCollisionConfiguration.h>
 #include <BulletCollision/CollisionDispatch/btGhostObject.h>
 #include <BulletCollision/NarrowPhaseCollision/btGjkEpaPenetrationDepthSolver.h>
 #include <BulletCollision/NarrowPhaseCollision/btGjkPairDetector.h>
@@ -46,24 +46,19 @@ bool BtPhysicsSpaces::is_space_initialized(BtSpaceIndex p_id) const {
 void BtPhysicsSpaces::init_space(BtSpaceIndex p_id, bool p_soft_world) {
 	ERR_FAIL_COND_MSG(is_space_initialized(p_id), "This space " + itos(p_id) + " is already initialized");
 
-	void *world_mem;
 	if (p_soft_world) {
-		world_mem = malloc(sizeof(btSoftRigidDynamicsWorld));
-		spaces[p_id].collision_configuration = memnew(GodotSoftCollisionConfiguration(
-				static_cast<btDiscreteDynamicsWorld *>(world_mem)));
+		spaces[p_id].collision_configuration = memnew(btSoftBodyRigidBodyCollisionConfiguration());
 	} else {
-		world_mem = malloc(sizeof(btDiscreteDynamicsWorld));
-		spaces[p_id].collision_configuration = memnew(GodotCollisionConfiguration(
-				static_cast<btDiscreteDynamicsWorld *>(world_mem)));
+		spaces[p_id].collision_configuration = memnew(btDefaultCollisionConfiguration());
 	}
 
-	spaces[p_id].dispatcher = memnew(GodotCollisionDispatcher(spaces[p_id].collision_configuration));
+	spaces[p_id].dispatcher = memnew(GodexBtCollisionDispatcher(spaces[p_id].collision_configuration));
 	spaces[p_id].broadphase = memnew(btDbvtBroadphase);
 	spaces[p_id].solver = new btSequentialImpulseConstraintSolver;
 
 	if (p_soft_world) {
 		spaces[p_id].dynamics_world =
-				new (world_mem) btSoftRigidDynamicsWorld(
+				new btSoftRigidDynamicsWorld(
 						spaces[p_id].dispatcher,
 						spaces[p_id].broadphase,
 						spaces[p_id].solver,
@@ -71,7 +66,7 @@ void BtPhysicsSpaces::init_space(BtSpaceIndex p_id, bool p_soft_world) {
 		spaces[p_id].soft_body_world_info = memnew(btSoftBodyWorldInfo);
 	} else {
 		spaces[p_id].dynamics_world =
-				new (world_mem) btDiscreteDynamicsWorld(
+				new btDiscreteDynamicsWorld(
 						spaces[p_id].dispatcher,
 						spaces[p_id].broadphase,
 						spaces[p_id].solver,
@@ -87,11 +82,11 @@ void BtPhysicsSpaces::init_space(BtSpaceIndex p_id, bool p_soft_world) {
 	// Set global callbacks.
 	gCalculateCombinedRestitutionCallback = &calculate_godot_combined_restitution;
 	gCalculateCombinedFrictionCallback = &calculate_godot_combined_friction;
-	gContactAddedCallback = &godotContactAddedCallback;
+	gContactAddedCallback = &godexBtContactAddedCallback;
 
 	// Setup the world callbacks.
 	spaces[p_id].ghost_pair_callback = memnew(btGhostPairCallback);
-	spaces[p_id].godot_filter_callback = memnew(GodotFilterCallback);
+	spaces[p_id].godot_filter_callback = memnew(GodexBtFilterCallback);
 
 	spaces[p_id].dynamics_world->setInternalTickCallback(on_post_tick_callback, this, false);
 	spaces[p_id].dynamics_world->getBroadphase()->getOverlappingPairCache()->setInternalGhostPairCallback(

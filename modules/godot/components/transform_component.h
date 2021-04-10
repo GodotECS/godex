@@ -2,6 +2,7 @@
 
 #include "../../../components/component.h"
 #include "../../../storage/hierarchical_storage.h"
+#include "core/math/transform.h"
 
 class TransformComponent {
 	COMPONENT(TransformComponent, HierarchicalStorage)

@@ -11,7 +11,7 @@ class btConstraintSolver;
 class btDiscreteDynamicsWorld;
 struct btSoftBodyWorldInfo;
 class btGhostPairCallback;
-struct GodotFilterCallback;
+struct GodexBtFilterCallback;
 class BtPhysicsSpaces;
 
 class BtSpace {
@@ -23,7 +23,7 @@ class BtSpace {
 	btConstraintSolver *solver = nullptr;
 	btDiscreteDynamicsWorld *dynamics_world = nullptr;
 	btGhostPairCallback *ghost_pair_callback = nullptr;
-	GodotFilterCallback *godot_filter_callback = nullptr;
+	GodexBtFilterCallback *godot_filter_callback = nullptr;
 	btSoftBodyWorldInfo *soft_body_world_info = nullptr;
 
 public:
@@ -47,8 +47,8 @@ public:
 	btGhostPairCallback *get_ghost_pair_callback() { return ghost_pair_callback; }
 	const btGhostPairCallback *get_ghost_pair_callback() const { return ghost_pair_callback; }
 
-	GodotFilterCallback *get_godot_filter_callback() { return godot_filter_callback; }
-	const GodotFilterCallback *get_godot_filter_callback() const { return godot_filter_callback; }
+	GodexBtFilterCallback *get_godot_filter_callback() { return godot_filter_callback; }
+	const GodexBtFilterCallback *get_godot_filter_callback() const { return godot_filter_callback; }
 };
 
 /// The `BtPhysicsSpaces` is a databag that contains all the physics worlds

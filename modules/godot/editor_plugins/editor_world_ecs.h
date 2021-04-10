@@ -164,7 +164,8 @@ public:
 	void components_manage_on_component_select();
 
 protected:
-	void _changed_callback(Object *p_changed, const char *p_prop) override;
+	void _changed_world_callback();
+	void _changed_pipeline_callback();
 
 	SystemInfoBox *pipeline_panel_add_system();
 	void pipeline_panel_clear();

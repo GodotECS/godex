@@ -818,5 +818,5 @@ void EntityInternal<C>::destroy_entity() {
 
 template <class C>
 void EntityInternal<C>::update_components_data() {
-	owner->_change_notify("components_data");
+	owner->notify_property_list_changed();
 }
