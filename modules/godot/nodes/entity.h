@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../../components/child.h"
+#include "core/templates/list.h"
 #include "core/templates/local_vector.h"
 #include "ecs_utilities.h"
 #include "ecs_world.h"
@@ -54,6 +55,7 @@ struct EntityInternal : public EntityBase {
 
 	C *owner;
 
+	void _get_property_list(List<PropertyInfo> *p_list) const;
 	bool _set(const StringName &p_name, const Variant &p_value);
 	bool _get(const StringName &p_name, Variant &r_ret) const;
 
@@ -69,9 +71,6 @@ struct EntityInternal : public EntityBase {
 	bool set_component_value(const StringName &p_component_name, const StringName &p_property_name, const Variant &p_value, Space p_space = Space::LOCAL);
 	Variant get_component_value(const StringName &p_component_name, const StringName &p_property_name, Space p_space = Space::LOCAL) const;
 	bool _get_component_value(const StringName &p_component_name, const StringName &p_property_name, Variant &r_ret, Space p_space = Space::LOCAL) const;
-
-	bool set_component(const StringName &p_component_name, const Variant &d_ret, Space p_space = Space::LOCAL);
-	bool _get_component(const StringName &p_component_name, Variant &r_ret, Space p_space = Space::LOCAL) const;
 
 	/// Duplicate this `Entity`.
 	uint32_t clone(Object *p_world) const;
@@ -97,6 +96,10 @@ class Entity3D : public Node3D {
 
 protected:
 	static void _bind_methods();
+
+	void _get_property_list(List<PropertyInfo> *p_list) const {
+		entity._get_property_list(p_list);
+	}
 
 	bool _set(const StringName &p_name, const Variant &p_value) {
 		return entity._set(p_name, p_value);
@@ -225,6 +228,10 @@ class Entity2D : public Node2D {
 protected:
 	static void _bind_methods();
 
+	void _get_property_list(List<PropertyInfo> *p_list) const {
+		entity._get_property_list(p_list);
+	}
+
 	bool _set(const StringName &p_name, const Variant &p_value) {
 		return entity._set(p_name, p_value);
 	}
@@ -317,11 +324,30 @@ public:
 // TODO this file is full of `get_component_id`. Would be nice cache it.
 
 template <class C>
+void EntityInternal<C>::_get_property_list(List<PropertyInfo> *p_list) const {
+	for (const Variant *component = components_data.next(); component; component = components_data.next(component)) {
+		p_list->push_back(PropertyInfo(Variant::BOOL, component->operator String(), PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
+
+		const Dictionary component_properties = *components_data.getptr(*component);
+
+		for (const Variant *key = component_properties.next(); key; key = component_properties.next(key)) {
+			const Variant *value = component_properties.getptr(*key);
+			p_list->push_back(PropertyInfo(value->get_type(), component->operator String() + "/" + key->operator String(), PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
+			// TODO add here the default value?
+		}
+	}
+}
+
+template <class C>
 bool EntityInternal<C>::_set(const StringName &p_name, const Variant &p_value) {
 	const Vector<String> names = String(p_name).split("/");
 	if (names.size() == 1) {
-		// Set the entire component.
-		return set_component(p_name, p_value);
+		// Here we are adding a new component.
+		if (unlikely(p_value.get_type() != Variant::BOOL)) {
+			WARN_PRINT("When adding a new component using `_set('component_name', true)`, it's not supposed to pass anything different than a TRUE");
+		}
+		add_component(p_name, Dictionary());
+		return true;
 	} else {
 		ERR_FAIL_COND_V(names.size() < 2, false);
 		const String component_name = names[0];
@@ -335,7 +361,9 @@ template <class C>
 bool EntityInternal<C>::_get(const StringName &p_name, Variant &r_ret) const {
 	const Vector<String> names = String(p_name).split("/");
 	if (names.size() == 1) {
-		return _get_component(p_name, r_ret);
+		// Here we are retrieving the component name, just set true.
+		r_ret = true;
+		return true;
 	} else {
 		ERR_FAIL_COND_V(names.size() < 2, false);
 		const String component_name = names[0];
@@ -398,7 +426,17 @@ void EntityInternal<C>::add_component(const StringName &p_component_name, const 
 			// This is a shared component.
 			components_data[p_component_name] = Variant();
 		} else {
-			components_data[p_component_name] = p_values.duplicate();
+			Variant *properties = components_data.getptr(p_component_name);
+			if (properties) {
+				// The component already exist, merge the two property
+				// dictionaries, so we don't lose the previous changes.
+				for (const Variant *key = p_values.next(); key; key = p_values.next(key)) {
+					properties->operator Dictionary()[*key] = *p_values.getptr(*key);
+				}
+			} else {
+				// This component doesn't exist yet, add it now.
+				components_data[p_component_name] = p_values.duplicate();
+			}
 			update_components_data();
 			owner->update_gizmo();
 		}
@@ -591,119 +629,6 @@ bool EntityInternal<C>::_get_component_value(const StringName &p_component_name,
 		const void *component = storage->get_ptr(entity_id, p_space);
 		ERR_FAIL_COND_V_MSG(component == nullptr, false, "The entity " + itos(entity_id) + " doesn't have a component " + p_component_name);
 		return ECS::unsafe_component_get_by_name(id, component, p_property_name, r_ret);
-	}
-}
-
-template <class C>
-bool EntityInternal<C>::set_component(const StringName &p_component_name, const Variant &d_data, Space p_space) {
-	Dictionary data = d_data;
-
-	if (entity_id.is_null()) {
-		const Variant *component_properties = components_data.getptr(p_component_name);
-		if (component_properties == nullptr) {
-			components_data[p_component_name] = Dictionary();
-			component_properties = components_data.getptr(p_component_name);
-		}
-		for (const Variant *key = data.next(nullptr); key != nullptr; key = data.next(key)) {
-			(component_properties->operator Dictionary())[*key] = data.getptr(*key)->duplicate();
-		}
-		return true;
-	} else {
-		// This entity exist on a world, just fetch the component.
-
-		ERR_FAIL_COND_V_MSG(ECS::get_singleton()->has_active_world() == false, false, "The world is supposed to be active at this point.");
-		const godex::component_id id = ECS::get_component_id(p_component_name);
-		ERR_FAIL_COND_V_MSG(id == UINT32_MAX, false, "The component " + p_component_name + " doesn't exists.");
-		StorageBase *storage = ECS::get_singleton()->get_active_world()->get_storage(id);
-		ERR_FAIL_COND_V_MSG(storage == nullptr, false, "The component " + p_component_name + " doesn't have a storage on the active world.");
-		void *component = storage->get_ptr(entity_id, p_space);
-		ERR_FAIL_COND_V_MSG(component == nullptr, false, "The entity " + itos(entity_id) + " doesn't have a component " + p_component_name);
-
-		for (const Variant *key = data.next(nullptr); key != nullptr; key = data.next(key)) {
-			ECS::unsafe_component_set_by_name(id, component, StringName(*key), *data.getptr(*key));
-		}
-		return true;
-	}
-}
-
-template <class C>
-bool EntityInternal<C>::_get_component(const StringName &p_component_name, Variant &r_ret, Space p_space) const {
-	if (entity_id.is_null()) {
-		// Entity is null, so take default or get what we have in `component_data`.
-		Dictionary dic;
-
-		const Variant *component_properties = components_data.getptr(p_component_name);
-		ERR_FAIL_COND_V_MSG(component_properties == nullptr, Variant(), "The component " + p_component_name + " doesn't exist on this entity: " + get_path());
-
-		if (EditorEcs::is_script_component(p_component_name)) {
-			// This is a script component.
-
-			Ref<Component> c = EditorEcs::get_script_component(p_component_name);
-			ERR_FAIL_COND_V_MSG(c.is_null(), false, "The script component " + p_component_name + " was not found.");
-
-			List<PropertyInfo> properties;
-			c->get_component_property_list(&properties);
-
-			for (List<PropertyInfo>::Element *e = properties.front(); e; e = e->next()) {
-				const Variant *value = (component_properties->operator Dictionary()).getptr(e->get().name);
-				if (value) {
-					// Just set the value in the data.
-					dic[e->get().name] = value->duplicate();
-				} else {
-					// TODO Find a more optimal way to take the default value
-					// from the script component.
-					// Takes the default value.
-					dic[e->get().name] = c->get_property_default_value(e->get().name).duplicate();
-				}
-			}
-
-		} else {
-			// This is a native Component.
-
-			const godex::component_id id = ECS::get_component_id(p_component_name);
-			ERR_FAIL_COND_V_MSG(id == UINT32_MAX, false, "The component " + p_component_name + " doesn't exists.");
-			const LocalVector<PropertyInfo> *properties = ECS::get_component_properties(id);
-			for (uint32_t i = 0; i < properties->size(); i += 1) {
-				const Variant *value = (component_properties->operator Dictionary()).getptr((*properties)[i].name);
-				if (value) {
-					// Just set the value in the data.
-					dic[(*properties)[i].name] = value->duplicate();
-				} else {
-					// TODO Find a more optimal way to take the default value
-					// from the script component.
-					// Just take the default value.
-					dic[(*properties)[i].name] = ECS::get_component_property_default(id, (*properties)[i].name).duplicate();
-				}
-			}
-		}
-
-		r_ret = dic;
-		return true;
-
-	} else {
-		// This entity exist on a world, just fetch the component.
-
-		ERR_FAIL_COND_V_MSG(ECS::get_singleton()->has_active_world() == false, false, "The world is supposed to be active at this point.");
-		const godex::component_id id = ECS::get_component_id(p_component_name);
-		ERR_FAIL_COND_V_MSG(id == UINT32_MAX, false, "The component " + p_component_name + " doesn't exists.");
-		const StorageBase *storage = ECS::get_singleton()->get_active_world()->get_storage(id);
-		ERR_FAIL_COND_V_MSG(storage == nullptr, false, "The component " + p_component_name + " doesn't have a storage on the active world.");
-		const void *component = storage->get_ptr(entity_id, p_space);
-		ERR_FAIL_COND_V_MSG(component == nullptr, false, "The entity " + itos(entity_id) + " doesn't have a component " + p_component_name);
-
-		Dictionary dic;
-		Variant supp;
-		const LocalVector<PropertyInfo> *props = ECS::get_component_properties(id);
-		for (uint32_t i = 0; i < props->size(); i += 1) {
-			if (likely(ECS::unsafe_component_get_by_index(id, component, i, supp))) {
-				dic[(*props)[i].name] = supp;
-			} else {
-				dic[(*props)[i].name] = Variant();
-			}
-		}
-
-		r_ret = dic;
-		return true;
 	}
 }
 
