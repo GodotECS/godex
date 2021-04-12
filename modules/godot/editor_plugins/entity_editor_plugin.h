@@ -40,7 +40,8 @@ public:
 	void _changed_callback();
 
 private:
-	const Dictionary &entity_get_components_data() const;
+	const OAHashMap<StringName, Variant> &entity_get_components_data() const;
+	Dictionary entity_get_component_props_data(const StringName &p_component) const;
 };
 
 class EditorInspectorPluginEntity : public EditorInspectorPlugin {

@@ -41,7 +41,7 @@ struct EntityBase {
 #endif
 
 	EntityID entity_id;
-	Dictionary components_data;
+	OAHashMap<StringName, Variant> components_data;
 
 	EntityBase *get_node_entity_base(Node *p_node);
 
@@ -61,12 +61,13 @@ struct EntityInternal : public EntityBase {
 
 	void _notification(int p_what);
 
-	void set_components_data(Dictionary p_data);
-	const Dictionary &get_components_data() const;
+	const OAHashMap<StringName, Variant> &get_components_data() const;
 
 	void add_component(const StringName &p_component_name, const Dictionary &p_values);
 	void remove_component(const StringName &p_component_name);
 	bool has_component(const StringName &p_component_name) const;
+
+	Dictionary get_component_properties_data(const StringName &p_component) const;
 
 	bool set_component_value(const StringName &p_component_name, const StringName &p_property_name, const Variant &p_value, Space p_space = Space::LOCAL);
 	Variant get_component_value(const StringName &p_component_name, const StringName &p_property_name, Space p_space = Space::LOCAL) const;
@@ -156,9 +157,6 @@ public:
 
 	uint32_t get_entity_id() const { return entity.entity_id; }
 
-	void set_components_data(Dictionary p_data) { entity.set_components_data(p_data); }
-	const Dictionary &get_components_data() const { return entity.get_components_data(); }
-
 	void add_component(const StringName &p_component_name, const Dictionary &p_values) {
 		entity.add_component(p_component_name, p_values);
 	}
@@ -169,6 +167,14 @@ public:
 
 	bool has_component(const StringName &p_component_name) const {
 		return entity.has_component(p_component_name);
+	}
+
+	const OAHashMap<StringName, Variant> &get_components_data() const {
+		return entity.get_components_data();
+	}
+
+	Dictionary get_component_properties_data(const StringName &p_component) const {
+		return entity.get_component_properties_data(p_component);
 	}
 
 	bool set_component_value(const StringName &p_component_name, const StringName &p_property_name, const Variant &p_value, Space p_space = Space::LOCAL) {
@@ -251,15 +257,20 @@ public:
 
 	uint32_t get_entity_id() const { return entity.entity_id; }
 
-	void set_components_data(Dictionary p_data) { entity.set_components_data(p_data); }
-	const Dictionary &get_components_data() const { return entity.get_components_data(); }
-
 	void add_component(const StringName &p_component_name, const Dictionary &p_values) {
 		entity.add_component(p_component_name, p_values);
 	}
 
 	void remove_component(const StringName &p_component_name) {
 		entity.remove_component(p_component_name);
+	}
+
+	const OAHashMap<StringName, Variant> &get_components_data() const {
+		return entity.get_components_data();
+	}
+
+	Dictionary get_component_properties_data(const StringName &p_component) const {
+		return entity.get_component_properties_data(p_component);
 	}
 
 	bool has_component(const StringName &p_component_name) const {
@@ -325,14 +336,14 @@ public:
 
 template <class C>
 void EntityInternal<C>::_get_property_list(List<PropertyInfo> *p_list) const {
-	for (const Variant *component = components_data.next(); component; component = components_data.next(component)) {
-		p_list->push_back(PropertyInfo(Variant::BOOL, component->operator String(), PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
+	for (OAHashMap<StringName, Variant>::Iterator it = components_data.iter(); it.valid; it = components_data.next_iter(it)) {
+		p_list->push_back(PropertyInfo(Variant::BOOL, *it.key, PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
 
-		const Dictionary component_properties = *components_data.getptr(*component);
+		const Dictionary &component_properties = it.value->operator Dictionary();
 
 		for (const Variant *key = component_properties.next(); key; key = component_properties.next(key)) {
 			const Variant *value = component_properties.getptr(*key);
-			p_list->push_back(PropertyInfo(value->get_type(), component->operator String() + "/" + key->operator String(), PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
+			p_list->push_back(PropertyInfo(value->get_type(), String(*it.key) + "/" + key->operator String(), PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
 			// TODO add here the default value?
 		}
 	}
@@ -419,14 +430,19 @@ void EntityInternal<C>::_notification(int p_what) {
 }
 
 template <class C>
+const OAHashMap<StringName, Variant> &EntityInternal<C>::get_components_data() const {
+	return components_data;
+}
+
+template <class C>
 void EntityInternal<C>::add_component(const StringName &p_component_name, const Dictionary &p_values) {
 	if (entity_id.is_null()) {
 		// We are on editor.
 		if (EditorEcs::component_is_shared(p_component_name)) {
 			// This is a shared component.
-			components_data[p_component_name] = Variant();
+			components_data.insert(p_component_name, Variant());
 		} else {
-			Variant *properties = components_data.getptr(p_component_name);
+			Variant *properties = components_data.lookup_ptr(p_component_name);
 			if (properties) {
 				// The component already exist, merge the two property
 				// dictionaries, so we don't lose the previous changes.
@@ -435,7 +451,7 @@ void EntityInternal<C>::add_component(const StringName &p_component_name, const 
 				}
 			} else {
 				// This component doesn't exist yet, add it now.
-				components_data[p_component_name] = p_values.duplicate();
+				components_data.insert(p_component_name, p_values.duplicate());
 			}
 			update_components_data();
 			owner->update_gizmo();
@@ -452,7 +468,7 @@ void EntityInternal<C>::add_component(const StringName &p_component_name, const 
 template <class C>
 void EntityInternal<C>::remove_component(const StringName &p_component_name) {
 	if (entity_id.is_null()) {
-		components_data.erase(p_component_name);
+		components_data.remove(p_component_name);
 		update_components_data();
 		owner->update_gizmo();
 	} else {
@@ -467,7 +483,7 @@ template <class C>
 bool EntityInternal<C>::has_component(const StringName &p_component_name) const {
 	if (entity_id.is_null()) {
 		if (EditorEcs::component_is_shared(p_component_name)) {
-			const Variant *val = components_data.getptr(p_component_name);
+			const Variant *val = components_data.lookup_ptr(p_component_name);
 			if (val) {
 				Ref<SharedComponentResource> shared = *val;
 				return shared.is_valid() && shared->is_init() && shared->get_component_name() == p_component_name && shared->get_component_data().is_empty() == false;
@@ -486,14 +502,10 @@ bool EntityInternal<C>::has_component(const StringName &p_component_name) const 
 }
 
 template <class C>
-void EntityInternal<C>::set_components_data(Dictionary p_data) {
-	components_data = p_data.duplicate();
-	update_components_data();
-}
-
-template <class C>
-const Dictionary &EntityInternal<C>::get_components_data() const {
-	return components_data;
+Dictionary EntityInternal<C>::get_component_properties_data(const StringName &p_component) const {
+	const Variant *val = components_data.lookup_ptr(p_component);
+	ERR_FAIL_COND_V_MSG(val == nullptr, Dictionary(), "This component doesn't exists");
+	return val->operator Dictionary().duplicate(true);
 }
 
 template <class C>
@@ -513,10 +525,10 @@ bool EntityInternal<C>::set_component_value(const StringName &p_component_name, 
 					// This component is new and not even init, so do it now.
 					shared->init(p_component_name);
 				}
-				components_data[p_component_name] = shared;
+				components_data.insert(p_component_name, shared);
 			} else {
 				// Try to set the value inside the shared component instead
-				Variant *val = components_data.getptr(p_component_name);
+				Variant *val = components_data.lookup_ptr(p_component_name);
 				if (val) {
 					shared = *val;
 				}
@@ -534,10 +546,10 @@ bool EntityInternal<C>::set_component_value(const StringName &p_component_name, 
 			// This is a standard component.
 			ERR_FAIL_COND_V(components_data.has(p_component_name) == false, false);
 
-			if (components_data[p_component_name].get_type() != Variant::DICTIONARY) {
-				components_data[p_component_name] = Dictionary();
+			if (components_data.lookup_ptr(p_component_name)->get_type() != Variant::DICTIONARY) {
+				components_data.insert(p_component_name, Dictionary());
 			}
-			(components_data[p_component_name].operator Dictionary())[p_property_name] = p_value.duplicate();
+			(components_data.lookup_ptr(p_component_name)->operator Dictionary())[p_property_name] = p_value.duplicate();
 
 			// Hack to propagate `Node3D` transform change.
 			if (p_component_name == "TransformComponent" && p_property_name == "transform") {
@@ -579,7 +591,7 @@ bool EntityInternal<C>::_get_component_value(const StringName &p_component_name,
 	if (entity_id.is_null()) {
 		// Executed on editor or when the entity is not loaded.
 
-		const Variant *component_properties = components_data.getptr(p_component_name);
+		const Variant *component_properties = components_data.lookup_ptr(p_component_name);
 		ERR_FAIL_COND_V_MSG(component_properties == nullptr, false, "The component " + p_component_name + " doesn't exist on this entity: " + get_path());
 
 		if (EditorEcs::component_is_shared(p_component_name)) {
@@ -691,15 +703,12 @@ EntityID EntityInternal<C>::_create_entity(World *p_world) const {
 	if (p_world) {
 		id = p_world->create_entity();
 
-		for (
-				const Variant *key = components_data.next(nullptr);
-				key != nullptr;
-				key = components_data.next(key)) {
-			const uint32_t component_id = ECS::get_component_id(*key);
+		for (OAHashMap<StringName, Variant>::Iterator it = components_data.iter(); it.valid; it = components_data.next_iter(it)) {
+			const uint32_t component_id = ECS::get_component_id(*it.key);
 			ERR_CONTINUE(component_id == godex::COMPONENT_NONE);
 
 			if (ECS::is_component_sharable(component_id)) {
-				Ref<SharedComponentResource> shared = *components_data.getptr(*key);
+				Ref<SharedComponentResource> shared = *it.value;
 				if (shared.is_valid()) {
 					godex::SID sid = shared->get_sid(p_world);
 					p_world->add_shared_component(id, component_id, sid);
@@ -708,7 +717,7 @@ EntityID EntityInternal<C>::_create_entity(World *p_world) const {
 				p_world->add_component(
 						id,
 						component_id,
-						*components_data.getptr(*key));
+						*it.value);
 			}
 		}
 	}
