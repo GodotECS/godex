@@ -92,6 +92,7 @@ String databag_validate_script(Ref<Script> p_script);
 /// - Save script systems.
 /// - Load script systems.
 class EditorEcs {
+	static bool def_defined_static_components;
 	/// Used to know if the previously stored `Component`s got loaded.
 	static bool component_loaded;
 	/// Used to know if the previously stored `System`s got loaded.
@@ -159,6 +160,8 @@ public:
 	static String system_save_script(const String &p_script_path, Ref<Script> p_script);
 
 	// ------------------------------------------------------------------ Runtime
+
+	static void define_editor_default_component_properties();
 
 	static void register_runtime_scripts();
 	static void register_dynamic_components();

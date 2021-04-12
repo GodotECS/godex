@@ -35,6 +35,7 @@ public:
 				// Add component gizmos:
 				Node3DEditor::get_singleton()->add_gizmo_plugin(Ref<Components3DGizmoPlugin>(Components3DGizmoPlugin::get_singleton()));
 			}
+			EditorEcs::define_editor_default_component_properties();
 		} else {
 			// Load the Scripted Components/Databags/Systems
 			EditorEcs::register_runtime_scripts();

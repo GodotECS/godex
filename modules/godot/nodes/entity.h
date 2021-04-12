@@ -440,7 +440,7 @@ void EntityInternal<C>::add_component(const StringName &p_component_name, const 
 		// We are on editor.
 		if (EditorEcs::component_is_shared(p_component_name)) {
 			// This is a shared component.
-			components_data.insert(p_component_name, Variant());
+			components_data.set(p_component_name, Variant());
 		} else {
 			Variant *properties = components_data.lookup_ptr(p_component_name);
 			if (properties) {
@@ -451,7 +451,7 @@ void EntityInternal<C>::add_component(const StringName &p_component_name, const 
 				}
 			} else {
 				// This component doesn't exist yet, add it now.
-				components_data.insert(p_component_name, p_values.duplicate());
+				components_data.set(p_component_name, p_values.duplicate());
 			}
 			update_components_data();
 			owner->update_gizmo();
@@ -525,7 +525,7 @@ bool EntityInternal<C>::set_component_value(const StringName &p_component_name, 
 					// This component is new and not even init, so do it now.
 					shared->init(p_component_name);
 				}
-				components_data.insert(p_component_name, shared);
+				components_data.set(p_component_name, shared);
 			} else {
 				// Try to set the value inside the shared component instead
 				Variant *val = components_data.lookup_ptr(p_component_name);
@@ -547,7 +547,7 @@ bool EntityInternal<C>::set_component_value(const StringName &p_component_name, 
 			ERR_FAIL_COND_V(components_data.has(p_component_name) == false, false);
 
 			if (components_data.lookup_ptr(p_component_name)->get_type() != Variant::DICTIONARY) {
-				components_data.insert(p_component_name, Dictionary());
+				components_data.set(p_component_name, Dictionary());
 			}
 			(components_data.lookup_ptr(p_component_name)->operator Dictionary())[p_property_name] = p_value.duplicate();
 
