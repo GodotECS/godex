@@ -407,7 +407,11 @@ void ECS::__set_singleton(ECS *p_singleton) {
 void ECS::set_active_world(World *p_world, WorldECS *p_active_world_ecs) {
 	if (active_world != nullptr) {
 		if (p_world == nullptr) {
-			active_world_node->get_tree()->get_root()->propagate_notification(NOTIFICATION_ECS_WORLD_PRE_UNLOAD);
+			if (active_world_node->is_inside_tree() == false) {
+				ERR_PRINT("The current active world is already no more in tree, this is a bug.");
+			} else {
+				active_world_node->get_tree()->get_root()->propagate_notification(NOTIFICATION_ECS_WORLD_PRE_UNLOAD);
+			}
 		} else {
 			ERR_FAIL_COND("Before adding a new world it's necessary remove the current one by calling `set_active_world(nullptr);`.");
 		}
@@ -422,11 +426,19 @@ void ECS::set_active_world(World *p_world, WorldECS *p_active_world_ecs) {
 
 	if (active_world != nullptr) {
 		// The world is just loaded.
-		active_world_node->get_tree()->get_root()->propagate_notification(NOTIFICATION_ECS_WORLD_LOADED);
+		if (active_world_node->is_inside_tree() == false) {
+			ERR_PRINT("The new active world is not in tree, this is a bug.");
+		} else {
+			active_world_node->get_tree()->get_root()->propagate_notification(NOTIFICATION_ECS_WORLD_LOADED);
+		}
 	} else {
 		// The world is just unloaded.
 		if (prev_node) {
-			prev_node->get_tree()->get_root()->propagate_notification(NOTIFICATION_ECS_WORLD_UNLOADED);
+			if (prev_node->is_inside_tree() == false) {
+				ERR_PRINT("The previous world is already not in tree, this is a bug.");
+			} else {
+				prev_node->get_tree()->get_root()->propagate_notification(NOTIFICATION_ECS_WORLD_UNLOADED);
+			}
 		}
 	}
 }
