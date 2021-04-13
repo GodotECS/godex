@@ -419,6 +419,7 @@ Dictionary WorldECS::get_storages_config() const {
 }
 
 void WorldECS::active_world() {
+	ERR_FAIL_COND_MSG(is_inside_tree() == false, "This WorldECS is not in tree, you can't activate it.");
 	if (ECS::get_singleton()->has_active_world() == false) {
 		// ~~ World activation ~~
 
