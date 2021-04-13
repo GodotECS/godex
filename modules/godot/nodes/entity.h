@@ -339,12 +339,18 @@ void EntityInternal<C>::_get_property_list(List<PropertyInfo> *p_list) const {
 	for (OAHashMap<StringName, Variant>::Iterator it = components_data.iter(); it.valid; it = components_data.next_iter(it)) {
 		p_list->push_back(PropertyInfo(Variant::BOOL, *it.key, PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
 
-		const Dictionary &component_properties = it.value->operator Dictionary();
+		if (ECS::is_component_sharable(ECS::get_component_id(*it.key))) {
+			// This is a shared component
+			p_list->push_back(PropertyInfo(Variant::OBJECT, String(*it.key) + "/resource", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
+		} else {
+			// This is a common component.
+			const Dictionary &component_properties = it.value->operator Dictionary();
 
-		for (const Variant *key = component_properties.next(); key; key = component_properties.next(key)) {
-			const Variant *value = component_properties.getptr(*key);
-			p_list->push_back(PropertyInfo(value->get_type(), String(*it.key) + "/" + key->operator String(), PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
-			// TODO add here the default value?
+			for (const Variant *key = component_properties.next(); key; key = component_properties.next(key)) {
+				const Variant *value = component_properties.getptr(*key);
+				p_list->push_back(PropertyInfo(value->get_type(), String(*it.key) + "/" + key->operator String(), PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
+				// TODO add here the default value?
+			}
 		}
 	}
 }
