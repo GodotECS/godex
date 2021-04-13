@@ -545,7 +545,7 @@ bool EntityInternal<C>::set_component_value(const StringName &p_component_name, 
 					set_component_value(p_component_name, "", shared);
 				}
 
-				shared->get_component_data_mut()[p_property_name] = p_value;
+				shared->set_property_value(p_property_name, p_value);
 			}
 
 		} else {
