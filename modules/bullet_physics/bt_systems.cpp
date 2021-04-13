@@ -28,7 +28,7 @@ void bt_body_config(
 								Changed<BtConvex>,
 								Changed<BtTrimesh>>>,
 				Maybe<TransformComponent>> &p_query) {
-	for (auto [entity, body, space_marker, shape_container, transform] : p_query) {
+	for (auto [entity, body, space_marker, shape_container, transform] : p_query.space(GLOBAL)) {
 		if (body == nullptr) {
 			// Body not yet assigned to this Entity, skip.
 			continue;
@@ -138,7 +138,7 @@ void bt_area_config(
 								Changed<BtConvex>,
 								Changed<BtTrimesh>>>,
 				Maybe<TransformComponent>> &p_query) {
-	for (auto [entity, area, space_marker, shape_container, transform] : p_query) {
+	for (auto [entity, area, space_marker, shape_container, transform] : p_query.space(GLOBAL)) {
 		if (area == nullptr) {
 			// Body not yet assigned to this Entity, skip.
 			continue;
