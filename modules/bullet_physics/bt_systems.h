@@ -22,14 +22,14 @@ void bt_body_config(
 				Any<Changed<BtRigidBody>,
 						Changed<BtSpaceMarker>,
 						Join<
-								Changed<BtShapeBox>,
-								Changed<BtShapeSphere>,
-								Changed<BtShapeCapsule>,
-								Changed<BtShapeCone>,
-								Changed<BtShapeCylinder>,
-								Changed<BtShapeWorldMargin>,
-								Changed<BtShapeConvex>,
-								Changed<BtShapeTrimesh>>>,
+								Changed<BtBox>,
+								Changed<BtSphere>,
+								Changed<BtCapsule>,
+								Changed<BtCone>,
+								Changed<BtCylinder>,
+								Changed<BtWorldMargin>,
+								Changed<BtConvex>,
+								Changed<BtTrimesh>>>,
 				Maybe<TransformComponent>> &p_query);
 
 /// Configures the Area
@@ -46,14 +46,14 @@ void bt_area_config(
 				Any<Changed<BtArea>,
 						Changed<BtSpaceMarker>,
 						Join<
-								Changed<BtShapeBox>,
-								Changed<BtShapeSphere>,
-								Changed<BtShapeCapsule>,
-								Changed<BtShapeCone>,
-								Changed<BtShapeCylinder>,
-								Changed<BtShapeWorldMargin>,
-								Changed<BtShapeConvex>,
-								Changed<BtShapeTrimesh>>>,
+								Changed<BtBox>,
+								Changed<BtSphere>,
+								Changed<BtCapsule>,
+								Changed<BtCone>,
+								Changed<BtCylinder>,
+								Changed<BtWorldMargin>,
+								Changed<BtConvex>,
+								Changed<BtTrimesh>>>,
 				Maybe<TransformComponent>> &p_query);
 
 void bt_apply_forces(
@@ -73,7 +73,7 @@ void bt_spaces_step(
 		const FrameTime *p_iterator_info,
 		// TODO this is not used, though we need it just to be sure they are not
 		// touched by anything else.
-		Query<BtRigidBody, BtArea, BtShapeBox, BtShapeSphere, BtShapeCapsule, BtShapeCone, BtShapeCylinder, BtShapeWorldMargin, BtShapeConvex, BtShapeTrimesh> &p_query);
+		Query<BtRigidBody, BtArea, BtBox, BtSphere, BtCapsule, BtCone, BtCylinder, BtWorldMargin, BtConvex, BtTrimesh> &p_query);
 
 /// Perform the Areas overlap check.
 void bt_overlap_check(

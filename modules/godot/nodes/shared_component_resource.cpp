@@ -6,11 +6,7 @@ void SharedComponentResource::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("__set_component_name", "name"), &SharedComponentResource::set_component_name);
 	ClassDB::bind_method(D_METHOD("__get_component_name"), &SharedComponentResource::get_component_name);
 
-	ClassDB::bind_method(D_METHOD("__set_component_data", "data"), &SharedComponentResource::set_component_data);
-	ClassDB::bind_method(D_METHOD("__get_component_data"), &SharedComponentResource::get_component_data);
-
 	ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "component_name", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "__set_component_name", "__get_component_name");
-	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "component_data", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "__set_component_data", "__get_component_data");
 }
 
 bool SharedComponentResource::_set(const StringName &p_name, const Variant &p_property) {
@@ -82,12 +78,9 @@ StringName SharedComponentResource::get_component_name() const {
 	return component_name;
 }
 
-void SharedComponentResource::set_component_data(const Dictionary &p_component) {
-	component_data = p_component;
-}
-
-Dictionary &SharedComponentResource::get_component_data_mut() {
-	return component_data;
+void SharedComponentResource::set_property_value(const StringName &p_property, const Variant &p_val) {
+	component_data[p_property] = p_val;
+	notify_property_list_changed();
 }
 
 const Dictionary &SharedComponentResource::get_component_data() const {

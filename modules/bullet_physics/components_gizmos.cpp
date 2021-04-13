@@ -3,7 +3,7 @@
 #include "../godot/nodes/entity.h"
 #include "debug_utilities.h"
 
-void BtShapeBoxGizmo::init() {
+void BtBoxGizmo::init() {
 	const Color gizmo_color = EDITOR_DEF("editors/3d_gizmos/gizmo_colors/shape", Color(0.5, 0.7, 1));
 	create_material("shape_material", gizmo_color);
 
@@ -14,7 +14,7 @@ void BtShapeBoxGizmo::init() {
 	create_handle_material("handles");
 }
 
-void BtShapeBoxGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
+void BtBoxGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 	ERR_FAIL_COND(entity == nullptr);
 
@@ -51,7 +51,7 @@ void BtShapeBoxGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 	}
 }
 
-int BtShapeBoxGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {
+int BtBoxGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 	ERR_FAIL_COND_V(entity == nullptr, 0);
 
@@ -62,7 +62,7 @@ int BtShapeBoxGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {
 	return 0;
 }
 
-String BtShapeBoxGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
+String BtBoxGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
 	if (p_idx == 0) {
 		return "half_extents_x";
 	} else if (p_idx == 1) {
@@ -72,7 +72,7 @@ String BtShapeBoxGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_
 	}
 }
 
-Variant BtShapeBoxGizmo::get_handle_value(EditorNode3DGizmo *p_gizmo, int p_idx) const {
+Variant BtBoxGizmo::get_handle_value(EditorNode3DGizmo *p_gizmo, int p_idx) const {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 	ERR_FAIL_COND_V(entity == nullptr, Variant());
 	ERR_FAIL_COND_V(entity->has_component(box_component_name) == false, Variant());
@@ -82,7 +82,7 @@ Variant BtShapeBoxGizmo::get_handle_value(EditorNode3DGizmo *p_gizmo, int p_idx)
 	return half_extents[p_idx];
 }
 
-void BtShapeBoxGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
+void BtBoxGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 	ERR_FAIL_COND(entity == nullptr);
 	ERR_FAIL_COND(entity->has_component(box_component_name) == false);
@@ -114,7 +114,7 @@ void BtShapeBoxGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D
 	entity->set_component_value(box_component_name, half_extents_name, half_extents);
 }
 
-void BtShapeBoxGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
+void BtBoxGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 	ERR_FAIL_COND(entity == nullptr);
 	ERR_FAIL_COND(entity->has_component(box_component_name) == false);
@@ -132,12 +132,12 @@ void BtShapeBoxGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const
 	}
 }
 
-void BtShapeSphereGizmo::init() {
+void BtSphereGizmo::init() {
 	// No need to register the materials, everything we need is already
 	// registered by the box gizmo.
 }
 
-void BtShapeSphereGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
+void BtSphereGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 	ERR_FAIL_COND(entity == nullptr);
 
@@ -188,7 +188,7 @@ void BtShapeSphereGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 	}
 }
 
-int BtShapeSphereGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {
+int BtSphereGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 	ERR_FAIL_COND_V(entity == nullptr, 0);
 
@@ -199,11 +199,11 @@ int BtShapeSphereGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const
 	return 0;
 }
 
-String BtShapeSphereGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
+String BtSphereGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
 	return "radius";
 }
 
-Variant BtShapeSphereGizmo::get_handle_value(EditorNode3DGizmo *p_gizmo, int p_idx) const {
+Variant BtSphereGizmo::get_handle_value(EditorNode3DGizmo *p_gizmo, int p_idx) const {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 	ERR_FAIL_COND_V(entity == nullptr, Variant());
 	ERR_FAIL_COND_V(entity->has_component(sphere_component_name) == false, Variant());
@@ -211,7 +211,7 @@ Variant BtShapeSphereGizmo::get_handle_value(EditorNode3DGizmo *p_gizmo, int p_i
 	return entity->get_component_value(sphere_component_name, radius_name);
 }
 
-void BtShapeSphereGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
+void BtSphereGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 	ERR_FAIL_COND(entity == nullptr);
 	ERR_FAIL_COND(entity->has_component(sphere_component_name) == false);
@@ -238,7 +238,7 @@ void BtShapeSphereGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camer
 	entity->set_component_value(sphere_component_name, radius_name, d);
 }
 
-void BtShapeSphereGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
+void BtSphereGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 	ERR_FAIL_COND(entity == nullptr);
 	ERR_FAIL_COND(entity->has_component(sphere_component_name) == false);
@@ -256,12 +256,12 @@ void BtShapeSphereGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, co
 	}
 }
 
-void BtShapeCapsuleGizmo::init() {
+void BtCapsuleGizmo::init() {
 	// No need to register the materials, everything we need is already
 	// registered by the box gizmo.
 }
 
-void BtShapeCapsuleGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
+void BtCapsuleGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 	ERR_FAIL_COND(entity == nullptr);
 
@@ -339,7 +339,7 @@ void BtShapeCapsuleGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 	}
 }
 
-int BtShapeCapsuleGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {
+int BtCapsuleGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 	ERR_FAIL_COND_V(entity == nullptr, 0);
 
@@ -350,7 +350,7 @@ int BtShapeCapsuleGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) cons
 	return 0;
 }
 
-String BtShapeCapsuleGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
+String BtCapsuleGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
 	if (p_idx == 0) {
 		return "radius";
 	} else {
@@ -358,7 +358,7 @@ String BtShapeCapsuleGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, in
 	}
 }
 
-Variant BtShapeCapsuleGizmo::get_handle_value(EditorNode3DGizmo *p_gizmo, int p_idx) const {
+Variant BtCapsuleGizmo::get_handle_value(EditorNode3DGizmo *p_gizmo, int p_idx) const {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 	ERR_FAIL_COND_V(entity == nullptr, Variant());
 	ERR_FAIL_COND_V(entity->has_component(capsule_component_name) == false, Variant());
@@ -370,7 +370,7 @@ Variant BtShapeCapsuleGizmo::get_handle_value(EditorNode3DGizmo *p_gizmo, int p_
 	}
 }
 
-void BtShapeCapsuleGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
+void BtCapsuleGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 	ERR_FAIL_COND(entity == nullptr);
 	ERR_FAIL_COND(entity->has_component(capsule_component_name) == false);
@@ -408,7 +408,7 @@ void BtShapeCapsuleGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Came
 	}
 }
 
-void BtShapeCapsuleGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
+void BtCapsuleGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 	ERR_FAIL_COND(entity == nullptr);
 	ERR_FAIL_COND(entity->has_component(capsule_component_name) == false);
@@ -426,12 +426,12 @@ void BtShapeCapsuleGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, c
 	}
 }
 
-void BtShapeConeGizmo::init() {
+void BtConeGizmo::init() {
 	// No need to register the materials, everything we need is already
 	// registered by the box gizmo.
 }
 
-void BtShapeConeGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
+void BtConeGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 	ERR_FAIL_COND(entity == nullptr);
 
@@ -489,7 +489,7 @@ void BtShapeConeGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 	}
 }
 
-int BtShapeConeGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {
+int BtConeGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 	ERR_FAIL_COND_V(entity == nullptr, 0);
 
@@ -500,7 +500,7 @@ int BtShapeConeGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {
 	return 0;
 }
 
-String BtShapeConeGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
+String BtConeGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
 	if (p_idx == 0) {
 		return "radius";
 	} else {
@@ -508,7 +508,7 @@ String BtShapeConeGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, int p
 	}
 }
 
-Variant BtShapeConeGizmo::get_handle_value(EditorNode3DGizmo *p_gizmo, int p_idx) const {
+Variant BtConeGizmo::get_handle_value(EditorNode3DGizmo *p_gizmo, int p_idx) const {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 	ERR_FAIL_COND_V(entity == nullptr, Variant());
 	ERR_FAIL_COND_V(entity->has_component(cone_component_name) == false, Variant());
@@ -520,7 +520,7 @@ Variant BtShapeConeGizmo::get_handle_value(EditorNode3DGizmo *p_gizmo, int p_idx
 	}
 }
 
-void BtShapeConeGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
+void BtConeGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 	ERR_FAIL_COND(entity == nullptr);
 	ERR_FAIL_COND(entity->has_component(cone_component_name) == false);
@@ -554,7 +554,7 @@ void BtShapeConeGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3
 	}
 }
 
-void BtShapeConeGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
+void BtConeGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 	ERR_FAIL_COND(entity == nullptr);
 	ERR_FAIL_COND(entity->has_component(cone_component_name) == false);
@@ -572,12 +572,12 @@ void BtShapeConeGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, cons
 	}
 }
 
-void BtShapeCylinderGizmo::init() {
+void BtCylinderGizmo::init() {
 	// No need to register the materials, everything we need is already
 	// registered by the box gizmo.
 }
 
-void BtShapeCylinderGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
+void BtCylinderGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 	ERR_FAIL_COND(entity == nullptr);
 
@@ -653,7 +653,7 @@ void BtShapeCylinderGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 	}
 }
 
-int BtShapeCylinderGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {
+int BtCylinderGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 	ERR_FAIL_COND_V(entity == nullptr, 0);
 
@@ -664,7 +664,7 @@ int BtShapeCylinderGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) con
 	return 0;
 }
 
-String BtShapeCylinderGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
+String BtCylinderGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
 	if (p_idx == 0) {
 		return "radius";
 	} else {
@@ -672,7 +672,7 @@ String BtShapeCylinderGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, i
 	}
 }
 
-Variant BtShapeCylinderGizmo::get_handle_value(EditorNode3DGizmo *p_gizmo, int p_idx) const {
+Variant BtCylinderGizmo::get_handle_value(EditorNode3DGizmo *p_gizmo, int p_idx) const {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 	ERR_FAIL_COND_V(entity == nullptr, Variant());
 	ERR_FAIL_COND_V(entity->has_component(cylinder_component_name) == false, Variant());
@@ -684,7 +684,7 @@ Variant BtShapeCylinderGizmo::get_handle_value(EditorNode3DGizmo *p_gizmo, int p
 	}
 }
 
-void BtShapeCylinderGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
+void BtCylinderGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 	ERR_FAIL_COND(entity == nullptr);
 	ERR_FAIL_COND(entity->has_component(cylinder_component_name) == false);
@@ -717,7 +717,7 @@ void BtShapeCylinderGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Cam
 	}
 }
 
-void BtShapeCylinderGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
+void BtCylinderGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 	ERR_FAIL_COND(entity == nullptr);
 	ERR_FAIL_COND(entity->has_component(cylinder_component_name) == false);
@@ -741,12 +741,12 @@ public:
 	Ref<ArrayMesh> mesh;
 };
 
-void BtShapeConvexGizmo::init() {
+void BtConvexGizmo::init() {
 	// No need to register the materials, everything we need is already
 	// registered by the box gizmo.
 }
 
-void BtShapeConvexGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
+void BtConvexGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 	ERR_FAIL_COND(entity == nullptr);
 
@@ -775,30 +775,30 @@ void BtShapeConvexGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 	}
 }
 
-int BtShapeConvexGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {
+int BtConvexGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {
 	return 0;
 }
 
-String BtShapeConvexGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
+String BtConvexGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
 	return "";
 }
 
-Variant BtShapeConvexGizmo::get_handle_value(EditorNode3DGizmo *p_gizmo, int p_idx) const {
+Variant BtConvexGizmo::get_handle_value(EditorNode3DGizmo *p_gizmo, int p_idx) const {
 	return Variant();
 }
 
-void BtShapeConvexGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
+void BtConvexGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
 }
 
-void BtShapeConvexGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
+void BtConvexGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
 }
 
-void BtShapeTrimeshGizmo::init() {
+void BtTrimeshGizmo::init() {
 	// No need to register the materials, everything we need is already
 	// registered by the box gizmo.
 }
 
-void BtShapeTrimeshGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
+void BtTrimeshGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 	ERR_FAIL_COND(entity == nullptr);
 
@@ -827,20 +827,20 @@ void BtShapeTrimeshGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 	}
 }
 
-int BtShapeTrimeshGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {
+int BtTrimeshGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {
 	return 0;
 }
 
-String BtShapeTrimeshGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
+String BtTrimeshGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
 	return "";
 }
 
-Variant BtShapeTrimeshGizmo::get_handle_value(EditorNode3DGizmo *p_gizmo, int p_idx) const {
+Variant BtTrimeshGizmo::get_handle_value(EditorNode3DGizmo *p_gizmo, int p_idx) const {
 	return Variant();
 }
 
-void BtShapeTrimeshGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
+void BtTrimeshGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
 }
 
-void BtShapeTrimeshGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
+void BtTrimeshGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
 }

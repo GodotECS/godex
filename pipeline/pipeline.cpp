@@ -174,6 +174,7 @@ void Pipeline::prepare(World *p_world) {
 		for (const Set<uint32_t>::Element *e = info.need_changed.front(); e; e = e->next()) {
 			// Mark as `need_changed` this storage.
 			StorageBase *storage = p_world->get_storage(e->get());
+			ERR_CONTINUE_MSG(storage == nullptr, "The storage is not supposed to be nullptr at this point. Storage: " + ECS::get_component_name(e->get()) + "#" + itos(e->get()));
 			storage->set_tracing_change(true);
 		}
 	}

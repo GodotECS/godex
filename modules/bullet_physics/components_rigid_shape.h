@@ -38,15 +38,15 @@ public:
 	}
 };
 
-struct BtShapeBox : public BtRigidShape {
-	COMPONENT_CUSTOM_CONSTRUCTOR(BtShapeBox, SharedSteadyStorage)
+struct BtBox : public BtRigidShape {
+	COMPONENT_CUSTOM_CONSTRUCTOR(BtBox, SharedSteadyStorage)
 
 	static void _bind_methods();
 	static void _get_storage_config(Dictionary &r_config);
 
 	btBoxShape box = btBoxShape(btVector3(1.0, 1.0, 1.0));
 
-	BtShapeBox() :
+	BtBox() :
 			BtRigidShape(TYPE_BOX) {}
 
 	void set_half_extents(const Vector3 &p_half_extends);
@@ -56,30 +56,30 @@ struct BtShapeBox : public BtRigidShape {
 	real_t get_margin() const;
 };
 
-struct BtShapeSphere : public BtRigidShape {
-	COMPONENT_CUSTOM_CONSTRUCTOR(BtShapeSphere, SharedSteadyStorage)
+struct BtSphere : public BtRigidShape {
+	COMPONENT_CUSTOM_CONSTRUCTOR(BtSphere, SharedSteadyStorage)
 
 	static void _bind_methods();
 	static void _get_storage_config(Dictionary &r_config);
 
 	btSphereShape sphere = btSphereShape(1.0);
 
-	BtShapeSphere() :
+	BtSphere() :
 			BtRigidShape(TYPE_SPHERE) {}
 
 	void set_radius(real_t p_radius);
 	real_t get_radius() const;
 };
 
-struct BtShapeCapsule : public BtRigidShape {
-	COMPONENT_CUSTOM_CONSTRUCTOR(BtShapeCapsule, SharedSteadyStorage)
+struct BtCapsule : public BtRigidShape {
+	COMPONENT_CUSTOM_CONSTRUCTOR(BtCapsule, SharedSteadyStorage)
 
 	static void _bind_methods();
 	static void _get_storage_config(Dictionary &r_config);
 
 	btCapsuleShape capsule = btCapsuleShape(1.0, 1.0); // Radius, Height
 
-	BtShapeCapsule() :
+	BtCapsule() :
 			BtRigidShape(TYPE_CAPSULE) {}
 
 	void set_radius(real_t p_radius);
@@ -89,15 +89,15 @@ struct BtShapeCapsule : public BtRigidShape {
 	real_t get_height() const;
 };
 
-struct BtShapeCone : public BtRigidShape {
-	COMPONENT_CUSTOM_CONSTRUCTOR(BtShapeCone, SharedSteadyStorage)
+struct BtCone : public BtRigidShape {
+	COMPONENT_CUSTOM_CONSTRUCTOR(BtCone, SharedSteadyStorage)
 
 	static void _bind_methods();
 	static void _get_storage_config(Dictionary &r_config);
 
 	btConeShape cone = btConeShape(1.0, 1.0); // Radius, Height
 
-	BtShapeCone() :
+	BtCone() :
 			BtRigidShape(TYPE_CONE) {}
 
 	void set_radius(real_t p_radius);
@@ -110,15 +110,15 @@ struct BtShapeCone : public BtRigidShape {
 	real_t get_margin() const;
 };
 
-struct BtShapeCylinder : public BtRigidShape {
-	COMPONENT_CUSTOM_CONSTRUCTOR(BtShapeCylinder, SharedSteadyStorage)
+struct BtCylinder : public BtRigidShape {
+	COMPONENT_CUSTOM_CONSTRUCTOR(BtCylinder, SharedSteadyStorage)
 
 	static void _bind_methods();
 	static void _get_storage_config(Dictionary &r_config);
 
 	btCylinderShape cylinder = btCylinderShape(btVector3(1.0, 1.0, 1.0)); // Half extents
 
-	BtShapeCylinder() :
+	BtCylinder() :
 			BtRigidShape(TYPE_CYLINDER) {}
 
 	void set_radius(real_t p_radius);
@@ -131,20 +131,20 @@ struct BtShapeCylinder : public BtRigidShape {
 	real_t get_margin() const;
 };
 
-struct BtShapeWorldMargin : public BtRigidShape {
-	COMPONENT_CUSTOM_CONSTRUCTOR(BtShapeWorldMargin, SharedSteadyStorage)
+struct BtWorldMargin : public BtRigidShape {
+	COMPONENT_CUSTOM_CONSTRUCTOR(BtWorldMargin, SharedSteadyStorage)
 
 	static void _bind_methods();
 	static void _get_storage_config(Dictionary &r_config);
 
 	btStaticPlaneShape world_margin = btStaticPlaneShape(btVector3(0, 1, 0), 0.0); // Normal, Distance
 
-	BtShapeWorldMargin() :
+	BtWorldMargin() :
 			BtRigidShape(TYPE_WORLD_MARGIN) {}
 };
 
-struct BtShapeConvex : public BtRigidShape {
-	COMPONENT_CUSTOM_CONSTRUCTOR(BtShapeConvex, SharedSteadyStorage)
+struct BtConvex : public BtRigidShape {
+	COMPONENT_CUSTOM_CONSTRUCTOR(BtConvex, SharedSteadyStorage)
 
 	static void _bind_methods();
 	static void _get_storage_config(Dictionary &r_config);
@@ -153,12 +153,12 @@ struct BtShapeConvex : public BtRigidShape {
 	uint32_t point_count = 0;
 	btConvexPointCloudShape convex = btConvexPointCloudShape();
 
-	BtShapeConvex() :
+	BtConvex() :
 			BtRigidShape(TYPE_CONVEX) {}
 	// Copy constructor is needed because I'm dealing with pointers here.
-	BtShapeConvex(const BtShapeConvex &p_other);
-	BtShapeConvex &operator=(const BtShapeConvex &p_other);
-	~BtShapeConvex();
+	BtConvex(const BtConvex &p_other);
+	BtConvex &operator=(const BtConvex &p_other);
+	~BtConvex();
 
 	void set_points(const Vector<Vector3> &p_points);
 	Vector<Vector3> get_points() const;
@@ -166,8 +166,8 @@ struct BtShapeConvex : public BtRigidShape {
 	void update_internal_shape();
 };
 
-struct BtShapeTrimesh : public BtRigidShape {
-	COMPONENT_CUSTOM_CONSTRUCTOR(BtShapeTrimesh, SharedSteadyStorage)
+struct BtTrimesh : public BtRigidShape {
+	COMPONENT_CUSTOM_CONSTRUCTOR(BtTrimesh, SharedSteadyStorage)
 
 	static void _bind_methods();
 	static void _get_storage_config(Dictionary &r_config);
@@ -177,7 +177,7 @@ struct BtShapeTrimesh : public BtRigidShape {
 	btTriangleInfoMap triangle_info_map;
 	btBvhTriangleMeshShape *trimesh = nullptr;
 
-	BtShapeTrimesh() :
+	BtTrimesh() :
 			BtRigidShape(TYPE_TRIMESH) {}
 
 	void set_faces(const Vector<Vector3> &p_faces);

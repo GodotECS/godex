@@ -7,6 +7,7 @@
 #include "core/io/resource_loader.h"
 #include "core/object/script_language.h"
 #include "editor/editor_node.h"
+#include "entity.h"
 
 void System::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_space", "space"), &System::set_space);
@@ -232,6 +233,7 @@ String databag_validate_script(Ref<Script> p_script) {
 	return "Not yet implemented";
 }
 
+bool EditorEcs::def_defined_static_components = false;
 bool EditorEcs::component_loaded = false;
 bool EditorEcs::systems_loaded = false;
 bool EditorEcs::ecs_initialized = false;
@@ -482,6 +484,34 @@ String EditorEcs::system_save_script(const String &p_script_path, Ref<Script> p_
 
 	// Success
 	return "";
+}
+
+void EditorEcs::define_editor_default_component_properties() {
+	const StringName entity_3d_name = Entity3D::get_class_static();
+	const StringName entity_2d_name = Entity2D::get_class_static();
+
+	if (def_defined_static_components == false) {
+		def_defined_static_components = true;
+		for (godex::component_id id = 0; id < ECS::get_components_count(); id += 1) {
+			const LocalVector<PropertyInfo> *props = ECS::get_component_properties(id);
+			for (uint32_t p = 0; p < props->size(); p += 1) {
+				Variant def = ECS::get_component_property_default(id, (*props)[p].name);
+				ClassDB::set_property_default_value(entity_3d_name, StringName(String(ECS::get_component_name(id)) + "/" + (*props)[p].name), def);
+				ClassDB::set_property_default_value(entity_2d_name, StringName(String(ECS::get_component_name(id)) + "/" + (*props)[p].name), def);
+			}
+		}
+	}
+
+	// Register the scripted component defaults.
+	for (uint32_t i = 0; i < components.size(); i += 1) {
+		List<PropertyInfo> props;
+		components[i]->get_property_list(&props);
+		for (List<PropertyInfo>::Element *e = props.front(); e; e = e->next()) {
+			Variant def = components[i]->get_property_default_value(e->get().name);
+			ClassDB::set_property_default_value(entity_3d_name, StringName(String(component_names[i]) + "/" + e->get().name), def);
+			ClassDB::set_property_default_value(entity_2d_name, StringName(String(component_names[i]) + "/" + e->get().name), def);
+		}
+	}
 }
 
 void EditorEcs::register_runtime_scripts() {

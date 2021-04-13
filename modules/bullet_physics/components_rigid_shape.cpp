@@ -7,21 +7,21 @@
 btCollisionShape *BtRigidShape::get_shape() {
 	switch (type) {
 		case TYPE_BOX:
-			return &static_cast<BtShapeBox *>(this)->box;
+			return &static_cast<BtBox *>(this)->box;
 		case TYPE_SPHERE:
-			return &static_cast<BtShapeSphere *>(this)->sphere;
+			return &static_cast<BtSphere *>(this)->sphere;
 		case TYPE_CAPSULE:
-			return &static_cast<BtShapeCapsule *>(this)->capsule;
+			return &static_cast<BtCapsule *>(this)->capsule;
 		case TYPE_CONE:
-			return &static_cast<BtShapeCone *>(this)->cone;
+			return &static_cast<BtCone *>(this)->cone;
 		case TYPE_CYLINDER:
-			return &static_cast<BtShapeCylinder *>(this)->cylinder;
+			return &static_cast<BtCylinder *>(this)->cylinder;
 		case TYPE_WORLD_MARGIN:
-			return &static_cast<BtShapeWorldMargin *>(this)->world_margin;
+			return &static_cast<BtWorldMargin *>(this)->world_margin;
 		case TYPE_CONVEX:
-			return &static_cast<BtShapeConvex *>(this)->convex;
+			return &static_cast<BtConvex *>(this)->convex;
 		case TYPE_TRIMESH:
-			return static_cast<BtShapeTrimesh *>(this)->trimesh;
+			return static_cast<BtTrimesh *>(this)->trimesh;
 	}
 
 	CRASH_NOW_MSG("Please support all shapes.");
@@ -32,169 +32,169 @@ const btCollisionShape *BtRigidShape::get_shape() const {
 	return const_cast<BtRigidShape *>(this)->get_shape();
 }
 
-void BtShapeBox::_bind_methods() {
-	ECS_BIND_PROPERTY_FUNC(BtShapeBox, PropertyInfo(Variant::VECTOR3, "half_extents"), set_half_extents, get_half_extents);
-	ECS_BIND_PROPERTY_FUNC(BtShapeBox, PropertyInfo(Variant::FLOAT, "margin"), set_margin, get_margin);
+void BtBox::_bind_methods() {
+	ECS_BIND_PROPERTY_FUNC(BtBox, PropertyInfo(Variant::VECTOR3, "half_extents"), set_half_extents, get_half_extents);
+	ECS_BIND_PROPERTY_FUNC(BtBox, PropertyInfo(Variant::FLOAT, "margin"), set_margin, get_margin);
 }
 
-void BtShapeBox::_get_storage_config(Dictionary &r_config) {
+void BtBox::_get_storage_config(Dictionary &r_config) {
 	/// Configure the storage of this component to have pages of 500 Physis Bodies
 	/// You can tweak this in editor.
 	r_config["page_size"] = 200;
 }
 
-void BtShapeBox::set_half_extents(const Vector3 &p_half_extends) {
+void BtBox::set_half_extents(const Vector3 &p_half_extends) {
 	box.setImplicitShapeDimensions(btVector3(p_half_extends.x - box.getMargin(), p_half_extends.y - box.getMargin(), p_half_extends.z - box.getMargin()));
 }
 
-Vector3 BtShapeBox::get_half_extents() const {
+Vector3 BtBox::get_half_extents() const {
 	const btVector3 &extents = box.getImplicitShapeDimensions();
 	return Vector3(extents.x() + box.getMargin(), extents.y() + box.getMargin(), extents.z() + box.getMargin());
 }
 
-void BtShapeBox::set_margin(real_t p_margin) {
+void BtBox::set_margin(real_t p_margin) {
 	box.setMargin(p_margin);
 }
 
-real_t BtShapeBox::get_margin() const {
+real_t BtBox::get_margin() const {
 	return box.getMargin();
 }
 
-void BtShapeSphere::_bind_methods() {
-	ECS_BIND_PROPERTY_FUNC(BtShapeSphere, PropertyInfo(Variant::FLOAT, "radius"), set_radius, get_radius);
+void BtSphere::_bind_methods() {
+	ECS_BIND_PROPERTY_FUNC(BtSphere, PropertyInfo(Variant::FLOAT, "radius"), set_radius, get_radius);
 }
 
-void BtShapeSphere::_get_storage_config(Dictionary &r_config) {
+void BtSphere::_get_storage_config(Dictionary &r_config) {
 	/// Configure the storage of this component to have pages of 500 Physis Bodies
 	/// You can tweak this in editor.
 	r_config["page_size"] = 50;
 }
 
-void BtShapeSphere::set_radius(real_t p_radius) {
+void BtSphere::set_radius(real_t p_radius) {
 	sphere.setUnscaledRadius(p_radius);
 }
 
-real_t BtShapeSphere::get_radius() const {
+real_t BtSphere::get_radius() const {
 	return sphere.getRadius();
 }
 
-void BtShapeCapsule::_bind_methods() {
-	ECS_BIND_PROPERTY_FUNC(BtShapeCapsule, PropertyInfo(Variant::FLOAT, "radius"), set_radius, get_radius);
-	ECS_BIND_PROPERTY_FUNC(BtShapeCapsule, PropertyInfo(Variant::FLOAT, "height"), set_height, get_height);
+void BtCapsule::_bind_methods() {
+	ECS_BIND_PROPERTY_FUNC(BtCapsule, PropertyInfo(Variant::FLOAT, "radius"), set_radius, get_radius);
+	ECS_BIND_PROPERTY_FUNC(BtCapsule, PropertyInfo(Variant::FLOAT, "height"), set_height, get_height);
 }
 
-void BtShapeCapsule::_get_storage_config(Dictionary &r_config) {
+void BtCapsule::_get_storage_config(Dictionary &r_config) {
 	/// Configure the storage of this component to have pages of 500 Physis Bodies
 	/// You can tweak this in editor.
 	r_config["page_size"] = 50;
 }
 
-void BtShapeCapsule::set_radius(real_t p_radius) {
+void BtCapsule::set_radius(real_t p_radius) {
 	// The capsule margin is the radius of the capsule.
 	capsule.setMargin(p_radius);
 	capsule.setImplicitShapeDimensions(btVector3(p_radius, capsule.getHalfHeight(), p_radius));
 }
 
-real_t BtShapeCapsule::get_radius() const {
+real_t BtCapsule::get_radius() const {
 	return capsule.getRadius();
 }
 
-void BtShapeCapsule::set_height(real_t p_height) {
+void BtCapsule::set_height(real_t p_height) {
 	capsule.setImplicitShapeDimensions(btVector3(capsule.getRadius(), 0.5f * p_height, capsule.getRadius()));
 }
 
-real_t BtShapeCapsule::get_height() const {
+real_t BtCapsule::get_height() const {
 	return capsule.getHalfHeight() * 2.0;
 }
 
-void BtShapeCone::_bind_methods() {
-	ECS_BIND_PROPERTY_FUNC(BtShapeCone, PropertyInfo(Variant::FLOAT, "radius"), set_radius, get_radius);
-	ECS_BIND_PROPERTY_FUNC(BtShapeCone, PropertyInfo(Variant::FLOAT, "height"), set_height, get_height);
-	ECS_BIND_PROPERTY_FUNC(BtShapeCone, PropertyInfo(Variant::FLOAT, "margin"), set_margin, get_margin);
+void BtCone::_bind_methods() {
+	ECS_BIND_PROPERTY_FUNC(BtCone, PropertyInfo(Variant::FLOAT, "radius"), set_radius, get_radius);
+	ECS_BIND_PROPERTY_FUNC(BtCone, PropertyInfo(Variant::FLOAT, "height"), set_height, get_height);
+	ECS_BIND_PROPERTY_FUNC(BtCone, PropertyInfo(Variant::FLOAT, "margin"), set_margin, get_margin);
 }
 
-void BtShapeCone::_get_storage_config(Dictionary &r_config) {
+void BtCone::_get_storage_config(Dictionary &r_config) {
 	/// Configure the storage of this component to have pages of 500 Physis Bodies
 	/// You can tweak this in editor.
 	r_config["page_size"] = 50;
 }
 
-void BtShapeCone::set_radius(real_t p_radius) {
+void BtCone::set_radius(real_t p_radius) {
 	cone.setRadius(p_radius);
 }
 
-real_t BtShapeCone::get_radius() const {
+real_t BtCone::get_radius() const {
 	return cone.getRadius();
 }
 
-void BtShapeCone::set_height(real_t p_height) {
+void BtCone::set_height(real_t p_height) {
 	cone.setHeight(p_height);
 }
 
-real_t BtShapeCone::get_height() const {
+real_t BtCone::get_height() const {
 	return cone.getHeight();
 }
 
-void BtShapeCone::set_margin(real_t p_margin) {
+void BtCone::set_margin(real_t p_margin) {
 	cone.setMargin(p_margin);
 }
 
-real_t BtShapeCone::get_margin() const {
+real_t BtCone::get_margin() const {
 	return cone.getMargin();
 }
 
-void BtShapeCylinder::_bind_methods() {
-	ECS_BIND_PROPERTY_FUNC(BtShapeCylinder, PropertyInfo(Variant::FLOAT, "radius"), set_radius, get_radius);
-	ECS_BIND_PROPERTY_FUNC(BtShapeCylinder, PropertyInfo(Variant::FLOAT, "height"), set_height, get_height);
-	ECS_BIND_PROPERTY_FUNC(BtShapeCylinder, PropertyInfo(Variant::FLOAT, "margin"), set_margin, get_margin);
+void BtCylinder::_bind_methods() {
+	ECS_BIND_PROPERTY_FUNC(BtCylinder, PropertyInfo(Variant::FLOAT, "radius"), set_radius, get_radius);
+	ECS_BIND_PROPERTY_FUNC(BtCylinder, PropertyInfo(Variant::FLOAT, "height"), set_height, get_height);
+	ECS_BIND_PROPERTY_FUNC(BtCylinder, PropertyInfo(Variant::FLOAT, "margin"), set_margin, get_margin);
 }
 
-void BtShapeCylinder::_get_storage_config(Dictionary &r_config) {
+void BtCylinder::_get_storage_config(Dictionary &r_config) {
 	/// Configure the storage of this component to have pages of 500 Physis Bodies
 	/// You can tweak this in editor.
 	r_config["page_size"] = 50;
 }
 
-void BtShapeCylinder::set_radius(real_t p_radius) {
+void BtCylinder::set_radius(real_t p_radius) {
 	cylinder.setImplicitShapeDimensions(btVector3(p_radius - get_margin(), (get_height() * 0.5) - get_margin(), p_radius - get_margin()));
 }
 
-real_t BtShapeCylinder::get_radius() const {
+real_t BtCylinder::get_radius() const {
 	return cylinder.getRadius();
 }
 
-void BtShapeCylinder::set_height(real_t p_height) {
+void BtCylinder::set_height(real_t p_height) {
 	cylinder.setImplicitShapeDimensions(btVector3(get_radius() - get_margin(), (p_height * 0.5) - get_margin(), get_radius() - get_margin()));
 }
 
-real_t BtShapeCylinder::get_height() const {
+real_t BtCylinder::get_height() const {
 	return cylinder.getHalfExtentsWithMargin()[1] * 2.0;
 }
 
-void BtShapeCylinder::set_margin(real_t p_margin) {
+void BtCylinder::set_margin(real_t p_margin) {
 	// This already handles the Radius and Height adjustment.
 	cylinder.setMargin(p_margin);
 }
 
-real_t BtShapeCylinder::get_margin() const {
+real_t BtCylinder::get_margin() const {
 	return cylinder.getMargin();
 }
 
-void BtShapeWorldMargin::_bind_methods() {
+void BtWorldMargin::_bind_methods() {
 }
 
-void BtShapeWorldMargin::_get_storage_config(Dictionary &r_config) {
+void BtWorldMargin::_get_storage_config(Dictionary &r_config) {
 	/// Configure the storage of this component to have pages of 500 Physis Bodies
 	/// You can tweak this in editor.
 	r_config["page_size"] = 4;
 }
 
-BtShapeConvex::BtShapeConvex(const BtShapeConvex &p_other) :
+BtConvex::BtConvex(const BtConvex &p_other) :
 		BtRigidShape(TYPE_CONVEX) {
 	operator=(p_other);
 }
 
-BtShapeConvex &BtShapeConvex::operator=(const BtShapeConvex &p_other) {
+BtConvex &BtConvex::operator=(const BtConvex &p_other) {
 	point_count = p_other.point_count;
 
 	if (point_count > 0) {
@@ -209,23 +209,23 @@ BtShapeConvex &BtShapeConvex::operator=(const BtShapeConvex &p_other) {
 	return *this;
 }
 
-BtShapeConvex::~BtShapeConvex() {
+BtConvex::~BtConvex() {
 	if (points != nullptr) {
 		memdelete(points);
 	}
 }
 
-void BtShapeConvex::_bind_methods() {
-	ECS_BIND_PROPERTY_FUNC(BtShapeConvex, PropertyInfo(Variant::ARRAY, "points"), set_points, get_points);
+void BtConvex::_bind_methods() {
+	ECS_BIND_PROPERTY_FUNC(BtConvex, PropertyInfo(Variant::ARRAY, "points"), set_points, get_points);
 }
 
-void BtShapeConvex::_get_storage_config(Dictionary &r_config) {
+void BtConvex::_get_storage_config(Dictionary &r_config) {
 	/// Configure the storage of this component to have pages of 500 Physis Bodies
 	/// You can tweak this in editor.
 	r_config["page_size"] = 200;
 }
 
-void BtShapeConvex::set_points(const Vector<Vector3> &p_points) {
+void BtConvex::set_points(const Vector<Vector3> &p_points) {
 	point_count = p_points.size();
 	if (point_count == 0 && points != nullptr) {
 		memdelete(points);
@@ -241,7 +241,7 @@ void BtShapeConvex::set_points(const Vector<Vector3> &p_points) {
 	update_internal_shape();
 }
 
-Vector<Vector3> BtShapeConvex::get_points() const {
+Vector<Vector3> BtConvex::get_points() const {
 	Vector<Vector3> ret;
 	ret.resize(point_count);
 	Vector3 *ptrw = ret.ptrw();
@@ -251,7 +251,7 @@ Vector<Vector3> BtShapeConvex::get_points() const {
 	return ret;
 }
 
-void BtShapeConvex::update_internal_shape() {
+void BtConvex::update_internal_shape() {
 	const btVector3 local_scaling(1.0, 1.0, 1.0);
 	if (point_count == 0) {
 		convex.setPoints(nullptr, 0, true, local_scaling);
@@ -260,17 +260,17 @@ void BtShapeConvex::update_internal_shape() {
 	}
 }
 
-void BtShapeTrimesh::_bind_methods() {
-	ECS_BIND_PROPERTY_FUNC(BtShapeTrimesh, PropertyInfo(Variant::ARRAY, "faces"), set_faces, get_faces);
+void BtTrimesh::_bind_methods() {
+	ECS_BIND_PROPERTY_FUNC(BtTrimesh, PropertyInfo(Variant::ARRAY, "faces"), set_faces, get_faces);
 }
 
-void BtShapeTrimesh::_get_storage_config(Dictionary &r_config) {
+void BtTrimesh::_get_storage_config(Dictionary &r_config) {
 	/// Configure the storage of this component to have pages of 500 Physis Bodies
 	/// You can tweak this in editor.
 	r_config["page_size"] = 200;
 }
 
-void BtShapeTrimesh::set_faces(const Vector<Vector3> &p_faces) {
+void BtTrimesh::set_faces(const Vector<Vector3> &p_faces) {
 	faces = p_faces;
 
 	delete trimesh;
@@ -313,6 +313,6 @@ void BtShapeTrimesh::set_faces(const Vector<Vector3> &p_faces) {
 	}
 }
 
-Vector<Vector3> BtShapeTrimesh::get_faces() const {
+Vector<Vector3> BtTrimesh::get_faces() const {
 	return faces;
 }

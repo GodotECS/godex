@@ -25,14 +25,14 @@ void register_bullet_physics_types() {
 	ECS::register_component<BtArea>();
 
 	// Shapes
-	ECS::register_component<BtShapeBox>();
-	ECS::register_component<BtShapeSphere>();
-	ECS::register_component<BtShapeCapsule>();
-	ECS::register_component<BtShapeCone>();
-	ECS::register_component<BtShapeCylinder>();
-	ECS::register_component<BtShapeWorldMargin>();
-	ECS::register_component<BtShapeConvex>();
-	ECS::register_component<BtShapeTrimesh>();
+	ECS::register_component<BtBox>();
+	ECS::register_component<BtSphere>();
+	ECS::register_component<BtCapsule>();
+	ECS::register_component<BtCone>();
+	ECS::register_component<BtCylinder>();
+	//ECS::register_component<BtWorldMargin>();
+	ECS::register_component<BtConvex>();
+	ECS::register_component<BtTrimesh>();
 
 	// Generics
 	// TODO move this inside `modules/godot`?
@@ -50,13 +50,13 @@ void register_bullet_physics_types() {
 	ECS::register_system(bt_body_sync, "BtBodySync", "Bullet Physics - Read the Physics Engine and update the Bodies");
 
 	// Register gizmos
-	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtShapeBoxGizmo));
-	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtShapeSphereGizmo));
-	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtShapeCapsuleGizmo));
-	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtShapeConeGizmo));
-	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtShapeCylinderGizmo));
-	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtShapeConvexGizmo));
-	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtShapeTrimeshGizmo));
+	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtBoxGizmo));
+	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtSphereGizmo));
+	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtCapsuleGizmo));
+	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtConeGizmo));
+	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtCylinderGizmo));
+	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtConvexGizmo));
+	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtTrimeshGizmo));
 }
 
 void unregister_bullet_physics_types() {
