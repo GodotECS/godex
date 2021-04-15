@@ -449,15 +449,16 @@ void EntityInternal<C>::add_component(const StringName &p_component_name, const 
 			components_data.set(p_component_name, Variant());
 		} else {
 			Variant *properties = components_data.lookup_ptr(p_component_name);
-			if (properties) {
-				// The component already exist, merge the two property
-				// dictionaries, so we don't lose the previous changes.
-				for (const Variant *key = p_values.next(); key; key = p_values.next(key)) {
-					properties->operator Dictionary()[*key] = *p_values.getptr(*key);
-				}
-			} else {
-				// This component doesn't exist yet, add it now.
-				components_data.set(p_component_name, p_values.duplicate());
+			if (properties == nullptr) {
+				// The component doesn't exist yet, add it.
+				components_data.set(p_component_name, Dictionary());
+				properties = components_data.lookup_ptr(p_component_name);
+			}
+			// Append properties.
+			for (const Variant *key = p_values.next(); key; key = p_values.next(key)) {
+				// Make sure that the `Key` is always a StringName.
+				StringName k = *key;
+				properties->operator Dictionary()[k] = *p_values.getptr(*key);
 			}
 			update_components_data();
 			owner->update_gizmo();
