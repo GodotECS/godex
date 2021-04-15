@@ -40,6 +40,7 @@ void register_bullet_physics_types() {
 	ECS::register_component<Torque>();
 	ECS::register_component<Impulse>();
 	ECS::register_component<TorqueImpulse>();
+	ECS::register_component<WalkIntention>();
 
 	// Register `System`s
 	ECS::register_system(bt_body_config, "BtBodyConfig", "Bullet Physics - Manage the lifetime of the Bodies");
