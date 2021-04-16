@@ -21,6 +21,11 @@ void TransformComponentGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 		return;
 	}
 
+	if (p_gizmo->is_selected() == false) {
+		// No gizmo when the entity is not selected in editor.
+		return;
+	}
+
 	{
 		const Ref<Material> material = get_material("transform_gizmo_x", p_gizmo);
 		Vector<Vector3> segments;
