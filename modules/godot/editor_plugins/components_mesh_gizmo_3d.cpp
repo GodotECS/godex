@@ -49,10 +49,10 @@ void MeshComponentGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 			if (d == nullptr || d->is_null()) {
 				editor_mesh.instance();
 				entity->get_internal_entity().gizmo_data.insert(mesh_component_name, editor_mesh);
-			} else {
-				editor_mesh = *d;
 				RenderingServer::get_singleton()->instance_attach_object_instance_id(editor_mesh->instance, entity->get_instance_id());
 				RenderingServer::get_singleton()->instance_set_scenario(editor_mesh->instance, scenario);
+			} else {
+				editor_mesh = *d;
 			}
 		}
 
