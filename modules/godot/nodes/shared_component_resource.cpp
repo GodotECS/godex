@@ -80,7 +80,6 @@ StringName SharedComponentResource::get_component_name() const {
 
 void SharedComponentResource::set_property_value(const StringName &p_property, const Variant &p_val) {
 	component_data[p_property] = p_val;
-	notify_property_list_changed();
 }
 
 const Dictionary &SharedComponentResource::get_component_data() const {
