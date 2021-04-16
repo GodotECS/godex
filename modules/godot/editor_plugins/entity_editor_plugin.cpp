@@ -16,14 +16,9 @@ EntityEditor::EntityEditor(
 		editor(p_editor),
 		editor_plugin(p_plugin),
 		entity(p_entity) {
-	// TODO Activating this make the gizmo movement really laggy. It's not due
-	// to FPS because it remains stable (2000FPS) so something else is going on.
-	// Leaving commented for now.
-	//entity->connect("property_list_changed", callable_mp(this, &EntityEditor::_changed_callback));
 }
 
 EntityEditor::~EntityEditor() {
-	//entity->disconnect("property_list_changed", callable_mp(this, &EntityEditor::_changed_callback));
 }
 
 void EntityEditor::_notification(int p_what) {
