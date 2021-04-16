@@ -82,7 +82,7 @@ struct EntityInternal : public EntityBase {
 	void create_entity();
 	EntityID _create_entity(World *p_world) const;
 	void destroy_entity();
-	void update_components_data();
+	void notify_property_list_changed();
 
 	// TODO implement this.
 	String get_path() const { return owner->get_path(); }
@@ -206,7 +206,7 @@ public:
 	}
 
 	void update_components_data() {
-		entity.update_components_data();
+		entity.notify_property_list_changed();
 	}
 
 	EntityInternal<Entity3D> &get_internal_entity() {
@@ -306,7 +306,7 @@ public:
 	}
 
 	void update_components_data() {
-		entity.update_components_data();
+		entity.notify_property_list_changed();
 	}
 
 	EntityInternal<Entity2D> &get_internal_entity() {
@@ -460,7 +460,6 @@ void EntityInternal<C>::add_component(const StringName &p_component_name, const 
 				StringName k = *key;
 				properties->operator Dictionary()[k] = *p_values.getptr(*key);
 			}
-			update_components_data();
 			owner->update_gizmo();
 		}
 	} else {
@@ -476,7 +475,6 @@ template <class C>
 void EntityInternal<C>::remove_component(const StringName &p_component_name) {
 	if (entity_id.is_null()) {
 		components_data.remove(p_component_name);
-		update_components_data();
 		owner->update_gizmo();
 	} else {
 		const godex::component_id id = ECS::get_component_id(p_component_name);
@@ -493,7 +491,7 @@ bool EntityInternal<C>::has_component(const StringName &p_component_name) const 
 			const Variant *val = components_data.lookup_ptr(p_component_name);
 			if (val) {
 				Ref<SharedComponentResource> shared = *val;
-				return shared.is_valid() && shared->is_init() && shared->get_component_name() == p_component_name && shared->get_component_data().is_empty() == false;
+				return shared.is_valid() && shared->is_init() && shared->get_component_name() == p_component_name;
 			}
 			return false;
 		} else {
@@ -565,7 +563,6 @@ bool EntityInternal<C>::set_component_value(const StringName &p_component_name, 
 		}
 
 		owner->update_gizmo();
-		update_components_data();
 		print_line("Component " + p_component_name + " property " + p_property_name + " changed to " + p_value);
 
 		return true;
@@ -758,6 +755,6 @@ void EntityInternal<C>::destroy_entity() {
 }
 
 template <class C>
-void EntityInternal<C>::update_components_data() {
+void EntityInternal<C>::notify_property_list_changed() {
 	owner->notify_property_list_changed();
 }
