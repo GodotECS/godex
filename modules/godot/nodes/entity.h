@@ -493,7 +493,7 @@ bool EntityInternal<C>::has_component(const StringName &p_component_name) const 
 			const Variant *val = components_data.lookup_ptr(p_component_name);
 			if (val) {
 				Ref<SharedComponentResource> shared = *val;
-				return shared.is_valid() && shared->is_init() && shared->get_component_name() == p_component_name && shared->get_component_data().is_empty() == false;
+				return shared.is_valid() && shared->is_init() && shared->get_component_name() == p_component_name;
 			}
 			return false;
 		} else {
