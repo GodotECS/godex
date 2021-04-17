@@ -280,7 +280,7 @@ template <class T>
 class HierarchicalStorage : public Storage<T>, public HierarchicalStorageBase {
 	DenseVector<LocalGlobal<T>> internal_storage;
 	// List of `Entities` taken mutably, for which we need to flush.
-	EntityList relationshitp_dirty_list;
+	EntityList relationship_dirty_list;
 
 public:
 	void configure(const Dictionary &p_config) {
@@ -330,7 +330,7 @@ public:
 		StorageBase::notify_changed(p_entity);
 		LocalGlobal<T> &data = internal_storage.get(p_entity);
 		if (data.has_relationship) {
-			relationshitp_dirty_list.insert(p_entity);
+			relationship_dirty_list.insert(p_entity);
 			data.global_changed = p_mode == Space::GLOBAL;
 		}
 		return data.is_root || p_mode == Space::LOCAL ? &data.local : &data.global;
@@ -347,7 +347,7 @@ public:
 
 	void propagate_change(EntityID p_entity) {
 		if (has(p_entity) == false) {
-			relationshitp_dirty_list.remove(p_entity);
+			relationship_dirty_list.remove(p_entity);
 			return;
 		}
 
@@ -359,9 +359,10 @@ public:
 		p_data.is_root = true;
 
 		if (hierarchy->has(p_entity) == false) {
-			// This is not parented, nothing to do.
-			relationshitp_dirty_list.remove(p_entity);
+			// This is not parented, nothing more to do.
+			relationship_dirty_list.remove(p_entity);
 			p_data.has_relationship = false;
+			StorageBase::notify_changed(p_entity);
 		} else {
 			// This is parented, continue
 			const Child *child = hierarchy->get(p_entity);
@@ -394,9 +395,11 @@ public:
 			}
 			p_data.is_root = false;
 			p_data.global_changed = false;
+
+			StorageBase::notify_changed(p_entity);
 		}
 
-		relationshitp_dirty_list.remove(p_entity);
+		relationship_dirty_list.remove(p_entity);
 
 		// Now propagate the change to the childs.
 		hierarchy->for_each_child(p_child, [&](EntityID p_child_entity, const Child &p_child_data) -> bool {
@@ -415,17 +418,17 @@ public:
 	}
 
 	void flush_changes() {
-		relationshitp_dirty_list.for_each([&](EntityID entity) {
+		relationship_dirty_list.for_each([&](EntityID entity) {
 			propagate_change(entity);
 		});
 #ifdef DEBUG_ENABLED
-		CRASH_COND_MSG(relationshitp_dirty_list.is_empty() == false, "At this point the flush list must be empty.");
+		CRASH_COND_MSG(relationship_dirty_list.is_empty() == false, "At this point the flush list must be empty.");
 #endif
 	}
 
 	virtual void flush_hierarchy_changes() override {
 		hierarchy->get_changed().for_each([&](EntityID entity) {
-			relationshitp_dirty_list.insert(entity);
+			relationship_dirty_list.insert(entity);
 		});
 		flush_changes();
 	}
