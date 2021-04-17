@@ -47,21 +47,23 @@ struct TorqueImpulse {
 	Vector3 impulse;
 };
 
-/// The KienamticWalk is a component that allow a Kienamtic Body to walk around.
-/// The KienamticWalk is able to move up and down slopes, move up and down stairs.
+/// The WalkIntention is a component that allow a Kienamtic Body to walk around:
+/// up and down slopes, move up and down stairs.
 ///
 /// # How to use it
-/// To make the pawn walk you can set the velocity. By changing the velocity
-/// within a system, it's possible to control the pawn direction.
+/// To make the body walk, you just need to set the velocity, from a system
+/// that does it according the Player inputs.
 ///
 /// # Forces & Impulese
 /// Forces and Impulses are also taken into account.
 ///
 /// # Reference plane
-/// It's possible to change the reference plane, so that the WalkIntention can
-/// walk all around a sphere.
+/// It's possible to change the walking algorithm reference plane. This feature
+/// is a lot useful when you want that your Pawn walks all around a sphere.
 struct WalkIntention {
 	COMPONENT(WalkIntention, DenseVectorStorage)
+
+	static void _bind_methods();
 
 	/// Current pawn linear velocity and direction.
 	Vector3 velocity;
