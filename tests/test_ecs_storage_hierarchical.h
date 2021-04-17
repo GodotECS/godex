@@ -224,6 +224,7 @@ TEST_CASE("[Modules][ECS] Test HierarchicalStorage.") {
 	Hierarchy hierarchy;
 
 	HierarchicalStorage<TransformComponent> transform_storage;
+	transform_storage.set_tracing_change(true);
 
 	hierarchy.add_sub_storage(&transform_storage);
 
@@ -279,7 +280,13 @@ TEST_CASE("[Modules][ECS] Test HierarchicalStorage.") {
 		CHECK(ABS(tc_entity_0->transform.origin[0] - 3.) <= CMP_EPSILON);
 		CHECK(ABS(tc_entity_1->transform.origin[0] - 4.) <= CMP_EPSILON);
 		CHECK(ABS(tc_entity_2->transform.origin[0] - 5.) <= CMP_EPSILON);
+
+		CHECK(transform_storage.is_changed(0));
+		CHECK(transform_storage.is_changed(1));
+		CHECK(transform_storage.is_changed(2));
 	}
+
+	transform_storage.flush_changed();
 
 	// Test update global transform bia `get`.
 	{
@@ -301,7 +308,13 @@ TEST_CASE("[Modules][ECS] Test HierarchicalStorage.") {
 		CHECK(ABS(tc_entity_1->transform.origin[0] - 4.) <= CMP_EPSILON);
 		CHECK(ABS(tc_entity_2->transform.origin[0] - 7.) <= CMP_EPSILON);
 		CHECK(ABS(tc_entity_2_local->transform.origin[0] - 3.) <= CMP_EPSILON);
+
+		CHECK(transform_storage.is_changed(0) == false);
+		CHECK(transform_storage.is_changed(1) == false);
+		CHECK(transform_storage.is_changed(2));
 	}
+
+	transform_storage.flush_changed();
 
 	// Test change hierarchy
 	{
@@ -321,6 +334,10 @@ TEST_CASE("[Modules][ECS] Test HierarchicalStorage.") {
 		CHECK(ABS(tc_entity_0->transform.origin[0] - 3.) <= CMP_EPSILON); // Root
 		CHECK(ABS(tc_entity_2->transform.origin[0] - 6.) <= CMP_EPSILON); // Child of `Entity0`.
 		CHECK(ABS(tc_entity_1->transform.origin[0] - 1.) <= CMP_EPSILON); // Root
+
+		CHECK(transform_storage.is_changed(0) == false);
+		CHECK(transform_storage.is_changed(1));
+		CHECK(transform_storage.is_changed(2));
 	}
 
 	// Check`Entities` fetch.
