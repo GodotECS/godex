@@ -84,7 +84,7 @@ void BtCapsule::_bind_methods() {
 }
 
 void BtCapsule::_get_storage_config(Dictionary &r_config) {
-	/// Configure the storage of this component to have pages of 500 Physis Bodies
+	/// Configure the storage of this component to have pages of 50 Physis Bodies
 	/// You can tweak this in editor.
 	r_config["page_size"] = 50;
 }

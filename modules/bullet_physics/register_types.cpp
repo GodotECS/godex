@@ -5,6 +5,7 @@
 #include "components_area.h"
 #include "components_generic.h"
 #include "components_gizmos.h"
+#include "components_pawn.h"
 #include "components_rigid_body.h"
 #include "components_rigid_shape.h"
 #include "databag_space.h"
@@ -41,7 +42,7 @@ void register_bullet_physics_types() {
 	ECS::register_component<Torque>();
 	ECS::register_component<Impulse>();
 	ECS::register_component<TorqueImpulse>();
-	ECS::register_component<WalkIntention>();
+	ECS::register_component<BtPawn>();
 
 	// Register Base `System`s
 	ECS::register_system(bt_body_config, "BtBodyConfig", "Bullet Physics - Manage the lifetime of the Bodies.");
@@ -52,7 +53,7 @@ void register_bullet_physics_types() {
 	ECS::register_system(bt_body_sync, "BtBodySync", "Bullet Physics - Read the Physics Engine and update the Bodies.");
 
 	// Register Walk `System`s
-	ECS::register_system(bt_walk, "BtWalk", "Bullet Physics - Make the Rigidbody in kinematic mode walk according to WalkIntention.");
+	ECS::register_system(bt_walk, "BtWalk", "Bullet Physics - Make the Rigidbody in kinematic mode walk according to Pawn.");
 
 	// Register gizmos
 	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtBoxGizmo));

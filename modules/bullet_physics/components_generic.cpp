@@ -30,10 +30,3 @@ void TorqueImpulse::_bind_methods() {
 
 void TorqueImpulse::_get_storage_config(Dictionary &r_config) {
 }
-
-void WalkIntention::_bind_methods() {
-	ECS_BIND_PROPERTY(WalkIntention, PropertyInfo(Variant::VECTOR3, "velocity"), velocity);
-	ECS_BIND_PROPERTY(WalkIntention, PropertyInfo(Variant::FLOAT, "step_height"), step_height);
-	ECS_BIND_PROPERTY(WalkIntention, PropertyInfo(Variant::BASIS, "ground_direction"), ground_direction);
-	ECS_BIND_PROPERTY(WalkIntention, PropertyInfo(Variant::BOOL, "snap_to_ground"), snap_to_ground);
-}
