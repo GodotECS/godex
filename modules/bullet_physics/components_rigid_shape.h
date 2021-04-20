@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../components/component.h"
+#include "../../storage/dense_vector_storage.h"
 #include "../../storage/shared_steady_storage.h"
 #include <BulletCollision/CollisionShapes/btConvexPointCloudShape.h>
 #include <btBulletCollisionCommon.h>
@@ -14,7 +15,8 @@ struct BtRigidShape {
 		TYPE_CYLINDER,
 		TYPE_WORLD_MARGIN,
 		TYPE_CONVEX,
-		TYPE_TRIMESH
+		TYPE_TRIMESH,
+		TYPE_SHAPE_CONTAINER
 	};
 
 protected:
@@ -32,6 +34,8 @@ public:
 
 	btCollisionShape *get_shape();
 	const btCollisionShape *get_shape() const;
+
+	bool fallback_empty() const;
 
 	void add_body(EntityID p_entity) {
 		bodies.push_back(p_entity);
@@ -182,4 +186,17 @@ struct BtTrimesh : public BtRigidShape {
 
 	void set_faces(const Vector<Vector3> &p_faces);
 	Vector<Vector3> get_faces() const;
+};
+
+/// The `BtStreamedShape` is a special shape that allow any system
+/// to change the body shape with another already allocated elsewhere.
+/// This is a lot useful for things like the `Pawn`, which changes
+/// a lot.
+struct BtStreamedShape : public BtRigidShape {
+	COMPONENT_CUSTOM_CONSTRUCTOR(BtStreamedShape, DenseVectorStorage)
+
+	btCollisionShape *shape = nullptr;
+
+	BtStreamedShape() :
+			BtRigidShape(TYPE_SHAPE_CONTAINER) {}
 };

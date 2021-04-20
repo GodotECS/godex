@@ -29,7 +29,8 @@ void bt_body_config(
 								Changed<BtCylinder>,
 								Changed<BtWorldMargin>,
 								Changed<BtConvex>,
-								Changed<BtTrimesh>>>,
+								Changed<BtTrimesh>,
+								Changed<BtStreamedShape>>>,
 				Maybe<TransformComponent>> &p_query);
 
 /// Configures the Area

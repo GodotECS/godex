@@ -36,13 +36,15 @@ void PawnShape::update_shapes_dimention() {
 }
 
 void BtPawn::_bind_methods() {
-	ECS_BIND_PROPERTY_FUNC(BtPawn, PropertyInfo(Variant::INT, "layer", PROPERTY_HINT_LAYERS_3D_PHYSICS), set_layer, get_layer);
-	ECS_BIND_PROPERTY_FUNC(BtPawn, PropertyInfo(Variant::INT, "mask", PROPERTY_HINT_LAYERS_3D_PHYSICS), set_mask, get_mask);
-
 	ECS_BIND_PROPERTY(BtPawn, PropertyInfo(Variant::VECTOR3, "velocity"), velocity);
 	ECS_BIND_PROPERTY(BtPawn, PropertyInfo(Variant::FLOAT, "step_height"), step_height);
 	ECS_BIND_PROPERTY(BtPawn, PropertyInfo(Variant::BASIS, "ground_direction"), ground_direction);
 	ECS_BIND_PROPERTY(BtPawn, PropertyInfo(Variant::BOOL, "snap_to_ground"), snap_to_ground);
+
+	ECS_BIND_PROPERTY_FUNC(BtPawn, PropertyInfo(Variant::FLOAT, "stance0_pawn_height"), stance0_set_pawn_height, stance0_get_pawn_height);
+	ECS_BIND_PROPERTY_FUNC(BtPawn, PropertyInfo(Variant::FLOAT, "stance0_pawn_radius"), stance0_set_pawn_radius, stance0_get_pawn_radius);
+	ECS_BIND_PROPERTY_FUNC(BtPawn, PropertyInfo(Variant::FLOAT, "stance1_pawn_height"), stance1_set_pawn_height, stance1_get_pawn_height);
+	ECS_BIND_PROPERTY_FUNC(BtPawn, PropertyInfo(Variant::FLOAT, "stance1_pawn_radius"), stance1_set_pawn_radius, stance1_get_pawn_radius);
 }
 
 void BtPawn::_get_storage_config(Dictionary &r_config) {
@@ -52,23 +54,36 @@ void BtPawn::_get_storage_config(Dictionary &r_config) {
 }
 
 BtPawn::BtPawn() {
-	body.setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
 }
 
-void BtPawn::set_layer(uint32_t p_layer) {
-	layer = p_layer;
-	need_body_reload = true;
+void BtPawn::stance0_set_pawn_height(real_t p_pawn_height) {
+	stances[0].set_pawn_height(p_pawn_height);
 }
 
-uint32_t BtPawn::get_layer() const {
-	return layer;
+real_t BtPawn::stance0_get_pawn_height() const {
+	return stances[0].get_pawn_height();
 }
 
-void BtPawn::set_mask(uint32_t p_mask) {
-	mask = p_mask;
-	need_body_reload = true;
+void BtPawn::stance0_set_pawn_radius(real_t p_pawn_radius) {
+	stances[0].set_pawn_radius(p_pawn_radius);
 }
 
-uint32_t BtPawn::get_mask() const {
-	return mask;
+real_t BtPawn::stance0_get_pawn_radius() const {
+	return stances[0].get_pawn_radius();
+}
+
+void BtPawn::stance1_set_pawn_height(real_t p_pawn_height) {
+	stances[1].set_pawn_height(p_pawn_height);
+}
+
+real_t BtPawn::stance1_get_pawn_height() const {
+	return stances[1].get_pawn_height();
+}
+
+void BtPawn::stance1_set_pawn_radius(real_t p_pawn_radius) {
+	stances[1].set_pawn_radius(p_pawn_radius);
+}
+
+real_t BtPawn::stance1_get_pawn_radius() const {
+	return stances[1].get_pawn_radius();
 }

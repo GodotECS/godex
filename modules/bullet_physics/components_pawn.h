@@ -2,6 +2,7 @@
 
 #include "../../components/component.h"
 #include "../../storage/steady_storage.h"
+#include "bt_def_type.h"
 #include <BulletDynamics/Dynamics/btRigidBody.h>
 #include <btBulletCollisionCommon.h>
 
@@ -58,8 +59,6 @@ struct BtPawn {
 	/// The pawn can have up to 2 stances: Standing, Crouching.
 	PawnShape stances[2];
 
-	btRigidBody body = btRigidBody(0.0, nullptr, &stances[0].main_shape);
-
 	Stance current_stance = STANCE_STANDING;
 
 	/// Current pawn linear velocity and direction.
@@ -75,18 +74,18 @@ struct BtPawn {
 	/// your pawn is falling or jumping, so to have a more natural motion.
 	bool snap_to_ground = true;
 
-	bool need_body_reload = false;
-
-private:
-	uint32_t layer = 1;
-	uint32_t mask = 1;
-
 public:
 	BtPawn();
 
-	void set_layer(uint32_t p_layer);
-	uint32_t get_layer() const;
+	void stance0_set_pawn_height(real_t p_pawn_height);
+	real_t stance0_get_pawn_height() const;
 
-	void set_mask(uint32_t p_mask);
-	uint32_t get_mask() const;
+	void stance0_set_pawn_radius(real_t p_pawn_radius);
+	real_t stance0_get_pawn_radius() const;
+
+	void stance1_set_pawn_height(real_t p_pawn_height);
+	real_t stance1_get_pawn_height() const;
+
+	void stance1_set_pawn_radius(real_t p_pawn_radius);
+	real_t stance1_get_pawn_radius() const;
 };

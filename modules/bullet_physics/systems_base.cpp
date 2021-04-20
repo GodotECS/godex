@@ -26,7 +26,8 @@ void bt_body_config(
 								Changed<BtCylinder>,
 								Changed<BtWorldMargin>,
 								Changed<BtConvex>,
-								Changed<BtTrimesh>>>,
+								Changed<BtTrimesh>,
+								Changed<BtStreamedShape>>>,
 				Maybe<TransformComponent>> &p_query) {
 	for (auto [entity, body, space_marker, shape_container, transform] : p_query.space(GLOBAL)) {
 		if (body == nullptr) {
@@ -35,15 +36,17 @@ void bt_body_config(
 		}
 
 		// Config shape.
-		BtRigidShape *shape = shape_container.as<BtRigidShape>();
-		if (shape != nullptr) {
-			if (body->get_shape() != shape->get_shape()) {
-				// Body shape is different (or nullptr) form the shape, assign it.
-				body->set_shape(shape->get_shape());
-			}
-		} else {
-			if (body->get_shape() != nullptr) {
-				// Body has something, but the shape is null, so unassign it.
+		{
+			BtRigidShape *shape = shape_container.as<BtRigidShape>();
+			if (shape) {
+				if (shape->get_shape()) {
+					body->set_shape(shape->get_shape());
+				} else if (shape->fallback_empty()) {
+					body->set_shape(&p_spaces->empty_shape);
+				} else {
+					body->set_shape(nullptr);
+				}
+			} else {
 				body->set_shape(nullptr);
 			}
 		}
@@ -64,11 +67,7 @@ void bt_body_config(
 
 			if (body->__current_space != BtSpaceIndex::BT_SPACE_NONE) {
 				// Assume the space is the body is currently on is initialized.
-				if (body->__current_mode == BtRigidBody::RIGID_MODE_STATIC) {
-					p_spaces->get_space(body->__current_space)->get_dynamics_world()->removeCollisionObject(body->get_body());
-				} else {
-					p_spaces->get_space(body->__current_space)->get_dynamics_world()->removeRigidBody(body->get_body());
-				}
+				p_spaces->get_space(body->__current_space)->get_dynamics_world()->removeRigidBody(body->get_body());
 
 				// Set the space this area is on.
 				body->get_body()->setUserIndex2(BtSpaceIndex::BT_SPACE_NONE);
@@ -80,17 +79,10 @@ void bt_body_config(
 			// another space?
 			if (space_index != BtSpaceIndex::BT_SPACE_NONE) {
 				BtSpace *space = p_spaces->get_space(space_index);
-				if (body->get_body_mode() == BtRigidBody::RIGID_MODE_STATIC) {
-					space->get_dynamics_world()->addCollisionObject(
-							body->get_body(),
-							body->get_layer(),
-							body->get_mask());
-				} else {
-					space->get_dynamics_world()->addRigidBody(
-							body->get_body(),
-							body->get_layer(),
-							body->get_mask());
-				}
+				space->get_dynamics_world()->addRigidBody(
+						body->get_body(),
+						body->get_layer(),
+						body->get_mask());
 
 				body->get_body()->setMotionState(body->get_motion_state());
 				body->get_motion_state()->entity = entity;

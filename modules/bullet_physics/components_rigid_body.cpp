@@ -202,6 +202,11 @@ void BtRigidBody::reload_body(BtSpaceIndex p_index) {
 }
 
 void BtRigidBody::set_shape(btCollisionShape *p_shape) {
+	if (get_shape() == p_shape) {
+		// Nothing to do
+		return;
+	}
+
 	body.setCollisionShape(p_shape);
 	reload_flags |= RELOAD_FLAGS_MASS;
 }

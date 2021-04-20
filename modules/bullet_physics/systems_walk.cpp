@@ -87,10 +87,13 @@ btVector3 unstuck(
 }
 */
 
-void bt_walk(
+void bt_pawn_walk(
 		BtPhysicsSpaces *p_spaces,
-		Query<BtRigidBody, BtPawn> &p_query) {
-	for (auto [rigid_body, walk] : p_query) {
-		ERR_CONTINUE_MSG(rigid_body->get_body_mode() != BtRigidBody::RIGID_MODE_KINEMATIC, "The mode of this body is not KINEMATIK");
+		Query<BtRigidBody, BtStreamedShape, BtPawn> &p_query) {
+	for (auto [body, shape, pawn] : p_query) {
+		ERR_CONTINUE_MSG(body->get_body_mode() != BtRigidBody::RIGID_MODE_KINEMATIC, "The mode of this body is not KINEMATIC");
+
+		// Set the correct shape to the body.
+		pawn->current_stance
 	}
 }
