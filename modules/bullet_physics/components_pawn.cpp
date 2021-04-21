@@ -35,6 +35,10 @@ void PawnShape::update_shapes_dimention() {
 			pawn_radius + margin));
 }
 
+real_t PawnShape::get_enclosing_radius() const {
+	return pawn_height + pawn_radius + margin;
+}
+
 void BtPawn::_bind_methods() {
 	ECS_BIND_PROPERTY(BtPawn, PropertyInfo(Variant::VECTOR3, "velocity"), velocity);
 	ECS_BIND_PROPERTY(BtPawn, PropertyInfo(Variant::FLOAT, "step_height"), step_height);

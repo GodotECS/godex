@@ -8,5 +8,6 @@
 #include "databag_space.h"
 
 void bt_pawn_walk(
-		BtPhysicsSpaces *p_spaces,
+		const FrameTime *frame_time,
+		BtPhysicsSpaces *p_spaces, // TODO can this be const?
 		Query<BtRigidBody, BtStreamedShape, BtPawn> &p_query);

@@ -28,6 +28,7 @@ public:
 	real_t get_pawn_radius() const;
 
 	void update_shapes_dimention();
+	real_t get_enclosing_radius() const;
 };
 
 enum Stance : int {
@@ -66,6 +67,7 @@ struct BtPawn {
 
 	/// The step height the Pawn will be able to step up.
 	real_t step_height = 0.2;
+	real_t on_impact_speed_change_factor = 0.35;
 
 	/// The ground direction the Pawn will be computed.
 	Basis ground_direction;

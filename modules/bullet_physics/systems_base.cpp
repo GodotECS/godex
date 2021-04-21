@@ -108,8 +108,7 @@ void bt_body_config(
 			} else {
 				t.setIdentity();
 			}
-			body->get_body()->setWorldTransform(t);
-			body->get_motion_state()->transf = t;
+			body->set_transform(t);
 		}
 	}
 }
