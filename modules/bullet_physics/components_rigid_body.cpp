@@ -61,6 +61,15 @@ const btTransform &BtRigidBody::get_transform() const {
 	return motion_state.transf;
 }
 
+void BtRigidBody::set_transform(const btTransform &p_transform, bool p_notify_changed) {
+	body.setWorldTransform(p_transform);
+	if (p_notify_changed) {
+		motion_state.setWorldTransform(p_transform);
+	} else {
+		motion_state.transf = p_transform;
+	}
+}
+
 void BtRigidBody::script_set_body_mode(uint32_t p_mode) {
 	set_body_mode(static_cast<RigidMode>(p_mode));
 }
@@ -202,6 +211,11 @@ void BtRigidBody::reload_body(BtSpaceIndex p_index) {
 }
 
 void BtRigidBody::set_shape(btCollisionShape *p_shape) {
+	if (get_shape() == p_shape) {
+		// Nothing to do
+		return;
+	}
+
 	body.setCollisionShape(p_shape);
 	reload_flags |= RELOAD_FLAGS_MASS;
 }

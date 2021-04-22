@@ -22,10 +22,16 @@ btCollisionShape *BtRigidShape::get_shape() {
 			return &static_cast<BtConvex *>(this)->convex;
 		case TYPE_TRIMESH:
 			return static_cast<BtTrimesh *>(this)->trimesh;
+		case TYPE_SHAPE_CONTAINER:
+			return static_cast<BtStreamedShape *>(this)->shape;
 	}
 
 	CRASH_NOW_MSG("Please support all shapes.");
 	return nullptr;
+}
+
+bool BtRigidShape::fallback_empty() const {
+	return type == TYPE_SHAPE_CONTAINER;
 }
 
 const btCollisionShape *BtRigidShape::get_shape() const {
@@ -84,7 +90,7 @@ void BtCapsule::_bind_methods() {
 }
 
 void BtCapsule::_get_storage_config(Dictionary &r_config) {
-	/// Configure the storage of this component to have pages of 500 Physis Bodies
+	/// Configure the storage of this component to have pages of 50 Physis Bodies
 	/// You can tweak this in editor.
 	r_config["page_size"] = 50;
 }

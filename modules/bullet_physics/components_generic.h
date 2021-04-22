@@ -2,6 +2,7 @@
 
 #include "../../components/component.h"
 #include "../../storage/dense_vector.h"
+#include "../../storage/dense_vector_storage.h"
 #include "components_area.h"
 
 struct Force {

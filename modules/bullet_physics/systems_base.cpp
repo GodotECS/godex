@@ -1,4 +1,4 @@
-#include "bt_systems.h"
+#include "systems_base.h"
 
 #include "modules/bullet/bullet_types_converter.h"
 #include "overlap_check.h"
@@ -26,7 +26,8 @@ void bt_body_config(
 								Changed<BtCylinder>,
 								Changed<BtWorldMargin>,
 								Changed<BtConvex>,
-								Changed<BtTrimesh>>>,
+								Changed<BtTrimesh>,
+								Changed<BtStreamedShape>>>,
 				Maybe<TransformComponent>> &p_query) {
 	for (auto [entity, body, space_marker, shape_container, transform] : p_query.space(GLOBAL)) {
 		if (body == nullptr) {
@@ -35,15 +36,17 @@ void bt_body_config(
 		}
 
 		// Config shape.
-		BtRigidShape *shape = shape_container.as<BtRigidShape>();
-		if (shape != nullptr) {
-			if (body->get_shape() != shape->get_shape()) {
-				// Body shape is different (or nullptr) form the shape, assign it.
-				body->set_shape(shape->get_shape());
-			}
-		} else {
-			if (body->get_shape() != nullptr) {
-				// Body has something, but the shape is null, so unassign it.
+		{
+			BtRigidShape *shape = shape_container.as<BtRigidShape>();
+			if (shape) {
+				if (shape->get_shape()) {
+					body->set_shape(shape->get_shape());
+				} else if (shape->fallback_empty()) {
+					body->set_shape(&p_spaces->empty_shape);
+				} else {
+					body->set_shape(nullptr);
+				}
+			} else {
 				body->set_shape(nullptr);
 			}
 		}
@@ -64,11 +67,7 @@ void bt_body_config(
 
 			if (body->__current_space != BtSpaceIndex::BT_SPACE_NONE) {
 				// Assume the space is the body is currently on is initialized.
-				if (body->__current_mode == BtRigidBody::RIGID_MODE_STATIC) {
-					p_spaces->get_space(body->__current_space)->get_dynamics_world()->removeCollisionObject(body->get_body());
-				} else {
-					p_spaces->get_space(body->__current_space)->get_dynamics_world()->removeRigidBody(body->get_body());
-				}
+				p_spaces->get_space(body->__current_space)->get_dynamics_world()->removeRigidBody(body->get_body());
 
 				// Set the space this area is on.
 				body->get_body()->setUserIndex2(BtSpaceIndex::BT_SPACE_NONE);
@@ -80,17 +79,10 @@ void bt_body_config(
 			// another space?
 			if (space_index != BtSpaceIndex::BT_SPACE_NONE) {
 				BtSpace *space = p_spaces->get_space(space_index);
-				if (body->get_body_mode() == BtRigidBody::RIGID_MODE_STATIC) {
-					space->get_dynamics_world()->addCollisionObject(
-							body->get_body(),
-							body->get_layer(),
-							body->get_mask());
-				} else {
-					space->get_dynamics_world()->addRigidBody(
-							body->get_body(),
-							body->get_layer(),
-							body->get_mask());
-				}
+				space->get_dynamics_world()->addRigidBody(
+						body->get_body(),
+						body->get_layer(),
+						body->get_mask());
 
 				body->get_body()->setMotionState(body->get_motion_state());
 				body->get_motion_state()->entity = entity;
@@ -116,8 +108,7 @@ void bt_body_config(
 			} else {
 				t.setIdentity();
 			}
-			body->get_body()->setWorldTransform(t);
-			body->get_motion_state()->transf = t;
+			body->set_transform(t, false);
 		}
 	}
 }
@@ -209,19 +200,23 @@ void bt_area_config(
 }
 
 void bt_apply_forces(
-		Query<BtRigidBody, Batch<Force>> &p_query_forces,
+		Query<BtRigidBody, Batch<Force>, Maybe<BtPawn>> &p_query_forces,
 		Query<BtRigidBody, Batch<Torque>> &p_query_torques,
-		Query<BtRigidBody, Batch<Impulse>> &p_query_impulses,
+		Query<BtRigidBody, Batch<Impulse>, Maybe<BtPawn>> &p_query_impulses,
 		Query<BtRigidBody, Batch<TorqueImpulse>> &p_query_torque_impulses,
 		Storage<Impulse> *p_inpulses,
 		Storage<TorqueImpulse> *p_torque_inpulses) {
-	for (auto [body, forces] : p_query_forces) {
+	for (auto [body, forces, pawn] : p_query_forces) {
 		for (uint32_t i = 0; i < forces.get_size(); i += 1) {
-			btVector3 l;
-			btVector3 f;
-			G_TO_B(forces[i]->location, l);
-			G_TO_B(forces[i]->force, f);
-			body->get_body()->applyForce(f, l);
+			if (pawn) {
+				pawn->external_forces += forces[i]->force;
+			} else {
+				btVector3 l;
+				btVector3 f;
+				G_TO_B(forces[i]->location, l);
+				G_TO_B(forces[i]->force, f);
+				body->get_body()->applyForce(f, l);
+			}
 		}
 	}
 
@@ -233,13 +228,18 @@ void bt_apply_forces(
 		}
 	}
 
-	for (auto [body, impulses] : p_query_impulses) {
+	for (auto [body, impulses, pawn] : p_query_impulses) {
 		for (uint32_t i = 0; i < impulses.get_size(); i += 1) {
-			btVector3 l;
-			btVector3 imp;
-			G_TO_B(impulses[i]->location, l);
-			G_TO_B(impulses[i]->impulse, imp);
-			body->get_body()->applyImpulse(imp, l);
+			if (pawn) {
+				// The impulse is add directly to velocity.
+				pawn->velocity += impulses[i]->impulse;
+			} else {
+				btVector3 l;
+				btVector3 imp;
+				G_TO_B(impulses[i]->location, l);
+				G_TO_B(impulses[i]->impulse, imp);
+				body->get_body()->applyImpulse(imp, l);
+			}
 		}
 	}
 

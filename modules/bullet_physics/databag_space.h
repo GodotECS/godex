@@ -3,6 +3,7 @@
 #include "../../databags/databag.h"
 #include "../../storage/entity_list.h"
 #include "bt_def_type.h"
+#include <BulletCollision/CollisionShapes/btEmptyShape.h>
 
 class btBroadphaseInterface;
 class btDefaultCollisionConfiguration;
@@ -61,6 +62,9 @@ public:
 /// is put to the main default world (ID 0).
 class BtPhysicsSpaces : public godex::Databag {
 	DATABAG(BtPhysicsSpaces)
+
+public:
+	btEmptyShape empty_shape;
 
 private:
 	BtSpace spaces[BT_SPACE_MAX];
