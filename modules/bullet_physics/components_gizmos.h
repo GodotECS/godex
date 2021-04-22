@@ -102,3 +102,25 @@ public:
 	virtual void set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) override;
 	virtual void commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel = false) override;
 };
+
+class BtPawnGizmo : public ComponentGizmo {
+	StringName pawn_component_name = "BtPawn";
+
+	StringName stance0_radius_name = "stance0_pawn_radius";
+	StringName stance0_height_name = "stance0_pawn_height";
+
+	StringName stance1_radius_name = "stance1_pawn_radius";
+	StringName stance1_height_name = "stance1_pawn_height";
+
+public:
+	virtual void init() override;
+
+	virtual void redraw(EditorNode3DGizmo *p_gizmo) override;
+	void redraw_capsule(EditorNode3DGizmo *p_gizmo, const Ref<Material> material, real_t p_height, real_t p_radius, const Vector3 &p_offset);
+
+	virtual int get_handle_count(const EditorNode3DGizmo *p_gizmo) const override;
+	virtual String get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_idx) const override;
+	virtual Variant get_handle_value(EditorNode3DGizmo *p_gizmo, int p_idx) const override;
+	virtual void set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) override;
+	virtual void commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel = false) override;
+};

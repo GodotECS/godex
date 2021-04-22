@@ -844,3 +844,240 @@ void BtTrimeshGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D 
 
 void BtTrimeshGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
 }
+
+void BtPawnGizmo::init() {
+	const Color gizmo_color = EDITOR_DEF("editors/3d_gizmos/gizmo_colors/pawn_stance0_shape", Color(1.0, 0.5, 1));
+	create_material("pawn_stance0_shape_material", gizmo_color);
+
+	const Color gizmo_color2 = EDITOR_DEF("editors/3d_gizmos/gizmo_colors/pawn_stance1_shape", Color(0.5, 0.5, 1));
+	create_material("pawn_stance1_shape_material", gizmo_color2);
+}
+
+void BtPawnGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	ERR_FAIL_COND(entity == nullptr);
+
+	if (entity->has_component(pawn_component_name)) {
+		const real_t stance0_pawn_height = entity->get_component_value(pawn_component_name, stance0_height_name);
+		const real_t stance1_pawn_height = entity->get_component_value(pawn_component_name, stance1_height_name);
+
+		const real_t ground_position =
+				MAX(stance0_pawn_height, stance1_pawn_height) / -2.0;
+
+		{
+			const Ref<Material> material = get_material("pawn_stance0_shape_material", p_gizmo);
+
+			const real_t pawn_height = stance0_pawn_height;
+			const real_t radius = entity->get_component_value(pawn_component_name, stance0_radius_name);
+			const real_t height = pawn_height - radius * 2.0;
+
+			Vector3 offset;
+			offset.y = ground_position + (pawn_height / 2.0);
+
+			redraw_capsule(p_gizmo, material, height, radius, offset);
+		}
+
+		{
+			const Ref<Material> material = get_material("pawn_stance1_shape_material", p_gizmo);
+
+			const real_t pawn_height = stance1_pawn_height;
+			const real_t radius = entity->get_component_value(pawn_component_name, stance1_radius_name);
+			const real_t height = pawn_height - radius * 2.0;
+
+			Vector3 offset;
+			offset.y = ground_position + (pawn_height / 2.0);
+
+			redraw_capsule(p_gizmo, material, height, radius, offset);
+		}
+	}
+}
+
+void BtPawnGizmo::redraw_capsule(EditorNode3DGizmo *p_gizmo, const Ref<Material> p_material, real_t p_height, real_t p_radius, const Vector3 &p_offset) {
+	Ref<Material> handles_material = get_material("handles");
+
+	Vector<Vector3> points;
+
+	Vector3 d(0, p_height * 0.5, 0);
+	for (int i = 0; i < 360; i++) {
+		float ra = Math::deg2rad((float)i);
+		float rb = Math::deg2rad((float)i + 1);
+		Point2 a = Vector2(Math::sin(ra), Math::cos(ra)) * p_radius;
+		Point2 b = Vector2(Math::sin(rb), Math::cos(rb)) * p_radius;
+
+		points.push_back(Vector3(a.x, 0, a.y) + d + p_offset);
+		points.push_back(Vector3(b.x, 0, b.y) + d + p_offset);
+
+		points.push_back(Vector3(a.x, 0, a.y) - d + p_offset);
+		points.push_back(Vector3(b.x, 0, b.y) - d + p_offset);
+
+		if (i % 90 == 0) {
+			points.push_back(Vector3(a.x, 0, a.y) + d + p_offset);
+			points.push_back(Vector3(a.x, 0, a.y) - d + p_offset);
+		}
+
+		Vector3 dud = i < 180 ? d : -d;
+
+		points.push_back(Vector3(0, a.x, a.y) + dud + p_offset);
+		points.push_back(Vector3(0, b.x, b.y) + dud + p_offset);
+		points.push_back(Vector3(a.y, a.x, 0) + dud + p_offset);
+		points.push_back(Vector3(b.y, b.x, 0) + dud + p_offset);
+	}
+
+	p_gizmo->add_lines(points, p_material);
+
+	Vector<Vector3> collision_segments;
+
+	for (int i = 0; i < 64; i++) {
+		float ra = i * (Math_TAU / 64.0);
+		float rb = (i + 1) * (Math_TAU / 64.0);
+		Point2 a = Vector2(Math::sin(ra), Math::cos(ra)) * p_radius;
+		Point2 b = Vector2(Math::sin(rb), Math::cos(rb)) * p_radius;
+
+		collision_segments.push_back(Vector3(a.x, 0, a.y) + d + p_offset);
+		collision_segments.push_back(Vector3(b.x, 0, b.y) + d + p_offset);
+
+		collision_segments.push_back(Vector3(a.x, 0, a.y) - d + p_offset);
+		collision_segments.push_back(Vector3(b.x, 0, b.y) - d + p_offset);
+
+		if (i % 16 == 0) {
+			collision_segments.push_back(Vector3(a.x, 0, a.y) + d + p_offset);
+			collision_segments.push_back(Vector3(a.x, 0, a.y) - d + p_offset);
+		}
+
+		Vector3 dud = i < 32 ? d : -d;
+
+		collision_segments.push_back(Vector3(0, a.x, a.y) + dud + p_offset);
+		collision_segments.push_back(Vector3(0, b.x, b.y) + dud + p_offset);
+		collision_segments.push_back(Vector3(a.y, a.x, 0) + dud + p_offset);
+		collision_segments.push_back(Vector3(b.y, b.x, 0) + dud + p_offset);
+	}
+
+	p_gizmo->add_collision_segments(collision_segments);
+
+	Vector<Vector3> handles;
+	handles.push_back(Vector3(p_radius, 0, 0) + p_offset);
+	handles.push_back(Vector3(0, p_height * 0.5 + p_radius, 0) + p_offset);
+
+	p_gizmo->add_handles(handles, handles_material);
+}
+
+int BtPawnGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	ERR_FAIL_COND_V(entity == nullptr, 0);
+
+	if (entity->has_component(pawn_component_name)) {
+		return 4;
+	}
+
+	return 0;
+}
+
+String BtPawnGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
+	if (p_idx == 0) {
+		return "stance0_radius";
+	} else if (p_idx == 1) {
+		return "stance0_height";
+	} else if (p_idx == 2) {
+		return "stance1_radius";
+	} else {
+		return "stance1_height";
+	}
+}
+
+Variant BtPawnGizmo::get_handle_value(EditorNode3DGizmo *p_gizmo, int p_idx) const {
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	ERR_FAIL_COND_V(entity == nullptr, Variant());
+	ERR_FAIL_COND_V(entity->has_component(pawn_component_name) == false, Variant());
+
+	if (p_idx == 0) {
+		return entity->get_component_value(pawn_component_name, stance0_radius_name);
+	} else if (p_idx == 1) {
+		return entity->get_component_value(pawn_component_name, stance0_height_name);
+	} else if (p_idx == 2) {
+		return entity->get_component_value(pawn_component_name, stance1_radius_name);
+	} else {
+		return entity->get_component_value(pawn_component_name, stance1_height_name);
+	}
+}
+
+void BtPawnGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	ERR_FAIL_COND(entity == nullptr);
+	ERR_FAIL_COND(entity->has_component(pawn_component_name) == false);
+
+	Transform gt = entity->get_global_transform();
+	Transform gi = gt.affine_inverse();
+
+	Vector3 ray_from = p_camera->project_ray_origin(p_point);
+	Vector3 ray_dir = p_camera->project_ray_normal(p_point);
+	Vector3 sg[2] = { gi.xform(ray_from), gi.xform(ray_from + ray_dir * 4096) };
+
+	// Extract the Handle value
+	Vector3 axis;
+	axis[p_idx % 2 == 0 ? 0 : 1] = 1.0;
+	Vector3 ra, rb;
+	float d;
+
+	if (p_idx == 1 || p_idx == 3) {
+		const real_t stance0_pawn_height = entity->get_component_value(pawn_component_name, stance0_height_name);
+		const real_t stance1_pawn_height = entity->get_component_value(pawn_component_name, stance1_height_name);
+		const real_t ground_position =
+				MAX(stance0_pawn_height, stance1_pawn_height) / -2.0;
+
+		Geometry3D::get_closest_points_between_segments(axis * ground_position, axis * 4096, sg[0], sg[1], ra, rb);
+		d = axis.dot(ra);
+
+		// Take the height of the pawn computing the distance from the ground position.
+		d -= ground_position;
+	} else {
+		Geometry3D::get_closest_points_between_segments(Vector3(), axis * 4096, sg[0], sg[1], ra, rb);
+		d = axis.dot(ra);
+	}
+
+	if (Node3DEditor::get_singleton()->is_snap_enabled()) {
+		d = Math::snapped(d, Node3DEditor::get_singleton()->get_translate_snap());
+	}
+
+	if (d < 0.001) {
+		d = 0.001;
+	}
+
+	if (p_idx == 0) {
+		entity->set_component_value(pawn_component_name, stance0_radius_name, d);
+	} else if (p_idx == 1) {
+		entity->set_component_value(pawn_component_name, stance0_height_name, d);
+	} else if (p_idx == 2) {
+		entity->set_component_value(pawn_component_name, stance1_radius_name, d);
+	} else {
+		entity->set_component_value(pawn_component_name, stance1_height_name, d);
+	}
+}
+
+void BtPawnGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	ERR_FAIL_COND(entity == nullptr);
+	ERR_FAIL_COND(entity->has_component(pawn_component_name) == false);
+
+	StringName prop_name;
+	if (p_idx == 0) {
+		prop_name = stance0_radius_name;
+	} else if (p_idx == 1) {
+		prop_name = stance0_height_name;
+	} else if (p_idx == 2) {
+		prop_name = stance1_radius_name;
+	} else {
+		prop_name = stance1_height_name;
+	}
+
+	const real_t v = entity->get_component_value(pawn_component_name, prop_name);
+
+	if (p_cancel) {
+		entity->set_component_value(pawn_component_name, prop_name, p_restore);
+	} else {
+		UndoRedo *ur = Node3DEditor::get_singleton()->get_undo_redo();
+		ur->create_action(TTR("Change Shape Capsule Radius"));
+		ur->add_do_method(entity, "set_component_value", pawn_component_name, prop_name, v);
+		ur->add_undo_method(entity, "set_component_value", pawn_component_name, prop_name, p_restore);
+		ur->commit_action();
+	}
+}

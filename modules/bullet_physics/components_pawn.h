@@ -20,6 +20,7 @@ public:
 	btCapsuleShape margin_shape = btCapsuleShape(0.3, 1.5);
 
 	PawnShape();
+	PawnShape(real_t p_pawn_height, real_t p_pawn_radius);
 
 	void set_pawn_height(real_t p_pawn_height);
 	real_t get_pawn_height() const;
@@ -61,7 +62,7 @@ struct BtPawn {
 	/// The pawn stances describes the height and radius the Pawn has depending
 	/// on its current stance.
 	/// The pawn can have up to 2 stances: Standing, Crouching.
-	PawnShape stances[2];
+	PawnShape stances[2] = { PawnShape(), PawnShape(0.8, 0.25) };
 
 	Stance current_stance = STANCE_STANDING;
 

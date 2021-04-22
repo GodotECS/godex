@@ -5,6 +5,11 @@ PawnShape::PawnShape() {
 	update_shapes_dimention();
 }
 
+PawnShape::PawnShape(real_t p_pawn_height, real_t p_pawn_radius) :
+		pawn_height(p_pawn_height), pawn_radius(p_pawn_radius) {
+	update_shapes_dimention();
+}
+
 void PawnShape::set_pawn_height(real_t p_pawn_height) {
 	pawn_height = p_pawn_height;
 	update_shapes_dimention();

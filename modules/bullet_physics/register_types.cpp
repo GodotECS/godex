@@ -64,6 +64,7 @@ void register_bullet_physics_types() {
 	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtCylinderGizmo));
 	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtConvexGizmo));
 	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtTrimeshGizmo));
+	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtPawnGizmo));
 }
 
 void unregister_bullet_physics_types() {
