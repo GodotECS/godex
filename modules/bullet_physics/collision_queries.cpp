@@ -5,14 +5,14 @@
 #include <btBulletCollisionCommon.h>
 
 KinematicConvexQResult test_motion(
+		const BtSpace *p_space,
 		const btCollisionObject *p_collision_object,
 		const btConvexShape *p_shape,
 		const btVector3 &p_position,
 		const btVector3 &p_motion,
 		real_t p_margin,
 		int p_collision_mask,
-		bool p_skip_if_moving_away,
-		const BtSpace *p_space) {
+		bool p_skip_if_moving_away) {
 	KinematicConvexQResult result(
 			p_collision_object,
 			p_motion.isZero() ? btVector3(0.0, 0.0, 0.0) : p_motion.normalized(),
@@ -34,33 +34,33 @@ KinematicConvexQResult test_motion(
 }
 
 KinematicConvexQResult test_motion_target(
+		const BtSpace *p_space,
 		const btCollisionObject *p_collision_object,
 		const btConvexShape *p_shape,
 		const btVector3 &p_position,
 		const btVector3 &p_target,
 		real_t p_margin,
 		int p_collision_mask,
-		bool p_skip_if_moving_away,
-		const BtSpace *p_space) {
+		bool p_skip_if_moving_away) {
 	return test_motion(
+			p_space,
 			p_collision_object,
 			p_shape,
 			p_position,
 			p_target - p_position,
 			p_margin,
 			p_collision_mask,
-			p_skip_if_moving_away,
-			p_space);
+			p_skip_if_moving_away);
 }
 
 KinematicContactQResult test_contact(
+		BtSpace *p_space,
 		const btCollisionObject *p_collision_object,
 		btConvexShape *p_shape,
 		const btVector3 &p_position,
 		real_t p_margin,
 		int p_collision_mask,
-		bool p_smooth_results,
-		BtSpace *p_space) {
+		bool p_smooth_results) {
 	// Note: I'm not using the collision_object because I don't want to change
 	// the main object transform. If turns out that this query is slow, we must
 	// reconsider this.
@@ -85,11 +85,11 @@ KinematicContactQResult test_contact(
 }
 
 KinematicRayQResult test_ray(
+		const BtSpace *p_space,
 		const btCollisionObject *p_collision_object,
 		const btVector3 &p_from,
 		const btVector3 &p_to,
-		int p_collision_mask,
-		const BtSpace *p_space) {
+		int p_collision_mask) {
 	KinematicRayQResult result(p_collision_object, p_from, p_to);
 
 	result.m_collisionFilterGroup = 0;

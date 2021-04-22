@@ -11,7 +11,7 @@ struct PawnShape {
 private:
 	real_t pawn_height = 1.8;
 	real_t pawn_radius = 0.3;
-	real_t margin = 0.04;
+	real_t margin = 0.01;
 
 public:
 	/// Main shape.
@@ -26,6 +26,9 @@ public:
 
 	void set_pawn_radius(real_t p_pawn_radius);
 	real_t get_pawn_radius() const;
+
+	void set_margin(real_t p_margin);
+	real_t get_margin() const;
 
 	void update_shapes_dimention();
 	real_t get_enclosing_radius() const;
@@ -64,6 +67,7 @@ struct BtPawn {
 
 	/// Current pawn linear velocity and direction.
 	Vector3 velocity;
+	Vector3 external_forces;
 
 	/// The step height the Pawn will be able to step up.
 	real_t step_height = 0.2;
@@ -90,4 +94,7 @@ public:
 
 	void stance1_set_pawn_radius(real_t p_pawn_radius);
 	real_t stance1_get_pawn_radius() const;
+
+	void set_margin(real_t p_margin);
+	real_t get_margin() const;
 };

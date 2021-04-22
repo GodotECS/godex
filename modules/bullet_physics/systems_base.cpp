@@ -108,7 +108,7 @@ void bt_body_config(
 			} else {
 				t.setIdentity();
 			}
-			body->set_transform(t);
+			body->set_transform(t, false);
 		}
 	}
 }
@@ -200,19 +200,23 @@ void bt_area_config(
 }
 
 void bt_apply_forces(
-		Query<BtRigidBody, Batch<Force>> &p_query_forces,
+		Query<BtRigidBody, Batch<Force>, Maybe<BtPawn>> &p_query_forces,
 		Query<BtRigidBody, Batch<Torque>> &p_query_torques,
-		Query<BtRigidBody, Batch<Impulse>> &p_query_impulses,
+		Query<BtRigidBody, Batch<Impulse>, Maybe<BtPawn>> &p_query_impulses,
 		Query<BtRigidBody, Batch<TorqueImpulse>> &p_query_torque_impulses,
 		Storage<Impulse> *p_inpulses,
 		Storage<TorqueImpulse> *p_torque_inpulses) {
-	for (auto [body, forces] : p_query_forces) {
+	for (auto [body, forces, pawn] : p_query_forces) {
 		for (uint32_t i = 0; i < forces.get_size(); i += 1) {
-			btVector3 l;
-			btVector3 f;
-			G_TO_B(forces[i]->location, l);
-			G_TO_B(forces[i]->force, f);
-			body->get_body()->applyForce(f, l);
+			if (pawn) {
+				pawn->external_forces += forces[i]->force;
+			} else {
+				btVector3 l;
+				btVector3 f;
+				G_TO_B(forces[i]->location, l);
+				G_TO_B(forces[i]->force, f);
+				body->get_body()->applyForce(f, l);
+			}
 		}
 	}
 
@@ -224,13 +228,18 @@ void bt_apply_forces(
 		}
 	}
 
-	for (auto [body, impulses] : p_query_impulses) {
+	for (auto [body, impulses, pawn] : p_query_impulses) {
 		for (uint32_t i = 0; i < impulses.get_size(); i += 1) {
-			btVector3 l;
-			btVector3 imp;
-			G_TO_B(impulses[i]->location, l);
-			G_TO_B(impulses[i]->impulse, imp);
-			body->get_body()->applyImpulse(imp, l);
+			if (pawn) {
+				// The impulse is add directly to velocity.
+				pawn->velocity += impulses[i]->impulse;
+			} else {
+				btVector3 l;
+				btVector3 imp;
+				G_TO_B(impulses[i]->location, l);
+				G_TO_B(impulses[i]->impulse, imp);
+				body->get_body()->applyImpulse(imp, l);
+			}
 		}
 	}
 

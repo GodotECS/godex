@@ -61,9 +61,13 @@ const btTransform &BtRigidBody::get_transform() const {
 	return motion_state.transf;
 }
 
-void BtRigidBody::set_transform(const btTransform &p_transform) {
+void BtRigidBody::set_transform(const btTransform &p_transform, bool p_notify_changed) {
 	body.setWorldTransform(p_transform);
-	motion_state.transf = p_transform;
+	if (p_notify_changed) {
+		motion_state.setWorldTransform(p_transform);
+	} else {
+		motion_state.transf = p_transform;
+	}
 }
 
 void BtRigidBody::script_set_body_mode(uint32_t p_mode) {

@@ -99,7 +99,7 @@ public:
 	const GodexBtMotionState *get_motion_state() const;
 
 	const btTransform &get_transform() const;
-	void set_transform(const btTransform &p_transform);
+	void set_transform(const btTransform &p_transform, bool p_notify_changed);
 
 	void script_set_body_mode(uint32_t p_mode);
 	void set_body_mode(RigidMode p_mode);

@@ -54,7 +54,7 @@ void register_bullet_physics_types() {
 	ECS::register_system(bt_body_sync, "BtBodySync", "Bullet Physics - Read the Physics Engine and update the Bodies.");
 
 	// Register Walk `System`s
-	ECS::register_system(bt_pawn_walk, "BtWalk", "Bullet Physics - Make the Rigidbody in kinematic mode walk according to Pawn.");
+	ECS::register_system(bt_pawn_walk, "BtPawnWalk", "Bullet Physics - Make the Rigidbody in kinematic mode walk according to Pawn settings.");
 
 	// Register gizmos
 	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtBoxGizmo));

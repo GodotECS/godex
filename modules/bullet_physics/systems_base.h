@@ -4,6 +4,7 @@
 #include "../godot/databags/godot_engine_databags.h"
 #include "components_area.h"
 #include "components_generic.h"
+#include "components_pawn.h"
 #include "components_rigid_body.h"
 #include "components_rigid_shape.h"
 #include "databag_space.h"
@@ -58,9 +59,9 @@ void bt_area_config(
 				Maybe<TransformComponent>> &p_query);
 
 void bt_apply_forces(
-		Query<BtRigidBody, Batch<Force>> &p_query_forces,
+		Query<BtRigidBody, Batch<Force>, Maybe<BtPawn>> &p_query_forces,
 		Query<BtRigidBody, Batch<Torque>> &p_query_torques,
-		Query<BtRigidBody, Batch<Impulse>> &p_query_impulses,
+		Query<BtRigidBody, Batch<Impulse>, Maybe<BtPawn>> &p_query_impulses,
 		Query<BtRigidBody, Batch<TorqueImpulse>> &p_query_torque_impulses,
 		Storage<Impulse> *p_inpulses,
 		Storage<TorqueImpulse> *p_torque_inpulses);

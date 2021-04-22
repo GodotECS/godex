@@ -23,6 +23,15 @@ real_t PawnShape::get_pawn_radius() const {
 	return pawn_radius;
 }
 
+void PawnShape::set_margin(real_t p_margin) {
+	margin = p_margin;
+	update_shapes_dimention();
+}
+
+real_t PawnShape::get_margin() const {
+	return margin;
+}
+
 void PawnShape::update_shapes_dimention() {
 	main_shape.setImplicitShapeDimensions(btVector3(
 			pawn_radius,
@@ -49,6 +58,8 @@ void BtPawn::_bind_methods() {
 	ECS_BIND_PROPERTY_FUNC(BtPawn, PropertyInfo(Variant::FLOAT, "stance0_pawn_radius"), stance0_set_pawn_radius, stance0_get_pawn_radius);
 	ECS_BIND_PROPERTY_FUNC(BtPawn, PropertyInfo(Variant::FLOAT, "stance1_pawn_height"), stance1_set_pawn_height, stance1_get_pawn_height);
 	ECS_BIND_PROPERTY_FUNC(BtPawn, PropertyInfo(Variant::FLOAT, "stance1_pawn_radius"), stance1_set_pawn_radius, stance1_get_pawn_radius);
+
+	ECS_BIND_PROPERTY_FUNC(BtPawn, PropertyInfo(Variant::FLOAT, "margin"), set_margin, get_margin);
 }
 
 void BtPawn::_get_storage_config(Dictionary &r_config) {
@@ -90,4 +101,13 @@ void BtPawn::stance1_set_pawn_radius(real_t p_pawn_radius) {
 
 real_t BtPawn::stance1_get_pawn_radius() const {
 	return stances[1].get_pawn_radius();
+}
+
+void BtPawn::set_margin(real_t p_margin) {
+	stances[0].set_margin(p_margin);
+	stances[1].set_margin(p_margin);
+}
+
+real_t BtPawn::get_margin() const {
+	return stances[0].get_margin();
 }

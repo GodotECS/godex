@@ -8,6 +8,8 @@
 #include <btBulletDynamicsCommon.h>
 
 static constexpr real_t UNSTUCK_TESTS = 4;
+static constexpr uint32_t MAX_STRAFING_TESTS = 10;
+static constexpr real_t UNSTUCK_FACTOR = 1.0; // TODO use lower value?
 
 struct StrafingResult {
 	const real_t fulfillment;
@@ -21,7 +23,9 @@ struct StrafingResult {
 };
 
 btVector3 unstuck(
-		const PawnShape &p_shape,
+		BtSpace *p_space,
+		BtRigidBody *p_rigid_body,
+		PawnShape &p_shape,
 		btVector3 &r_position,
 		const btVector3 &p_up_dir,
 		real_t p_margin,
@@ -31,9 +35,12 @@ btVector3 unstuck(
 
 	for (int x = 0; x < UNSTUCK_TESTS; x += 1) {
 		const KinematicContactQResult result = test_contact(
+				p_space,
+				p_rigid_body->get_body(),
 				&p_shape.margin_shape,
 				r_position,
 				p_margin,
+				p_rigid_body->get_mask(),
 				true);
 
 		btVector3 norm(0.0, 0.0, 0.0);
@@ -99,7 +106,9 @@ btVector3 unstuck(
 }
 
 StrafingResult move(
-		const PawnShape &p_motion_shape,
+		BtSpace *p_space,
+		BtRigidBody *p_rigid_body,
+		PawnShape &p_motion_shape,
 		const btMatrix3x3 &p_ground_dir,
 		btVector3 &r_position,
 		const btVector3 &p_motion,
@@ -112,18 +121,32 @@ StrafingResult move(
 	real_t remaining_strafing = motion_length;
 	btVector3 strafing_dir(0, 0, 0);
 	if (motion_length >= CMP_EPSILON) {
-		//const real_t radius = p_motion_shape.get_enclosing_radius();
+		const real_t radius = p_motion_shape.get_enclosing_radius();
 		strafing_dir = p_motion / motion_length;
 
 		// Unstuck to start from a valid position.
-		const btVector3 unstuck_dir = unstuck(p_motion_shape, r_position, up_dir, 0.01);
+		const btVector3 unstuck_dir = unstuck(
+				p_space,
+				p_rigid_body,
+				p_motion_shape,
+				r_position,
+				up_dir,
+				0.01);
 		const btVector3 unstuck_motion = (unstuck_dir.length2() <= CMP_EPSILON ? up_dir : unstuck_dir) * p_step_height;
 		const btVector3 safe_initial_position = r_position;
 
 		// Phase 1: Unstuck motion
 		{
 			// Then move along the unstuck_dir, and if there is a collision put the body in between.
-			const KinematicConvexQResult result = test_motion(p_motion_shape.shape, r_position, unstuck_motion, 0.0, true);
+			const KinematicConvexQResult result = test_motion(
+					p_space,
+					p_rigid_body->get_body(),
+					&p_motion_shape.main_shape,
+					r_position,
+					unstuck_motion,
+					0.0,
+					p_rigid_body->get_mask(),
+					true);
 			if (result.hasHit() == false) {
 				// Only if no hit.
 				r_position += unstuck_motion;
@@ -153,14 +176,20 @@ StrafingResult move(
 			bool special_manouvre = false;
 			bool special_manouvre2 = false;
 
-			for (int test_n = 0; test_n < MAX_STRAFING_TESTS && remaining_strafing >= CMP_EPSILON; test_n += 1) {
+			for (
+					uint32_t test_n = 0;
+					test_n < MAX_STRAFING_TESTS && remaining_strafing >= CMP_EPSILON;
+					test_n += 1) {
 				// Target location from the initial position.
 				// Test the motion from the actual up moved position to the target position.
 				const KinematicConvexQResult result = test_motion_target(
-						p_motion_shape.shape,
+						p_space,
+						p_rigid_body->get_body(),
+						&p_motion_shape.main_shape,
 						cast_position,
 						target_position,
 						0.0,
+						p_rigid_body->get_mask(),
 						true);
 
 				if (result.hasHit()) {
@@ -243,12 +272,18 @@ StrafingResult move(
 						test_n -= 1;
 
 						const KinematicRayQResult ray_1_result = test_ray(
+								p_space,
+								p_rigid_body->get_body(),
 								r_position,
-								r_position + (up_dir * -(p_step_height * 4.0 + radius)));
+								r_position + (up_dir * -(p_step_height * 4.0 + radius)),
+								p_rigid_body->get_mask());
 
 						const KinematicRayQResult ray_2_result = test_ray(
+								p_space,
+								p_rigid_body->get_body(),
 								target_position,
-								target_position + (up_dir * -(p_step_height * 4.0 + radius)));
+								target_position + (up_dir * -(p_step_height * 4.0 + radius)),
+								p_rigid_body->get_mask());
 
 						if (ray_1_result.hasHit() && ray_2_result.hasHit()) {
 							btVector3 new_dir = ray_2_result.m_hitPointWorld -
@@ -280,7 +315,15 @@ StrafingResult move(
 			// contact.
 			// This step down make sure that this doesn't happen.
 			const btVector3 vertical_motion = up_dir * -p_step_height * 2.0;
-			const KinematicConvexQResult result = test_motion(p_motion_shape.shape, r_position, vertical_motion, 0.0, true);
+			const KinematicConvexQResult result = test_motion(
+					p_space,
+					p_rigid_body->get_body(),
+					&p_motion_shape.main_shape,
+					r_position,
+					vertical_motion,
+					0.0,
+					p_rigid_body->get_mask(),
+					true);
 			if (result.hasHit()) {
 				r_position += vertical_motion * result.m_closestHitFraction;
 			}
@@ -288,7 +331,14 @@ StrafingResult move(
 	}
 
 	// Unstuck to avoid bumps!
-	unstuck(p_motion_shape, r_position, up_dir, 0.0, 0.9);
+	unstuck(
+			p_space,
+			p_rigid_body,
+			p_motion_shape,
+			r_position,
+			up_dir,
+			0.0,
+			0.9);
 
 	const btVector3 motion = r_position - initial_position;
 	const real_t len = motion.length();
@@ -307,6 +357,7 @@ void bt_pawn_walk(
 		Query<BtRigidBody, BtStreamedShape, BtPawn> &p_query) {
 	for (auto [body, shape, pawn] : p_query) {
 		ERR_CONTINUE_MSG(body->get_body_mode() != BtRigidBody::RIGID_MODE_KINEMATIC, "The mode of this body is not KINEMATIC");
+		ERR_CONTINUE_MSG(body->__current_space == BtSpaceIndex::BT_SPACE_NONE, "Thid body is not in world, skip.");
 
 		PawnShape &pawn_shape = pawn->stances[pawn->current_stance];
 
@@ -318,6 +369,10 @@ void bt_pawn_walk(
 		btMatrix3x3 ground_dir;
 		G_TO_B(pawn->ground_direction, ground_dir);
 
+		// Compute the forces
+		pawn->velocity += pawn->external_forces * frame_time->physics_delta /* x inverse_mass */;
+		pawn->external_forces = Vector3();
+
 		// Calculate the motion on this frame.
 		btVector3 velocity;
 		G_TO_B(pawn->velocity, velocity);
@@ -327,6 +382,8 @@ void bt_pawn_walk(
 
 		// Execute the motion
 		const StrafingResult strafing_res = move(
+				p_spaces->get_space(body->__current_space),
+				body,
 				pawn_shape,
 				ground_dir,
 				position.getOrigin(),
@@ -344,6 +401,6 @@ void bt_pawn_walk(
 		B_TO_G(velocity, pawn->velocity);
 
 		// Set the new position
-		body->set_transform(position);
+		body->set_transform(position, true);
 	}
 }
