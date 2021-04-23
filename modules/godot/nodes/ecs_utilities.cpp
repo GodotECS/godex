@@ -446,7 +446,7 @@ StringName EditorEcs::reload_system(const String &p_path) {
 		ERR_FAIL_COND_V_MSG(script->is_valid() == false, StringName(), "The script [" + p_path + "] is not a valid script.");
 		ERR_FAIL_COND_V_MSG("System" != script->get_instance_base_type(), StringName(), "This script [" + p_path + "] is not extending `Component`.");
 		const String res = System::validate_script(script);
-		ERR_FAIL_COND_V_MSG(res != "", StringName();, "This script [" + p_path + "] is not valid: " + res);
+		ERR_FAIL_COND_V_MSG(res != "", StringName(), "This script [" + p_path + "] is not valid: " + res);
 
 		Ref<System> system;
 		system.instance();
@@ -588,7 +588,9 @@ bool EditorEcs::save_script(const String &p_setting_list_name, const String &p_s
 
 		EditorNode::get_undo_redo()->create_action(TTR("Save script " + p_setting_list_name));
 		EditorNode::get_undo_redo()->add_do_method(ProjectSettings::get_singleton(), "set_setting", p_setting_list_name, scripts);
+		EditorNode::get_undo_redo()->add_do_method(ProjectSettings::get_singleton(), "save");
 		EditorNode::get_undo_redo()->add_undo_method(ProjectSettings::get_singleton(), "set_setting", p_setting_list_name, prev_scripts);
+		EditorNode::get_undo_redo()->add_undo_method(ProjectSettings::get_singleton(), "save");
 		EditorNode::get_undo_redo()->commit_action();
 
 		return true;
