@@ -296,6 +296,10 @@ public:
 		return verify_system_id(p_id);
 	}
 
+	bool is_dispatching() const {
+		return dispatching;
+	}
+
 private:
 	void dispatch_active_world();
 	void ecs_init();
