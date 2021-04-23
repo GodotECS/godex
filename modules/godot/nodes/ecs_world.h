@@ -81,6 +81,7 @@ class WorldECS : public Node {
 	World *world = nullptr;
 	bool want_to_activate = false;
 	bool is_active = false;
+	uint64_t input_registered_frame = UINT64_MAX;
 
 	Vector<Ref<PipelineECS>> pipelines;
 	/// Stores the system dispatchers for the pipelines of this world.
@@ -165,4 +166,6 @@ public:
 private:
 	void active_world();
 	void unactive_world();
+
+	void on_input(const Ref<InputEvent> &p_ev);
 };

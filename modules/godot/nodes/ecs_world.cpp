@@ -4,8 +4,12 @@
 #include "../../../ecs.h"
 #include "../../../pipeline/pipeline.h"
 #include "../../../world/world.h"
+#include "../databags/input_databag.h"
 #include "ecs_utilities.h"
 #include "entity.h"
+#include "scene/main/viewport.h"
+#include "scene/main/window.h"
+#include "scene/scene_string_names.h"
 
 void PipelineECS::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_pipeline_name", "name"), &PipelineECS::set_pipeline_name);
@@ -286,6 +290,10 @@ void WorldECS::_notification(int p_what) {
 			if (Engine::get_singleton()->is_editor_hint() == false) {
 				active_world();
 			}
+
+			get_viewport()->get_base_window()->connect(
+					SceneStringNames::get_singleton()->window_input,
+					callable_mp(this, &WorldECS::on_input));
 			break;
 		case ECS::NOTIFICATION_ECS_WORLD_UNLOADED:
 			if (want_to_activate) {
@@ -293,6 +301,10 @@ void WorldECS::_notification(int p_what) {
 			}
 			break;
 		case NOTIFICATION_EXIT_TREE:
+			get_viewport()->get_base_window()->disconnect(
+					SceneStringNames::get_singleton()->window_input,
+					callable_mp(this, &WorldECS::on_input));
+
 			if (Engine::get_singleton()->is_editor_hint() == false) {
 				unactive_world();
 			}
@@ -538,4 +550,25 @@ Object *WorldECS::get_databag(uint32_t p_databag_id) {
 	databag_accessor.set_target(world->get_databag(p_databag_id));
 
 	return &databag_accessor;
+}
+
+void WorldECS::on_input(const Ref<InputEvent> &p_ev) {
+#ifdef DEBUG_ENABLED
+	// This function is called by the OS always at beginning of each frame, before
+	// anything else.
+	CRASH_COND(ECS::get_singleton()->is_dispatching());
+	// The world is never nullptr since it's created in the constructor.
+	CRASH_COND(world == nullptr);
+#endif
+
+	InputDatabag *input = world->get_databag<InputDatabag>();
+	if (likely(input)) {
+		if (input_registered_frame != Engine::get_singleton()->get_process_frames()) {
+			// This is a new frame.
+			input_registered_frame = Engine::get_singleton()->get_process_frames();
+			input->clear_input_events();
+		}
+
+		input->add_input_event(p_ev);
+	}
 }
