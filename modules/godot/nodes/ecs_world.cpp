@@ -4,7 +4,9 @@
 #include "../../../ecs.h"
 #include "../../../pipeline/pipeline.h"
 #include "../../../world/world.h"
+#include "../components/transform_component.h"
 #include "../databags/input_databag.h"
+#include "core/templates/list.h"
 #include "ecs_utilities.h"
 #include "entity.h"
 #include "scene/main/viewport.h"
@@ -281,6 +283,12 @@ void WorldECS::_get_property_list(List<PropertyInfo> *p_list) const {
 
 void WorldECS::_notification(int p_what) {
 	switch (p_what) {
+		case ECS::NOTIFICATION_ECS_WORLD_POST_PROCESS: {
+			// The process is done, we can now sync the transform back to the
+			// entities.
+			sync_3d_transforms();
+			sync_2d_transforms();
+		} break;
 		case NOTIFICATION_READY:
 			// Make sure to register all scripted components/databags/systems
 			// at this point.
@@ -570,5 +578,39 @@ void WorldECS::on_input(const Ref<InputEvent> &p_ev) {
 		}
 
 		input->add_input_event(p_ev);
+	}
+}
+
+void WorldECS::sync_3d_transforms() {
+#ifdef DEBUG_ENABLED
+	// The world is never nullptr since it's created in the constructor.
+	CRASH_COND(world == nullptr);
+#endif
+
+	List<Node *> entities;
+	get_tree()->get_nodes_in_group("__sync_transform_3d", &entities);
+
+	const Storage<const TransformComponent> *storage = std::as_const(world)->get_storage<const TransformComponent>();
+	if (unlikely(storage == nullptr)) {
+		// Nothing to do
+		return;
+	}
+
+	for (List<Node *>::Element *e = entities.front(); e; e = e->next()) {
+		// Thrust this cast <3
+		Entity3D *entity_node = static_cast<Entity3D *>(e->get());
+		EntityID entity = entity_node->get_entity_id();
+		if (entity.is_valid() && storage->has(entity)) {
+			const TransformComponent *t = storage->get(entity, Space::GLOBAL);
+			entity_node->set_global_transform(t->transform);
+		}
+	}
+}
+
+void WorldECS::sync_2d_transforms() {
+	List<Node *> entities;
+	get_tree()->get_nodes_in_group("__sync_transform_2d", &entities);
+	if (entities.size() > 0) {
+		ERR_PRINT("Plese implement the function `WorldECS::sync_2d_transforms`.");
 	}
 }

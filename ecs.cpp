@@ -39,7 +39,8 @@ void ECS::_bind_methods() {
 	BIND_CONSTANT(NOTIFICATION_ECS_WORLD_LOADED)
 	BIND_CONSTANT(NOTIFICATION_ECS_WORLD_PRE_UNLOAD)
 	BIND_CONSTANT(NOTIFICATION_ECS_WORLD_UNLOADED)
-	BIND_CONSTANT(NOTIFICATION_ECS_WORDL_READY)
+	BIND_CONSTANT(NOTIFICATION_ECS_WORLD_READY)
+	BIND_CONSTANT(NOTIFICATION_ECS_WORLD_POST_PROCESS)
 	BIND_CONSTANT(NOTIFICATION_ECS_ENTITY_CREATED)
 
 	BIND_ENUM_CONSTANT(LOCAL);
@@ -489,7 +490,7 @@ void ECS::dispatch_active_world() {
 	if (likely(active_world && active_world_pipeline)) {
 		if (unlikely(ready == false)) {
 			// Ready.
-			active_world_node->get_tree()->get_root()->propagate_notification(NOTIFICATION_ECS_WORDL_READY);
+			active_world_node->get_tree()->get_root()->propagate_notification(NOTIFICATION_ECS_WORLD_READY);
 			ready = true;
 		}
 
@@ -497,6 +498,8 @@ void ECS::dispatch_active_world() {
 		active_world_pipeline->dispatch(active_world);
 		active_world->flush();
 		dispatching = false;
+
+		active_world_node->get_tree()->get_root()->propagate_notification(NOTIFICATION_ECS_WORLD_POST_PROCESS);
 	}
 }
 
