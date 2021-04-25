@@ -28,7 +28,7 @@ void EntityBase::remove_child(EntityID p_entity_id) {
 }
 
 void Entity3D::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("get_entity_id"), &Entity3D::get_entity_id);
+	ClassDB::bind_method(D_METHOD("get_entity_id"), &Entity3D::script_get_entity_id);
 
 	ClassDB::bind_method(D_METHOD("add_component", "component_name", "values"), &Entity3D::add_component, DEFVAL(Dictionary()));
 	ClassDB::bind_method(D_METHOD("remove_component", "component_name"), &Entity3D::remove_component);
@@ -38,10 +38,15 @@ void Entity3D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_component_value", "component", "property", "space"), &Entity3D::get_component_value, DEFVAL(Space::LOCAL));
 
 	ClassDB::bind_method(D_METHOD("clone", "world"), &Entity3D::clone);
+
+	ClassDB::bind_method(D_METHOD("set_sync_transform", "active"), &Entity3D::set_sync_transform);
+	ClassDB::bind_method(D_METHOD("get_sync_transform"), &Entity3D::get_sync_transform);
+
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "sync_transform"), "set_sync_transform", "get_sync_transform");
 }
 
 void Entity2D::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("get_entity_id"), &Entity2D::get_entity_id);
+	ClassDB::bind_method(D_METHOD("get_entity_id"), &Entity2D::script_get_entity_id);
 
 	ClassDB::bind_method(D_METHOD("add_component", "component_name", "values"), &Entity2D::add_component, DEFVAL(Dictionary()));
 	ClassDB::bind_method(D_METHOD("remove_component", "component_name"), &Entity2D::remove_component);
@@ -51,4 +56,9 @@ void Entity2D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_component_value", "component", "property", "space"), &Entity2D::get_component_value, DEFVAL(Space::LOCAL));
 
 	ClassDB::bind_method(D_METHOD("clone", "world"), &Entity2D::clone);
+
+	ClassDB::bind_method(D_METHOD("set_sync_transform", "active"), &Entity2D::set_sync_transform);
+	ClassDB::bind_method(D_METHOD("get_sync_transform"), &Entity2D::get_sync_transform);
+
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "sync_transform"), "set_sync_transform", "get_sync_transform");
 }

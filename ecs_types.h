@@ -70,6 +70,10 @@ public:
 		return id == UINT32_MAX;
 	}
 
+	bool is_valid() const {
+		return id != UINT32_MAX;
+	}
+
 	bool operator==(const EntityID &p_other) const {
 		return id == p_other.id;
 	}

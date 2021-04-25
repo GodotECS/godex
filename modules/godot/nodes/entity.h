@@ -54,6 +54,7 @@ struct EntityInternal : public EntityBase {
 	friend class WorldECS;
 
 	C *owner;
+	bool sync_transform = false;
 
 	void _get_property_list(List<PropertyInfo> *p_list) const;
 	bool _set(const StringName &p_name, const Variant &p_value);
@@ -83,6 +84,14 @@ struct EntityInternal : public EntityBase {
 	EntityID _create_entity(World *p_world) const;
 	void destroy_entity();
 	void notify_property_list_changed();
+
+	void set_sync_transform(bool p_active) {
+		sync_transform = p_active;
+	}
+
+	bool get_sync_transform() const {
+		return sync_transform;
+	}
 
 	// TODO implement this.
 	String get_path() const { return owner->get_path(); }
@@ -155,7 +164,8 @@ public:
 		entity._notification(p_what);
 	}
 
-	uint32_t get_entity_id() const { return entity.entity_id; }
+	uint32_t script_get_entity_id() const { return entity.entity_id; }
+	EntityID get_entity_id() const { return entity.entity_id; }
 
 	void add_component(const StringName &p_component_name, const Dictionary &p_values) {
 		entity.add_component(p_component_name, p_values);
@@ -222,6 +232,19 @@ public:
 	const EntityBase &get_internal_entity_base() const {
 		return entity;
 	}
+
+	void set_sync_transform(bool p_active) {
+		entity.set_sync_transform(p_active);
+		if (p_active) {
+			add_to_group("__sync_transform_3d");
+		} else {
+			remove_from_group("__sync_transform_3d");
+		}
+	}
+
+	bool get_sync_transform() const {
+		return entity.get_sync_transform();
+	}
 };
 
 /// Check `EntityInternal`, above, for more info.
@@ -255,7 +278,8 @@ public:
 		entity._notification(p_what);
 	}
 
-	uint32_t get_entity_id() const { return entity.entity_id; }
+	uint32_t script_get_entity_id() const { return entity.entity_id; }
+	EntityID get_entity_id() const { return entity.entity_id; }
 
 	void add_component(const StringName &p_component_name, const Dictionary &p_values) {
 		entity.add_component(p_component_name, p_values);
@@ -329,7 +353,20 @@ public:
 		// TODO no update gizmo for 2D?
 	}
 
-	void set_transform(const Transform &p_value) {}
+	void set_transform(const Transform2D &p_value) {}
+
+	void set_sync_transform(bool p_active) {
+		entity.set_sync_transform(p_active);
+		if (p_active) {
+			add_to_group("__sync_transform_2d");
+		} else {
+			remove_from_group("__sync_transform_2d");
+		}
+	}
+
+	bool get_sync_transform() const {
+		return entity.get_sync_transform();
+	}
 };
 
 // TODO this file is full of `get_component_id`. Would be nice cache it.
@@ -397,7 +434,7 @@ void EntityInternal<C>::_notification(int p_what) {
 			// Just reset the `EntityID`.
 			entity_id = EntityID();
 			break;
-		case ECS::NOTIFICATION_ECS_WORDL_READY:
+		case ECS::NOTIFICATION_ECS_WORLD_READY:
 			// This happens always after `READY` and differently from
 			// `NOTIFICATION_READY` it's not propagated in reverse: so the
 			// parent at this point is always initialized.

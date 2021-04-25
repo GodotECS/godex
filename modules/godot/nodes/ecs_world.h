@@ -168,4 +168,7 @@ private:
 	void unactive_world();
 
 	void on_input(const Ref<InputEvent> &p_ev);
+
+	void sync_3d_transforms();
+	void sync_2d_transforms();
 };
