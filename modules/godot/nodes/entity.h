@@ -77,8 +77,8 @@ struct EntityInternal : public EntityBase {
 	/// Duplicate this `Entity`.
 	uint32_t clone(Object *p_world) const;
 
-	void on_world_ready();
-	void solve_parenting();
+	void solve_parenting_with_childs();
+	void solve_parenting_with_parent();
 
 	void create_entity();
 	EntityID _create_entity(World *p_world) const;
@@ -199,10 +199,6 @@ public:
 		return entity.clone(p_world);
 	}
 
-	void on_world_ready() {
-		entity.on_world_ready();
-	}
-
 	void create_entity() {
 		entity.create_entity();
 	}
@@ -311,10 +307,6 @@ public:
 
 	uint32_t clone(Object *p_world) const {
 		return entity.clone(p_world);
-	}
-
-	void on_world_ready() {
-		entity.on_world_ready();
 	}
 
 	void create_entity() {
@@ -443,7 +435,9 @@ void EntityInternal<C>::_notification(int p_what) {
 			CRASH_COND(entity_id.is_null() == false);
 #endif
 			create_entity();
-			on_world_ready();
+			// Solving backward because this call is executed first on the parent
+			// later on the childs.
+			solve_parenting_with_parent();
 			break;
 		case Node::NOTIFICATION_READY:
 			if (Engine::get_singleton()->is_editor_hint()) {
@@ -452,7 +446,10 @@ void EntityInternal<C>::_notification(int p_what) {
 				if (ECS::get_singleton()->is_world_ready()) {
 					// There is already an active world, just call `ready`.
 					create_entity();
-					on_world_ready();
+					// Solving forward because this function is executed first
+					// on the child, later on the parent, so the child entity ID
+					// is known at this point.
+					solve_parenting_with_childs();
 				}
 			}
 			break;
@@ -694,21 +691,23 @@ uint32_t EntityInternal<C>::clone(Object *p_world) const {
 }
 
 template <class C>
-void EntityInternal<C>::on_world_ready() {
-	// At this point, the `entity_id` is already created.
-#ifdef DEBUG_ENABLED
-	CRASH_COND(entity_id.is_null());
-#endif
+void EntityInternal<C>::solve_parenting_with_childs() {
+	ERR_FAIL_COND_MSG(entity_id.is_null(), "This is a bug, at this point the entity MUST exist.");
 
-	solve_parenting();
+	for (int i = 0; i < owner->get_child_count(); i += 1) {
+		EntityBase *child = get_node_entity_base(owner->get_child(i));
+		if (child) {
+			if (child->components_data.has(ECS::get_component_name(Child::get_component_id()))) {
+				ERR_CONTINUE_MSG(child->entity_id.is_null(), "The child entity is expected to exist at this point. This is a bug.");
+				add_child(child->entity_id);
+			}
+		}
+	}
 }
 
 template <class C>
-void EntityInternal<C>::solve_parenting() {
-	if (entity_id.is_null()) {
-		// The `Entity` is not created yet.
-		return;
-	}
+void EntityInternal<C>::solve_parenting_with_parent() {
+	ERR_FAIL_COND_MSG(entity_id.is_null(), "This is a bug, at this point the entity MUST exist.");
 
 	// Fetch the childs
 	if (components_data.has(ECS::get_component_name(Child::get_component_id()))) {
@@ -716,6 +715,7 @@ void EntityInternal<C>::solve_parenting() {
 		// child of that.
 		EntityBase *parent = get_node_entity_base(owner->get_parent());
 		if (parent) {
+			ERR_FAIL_COND_MSG(parent->entity_id.is_null(), "The parent entity is expected to exist at this point. This is a bug.");
 			// It has an `Entity` parent.
 			parent->add_child(entity_id);
 		}
