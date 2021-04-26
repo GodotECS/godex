@@ -283,12 +283,6 @@ void WorldECS::_get_property_list(List<PropertyInfo> *p_list) const {
 
 void WorldECS::_notification(int p_what) {
 	switch (p_what) {
-		case ECS::NOTIFICATION_ECS_WORLD_POST_PROCESS: {
-			// The process is done, we can now sync the transform back to the
-			// entities.
-			sync_3d_transforms();
-			sync_2d_transforms();
-		} break;
 		case NOTIFICATION_READY:
 			// Make sure to register all scripted components/databags/systems
 			// at this point.
@@ -438,6 +432,19 @@ Dictionary WorldECS::get_storages_config() const {
 	return world->storages_config;
 }
 
+void WorldECS::pre_process() {
+}
+
+void WorldECS::post_process() {
+	// The process is done, we can now sync the transform back to the
+	// entities.
+	sync_3d_transforms();
+	sync_2d_transforms();
+	// The inputs are generated at very beginning by the platform main,
+	// at this point we don't need the inputs so we can just clear the input here.
+	clear_inputs();
+}
+
 void WorldECS::active_world() {
 	ERR_FAIL_COND_MSG(is_inside_tree() == false, "This WorldECS is not in tree, you can't activate it.");
 	if (ECS::get_singleton()->has_active_world() == false) {
@@ -560,6 +567,13 @@ Object *WorldECS::get_databag(uint32_t p_databag_id) {
 	return &databag_accessor;
 }
 
+void WorldECS::clear_inputs() {
+	InputDatabag *input = world->get_databag<InputDatabag>();
+	if (likely(input)) {
+		input->clear_input_events();
+	}
+}
+
 void WorldECS::on_input(const Ref<InputEvent> &p_ev) {
 #ifdef DEBUG_ENABLED
 	// This function is called by the OS always at beginning of each frame, before
@@ -571,12 +585,6 @@ void WorldECS::on_input(const Ref<InputEvent> &p_ev) {
 
 	InputDatabag *input = world->get_databag<InputDatabag>();
 	if (likely(input)) {
-		if (input_registered_frame != Engine::get_singleton()->get_process_frames()) {
-			// This is a new frame.
-			input_registered_frame = Engine::get_singleton()->get_process_frames();
-			input->clear_input_events();
-		}
-
 		input->add_input_event(p_ev);
 	}
 }
