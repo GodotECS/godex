@@ -329,24 +329,21 @@ World *WorldECS::get_world() const {
 	return world;
 }
 
-String WorldECS::get_configuration_warning() const {
-	String warning = Node::get_configuration_warning();
+TypedArray<String> WorldECS::get_configuration_warnings() const {
+	TypedArray<String> warnings = Node::get_configuration_warnings();
 
 	if (!is_inside_tree()) {
-		return warning;
+		return warnings;
 	}
 
 	List<Node *> nodes;
 	get_tree()->get_nodes_in_group("_world_ecs", &nodes);
 
 	if (nodes.size() > 1) {
-		if (!warning.is_empty()) {
-			warning += "\n\n";
-		}
-		warning += TTR("Only one WorldECS is allowed per scene (or set of instanced scenes).");
+		warnings.push_back(TTR("Only one WorldECS is allowed per scene (or set of instanced scenes)."));
 	}
 
-	return warning;
+	return warnings;
 }
 
 void WorldECS::set_pipelines(Vector<Ref<PipelineECS>> p_pipelines) {

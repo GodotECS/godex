@@ -76,7 +76,9 @@ jobs:
     # Execute unit tests for the editor
     - name: Unit Tests
       run: |
-        ./godot/bin/godot.windows.opt.tools.64.exe --test
+        cd ./godot
+        ./bin/godot.windows.opt.tools.64.exe --test
+        cd ../
 
     - uses: actions/upload-artifact@v2
       with:

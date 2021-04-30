@@ -790,7 +790,7 @@ void EditorWorldECS::pipeline_on_menu_select(int p_index) {
 		pipeline_name_ledit->set_text(pipeline->get_pipeline_name());
 	}
 	// Always position the cursor at the end.
-	pipeline_name_ledit->set_cursor_position(INT32_MAX);
+	pipeline_name_ledit->set_caret_column(INT32_MAX);
 	pipeline_panel_update();
 }
 
