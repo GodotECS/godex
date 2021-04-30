@@ -32,7 +32,6 @@
 #define STATIC_VECTOR_H
 
 #include "core/error/error_macros.h"
-#include "core/os/copymem.h"
 #include "core/os/memory.h"
 #include "core/templates/sort_array.h"
 #include "core/templates/vector.h"
