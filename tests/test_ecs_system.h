@@ -1024,6 +1024,60 @@ TEST_CASE("[Modules][ECS] Test system changed query filter.") {
 	// Taken immutably, so never changed.
 	CHECK(entity_3_tracer->trace == 1);
 }
+
+TEST_CASE("[Modules][ECS] Test fetch entity from nodepath, using a dynamic system.") {
+	World world;
+
+	const EntityID entity_1 = world
+									  .create_entity()
+									  .with(Test1Component());
+
+	world.assign_nodepath_to_entity(entity_1, NodePath("/root/node_1"));
+
+	// Test add
+	{
+		Ref<System> target_obj;
+		target_obj.instance();
+		{
+			// Create the script.
+			String code;
+			code += "extends System\n";
+			code += "\n";
+			code += "func _for_each(world, test_component):\n";
+			code += "	var entity_1 = world.get_entity_from_path(\"/root/node_1\")\n";
+			code += "	if entity_1 == get_current_entity_id():\n";
+			code += "		test_component.a = 1000\n";
+			code += "\n";
+
+			CHECK(build_and_assign_script(target_obj.ptr(), code));
+		}
+
+		// Build dynamic query.
+		const uint32_t system_id = ECS::register_dynamic_system("TestFetchEntityFromNodePath.gd");
+		godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
+		dynamic_system_info->with_databag(World::get_databag_id(), false);
+		dynamic_system_info->with_component(Test1Component::get_component_id(), true);
+		target_obj->__force_set_system_info(dynamic_system_info, system_id);
+		dynamic_system_info->set_target(target_obj->get_script_instance());
+		dynamic_system_info->build();
+
+		// Create the pipeline.
+		Pipeline pipeline;
+		// Add the system to the pipeline.
+		pipeline.add_registered_system(system_id);
+		pipeline.build();
+		pipeline.prepare(&world);
+
+		// Dispatch 1 time.
+		pipeline.dispatch(&world);
+
+		// Make sure the entity 0 has the `TransformComponent`
+		CHECK(world.get_storage<Test1Component>()->has(entity_1));
+
+		// Make sure the value is correctly changed.
+		CHECK(world.get_storage<Test1Component>()->get(entity_1)->a == 1000);
+	}
+}
 } // namespace godex_tests_system
 
 #endif // TEST_ECS_SYSTEM_H

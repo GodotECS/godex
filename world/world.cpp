@@ -32,6 +32,8 @@ void WorldCommands::destroy_deferred(EntityID p_entity) {
 }
 
 void World::_bind_methods() {
+	add_method("get_entity_from_path", &World::get_entity_from_path);
+	add_method("get_entity_path", &World::get_entity_path);
 }
 
 World::World() {
@@ -75,6 +77,21 @@ const EntityBuilder &World::create_entity() {
 	return entity_builder;
 }
 
+void World::assign_nodepath_to_entity(EntityID p_entity, const NodePath &p_path) {
+	// TODO consider to convert the nodepath to a more efficient structure?
+	// maybe by partizioning each node to a tree structure, it's possible to find
+	// the entity much faster?
+	// Like, node path: `/root/my/node1/path` & `/root/my/node2/path`
+	// Converted to:
+	//  root
+	//   |- my
+	//      |- Node1
+	//          |- path = 0
+	//      |- Node2
+	//          |- path = 1
+	entity_paths.insert(p_path, p_entity);
+}
+
 void World::destroy_entity(EntityID p_entity) {
 	// Removes the components assigned to this entity.
 	for (uint32_t i = 0; i < storages.size(); i += 1) {
@@ -84,6 +101,26 @@ void World::destroy_entity(EntityID p_entity) {
 	}
 
 	// TODO consider to reuse this ID.
+}
+
+EntityID World::get_entity_from_path(const NodePath &p_path) const {
+	const EntityID *entity = entity_paths.lookup_ptr(p_path);
+	if (entity) {
+		return *entity;
+	} else {
+		return EntityID();
+	}
+}
+
+NodePath World::get_entity_path(EntityID p_id) const {
+	for (OAHashMap<NodePath, EntityID>::Iterator it = entity_paths.iter();
+			it.valid;
+			it = entity_paths.next_iter(it)) {
+		if ((*it.value) == p_id) {
+			return *it.key;
+		}
+	}
+	return NodePath();
 }
 
 WorldCommands &World::get_commands() {

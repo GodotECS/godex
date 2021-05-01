@@ -231,6 +231,29 @@ TEST_CASE("[Modules][ECS] Test WorldECS runtime API fetch databags.") {
 	World *world_ptr = godex::unwrap_databag<World>(world_res_raw);
 	CHECK(world.get_world() == world_ptr);
 }
+
+TEST_CASE("[Modules][ECS] Test World NodePath.") {
+	World world;
+	EntityID entity_1 = world.create_entity();
+	EntityID entity_2 = world.create_entity();
+	EntityID entity_3 = world.create_entity();
+
+	NodePath node_1("/root/node1");
+	NodePath node_2("/root/node2");
+	NodePath node_3("/root/node3");
+
+	world.assign_nodepath_to_entity(entity_1, node_1);
+	world.assign_nodepath_to_entity(entity_2, node_2);
+	world.assign_nodepath_to_entity(entity_3, node_3);
+
+	CHECK(world.get_entity_from_path(node_1) == entity_1);
+	CHECK(world.get_entity_from_path(node_2) == entity_2);
+	CHECK(world.get_entity_from_path(node_3) == entity_3);
+
+	CHECK(world.get_entity_path(entity_1) == node_1);
+	CHECK(world.get_entity_path(entity_2) == node_2);
+	CHECK(world.get_entity_path(entity_3) == node_3);
+}
 } // namespace godex_tests_world
 
 #endif // TEST_ECS_WORLD_H

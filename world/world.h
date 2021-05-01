@@ -55,6 +55,7 @@ public:
 
 // TODO consider to split this in multiple `Databag`, one for removal and the
 // other for creation. So two `Systems` can run in parallel.
+// TODO Maybe rename to somethins that explains better this is used to add / remove entities?
 class WorldCommands : public godex::Databag {
 	DATABAG(WorldCommands)
 
@@ -88,6 +89,7 @@ class World : public godex::Databag {
 	LocalVector<godex::Databag *> databags;
 	EntityBuilder entity_builder = EntityBuilder(this);
 	bool is_dispatching_in_progress = false;
+	OAHashMap<NodePath, EntityID> entity_paths;
 
 	/// Storages configuration, the format is as follows:
 	/// {"Component Name" :{"param_1": 11, "param_2": 11},
@@ -126,8 +128,15 @@ public:
 	/// It's undefined behavior use it in any other way than the above one.
 	const EntityBuilder &create_entity();
 
+	/// This function can be used to associate a NodePath to an entity,
+	/// so it's possible to uniquly identify the entity.
+	void assign_nodepath_to_entity(EntityID p_entity, const NodePath &p_path);
+
 	/// Remove the entity from this World.
 	void destroy_entity(EntityID p_entity);
+
+	EntityID get_entity_from_path(const NodePath &p_path) const;
+	NodePath get_entity_path(EntityID p_id) const;
 
 	WorldCommands &get_commands();
 	const WorldCommands &get_commands() const;

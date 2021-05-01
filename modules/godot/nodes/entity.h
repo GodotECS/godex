@@ -55,6 +55,7 @@ struct EntityInternal : public EntityBase {
 
 	C *owner;
 	bool sync_transform = false;
+	bool reference_by_nodepath = true;
 
 	void _get_property_list(List<PropertyInfo> *p_list) const;
 	bool _set(const StringName &p_name, const Variant &p_value);
@@ -91,6 +92,14 @@ struct EntityInternal : public EntityBase {
 
 	bool get_sync_transform() const {
 		return sync_transform;
+	}
+
+	void set_reference_by_nodepath(bool p_ref) {
+		reference_by_nodepath = p_ref;
+	}
+
+	bool get_reference_by_nodepath() const {
+		return reference_by_nodepath;
 	}
 
 	// TODO implement this.
@@ -241,6 +250,14 @@ public:
 	bool get_sync_transform() const {
 		return entity.get_sync_transform();
 	}
+
+	void set_reference_by_nodepath(bool p_active) {
+		entity.set_reference_by_nodepath(p_active);
+	}
+
+	bool get_reference_by_nodepath() const {
+		return entity.get_reference_by_nodepath();
+	}
 };
 
 /// Check `EntityInternal`, above, for more info.
@@ -358,6 +375,14 @@ public:
 
 	bool get_sync_transform() const {
 		return entity.get_sync_transform();
+	}
+
+	void set_reference_by_nodepath(bool p_active) {
+		entity.set_reference_by_nodepath(p_active);
+	}
+
+	bool get_reference_by_nodepath() const {
+		return entity.get_reference_by_nodepath();
 	}
 };
 
@@ -733,6 +758,11 @@ void EntityInternal<C>::create_entity() {
 		// It's safe dereference command because this function is always called
 		// when the world is not dispatching.
 		entity_id = _create_entity(ECS::get_singleton()->get_active_world());
+		if (get_reference_by_nodepath()) {
+			ECS::get_singleton()->get_active_world()->assign_nodepath_to_entity(
+					entity_id,
+					owner->get_path());
+		}
 	}
 
 	owner->propagate_notification(ECS::NOTIFICATION_ECS_ENTITY_CREATED);
