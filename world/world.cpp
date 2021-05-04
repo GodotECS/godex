@@ -105,11 +105,8 @@ void World::destroy_entity(EntityID p_entity) {
 
 EntityID World::get_entity_from_path(const NodePath &p_path) const {
 	const EntityID *entity = entity_paths.lookup_ptr(p_path);
-	if (entity) {
-		return *entity;
-	} else {
-		return EntityID();
-	}
+	ERR_FAIL_COND_V_MSG(entity == nullptr, EntityID(), "The path `" + p_path + "` is not assigned to any entity.");
+	return *entity;
 }
 
 NodePath World::get_entity_path(EntityID p_id) const {
