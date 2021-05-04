@@ -1171,6 +1171,10 @@ public:
 			return *this != query->end();
 		}
 
+		value_type fetch() const {
+			return operator*();
+		}
+
 		value_type operator*() const {
 			QueryResultTuple<Cs...> result;
 			query->q.fetch(*entity, query->m_space, result);
