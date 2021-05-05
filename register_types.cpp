@@ -3,6 +3,7 @@
 
 #include "components/child.h"
 #include "core/config/engine.h"
+#include "databags/frame_time.h"
 #include "ecs.h"
 #include "editor/plugins/node_3d_editor_plugin.h"
 #include "iterators/dynamic_query.h"
@@ -29,6 +30,7 @@ void register_godex_types() {
 
 	ECS::register_databag<WorldCommands>();
 	ECS::register_databag<World>();
+	ECS::register_databag<FrameTime>();
 }
 
 void unregister_godex_types() {
