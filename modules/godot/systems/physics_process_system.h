@@ -1,11 +1,11 @@
 #ifndef PHYSICS_PROCESS_SYSTEM_H
 #define PHYSICS_PROCESS_SYSTEM_H
 
+#include "../../../databags/frame_time.h"
 #include "../../../systems/dynamic_system.h"
 #include "../databags/physics_datagabs.h"
 #include "servers/physics_server_3d.h"
 
-class FrameTime;
 class PhysicsServer3D;
 class EngineDatabag;
 class OsDatabag;

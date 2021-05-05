@@ -74,7 +74,6 @@ void register_godot_types() {
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Register engine databags
 	// Engine
-	ECS::register_databag<FrameTime>();
 	ECS::register_databag<OsDatabag>();
 	ECS::register_databag<EngineDatabag>();
 	ECS::register_databag<MessageQueueDatabag>();

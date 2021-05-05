@@ -1,7 +1,7 @@
 #pragma once
 
+#include "../../databags/frame_time.h"
 #include "../godot/components/transform_component.h"
-#include "../godot/databags/godot_engine_databags.h"
 #include "components_area.h"
 #include "components_generic.h"
 #include "components_pawn.h"
