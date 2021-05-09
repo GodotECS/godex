@@ -128,9 +128,6 @@ public:
 	template <class C>
 	static void register_component(StorageBase *(*create_storage)());
 
-	template <class E>
-	static void register_component_event();
-
 	// TODO specify the storage here?
 	static uint32_t register_script_component(const StringName &p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type, Vector<StringName> p_spawners);
 	static uint32_t register_script_component_event(const StringName &p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type, Vector<StringName> p_spawners);
@@ -409,20 +406,11 @@ void ECS::register_component(StorageBase *(*create_storage)()) {
 	// Add a new scripting constant, for fast and easy `component` access.
 	ClassDB::bind_integer_constant(get_class_static(), StringName(), component_name, C::component_id);
 
+	if constexpr (godex_has_is_event<C>::value) {
+		components_info[C::component_id].is_event = true;
+	}
+
 	print_line("Component: " + component_name + " registered with ID: " + itos(C::component_id));
-}
-
-template <class E>
-void ECS::register_component_event() {
-	ERR_FAIL_COND_MSG(E::get_component_id() != UINT32_MAX, "This component event is already registered.");
-	register_component<E>();
-
-#ifdef DEBUG_ENABLED
-	// `register_component` is not supposed to fail.
-	CRASH_COND(E::get_component_id() == UINT32_MAX);
-#endif
-
-	components_info[E::get_component_id()].is_event = true;
 }
 
 template <class R>

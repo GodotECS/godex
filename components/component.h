@@ -101,4 +101,7 @@ const T *unwrap_component(const Object *p_access_databag) {
 		return nullptr;
 	}
 }
+
+#define EVENT() \
+	void __is_event() {}
 } // namespace godex
