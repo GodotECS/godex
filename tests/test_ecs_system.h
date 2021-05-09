@@ -39,6 +39,7 @@ struct TestSystem1Databag : public godex::Databag {
 
 struct Event1Component {
 	COMPONENT_BATCH(Event1Component, DenseVector, 2)
+	EVENT()
 
 	static void _bind_methods() {
 		ECS_BIND_PROPERTY(Event1Component, PropertyInfo(Variant::INT, "a"), a);
@@ -475,7 +476,7 @@ TEST_CASE("[Modules][ECS] Test system databag fetch with dynamic query.") {
 }
 
 TEST_CASE("[Modules][ECS] Test event mechanism.") {
-	ECS::register_component_event<Event1Component>();
+	ECS::register_component<Event1Component>();
 
 	World world;
 
