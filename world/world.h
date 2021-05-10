@@ -8,6 +8,7 @@
 
 class StorageBase;
 class World;
+class WorldECS;
 
 namespace godex {
 class Databag;
@@ -96,11 +97,13 @@ class World : public godex::Databag {
 	///  "Component Name" :{"param_1": 11, "param_2": 11},
 	///  "Component Name" :{"param_1": 11, "param_2": 11}}
 	Dictionary storages_config;
+	WorldECS *world_ecs = nullptr;
 
 	static void _bind_methods();
 
 public:
 	World();
+	World(WorldECS *p_world_ecs);
 	~World();
 
 	/// Creates a new Entity id. You can add the components using the function
@@ -229,6 +232,10 @@ public:
 
 	/// Retuns a databag pointer.
 	const godex::Databag *get_databag(godex::databag_id p_id) const;
+
+	WorldECS *get_world_ecs();
+	const WorldECS *get_world_ecs() const;
+	Node *get_world_ecs_script();
 
 private:
 	/// Creates a new component storage into the world, if the storage

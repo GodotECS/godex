@@ -2,6 +2,7 @@
 #include "world.h"
 
 #include "../ecs.h"
+#include "../modules/godot/nodes/ecs_world.h"
 #include "../storage/hierarchical_storage.h"
 
 EntityBuilder::EntityBuilder(World *p_world) :
@@ -34,9 +35,15 @@ void WorldCommands::destroy_deferred(EntityID p_entity) {
 void World::_bind_methods() {
 	add_method("get_entity_from_path", &World::get_entity_from_path);
 	add_method("get_entity_path", &World::get_entity_path);
+	add_method("get_world_ecs", &World::get_world_ecs_script);
 }
 
-World::World() {
+World::World() :
+		World(nullptr) {
+}
+
+World::World(WorldECS *p_world_ecs) :
+		world_ecs(p_world_ecs) {
 	// Add self as databag, so that the `Systems` can obtain it.
 	const uint32_t size = MAX(WorldCommands::get_databag_id(), World::get_databag_id()) + 1;
 
@@ -321,4 +328,16 @@ const godex::Databag *World::get_databag(godex::databag_id p_id) const {
 	}
 
 	return databags[p_id];
+}
+
+WorldECS *World::get_world_ecs() {
+	return world_ecs;
+}
+
+const WorldECS *World::get_world_ecs() const {
+	return world_ecs;
+}
+
+Node *World::get_world_ecs_script() {
+	return get_world_ecs();
 }

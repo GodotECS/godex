@@ -316,7 +316,7 @@ void WorldECS::_notification(int p_what) {
 }
 
 WorldECS::WorldECS() {
-	world = memnew(World);
+	world = memnew(World(this));
 }
 
 WorldECS::~WorldECS() {
