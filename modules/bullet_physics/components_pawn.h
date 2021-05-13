@@ -36,8 +36,8 @@ public:
 };
 
 enum Stance : int {
-	STANCE_STANDING,
-	STANCE_CROUCHING,
+	STANCE_0,
+	STANCE_1,
 };
 
 /// The Pawn is a component that allow a Kienamtic Body to walk around:
@@ -64,7 +64,7 @@ struct BtPawn {
 	/// The pawn can have up to 2 stances: Standing, Crouching.
 	PawnShape stances[2] = { PawnShape(), PawnShape(0.8, 0.25) };
 
-	Stance current_stance = STANCE_STANDING;
+	Stance current_stance = STANCE_0;
 
 	/// Current pawn linear velocity and direction.
 	Vector3 velocity;
