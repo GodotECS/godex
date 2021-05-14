@@ -233,10 +233,6 @@ public:
 	/// Retuns a databag pointer.
 	const godex::Databag *get_databag(godex::databag_id p_id) const;
 
-	WorldECS *get_world_ecs();
-	const WorldECS *get_world_ecs() const;
-	Node *get_world_ecs_script();
-
 private:
 	/// Creates a new component storage into the world, if the storage
 	/// already exists, does nothing.

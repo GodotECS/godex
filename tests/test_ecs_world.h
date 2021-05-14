@@ -5,6 +5,7 @@
 
 #include "../ecs.h"
 #include "../modules/godot/components/transform_component.h"
+#include "../modules/godot/databags/scene_tree_databag.h"
 #include "../modules/godot/nodes/ecs_world.h"
 #include "../modules/godot/nodes/entity.h"
 #include "../world/world.h"
@@ -193,6 +194,29 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 	}
 }
 
+TEST_CASE("[Modules][ECS] Test World NodePath.") {
+	World world;
+	EntityID entity_1 = world.create_entity();
+	EntityID entity_2 = world.create_entity();
+	EntityID entity_3 = world.create_entity();
+
+	NodePath node_1("/root/node1");
+	NodePath node_2("/root/node2");
+	NodePath node_3("/root/node3");
+
+	world.assign_nodepath_to_entity(entity_1, node_1);
+	world.assign_nodepath_to_entity(entity_2, node_2);
+	world.assign_nodepath_to_entity(entity_3, node_3);
+
+	CHECK(world.get_entity_from_path(node_1) == entity_1);
+	CHECK(world.get_entity_from_path(node_2) == entity_2);
+	CHECK(world.get_entity_from_path(node_3) == entity_3);
+
+	CHECK(world.get_entity_path(entity_1) == node_1);
+	CHECK(world.get_entity_path(entity_2) == node_2);
+	CHECK(world.get_entity_path(entity_3) == node_3);
+}
+
 TEST_CASE("[Modules][ECS] Test WorldECS runtime API create entity from prefab.") {
 	WorldECS world;
 
@@ -232,27 +256,38 @@ TEST_CASE("[Modules][ECS] Test WorldECS runtime API fetch databags.") {
 	CHECK(world.get_world() == world_ptr);
 }
 
-TEST_CASE("[Modules][ECS] Test World NodePath.") {
-	World world;
-	EntityID entity_1 = world.create_entity();
-	EntityID entity_2 = world.create_entity();
-	EntityID entity_3 = world.create_entity();
+TEST_CASE("[Modules][ECS] Test WorldECS runtime API fetch databags.") {
+	Node root;
+	root.set_name("root");
 
-	NodePath node_1("/root/node1");
-	NodePath node_2("/root/node2");
-	NodePath node_3("/root/node3");
+	WorldECS world_ecs;
+	world_ecs.set_name("world_ecs");
 
-	world.assign_nodepath_to_entity(entity_1, node_1);
-	world.assign_nodepath_to_entity(entity_2, node_2);
-	world.assign_nodepath_to_entity(entity_3, node_3);
+	Node child_1;
+	child_1.set_name("child_1");
 
-	CHECK(world.get_entity_from_path(node_1) == entity_1);
-	CHECK(world.get_entity_from_path(node_2) == entity_2);
-	CHECK(world.get_entity_from_path(node_3) == entity_3);
+	Node child_2;
+	child_2.set_name("child_2");
 
-	CHECK(world.get_entity_path(entity_1) == node_1);
-	CHECK(world.get_entity_path(entity_2) == node_2);
-	CHECK(world.get_entity_path(entity_3) == node_3);
+	root.add_child(&world_ecs);
+	root.add_child(&child_1);
+	child_1.add_child(&child_2);
+
+	World *world = world_ecs.get_world();
+
+	SceneTreeDatabag *scene_tree_db = world->get_databag<SceneTreeDatabag>();
+	CHECK(scene_tree_db != nullptr);
+	CHECK(scene_tree_db->get_world_ecs() == &world_ecs);
+
+	CHECK(&child_1 == scene_tree_db->get_node(NodePath("../child_1")));
+	CHECK(&child_1 == scene_tree_db->get_node_or_null(NodePath("../child_1")));
+	CHECK(&child_2 == scene_tree_db->get_node(NodePath("../child_1/child_2")));
+	CHECK(&child_2 == scene_tree_db->get_node_or_null(NodePath("../child_1/child_2")));
+	CHECK(&world_ecs == scene_tree_db->get_node(NodePath("./")));
+	CHECK(&world_ecs == scene_tree_db->get_node_or_null(NodePath("./")));
+
+	// Can't test Absolute path because it need a SceneTree that I can't create
+	// inside the tests.
 }
 } // namespace godex_tests_world
 
