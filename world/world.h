@@ -84,7 +84,6 @@ class World : public godex::Databag {
 	DATABAG(World)
 
 	friend class Pipeline;
-	friend class SceneTreeDatabag;
 
 	WorldCommands commands;
 	LocalVector<StorageBase *> storages;
