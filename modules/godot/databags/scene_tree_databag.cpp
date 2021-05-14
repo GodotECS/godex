@@ -5,6 +5,9 @@
 
 void SceneTreeDatabag::_bind_methods() {
 	add_method("get_world_ecs", &SceneTreeDatabag::get_world_ecs_script);
+	add_method("get_node", &SceneTreeDatabag::get_node_script);
+	add_method("get_node_or_null", &SceneTreeDatabag::get_node_or_null_script);
+	add_method("find_node", &SceneTreeDatabag::find_node_script);
 }
 
 WorldECS *SceneTreeDatabag::get_world_ecs() {
@@ -35,13 +38,20 @@ const Node *SceneTreeDatabag::get_node(const NodePath &p_path) const {
 	return world_ecs->get_node(p_path);
 }
 
+Node *SceneTreeDatabag::get_node_script(const NodePath &p_path) {
+	return get_node(p_path);
+}
+
 Node *SceneTreeDatabag::get_node_or_null(const NodePath &p_path) {
 	return world_ecs->get_node_or_null(p_path);
 }
 
 const Node *SceneTreeDatabag::get_node_or_null(const NodePath &p_path) const {
 	return world_ecs->get_node_or_null(p_path);
-	return world_ecs->find_node(p_path);
+}
+
+Node *SceneTreeDatabag::get_node_or_null_script(const NodePath &p_path) {
+	return get_node_or_null(p_path);
 }
 
 Node *SceneTreeDatabag::find_node(const String &p_mask, bool p_recursive, bool p_owner) {
@@ -52,4 +62,8 @@ Node *SceneTreeDatabag::find_node(const String &p_mask, bool p_recursive, bool p
 const Node *SceneTreeDatabag::find_node(const String &p_mask, bool p_recursive, bool p_owner) const {
 	// Using root to search the node.
 	return world_ecs->get_tree()->get_root()->find_node(p_mask, p_recursive, p_owner);
+}
+
+Node *SceneTreeDatabag::find_node_script(const String &p_mask, bool p_recursive, bool p_owner) {
+	return find_node(p_mask, p_recursive, p_owner);
 }

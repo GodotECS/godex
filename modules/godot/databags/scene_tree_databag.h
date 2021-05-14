@@ -28,10 +28,13 @@ public:
 
 	Node *get_node(const NodePath &p_path);
 	const Node *get_node(const NodePath &p_path) const;
+	Node *get_node_script(const NodePath &p_path);
 
 	Node *get_node_or_null(const NodePath &p_path);
 	const Node *get_node_or_null(const NodePath &p_path) const;
+	Node *get_node_or_null_script(const NodePath &p_path);
 
 	Node *find_node(const String &p_mask, bool p_recursive = true, bool p_owner = true);
 	const Node *find_node(const String &p_mask, bool p_recursive = true, bool p_owner = true) const;
+	Node *find_node_script(const String &p_mask, bool p_recursive = true, bool p_owner = true);
 };
