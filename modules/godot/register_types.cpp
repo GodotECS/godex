@@ -7,6 +7,7 @@
 #include "core/object/message_queue.h"
 #include "databags/godot_engine_databags.h"
 #include "databags/input_databag.h"
+#include "databags/scene_tree_databag.h"
 #include "databags/visual_servers_databags.h"
 #include "editor_plugins/components_mesh_gizmo_3d.h"
 #include "editor_plugins/components_transform_gizmo_3d.h"
@@ -74,6 +75,7 @@ void register_godot_types() {
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Register engine databags
 	// Engine
+	ECS::register_databag<SceneTreeDatabag>();
 	ECS::register_databag<OsDatabag>();
 	ECS::register_databag<EngineDatabag>();
 	ECS::register_databag<MessageQueueDatabag>();

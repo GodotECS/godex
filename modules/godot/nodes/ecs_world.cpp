@@ -6,6 +6,7 @@
 #include "../../../world/world.h"
 #include "../components/transform_component.h"
 #include "../databags/input_databag.h"
+#include "../databags/scene_tree_databag.h"
 #include "core/templates/list.h"
 #include "ecs_utilities.h"
 #include "entity.h"
@@ -317,6 +318,10 @@ void WorldECS::_notification(int p_what) {
 
 WorldECS::WorldECS() {
 	world = memnew(World(this));
+
+	// Add SceneTreeDatabag to the World, so Systems can fetch the scene tree.
+	world->create_databag<SceneTreeDatabag>();
+	world->get_databag<SceneTreeDatabag>()->world_ecs = this;
 }
 
 WorldECS::~WorldECS() {
