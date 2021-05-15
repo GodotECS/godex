@@ -398,6 +398,22 @@ void EntityInternal<C>::_get_property_list(List<PropertyInfo> *p_list) const {
 			p_list->push_back(PropertyInfo(Variant::OBJECT, String(*it.key) + "/resource", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
 		} else {
 			// This is a common component.
+			List<PropertyInfo> properties;
+			EditorEcs::component_get_properties(*it.key, &properties);
+
+			for (List<PropertyInfo>::Element *e = properties.front(); e; e = e->next()) {
+				if ((e->get().usage & PROPERTY_USAGE_STORAGE) == 0) {
+					// No store.
+					continue;
+				}
+				const StringName prop_name = String(*it.key) + "/" + e->get().name;
+				p_list->push_back(PropertyInfo(e->get().type, prop_name, PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
+				Variant def;
+				if (EditorEcs::component_get_property_default_value(*it.key, e->get().name, def)) {
+					ClassDB::set_property_default_value(owner->get_class_name(), prop_name, def);
+				}
+			}
+			/*
 			const Dictionary &component_properties = it.value->operator Dictionary();
 
 			for (const Variant *key = component_properties.next(); key; key = component_properties.next(key)) {
@@ -405,6 +421,7 @@ void EntityInternal<C>::_get_property_list(List<PropertyInfo> *p_list) const {
 				p_list->push_back(PropertyInfo(value->get_type(), String(*it.key) + "/" + key->operator String(), PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
 				// TODO add here the default value?
 			}
+			*/
 		}
 	}
 }
@@ -616,8 +633,16 @@ bool EntityInternal<C>::set_component_value(const StringName &p_component_name, 
 			(components_data.lookup_ptr(p_component_name)->operator Dictionary())[p_property_name] = p_value.duplicate();
 
 			// Hack to propagate `Node3D` transform change.
-			if (p_component_name == "TransformComponent" && p_property_name == "transform") {
-				owner->set_transform(p_value);
+			if (p_component_name == "TransformComponent") {
+				Transform t = Variant(owner->get_transform());
+				if (p_property_name == "origin") {
+					t.origin = p_value;
+				} else if (p_property_name == "rotation") {
+					t.basis.set_euler(p_value);
+				} else if (p_property_name == "transform") {
+					t = p_value;
+				}
+				owner->set_transform(Variant(t));
 			}
 		}
 

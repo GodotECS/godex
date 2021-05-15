@@ -128,6 +128,11 @@ void EntityEditor::create_component_inspector(StringName p_component_name, VBoxC
 		for (List<PropertyInfo>::Element *e = properties.front(); e; e = e->next()) {
 			EditorProperty *prop = nullptr;
 
+			if ((e->get().usage & PROPERTY_USAGE_EDITOR) == 0) {
+				// This property is not meant to be displayed on editor.
+				continue;
+			}
+
 			switch (e->get().type) {
 				case Variant::NIL: {
 					prop = memnew(EditorPropertyNil);
