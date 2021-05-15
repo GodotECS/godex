@@ -41,7 +41,7 @@ struct EntityBase {
 #endif
 
 	EntityID entity_id;
-	OAHashMap<StringName, Variant> components_data;
+	OAHashMap<StringName, Ref<ComponentDepot>> components_data;
 
 	EntityBase *get_node_entity_base(Node *p_node);
 
@@ -63,7 +63,7 @@ struct EntityInternal : public EntityBase {
 
 	void _notification(int p_what);
 
-	const OAHashMap<StringName, Variant> &get_components_data() const;
+	const OAHashMap<StringName, Ref<ComponentDepot>> &get_components_data() const;
 
 	void add_component(const StringName &p_component_name, const Dictionary &p_values);
 	void remove_component(const StringName &p_component_name);
@@ -188,7 +188,7 @@ public:
 		return entity.has_component(p_component_name);
 	}
 
-	const OAHashMap<StringName, Variant> &get_components_data() const {
+	const OAHashMap<StringName, Ref<ComponentDepot>> &get_components_data() const {
 		return entity.get_components_data();
 	}
 
@@ -302,7 +302,7 @@ public:
 		entity.remove_component(p_component_name);
 	}
 
-	const OAHashMap<StringName, Variant> &get_components_data() const {
+	const OAHashMap<StringName, Ref<ComponentDepot>> &get_components_data() const {
 		return entity.get_components_data();
 	}
 
@@ -390,7 +390,9 @@ public:
 
 template <class C>
 void EntityInternal<C>::_get_property_list(List<PropertyInfo> *p_list) const {
-	for (OAHashMap<StringName, Variant>::Iterator it = components_data.iter(); it.valid; it = components_data.next_iter(it)) {
+	for (OAHashMap<StringName, Ref<ComponentDepot>>::Iterator it = components_data.iter();
+			it.valid;
+			it = components_data.next_iter(it)) {
 		p_list->push_back(PropertyInfo(Variant::BOOL, *it.key, PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
 
 		if (ECS::is_component_sharable(ECS::get_component_id(*it.key))) {
@@ -408,20 +410,13 @@ void EntityInternal<C>::_get_property_list(List<PropertyInfo> *p_list) const {
 				}
 				const StringName prop_name = String(*it.key) + "/" + e->get().name;
 				p_list->push_back(PropertyInfo(e->get().type, prop_name, PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
+
+				// Set the component defaults.
 				Variant def;
 				if (EditorEcs::component_get_property_default_value(*it.key, e->get().name, def)) {
 					ClassDB::set_property_default_value(owner->get_class_name(), prop_name, def);
 				}
 			}
-			/*
-			const Dictionary &component_properties = it.value->operator Dictionary();
-
-			for (const Variant *key = component_properties.next(); key; key = component_properties.next(key)) {
-				const Variant *value = component_properties.getptr(*key);
-				p_list->push_back(PropertyInfo(value->get_type(), String(*it.key) + "/" + key->operator String(), PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
-				// TODO add here the default value?
-			}
-			*/
 		}
 	}
 }
@@ -512,7 +507,7 @@ void EntityInternal<C>::_notification(int p_what) {
 }
 
 template <class C>
-const OAHashMap<StringName, Variant> &EntityInternal<C>::get_components_data() const {
+const OAHashMap<StringName, Ref<ComponentDepot>> &EntityInternal<C>::get_components_data() const {
 	return components_data;
 }
 
@@ -520,24 +515,34 @@ template <class C>
 void EntityInternal<C>::add_component(const StringName &p_component_name, const Dictionary &p_values) {
 	if (entity_id.is_null()) {
 		// We are on editor.
+		Ref<ComponentDepot> depot;
 		if (EditorEcs::component_is_shared(p_component_name)) {
 			// This is a shared component.
-			components_data.set(p_component_name, Variant());
+			Ref<SharedComponentDepot> d;
+			d.instance();
+			d->init(p_component_name);
+			components_data.set(p_component_name, d);
+			depot = d;
+		} else if (EditorEcs::is_script_component(p_component_name)) {
+			Ref<ScriptComponentDepot> d;
+			d.instance();
+			d->init(p_component_name);
+			components_data.set(p_component_name, d);
+			depot = d;
 		} else {
-			Variant *properties = components_data.lookup_ptr(p_component_name);
-			if (properties == nullptr) {
-				// The component doesn't exist yet, add it.
-				components_data.set(p_component_name, Dictionary());
-				properties = components_data.lookup_ptr(p_component_name);
-			}
-			// Append properties.
-			for (const Variant *key = p_values.next(); key; key = p_values.next(key)) {
-				// Make sure that the `Key` is always a StringName.
-				StringName k = *key;
-				properties->operator Dictionary()[k] = *p_values.getptr(*key);
-			}
-			owner->update_gizmo();
+			Ref<StaticComponentDepot> d;
+			d.instance();
+			d->init(p_component_name);
+			components_data.set(p_component_name, d);
+			depot = d;
 		}
+
+		// Append properties.
+		for (const Variant *key = p_values.next(); key; key = p_values.next(key)) {
+			depot->set(*key, *p_values.getptr(*key));
+		}
+
+		owner->update_gizmo();
 	} else {
 		// At runtime during game.
 		const godex::component_id id = ECS::get_component_id(p_component_name);
@@ -564,9 +569,9 @@ template <class C>
 bool EntityInternal<C>::has_component(const StringName &p_component_name) const {
 	if (entity_id.is_null()) {
 		if (EditorEcs::component_is_shared(p_component_name)) {
-			const Variant *val = components_data.lookup_ptr(p_component_name);
-			if (val) {
-				Ref<SharedComponentResource> shared = *val;
+			const Ref<ComponentDepot> *val = components_data.lookup_ptr(p_component_name);
+			if (val && val->is_valid()) {
+				Ref<SharedComponentResource> shared = (*val)->get("resource");
 				return shared.is_valid() && shared->is_init() && shared->get_component_name() == p_component_name;
 			}
 			return false;
@@ -584,9 +589,9 @@ bool EntityInternal<C>::has_component(const StringName &p_component_name) const 
 
 template <class C>
 Dictionary EntityInternal<C>::get_component_properties_data(const StringName &p_component) const {
-	const Variant *val = components_data.lookup_ptr(p_component);
-	ERR_FAIL_COND_V_MSG(val == nullptr, Dictionary(), "This component doesn't exists");
-	return val->operator Dictionary().duplicate(true);
+	const Ref<ComponentDepot> *val = components_data.lookup_ptr(p_component);
+	ERR_FAIL_COND_V_MSG(val == nullptr || val->is_null(), Dictionary(), "This component isn't on this entity.");
+	return (*val)->get_properties_data();
 }
 
 template <class C>
@@ -594,62 +599,29 @@ bool EntityInternal<C>::set_component_value(const StringName &p_component_name, 
 	if (entity_id.is_null()) {
 		// We are on editor or the entity doesn't exist yet.
 
-		if (EditorEcs::component_is_shared(p_component_name)) {
-			// This is a shared component.
+		Ref<ComponentDepot> *val = components_data.lookup_ptr(p_component_name);
+		ERR_FAIL_COND_V_MSG(val == nullptr || val->is_null(), false, "This component" + p_component_name + " is not set on this entity.");
 
-			Ref<SharedComponentResource> shared = p_value;
-			if (shared.is_valid()) {
-				// Validate the shared component.
-				if (shared->is_init()) {
-					ERR_FAIL_COND_V_MSG(shared->get_component_name() != p_component_name, false, "The passed component is of type: " + shared->get_component_name() + " while the expected one is of type: " + p_component_name + ".");
-				} else {
-					// This component is new and not even init, so do it now.
-					shared->init(p_component_name);
-				}
-				components_data.set(p_component_name, shared);
-			} else {
-				// Try to set the value inside the shared component instead
-				Variant *val = components_data.lookup_ptr(p_component_name);
-				if (val) {
-					shared = *val;
-				}
+		bool success = false;
+		(*val)->set(p_property_name, p_value, &success);
 
-				if (shared.is_null()) {
-					// The shared component is still null, so create it.
-					shared.instance();
-					set_component_value(p_component_name, "", shared);
-				}
-
-				shared->set_property_value(p_property_name, p_value);
+		// Hack to propagate `Node3D` transform change.
+		if (p_component_name == "TransformComponent") {
+			Transform t = Variant(owner->get_transform());
+			if (p_property_name == "origin") {
+				t.origin = p_value;
+			} else if (p_property_name == "rotation") {
+				t.basis.set_euler(p_value);
+			} else if (p_property_name == "transform") {
+				t = p_value;
 			}
-
-		} else {
-			// This is a standard component.
-			ERR_FAIL_COND_V(components_data.has(p_component_name) == false, false);
-
-			if (components_data.lookup_ptr(p_component_name)->get_type() != Variant::DICTIONARY) {
-				components_data.set(p_component_name, Dictionary());
-			}
-			(components_data.lookup_ptr(p_component_name)->operator Dictionary())[p_property_name] = p_value.duplicate();
-
-			// Hack to propagate `Node3D` transform change.
-			if (p_component_name == "TransformComponent") {
-				Transform t = Variant(owner->get_transform());
-				if (p_property_name == "origin") {
-					t.origin = p_value;
-				} else if (p_property_name == "rotation") {
-					t.basis.set_euler(p_value);
-				} else if (p_property_name == "transform") {
-					t = p_value;
-				}
-				owner->set_transform(Variant(t));
-			}
+			owner->set_transform(Variant(t));
 		}
 
 		owner->update_gizmo();
 		print_line("Component " + p_component_name + " property " + p_property_name + " changed to " + p_value);
 
-		return true;
+		return success;
 	} else {
 		// This entity exist, so set it on the World.
 
@@ -679,45 +651,13 @@ bool EntityInternal<C>::_get_component_value(const StringName &p_component_name,
 	if (entity_id.is_null()) {
 		// Executed on editor or when the entity is not loaded.
 
-		const Variant *component_properties = components_data.lookup_ptr(p_component_name);
-		ERR_FAIL_COND_V_MSG(component_properties == nullptr, false, "The component " + p_component_name + " doesn't exist on this entity: " + get_path());
+		const Ref<ComponentDepot> *depot = components_data.lookup_ptr(p_component_name);
+		ERR_FAIL_COND_V_MSG(depot == nullptr || depot->is_null(), false, "The component " + p_component_name + " doesn't exist on this entity: " + get_path());
 
-		if (EditorEcs::component_is_shared(p_component_name)) {
-			// This is a shared component, so return it.
-			Ref<SharedComponentResource> shared = *component_properties;
-			if (shared.is_valid() && shared->is_init() && shared->get_component_name() == p_component_name) {
-				if (p_property_name == StringName("resource")) {
-					// The caller want the entire resource, return it.
-					r_ret = shared;
-					return true;
-				}
+		bool success = false;
+		r_ret = (*depot)->get(p_property_name, &success);
+		return success;
 
-				const Variant *val = shared->get_component_data().getptr(p_property_name);
-				if (val) {
-					r_ret = *val;
-					return true;
-				} else {
-					// The component property is not set, so take the default.
-				}
-			} else {
-				// Can't extract the data from the shared component, take the default.
-			}
-		} else {
-			if (component_properties->get_type() == Variant::DICTIONARY) {
-				const Variant *value = (component_properties->operator Dictionary()).getptr(p_property_name);
-				if (value != nullptr) {
-					// Property is stored, just return it.
-					r_ret = value->duplicate(true);
-					return true;
-				}
-			}
-		}
-
-		// Property was not found, take the default one.
-		return EditorEcs::component_get_property_default_value(
-				p_component_name,
-				p_property_name,
-				r_ret);
 	} else {
 		// This entity exist on a world, check the value on the world storage.
 
@@ -799,21 +739,25 @@ EntityID EntityInternal<C>::_create_entity(World *p_world) const {
 	if (p_world) {
 		id = p_world->create_entity();
 
-		for (OAHashMap<StringName, Variant>::Iterator it = components_data.iter(); it.valid; it = components_data.next_iter(it)) {
+		for (OAHashMap<StringName, Ref<ComponentDepot>>::Iterator it = components_data.iter();
+				it.valid;
+				it = components_data.next_iter(it)) {
 			const uint32_t component_id = ECS::get_component_id(*it.key);
 			ERR_CONTINUE(component_id == godex::COMPONENT_NONE);
 
-			if (ECS::is_component_sharable(component_id)) {
-				Ref<SharedComponentResource> shared = *it.value;
-				if (shared.is_valid()) {
-					godex::SID sid = shared->get_sid(p_world);
-					p_world->add_shared_component(id, component_id, sid);
+			if (it.value->is_valid()) {
+				if (ECS::is_component_sharable(component_id)) {
+					Ref<SharedComponentResource> shared = (*it.value)->get("resource");
+					if (shared.is_valid()) {
+						godex::SID sid = shared->get_sid(p_world);
+						p_world->add_shared_component(id, component_id, sid);
+					}
+				} else {
+					p_world->add_component(
+							id,
+							component_id,
+							(*it.value)->get_properties_data());
 				}
-			} else {
-				p_world->add_component(
-						id,
-						component_id,
-						*it.value);
 			}
 		}
 	}

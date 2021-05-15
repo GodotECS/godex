@@ -77,8 +77,8 @@ void EntityEditor::update_editors() {
 		}
 		components_properties.clear();
 
-		const OAHashMap<StringName, Variant> &components = entity_get_components_data();
-		for (OAHashMap<StringName, Variant>::Iterator it = components.iter(); it.valid; it = components.next_iter(it)) {
+		const OAHashMap<StringName, Ref<ComponentDepot>> &components = entity_get_components_data();
+		for (OAHashMap<StringName, Ref<ComponentDepot>>::Iterator it = components.iter(); it.valid; it = components.next_iter(it)) {
 			// Add the components of this Entity
 			EditorInspectorSection *component_section = memnew(EditorInspectorSection);
 			component_section->setup("component_" + String(*it.key), String(*it.key), entity, section_color, true);
@@ -668,7 +668,7 @@ void EntityEditor::_changed_callback() {
 	update_editors();
 }
 
-const OAHashMap<StringName, Variant> &EntityEditor::entity_get_components_data() const {
+const OAHashMap<StringName, Ref<ComponentDepot>> &EntityEditor::entity_get_components_data() const {
 	Entity3D *e = Object::cast_to<Entity3D>(entity);
 	if (e) {
 		return e->get_components_data();

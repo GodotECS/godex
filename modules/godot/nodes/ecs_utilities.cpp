@@ -8,6 +8,7 @@
 #include "core/object/script_language.h"
 #include "editor/editor_node.h"
 #include "entity.h"
+#include "shared_component_resource.h"
 
 void System::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_space", "space"), &System::set_space);
@@ -595,4 +596,135 @@ bool EditorEcs::save_script(const String &p_setting_list_name, const String &p_s
 
 		return true;
 	}
+}
+
+ComponentDepot::~ComponentDepot() {
+}
+
+StaticComponentDepot::~StaticComponentDepot() {
+	if (component != nullptr) {
+		ECS::free_component(component_id, component);
+		component = nullptr;
+	}
+}
+
+void StaticComponentDepot::init(const StringName &p_name) {
+	ERR_FAIL_COND_MSG(component_name != StringName(), "The component is already initialized.");
+	const godex::component_id id = ECS::get_component_id(p_name);
+	ERR_FAIL_COND_MSG(id == godex::COMPONENT_NONE, "This component " + p_name + " doesn't exist.");
+	component_name = p_name;
+
+	component = ECS::new_component(id);
+	component_id = id;
+}
+
+bool StaticComponentDepot::_setv(const StringName &p_name, const Variant &p_value) {
+	ERR_FAIL_COND_V_MSG(component == nullptr, false, "This depot is not initialized.");
+	return ECS::unsafe_component_set_by_name(component_id, component, p_name, p_value);
+}
+
+bool StaticComponentDepot::_getv(const StringName &p_name, Variant &r_ret) const {
+	ERR_FAIL_COND_V_MSG(component == nullptr, false, "This depot is not initialized.");
+	return ECS::unsafe_component_get_by_name(component_id, component, p_name, r_ret);
+}
+
+Dictionary StaticComponentDepot::get_properties_data() const {
+	Dictionary d;
+
+	ERR_FAIL_COND_V_MSG(component == nullptr, d, "This depot is not initialized.");
+
+	const LocalVector<PropertyInfo> *props = ECS::get_component_properties(component_id);
+	for (uint32_t i = 0; i < props->size(); i += 1) {
+		Variant v;
+		ECS::unsafe_component_get_by_index(component_id, component, i, v);
+		d[StringName((*props)[i].name)] = v;
+	}
+
+	return d;
+}
+
+void ScriptComponentDepot::init(const StringName &p_name) {
+	ERR_FAIL_COND_MSG(component_name != StringName(), "The component is already initialized.");
+	ERR_FAIL_COND_MSG(EditorEcs::is_script_component(p_name) == false, "Thid component " + p_name + " is not a script component.");
+	component_name = p_name;
+}
+
+bool ScriptComponentDepot::_setv(const StringName &p_name, const Variant &p_value) {
+	ERR_FAIL_COND_V_MSG(component_name == StringName(), false, "The component is not initialized.");
+	data[p_name] = p_value.duplicate(true);
+	return true;
+}
+
+bool ScriptComponentDepot::_getv(const StringName &p_name, Variant &r_ret) const {
+	ERR_FAIL_COND_V_MSG(component_name == StringName(), false, "The component is not initialized.");
+	const Variant *v = data.getptr(p_name);
+	if (v == nullptr) {
+		// Take the default.
+		return EditorEcs::component_get_property_default_value(component_name, p_name, r_ret);
+	} else {
+		r_ret = v->duplicate(true);
+		return true;
+	}
+}
+
+Dictionary ScriptComponentDepot::get_properties_data() const {
+	return data;
+}
+
+void SharedComponentDepot::init(const StringName &p_name) {
+	ERR_FAIL_COND_MSG(component_name != StringName(), "The component is already initialized.");
+	ERR_FAIL_COND_MSG(EditorEcs::component_is_shared(p_name) == false, "Thid component " + p_name + " is not a shared component.");
+	component_name = p_name;
+}
+
+bool SharedComponentDepot::_setv(const StringName &p_name, const Variant &p_value) {
+	ERR_FAIL_COND_V_MSG(component_name == StringName(), false, "The component is not initialized.");
+
+	Ref<SharedComponentResource> shared = p_value;
+	if (shared.is_valid()) {
+		// Validate the shared component.
+		if (shared->is_init()) {
+			ERR_FAIL_COND_V_MSG(shared->get_component_name() != component_name, false, "The passed component is of type: " + shared->get_component_name() + " while the expected one is of type: " + component_name + ".");
+		} else {
+			// This component is new and not even init, so do it now.
+			shared->init(component_name);
+		}
+		data = shared;
+		return true;
+	} else {
+		// Try to set the value inside the shared component instead
+
+		if (data.is_null()) {
+			// The shared component is still null, so create it.
+			data.instance();
+			data->init(component_name);
+		}
+
+		data->set_property_value(p_name, p_value);
+		return true;
+	}
+}
+
+bool SharedComponentDepot::_getv(const StringName &p_name, Variant &r_ret) const {
+	if (p_name == "resource") {
+		r_ret = data;
+		return true;
+	} else {
+		ERR_FAIL_COND_V_MSG(data.is_null(), false, "The component is not initialized.");
+		bool success = false;
+		r_ret = data->get(p_name, &success);
+		if (success == false) {
+			// Take the default
+			return EditorEcs::component_get_property_default_value(component_name, p_name, r_ret);
+		} else {
+			return true;
+		}
+	}
+	return false;
+}
+
+Dictionary SharedComponentDepot::get_properties_data() const {
+	Dictionary d;
+	d[StringName("resource")] = data;
+	return d;
 }
