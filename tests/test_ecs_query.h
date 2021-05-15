@@ -262,7 +262,7 @@ TEST_CASE("[Modules][ECS] Test QueryResultTuple: packing and unpaking following 
 			CHECK(ptr_c == &c);
 		}
 
-		transf.transform.origin.x = -50;
+		transf.origin.x = -50;
 
 		{
 			auto [transform_ptr, ptr_a, ptr_b, ptr_c] = tuple;
@@ -272,7 +272,7 @@ TEST_CASE("[Modules][ECS] Test QueryResultTuple: packing and unpaking following 
 			CHECK(ptr_b == &b);
 			CHECK(ptr_c == &c);
 
-			CHECK(ABS(transform_ptr->transform.origin.x - transf.transform.origin.x) <= CMP_EPSILON);
+			CHECK(ABS(transform_ptr->origin.x - transf.origin.x) <= CMP_EPSILON);
 		}
 	}
 
@@ -565,7 +565,7 @@ TEST_CASE("[Modules][ECS] Test static query") {
 		CHECK(query.has(entity_2));
 		CHECK(query.has(entity_3) == false);
 		auto [transform, tag] = query[entity_2];
-		CHECK(ABS(transform->transform.origin.z - 23.0) <= CMP_EPSILON);
+		CHECK(ABS(transform->origin.z - 23.0) <= CMP_EPSILON);
 		CHECK(tag == nullptr);
 	}
 

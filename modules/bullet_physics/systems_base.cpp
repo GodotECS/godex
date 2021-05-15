@@ -104,7 +104,7 @@ void bt_body_config(
 			// Set transfrorm
 			btTransform t;
 			if (transform != nullptr) {
-				G_TO_B(transform->transform, t);
+				G_TO_B(*transform, t);
 			} else {
 				t.setIdentity();
 			}
@@ -188,7 +188,7 @@ void bt_area_config(
 			// Set transfrorm
 			btTransform t;
 			if (transform != nullptr) {
-				G_TO_B(transform->transform, t);
+				G_TO_B(*transform, t);
 			} else {
 				t.setIdentity();
 			}
@@ -451,7 +451,7 @@ void bt_body_sync(
 		p_spaces->get_space(w_i)->moved_bodies.for_each([&](EntityID p_entity_id) {
 			if (p_query.has(p_entity_id)) {
 				auto [body, transform] = p_query.space(GLOBAL)[p_entity_id];
-				B_TO_G(body->get_motion_state()->transf, transform->transform);
+				B_TO_G(body->get_motion_state()->transf, *transform);
 			}
 		});
 
