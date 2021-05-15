@@ -610,8 +610,13 @@ bool EntityInternal<C>::set_component_value(const StringName &p_component_name, 
 			Transform t = Variant(owner->get_transform());
 			if (p_property_name == "origin") {
 				t.origin = p_value;
+
 			} else if (p_property_name == "rotation") {
-				t.basis.set_euler(p_value);
+				t.basis.set_euler_scale(p_value, t.basis.get_scale_local());
+
+			} else if (p_property_name == "scale") {
+				t.basis.set_euler_scale(t.basis.get_euler(), p_value);
+
 			} else if (p_property_name == "transform") {
 				t = p_value;
 			}
