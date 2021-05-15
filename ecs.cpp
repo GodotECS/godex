@@ -595,6 +595,8 @@ uint32_t ECS::register_script_component(
 			ComponentInfo{
 					nullptr,
 					nullptr,
+					nullptr,
+					nullptr,
 					info,
 					false,
 					false,
@@ -642,6 +644,16 @@ StorageBase *ECS::create_storage(uint32_t p_component_id) {
 		// This is a native component.
 		return components_info[p_component_id].create_storage();
 	}
+}
+
+void *ECS::new_component(godex::component_id p_component_id) {
+	ERR_FAIL_COND_V_MSG(ECS::verify_component_id(p_component_id) == false, nullptr, "This component id " + itos(p_component_id) + " is not valid.");
+	return components_info[p_component_id].new_component();
+}
+
+void ECS::free_component(godex::component_id p_component_id, void *p_component) {
+	ERR_FAIL_COND_MSG(ECS::verify_component_id(p_component_id) == false, "This component id " + itos(p_component_id) + " is not valid.");
+	components_info[p_component_id].free_component(p_component);
 }
 
 void ECS::get_storage_config(godex::component_id p_component_id, Dictionary &r_config) {
