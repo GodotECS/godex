@@ -127,7 +127,9 @@ void BtBoxGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Vari
 		UndoRedo *ur = Node3DEditor::get_singleton()->get_undo_redo();
 		ur->create_action(TTR("Change Shape Box Half Extent"));
 		ur->add_do_method(entity, "set_component_value", box_component_name, half_extents_name, half_extents);
-		ur->add_undo_method(entity, "set_component_value", box_component_name, half_extents_name, p_restore);
+		Vector3 restore = half_extents;
+		restore[p_idx] = p_restore;
+		ur->add_undo_method(entity, "set_component_value", box_component_name, half_extents_name, restore);
 		ur->commit_action();
 	}
 }
