@@ -700,8 +700,9 @@ bool SharedComponentDepot::_setv(const StringName &p_name, const Variant &p_valu
 			data->init(component_name);
 		}
 
-		data->set_property_value(p_name, p_value);
-		return true;
+		bool success = false;
+		data->set(p_name, p_value, &success);
+		return success;
 	}
 }
 

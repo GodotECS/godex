@@ -22,12 +22,10 @@ TransformComponent::TransformComponent(const Transform &p_transform) :
 }
 
 void TransformComponent::set_self_script(const Transform &p_transf) {
-	WARN_PRINT_ONCE("TtransformComponent::set_transform is deprecated. Don't use it please.");
 	*this = p_transf;
 }
 
 Transform TransformComponent::get_self_script() const {
-	WARN_PRINT_ONCE("TtransformComponent::get_transform is deprecated. Don't use it please.");
 	return *this;
 }
 

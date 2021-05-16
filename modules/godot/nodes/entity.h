@@ -520,22 +520,19 @@ void EntityInternal<C>::add_component(const StringName &p_component_name, const 
 			// This is a shared component.
 			Ref<SharedComponentDepot> d;
 			d.instance();
-			d->init(p_component_name);
-			components_data.set(p_component_name, d);
 			depot = d;
 		} else if (EditorEcs::is_script_component(p_component_name)) {
 			Ref<ScriptComponentDepot> d;
 			d.instance();
-			d->init(p_component_name);
-			components_data.set(p_component_name, d);
 			depot = d;
 		} else {
 			Ref<StaticComponentDepot> d;
 			d.instance();
-			d->init(p_component_name);
-			components_data.set(p_component_name, d);
 			depot = d;
 		}
+
+		components_data.set(p_component_name, depot);
+		depot->init(p_component_name);
 
 		// Append properties.
 		for (const Variant *key = p_values.next(); key; key = p_values.next(key)) {

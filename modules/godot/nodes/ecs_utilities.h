@@ -191,6 +191,8 @@ class StaticComponentDepot : public ComponentDepot {
 	godex::component_id component_id = godex::COMPONENT_NONE;
 
 public:
+	godex::component_id get_component_id() const { return component_id; }
+
 	virtual ~StaticComponentDepot();
 
 	virtual void init(const StringName &p_name) override;
