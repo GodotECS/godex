@@ -603,24 +603,26 @@ bool EntityInternal<C>::set_component_value(const StringName &p_component_name, 
 		ERR_FAIL_COND_V_MSG(val == nullptr || val->is_null(), false, "This component" + p_component_name + " is not set on this entity.");
 
 		bool success = false;
-		(*val)->set(p_property_name, p_value, &success);
 
 		// Hack to propagate `Node3D` transform change.
-		if (p_component_name == "TransformComponent") {
-			Transform t = Variant(owner->get_transform());
+		if (Object::cast_to<Entity3D>(owner) != nullptr &&
+				p_component_name == "TransformComponent") {
+			Entity3D *entity = (Entity3D *)owner;
 			if (p_property_name == "origin") {
-				t.origin = p_value;
+				entity->set_translation(p_value);
 
-			} else if (p_property_name == "rotation") {
-				t.basis.set_euler_scale(p_value, t.basis.get_scale_local());
+			} else if (p_property_name == "rotation_deg") {
+				entity->set_rotation_degrees(p_value);
 
 			} else if (p_property_name == "scale") {
-				t.basis.set_euler_scale(t.basis.get_euler(), p_value);
+				entity->set_scale(p_value);
 
 			} else if (p_property_name == "transform") {
-				t = p_value;
+				entity->set_transform(p_value);
 			}
-			owner->set_transform(Variant(t));
+			(*val)->set("transform", Variant(owner->get_transform()), &success);
+		} else {
+			(*val)->set(p_property_name, p_value, &success);
 		}
 
 		owner->update_gizmo();

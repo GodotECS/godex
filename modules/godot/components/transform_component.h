@@ -18,6 +18,9 @@ class TransformComponent : public Transform {
 	void set_rotation(const Vector3 &p_euler);
 	const Vector3 get_rotation() const;
 
+	void set_rotation_deg(const Vector3 &p_euler);
+	const Vector3 get_rotation_deg() const;
+
 	void set_scale(const Vector3 &p_scale);
 	const Vector3 get_scale() const;
 

@@ -1,10 +1,12 @@
 #include "transform_component.h"
 
+#include "core/math/math_funcs.h"
+
 void TransformComponent::_bind_methods() {
 	// TODO remove this.
 	ECS_BIND_PROPERTY_FUNC(TransformComponent, PropertyInfo(Variant::TRANSFORM, "transform", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NOEDITOR), set_self_script, get_self_script);
 	ECS_BIND_PROPERTY(TransformComponent, PropertyInfo(Variant::VECTOR3, "origin", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), origin);
-	ECS_BIND_PROPERTY_FUNC(TransformComponent, PropertyInfo(Variant::VECTOR3, "rotation", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), set_rotation, get_rotation);
+	ECS_BIND_PROPERTY_FUNC(TransformComponent, PropertyInfo(Variant::VECTOR3, "rotation_deg", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), set_rotation_deg, get_rotation_deg);
 	ECS_BIND_PROPERTY_FUNC(TransformComponent, PropertyInfo(Variant::VECTOR3, "scale", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), set_scale, get_scale);
 
 	// Usage is set to 0 because we need to expose this only to scripts.
@@ -35,6 +37,21 @@ void TransformComponent::set_rotation(const Vector3 &p_euler) {
 
 const Vector3 TransformComponent::get_rotation() const {
 	return basis.get_euler();
+}
+
+void TransformComponent::set_rotation_deg(const Vector3 &p_euler) {
+	set_rotation(Vector3(
+			Math::deg2rad(p_euler[0]),
+			Math::deg2rad(p_euler[1]),
+			Math::deg2rad(p_euler[2])));
+}
+
+const Vector3 TransformComponent::get_rotation_deg() const {
+	const Vector3 r = get_rotation();
+	return Vector3(
+			Math::rad2deg(r[0]),
+			Math::rad2deg(r[1]),
+			Math::rad2deg(r[2]));
 }
 
 void TransformComponent::set_scale(const Vector3 &p_scale) {
