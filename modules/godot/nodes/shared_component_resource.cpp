@@ -12,20 +12,17 @@ void SharedComponentResource::_bind_methods() {
 bool SharedComponentResource::_set(const StringName &p_name, const Variant &p_property) {
 	ERR_FAIL_COND_V_MSG(is_init() == false, false, "This shared component is not init. So you can't use it.");
 
-	component_data[p_name] = p_property;
-	return true;
+	bool success = false;
+	depot->set(p_name, p_property, &success);
+	return success;
 }
 
 bool SharedComponentResource::_get(const StringName &p_name, Variant &r_property) const {
 	ERR_FAIL_COND_V_MSG(is_init() == false, false, "This shared component is not init. So you can't use it.");
 
-	if (const Variant *v = component_data.getptr(p_name)) {
-		r_property = *v;
-		return true;
-	} else {
-		// Data not found, try to take the default value.
-		return EditorEcs::component_get_property_default_value(component_name, p_name, r_property);
-	}
+	bool success = false;
+	r_property = depot->get(p_name, &success);
+	return success;
 }
 
 void SharedComponentResource::_get_property_list(List<PropertyInfo> *p_list) const {
@@ -46,6 +43,8 @@ void SharedComponentResource::init(const StringName &p_component_name) {
 	ERR_FAIL_COND_MSG(ECS::is_component_sharable(component_id) == false, "It's not possible to initialize a SharedComponentResource for a component that is not shareable.");
 
 	component_name = p_component_name;
+	depot.instance();
+	depot->init(component_name);
 }
 
 bool SharedComponentResource::is_init() const {
@@ -54,13 +53,19 @@ bool SharedComponentResource::is_init() const {
 
 /// Returns the `SID` for this world. Creates one if it has none yet.
 godex::SID SharedComponentResource::get_sid(World *p_world) {
+	ERR_FAIL_COND_V_MSG(component_name == StringName(), godex::SID_NONE, "This shared component is not yet init.");
+
 	// Try to see if we already have the Shared ID.
 	const int64_t index = sids.find({ p_world, godex::SID_NONE });
 	if (index != -1) {
 		return sids[index].sid;
 	} else {
-		const godex::component_id component_id = ECS::get_component_id(component_name);
-		const godex::SID sid = p_world->create_shared_component(component_id, component_data);
+		if (depot.is_null()) {
+			depot.instance();
+			depot->init(component_name);
+		}
+		const godex::component_id component_id = depot->get_component_id();
+		const godex::SID sid = p_world->create_shared_component(component_id, depot->get_properties_data());
 
 		ERR_FAIL_COND_V(sid == godex::SID_NONE, godex::SID_NONE);
 
@@ -71,19 +76,11 @@ godex::SID SharedComponentResource::get_sid(World *p_world) {
 }
 
 void SharedComponentResource::set_component_name(const StringName &p_component_name) {
-	component_name = p_component_name;
+	init(p_component_name);
 }
 
 StringName SharedComponentResource::get_component_name() const {
 	return component_name;
-}
-
-void SharedComponentResource::set_property_value(const StringName &p_property, const Variant &p_val) {
-	component_data[p_property] = p_val;
-}
-
-const Dictionary &SharedComponentResource::get_component_data() const {
-	return component_data;
 }
 
 Ref<Resource> SharedComponentResource::duplicate(bool p_subresources) const {

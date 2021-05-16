@@ -6,6 +6,7 @@
 #include "core/templates/oa_hash_map.h"
 
 class Script;
+class SharedComponentResource;
 
 namespace godex {
 class DynamicSystemInfo;
@@ -170,4 +171,58 @@ public:
 
 private:
 	static bool save_script(const String &p_setting_list_name, const String &p_script_path);
+};
+
+/// Used by the Entity3D & Entity2D to store the entity variables, when the
+/// entity is not inside a world.
+class ComponentDepot : public Reference {
+protected:
+	StringName component_name;
+
+public:
+	virtual ~ComponentDepot();
+
+	virtual void init(const StringName &p_name) = 0;
+	virtual Dictionary get_properties_data() const = 0;
+};
+
+class StaticComponentDepot : public ComponentDepot {
+	void *component = nullptr;
+	godex::component_id component_id = godex::COMPONENT_NONE;
+
+public:
+	godex::component_id get_component_id() const { return component_id; }
+
+	virtual ~StaticComponentDepot();
+
+	virtual void init(const StringName &p_name) override;
+
+	virtual bool _setv(const StringName &p_name, const Variant &p_value) override;
+	virtual bool _getv(const StringName &p_name, Variant &r_ret) const override;
+
+	virtual Dictionary get_properties_data() const override;
+};
+
+class ScriptComponentDepot : public ComponentDepot {
+	Dictionary data;
+
+public:
+	virtual void init(const StringName &p_name) override;
+
+	virtual bool _setv(const StringName &p_name, const Variant &p_value) override;
+	virtual bool _getv(const StringName &p_name, Variant &r_ret) const override;
+
+	virtual Dictionary get_properties_data() const override;
+};
+
+class SharedComponentDepot : public ComponentDepot {
+	Ref<SharedComponentResource> data;
+
+public:
+	virtual void init(const StringName &p_name) override;
+
+	virtual bool _setv(const StringName &p_name, const Variant &p_value) override;
+	virtual bool _getv(const StringName &p_name, Variant &r_ret) const override;
+
+	virtual Dictionary get_properties_data() const override;
 };

@@ -37,6 +37,8 @@ struct SpawnerInfo {
 /// component registration.
 struct ComponentInfo {
 	StorageBase *(*create_storage)();
+	void *(*new_component)();
+	void (*free_component)(void *);
 	void (*get_storage_config)(Dictionary &);
 	DynamicComponentInfo *dynamic_component_info = nullptr;
 	bool notify_release_write = false;
@@ -136,6 +138,8 @@ public:
 	static bool verify_component_id(uint32_t p_component_id);
 
 	static StorageBase *create_storage(godex::component_id p_component_id);
+	static void *new_component(godex::component_id p_component_id);
+	static void free_component(godex::component_id p_component_id, void *p_component);
 	static void get_storage_config(godex::component_id p_component_id, Dictionary &r_config);
 	static const LocalVector<StringName> &get_registered_components();
 	static godex::component_id get_component_id(StringName p_component_name);
@@ -385,6 +389,8 @@ void ECS::register_component(StorageBase *(*create_storage)()) {
 	components_info.push_back(
 			ComponentInfo{
 					create_storage,
+					C::new_component,
+					C::free_component,
 					get_storage_config,
 					nullptr,
 					notify_release_write,

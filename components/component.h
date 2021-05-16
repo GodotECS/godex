@@ -8,23 +8,25 @@
 
 namespace godex {
 
-#define COMPONENT_INTERNAL(m_class)                             \
-	/* Components */                                            \
-	static inline uint32_t component_id = UINT32_MAX;           \
-                                                                \
-public:                                                         \
-	static uint32_t get_component_id() { return component_id; } \
-	ECS_PROPERTY_MAPPER(m_class)                                \
-	ECS_METHOD_MAPPER(m_class)                                  \
-	static void __static_destructor() {                         \
-		property_map.reset();                                   \
-		properties.reset();                                     \
-		setters.reset();                                        \
-		getters.reset();                                        \
-		methods_map.reset();                                    \
-		methods.reset();                                        \
-	}                                                           \
-                                                                \
+#define COMPONENT_INTERNAL(m_class)                                                    \
+	/* Components */                                                                   \
+	static inline uint32_t component_id = UINT32_MAX;                                  \
+                                                                                       \
+public:                                                                                \
+	static void *new_component() { return new m_class; }                               \
+	static void free_component(void *p_component) { delete ((m_class *)p_component); } \
+	static uint32_t get_component_id() { return component_id; }                        \
+	ECS_PROPERTY_MAPPER(m_class)                                                       \
+	ECS_METHOD_MAPPER(m_class)                                                         \
+	static void __static_destructor() {                                                \
+		property_map.reset();                                                          \
+		properties.reset();                                                            \
+		setters.reset();                                                               \
+		getters.reset();                                                               \
+		methods_map.reset();                                                           \
+		methods.reset();                                                               \
+	}                                                                                  \
+                                                                                       \
 public:
 
 /// Register a component and allow to use a custom constructor.

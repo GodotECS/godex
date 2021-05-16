@@ -612,7 +612,7 @@ void WorldECS::sync_3d_transforms() {
 		EntityID entity = entity_node->get_entity_id();
 		if (entity.is_valid() && storage->has(entity)) {
 			const TransformComponent *t = storage->get(entity, Space::GLOBAL);
-			entity_node->set_global_transform(t->transform);
+			entity_node->set_global_transform(*t);
 		}
 	}
 }

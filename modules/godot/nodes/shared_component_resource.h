@@ -4,6 +4,8 @@
 #include "../../../ecs.h"
 #include "core/io/resource.h"
 
+class StaticComponentDepot;
+
 struct WorldSIDPair {
 	void *world;
 	godex::SID sid;
@@ -23,8 +25,8 @@ class SharedComponentResource : public Resource {
 
 	StringName component_name;
 
-	/// Component initializatin data.
-	Dictionary component_data;
+	/// Component data.
+	Ref<StaticComponentDepot> depot;
 
 	/// List of `SID` for each `World`.
 	/// The `void *` is the World pointer, and it's here just as index to store
@@ -44,9 +46,6 @@ public:
 
 	void set_component_name(const StringName &p_component_name);
 	StringName get_component_name() const;
-
-	void set_property_value(const StringName &p_property, const Variant &p_val);
-	const Dictionary &get_component_data() const;
 
 	virtual Ref<Resource> duplicate(bool p_subresources = false) const override;
 };

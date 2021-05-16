@@ -43,7 +43,7 @@ TEST_CASE("[Modules][ECS] Test world") {
 	const TransformComponent *transform_from_storage = storage->get(entity_1);
 
 	// Check the add component has the exact same data as the stored one.
-	CHECK((entity_1_transform_component.transform.origin - transform_from_storage->transform.origin).length() < CMP_EPSILON);
+	CHECK((entity_1_transform_component.origin - transform_from_storage->origin).length() < CMP_EPSILON);
 }
 
 TEST_CASE("[Modules][ECS] Test storage script component") {
@@ -223,7 +223,7 @@ TEST_CASE("[Modules][ECS] Test WorldECS runtime API create entity from prefab.")
 	Entity3D entity_prefab;
 
 	Dictionary defaults;
-	defaults["transform"] = Transform(Basis(), Vector3(10.0, 0.0, 0.0));
+	defaults["origin"] = Vector3(10.0, 0.0, 0.0);
 	entity_prefab.add_component("TransformComponent", defaults);
 
 	const uint32_t entity_id = world.create_entity_from_prefab(&entity_prefab);
@@ -242,7 +242,7 @@ TEST_CASE("[Modules][ECS] Test WorldECS runtime API create entity from prefab.")
 	TransformComponent *transf = godex::unwrap_component<TransformComponent>(comp);
 
 	// Make sure the default is also set.
-	CHECK(ABS(transf->transform.origin.x - 10) <= CMP_EPSILON);
+	CHECK(ABS(transf->origin.x - 10) <= CMP_EPSILON);
 }
 
 TEST_CASE("[Modules][ECS] Test WorldECS runtime API fetch databags.") {

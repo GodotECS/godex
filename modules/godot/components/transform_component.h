@@ -4,14 +4,25 @@
 #include "../../../storage/hierarchical_storage.h"
 #include "core/math/transform.h"
 
-class TransformComponent {
+class TransformComponent : public Transform {
 	COMPONENT(TransformComponent, HierarchicalStorage)
+
 	static void _bind_methods();
 	static void _get_storage_config(Dictionary &r_dictionary);
 
-	Transform transform;
-
 	TransformComponent(const Transform &p_transform);
+
+	void set_self_script(const Transform &p_transf);
+	Transform get_self_script() const;
+
+	void set_rotation(const Vector3 &p_euler);
+	const Vector3 get_rotation() const;
+
+	void set_rotation_deg(const Vector3 &p_euler);
+	const Vector3 get_rotation_deg() const;
+
+	void set_scale(const Vector3 &p_scale);
+	const Vector3 get_scale() const;
 
 	/// Used by the `HierarchyStorage` to combine the local data with the parent
 	/// global data, and obtain this global.

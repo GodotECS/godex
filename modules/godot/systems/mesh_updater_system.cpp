@@ -59,7 +59,7 @@ void mesh_transform_updater_system(
 
 	for (auto [mesh, transf] : p_query.space(Space::GLOBAL)) {
 		if (mesh->instance != RID()) {
-			rs->get_rs()->instance_set_transform(mesh->instance, transf->transform);
+			rs->get_rs()->instance_set_transform(mesh->instance, *transf);
 		}
 	}
 }

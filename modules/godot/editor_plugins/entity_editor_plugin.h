@@ -7,6 +7,7 @@
 class EntityEditorPlugin;
 class EditorInspectorPluginEntity;
 class Entity3D;
+class ComponentDepot;
 
 class EntityEditor : public VBoxContainer {
 	GDCLASS(EntityEditor, VBoxContainer);
@@ -40,7 +41,7 @@ public:
 	void _changed_callback();
 
 private:
-	const OAHashMap<StringName, Variant> &entity_get_components_data() const;
+	const OAHashMap<StringName, Ref<ComponentDepot>> &entity_get_components_data() const;
 	Dictionary entity_get_component_props_data(const StringName &p_component) const;
 };
 

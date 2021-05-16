@@ -74,7 +74,7 @@ namespace godex_tests_system {
 
 void test_system_tag(Query<TransformComponent, const TagTestComponent> &p_query) {
 	for (auto [transform, component] : p_query) {
-		transform->transform.origin.x += 100.0;
+		transform->origin.x += 100.0;
 	}
 }
 
@@ -161,9 +161,9 @@ TEST_CASE("[Modules][ECS] Test system and query") {
 
 	const Storage<const TransformComponent> *storage = world.get_storage<const TransformComponent>();
 
-	const Vector3 entity_1_origin = storage->get(entity_1)->transform.origin;
-	const Vector3 entity_2_origin = storage->get(entity_2)->transform.origin;
-	const Vector3 entity_3_origin = storage->get(entity_3)->transform.origin;
+	const Vector3 entity_1_origin = storage->get(entity_1)->origin;
+	const Vector3 entity_2_origin = storage->get(entity_2)->origin;
+	const Vector3 entity_3_origin = storage->get(entity_3)->origin;
 
 	// This entity is expected to change.
 	CHECK(ABS(entity_1_origin.x - 300.0) <= CMP_EPSILON);
@@ -245,9 +245,9 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 	{
 		const Storage<const TransformComponent> *storage = world.get_storage<const TransformComponent>();
 
-		const Vector3 entity_1_origin = storage->get(entity_1)->transform.origin;
-		const Vector3 entity_2_origin = storage->get(entity_2)->transform.origin;
-		const Vector3 entity_3_origin = storage->get(entity_3)->transform.origin;
+		const Vector3 entity_1_origin = storage->get(entity_1)->origin;
+		const Vector3 entity_2_origin = storage->get(entity_2)->origin;
+		const Vector3 entity_3_origin = storage->get(entity_3)->origin;
 
 		// This entity is expected to change.
 		CHECK(ABS(entity_1_origin.x - 300.0) <= CMP_EPSILON);
@@ -294,14 +294,14 @@ void test_sub_pipeline_execute(World *p_world, Pipeline *p_pipeline) {
 
 void test_system_transform_add_x(Query<TransformComponent> &p_query) {
 	for (auto [transform] : p_query) {
-		transform->transform.origin.x += 100.0;
+		transform->origin.x += 100.0;
 	}
 }
 
 void test_move_root(Query<EntityID, TransformComponent> &p_query) {
 	for (auto [entity, transform] : p_query) {
 		if (entity == EntityID(0)) {
-			transform->transform.origin.x += 1.0;
+			transform->origin.x += 1.0;
 			return;
 		}
 	}
@@ -310,7 +310,7 @@ void test_move_root(Query<EntityID, TransformComponent> &p_query) {
 void test_move_1_global(Query<EntityID, TransformComponent> &p_query) {
 	for (auto [entity, transform] : p_query.space(Space::GLOBAL)) {
 		if (entity == EntityID(1)) {
-			transform->transform.origin.x = 6.0;
+			transform->origin.x = 6.0;
 			return;
 		}
 	}
@@ -361,7 +361,7 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 		// since we are dispatching the main pipeline 2 times the
 		// `test_system_transform_add_x` add 100, four times.
 		const TransformComponent *comp = world.get_storage<TransformComponent>()->get(entity_1);
-		CHECK(ABS(comp->transform.origin.x - 400.0) <= CMP_EPSILON);
+		CHECK(ABS(comp->origin.x - 400.0) <= CMP_EPSILON);
 	}
 
 	{
@@ -373,7 +373,7 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 
 		// Verify the execution is properly done by making sure the value is 1000.
 		const TransformComponent *comp = world.get_storage<TransformComponent>()->get(entity_1);
-		CHECK(ABS(comp->transform.origin.x - 1000.0) <= CMP_EPSILON);
+		CHECK(ABS(comp->origin.x - 1000.0) <= CMP_EPSILON);
 	}
 }
 
@@ -574,13 +574,13 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 		// Check local transform.
 		{
 			const TransformComponent *entity_2_transform = world.get_storage<TransformComponent>()->get(entity_2);
-			CHECK(ABS(entity_2_transform->transform.origin.x - 1.0) <= CMP_EPSILON);
+			CHECK(ABS(entity_2_transform->origin.x - 1.0) <= CMP_EPSILON);
 		}
 
 		// Check global transform
 		{
 			const TransformComponent *entity_2_transform = world.get_storage<TransformComponent>()->get(entity_2, Space::GLOBAL);
-			CHECK(ABS(entity_2_transform->transform.origin.x - 3.0) <= CMP_EPSILON);
+			CHECK(ABS(entity_2_transform->origin.x - 3.0) <= CMP_EPSILON);
 		}
 
 		pipeline.dispatch(&world);
@@ -588,13 +588,13 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 		// Check local transform after root motion.
 		{
 			const TransformComponent *entity_2_transform = world.get_storage<TransformComponent>()->get(entity_2);
-			CHECK(ABS(entity_2_transform->transform.origin.x - 1.0) <= CMP_EPSILON);
+			CHECK(ABS(entity_2_transform->origin.x - 1.0) <= CMP_EPSILON);
 		}
 
 		// Check global transform after root motion.
 		{
 			const TransformComponent *entity_2_transform = world.get_storage<TransformComponent>()->get(entity_2, Space::GLOBAL);
-			CHECK(ABS(entity_2_transform->transform.origin.x - 4.0) <= CMP_EPSILON);
+			CHECK(ABS(entity_2_transform->origin.x - 4.0) <= CMP_EPSILON);
 		}
 	}
 
@@ -614,7 +614,7 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 		// Check local transform before motion.
 		{
 			const TransformComponent *entity_1_transform = world.get_storage<TransformComponent>()->get(entity_1);
-			CHECK(ABS(entity_1_transform->transform.origin.x - 1.0) <= CMP_EPSILON);
+			CHECK(ABS(entity_1_transform->origin.x - 1.0) <= CMP_EPSILON);
 		}
 
 		// Dispatch the pipeline, so to move the `Entity_1` globally.
@@ -628,25 +628,25 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 		// `Entity 0` din't move.
 		{
 			const TransformComponent *entity_0_transform = world.get_storage<TransformComponent>()->get(entity_0);
-			CHECK(ABS(entity_0_transform->transform.origin.x - 2.0) <= CMP_EPSILON);
+			CHECK(ABS(entity_0_transform->origin.x - 2.0) <= CMP_EPSILON);
 		}
 
 		// `Entity 1` moved globally to 6, so check local and global position:
 		{
 			const TransformComponent *entity_1_transform_l = world.get_storage<TransformComponent>()->get(entity_1);
-			CHECK(ABS(entity_1_transform_l->transform.origin.x - 4.0) <= CMP_EPSILON);
+			CHECK(ABS(entity_1_transform_l->origin.x - 4.0) <= CMP_EPSILON);
 
 			const TransformComponent *entity_1_transform_g = world.get_storage<TransformComponent>()->get(entity_1, Space::GLOBAL);
-			CHECK(ABS(entity_1_transform_g->transform.origin.x - 6.0) <= CMP_EPSILON);
+			CHECK(ABS(entity_1_transform_g->origin.x - 6.0) <= CMP_EPSILON);
 		}
 
 		// `Entity 2` moved cause of the parent motion.
 		{
 			const TransformComponent *entity_2_transform_l = world.get_storage<TransformComponent>()->get(entity_2);
-			CHECK(ABS(entity_2_transform_l->transform.origin.x - 1.0) <= CMP_EPSILON);
+			CHECK(ABS(entity_2_transform_l->origin.x - 1.0) <= CMP_EPSILON);
 
 			const TransformComponent *entity_2_transform_g = world.get_storage<TransformComponent>()->get(entity_2, Space::GLOBAL);
-			CHECK(ABS(entity_2_transform_g->transform.origin.x - 7.0) <= CMP_EPSILON);
+			CHECK(ABS(entity_2_transform_g->origin.x - 7.0) <= CMP_EPSILON);
 		}
 	}
 
@@ -672,26 +672,26 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 		// `Entity 0` din't move.
 		{
 			const TransformComponent *entity_0_transform = world.get_storage<TransformComponent>()->get(entity_0);
-			CHECK(ABS(entity_0_transform->transform.origin.x - 2.0) <= CMP_EPSILON);
+			CHECK(ABS(entity_0_transform->origin.x - 2.0) <= CMP_EPSILON);
 		}
 
 		// `Entity 1` it's not root, and it's relative to itself: local and
 		// global are equals.
 		{
 			const TransformComponent *entity_1_transform_l = world.get_storage<TransformComponent>()->get(entity_1);
-			CHECK(ABS(entity_1_transform_l->transform.origin.x - 4.0) <= CMP_EPSILON);
+			CHECK(ABS(entity_1_transform_l->origin.x - 4.0) <= CMP_EPSILON);
 
 			const TransformComponent *entity_1_transform_g = world.get_storage<TransformComponent>()->get(entity_1, Space::GLOBAL);
-			CHECK(ABS(entity_1_transform_g->transform.origin.x - 4.0) <= CMP_EPSILON);
+			CHECK(ABS(entity_1_transform_g->origin.x - 4.0) <= CMP_EPSILON);
 		}
 
 		// `Entity 2` moved cause of the parent hierarchy change.
 		{
 			const TransformComponent *entity_2_transform_l = world.get_storage<TransformComponent>()->get(entity_2);
-			CHECK(ABS(entity_2_transform_l->transform.origin.x - 1.0) <= CMP_EPSILON);
+			CHECK(ABS(entity_2_transform_l->origin.x - 1.0) <= CMP_EPSILON);
 
 			const TransformComponent *entity_2_transform_g = world.get_storage<TransformComponent>()->get(entity_2, Space::GLOBAL);
-			CHECK(ABS(entity_2_transform_g->transform.origin.x - 5.0) <= CMP_EPSILON);
+			CHECK(ABS(entity_2_transform_g->origin.x - 5.0) <= CMP_EPSILON);
 		}
 	}
 
@@ -706,16 +706,16 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 		// Check `Entity 0` transform.
 		{
 			const TransformComponent *entity_0_transform_l = world.get_storage<TransformComponent>()->get(entity_0);
-			CHECK(ABS(entity_0_transform_l->transform.origin.x - 2.0) <= CMP_EPSILON);
+			CHECK(ABS(entity_0_transform_l->origin.x - 2.0) <= CMP_EPSILON);
 
 			const TransformComponent *entity_0_transform_g = world.get_storage<TransformComponent>()->get(entity_0, Space::GLOBAL);
-			CHECK(ABS(entity_0_transform_g->transform.origin.x - 2.0) <= CMP_EPSILON);
+			CHECK(ABS(entity_0_transform_g->origin.x - 2.0) <= CMP_EPSILON);
 		}
 
 		// Check `Entity 1` transform.
 		{
 			const TransformComponent *entity_1_transform = world.get_storage<TransformComponent>()->get(entity_1, Space::GLOBAL);
-			CHECK(ABS(entity_1_transform->transform.origin.x - 4.0) <= CMP_EPSILON);
+			CHECK(ABS(entity_1_transform->origin.x - 4.0) <= CMP_EPSILON);
 		}
 
 		pipeline.dispatch(&world);
@@ -727,16 +727,16 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 		// Make sure `Entity 0` moved.
 		{
 			const TransformComponent *entity_0_transform_l = world.get_storage<TransformComponent>()->get(entity_0);
-			CHECK(ABS(entity_0_transform_l->transform.origin.x - 3.0) <= CMP_EPSILON);
+			CHECK(ABS(entity_0_transform_l->origin.x - 3.0) <= CMP_EPSILON);
 
 			const TransformComponent *entity_0_transform_g = world.get_storage<TransformComponent>()->get(entity_0, Space::GLOBAL);
-			CHECK(ABS(entity_0_transform_g->transform.origin.x - 3.0) <= CMP_EPSILON);
+			CHECK(ABS(entity_0_transform_g->origin.x - 3.0) <= CMP_EPSILON);
 		}
 
 		// Make sure `Entity 1` din't move.
 		{
 			const TransformComponent *entity_1_transform = world.get_storage<TransformComponent>()->get(entity_1, Space::GLOBAL);
-			CHECK(ABS(entity_1_transform->transform.origin.x - 4.0) <= CMP_EPSILON);
+			CHECK(ABS(entity_1_transform->origin.x - 4.0) <= CMP_EPSILON);
 		}
 	}
 
@@ -779,10 +779,10 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 		// Make sure `Entity 2` initial position.
 		{
 			const TransformComponent *entity_2_transform_l = world.get_storage<TransformComponent>()->get(entity_2);
-			CHECK(ABS(entity_2_transform_l->transform.origin.x - 1.0) <= CMP_EPSILON);
+			CHECK(ABS(entity_2_transform_l->origin.x - 1.0) <= CMP_EPSILON);
 
 			const TransformComponent *entity_2_transform_g = world.get_storage<TransformComponent>()->get(entity_2, Space::GLOBAL);
-			CHECK(ABS(entity_2_transform_g->transform.origin.x - 5.0) <= CMP_EPSILON);
+			CHECK(ABS(entity_2_transform_g->origin.x - 5.0) <= CMP_EPSILON);
 		}
 
 		pipeline.dispatch(&world);
@@ -794,16 +794,16 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 		// Make sure `Entity 1` didn't move.
 		{
 			const TransformComponent *entity_1_transform_l = world.get_storage<TransformComponent>()->get(entity_1);
-			CHECK(ABS(entity_1_transform_l->transform.origin.x - 4.0) <= CMP_EPSILON);
+			CHECK(ABS(entity_1_transform_l->origin.x - 4.0) <= CMP_EPSILON);
 		}
 
 		// Make sure `Entity 2` moved.
 		{
 			const TransformComponent *entity_2_transform_l = world.get_storage<TransformComponent>()->get(entity_2);
-			CHECK(ABS(entity_2_transform_l->transform.origin.x - 6.0) <= CMP_EPSILON);
+			CHECK(ABS(entity_2_transform_l->origin.x - 6.0) <= CMP_EPSILON);
 
 			const TransformComponent *entity_2_transform_g = world.get_storage<TransformComponent>()->get(entity_2, Space::GLOBAL);
-			CHECK(ABS(entity_2_transform_g->transform.origin.x - 10.0) <= CMP_EPSILON);
+			CHECK(ABS(entity_2_transform_g->origin.x - 10.0) <= CMP_EPSILON);
 		}
 	}
 }
@@ -950,7 +950,7 @@ TEST_CASE("[Modules][ECS] Test fetch changed from dynamic system.") {
 	// Dispatch 1 time.
 	pipeline.dispatch(&world);
 
-	CHECK(ABS(world.get_storage<TransformComponent>()->get(entity_1)->transform.origin.x - 100.0) <= CMP_EPSILON);
+	CHECK(ABS(world.get_storage<TransformComponent>()->get(entity_1)->origin.x - 100.0) <= CMP_EPSILON);
 }
 } // namespace godex_tests_system
 
