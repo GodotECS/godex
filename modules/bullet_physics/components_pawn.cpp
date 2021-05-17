@@ -78,6 +78,7 @@ BtPawn::BtPawn() {
 
 void BtPawn::stance0_set_pawn_height(real_t p_pawn_height) {
 	stances[0].set_pawn_height(p_pawn_height);
+	update_y_offsets();
 }
 
 real_t BtPawn::stance0_get_pawn_height() const {
@@ -86,6 +87,7 @@ real_t BtPawn::stance0_get_pawn_height() const {
 
 void BtPawn::stance0_set_pawn_radius(real_t p_pawn_radius) {
 	stances[0].set_pawn_radius(p_pawn_radius);
+	update_y_offsets();
 }
 
 real_t BtPawn::stance0_get_pawn_radius() const {
@@ -94,20 +96,18 @@ real_t BtPawn::stance0_get_pawn_radius() const {
 
 void BtPawn::stance1_set_pawn_height(real_t p_pawn_height) {
 	stances[1].set_pawn_height(p_pawn_height);
+	update_y_offsets();
 }
-
 real_t BtPawn::stance1_get_pawn_height() const {
 	return stances[1].get_pawn_height();
 }
-
 void BtPawn::stance1_set_pawn_radius(real_t p_pawn_radius) {
 	stances[1].set_pawn_radius(p_pawn_radius);
+	update_y_offsets();
 }
-
 real_t BtPawn::stance1_get_pawn_radius() const {
 	return stances[1].get_pawn_radius();
 }
-
 void BtPawn::set_margin(real_t p_margin) {
 	stances[0].set_margin(p_margin);
 	stances[1].set_margin(p_margin);
@@ -115,4 +115,15 @@ void BtPawn::set_margin(real_t p_margin) {
 
 real_t BtPawn::get_margin() const {
 	return stances[0].get_margin();
+}
+
+void BtPawn::update_y_offsets() {
+	const real_t stance0_pawn_height = stances[0].get_pawn_height();
+	const real_t stance1_pawn_height = stances[1].get_pawn_height();
+
+	const real_t ground_position =
+			MAX(stance0_pawn_height, stance1_pawn_height) / -2.0;
+
+	stances[0].offset[1] = ground_position + (stance0_pawn_height / 2.0);
+	stances[1].offset[1] = ground_position + (stance1_pawn_height / 2.0);
 }
