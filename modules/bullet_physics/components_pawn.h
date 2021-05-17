@@ -14,6 +14,8 @@ private:
 	real_t margin = 0.01;
 
 public:
+	btVector3 offset = btVector3(0.0, 0.0, 0.0);
+
 	/// Main shape.
 	btCapsuleShape main_shape = btCapsuleShape(0.3, 1.5);
 	/// Little enflated shape used for unstuck.
@@ -98,4 +100,6 @@ public:
 
 	void set_margin(real_t p_margin);
 	real_t get_margin() const;
+
+	void update_y_offsets();
 };
