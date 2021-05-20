@@ -34,7 +34,7 @@ btVector3 unstuck(
 	const btVector3 initial = r_position;
 
 	for (int x = 0; x < UNSTUCK_TESTS; x += 1) {
-		const KinematicContactQResult result = test_contact(
+		const BtKinematicContactQResult result = test_contact(
 				p_space,
 				p_rigid_body->get_body(),
 				&p_shape.margin_shape,
@@ -138,7 +138,7 @@ StrafingResult move(
 		// Phase 1: Unstuck motion
 		{
 			// Then move along the unstuck_dir, and if there is a collision put the body in between.
-			const KinematicConvexQResult result = test_motion(
+			const BtKinematicConvexQResult result = test_motion(
 					p_space,
 					p_rigid_body->get_body(),
 					&p_motion_shape.main_shape,
@@ -182,7 +182,7 @@ StrafingResult move(
 					test_n += 1) {
 				// Target location from the initial position.
 				// Test the motion from the actual up moved position to the target position.
-				const KinematicConvexQResult result = test_motion_target(
+				const BtKinematicConvexQResult result = test_motion_target(
 						p_space,
 						p_rigid_body->get_body(),
 						&p_motion_shape.main_shape,
@@ -271,14 +271,14 @@ StrafingResult move(
 						special_manouvre2 = true;
 						test_n -= 1;
 
-						const KinematicRayQResult ray_1_result = test_ray(
+						const BtKinematicRayQResult ray_1_result = test_ray(
 								p_space,
 								p_rigid_body->get_body(),
 								r_position,
 								r_position + (up_dir * -(p_step_height * 4.0 + radius)),
 								p_rigid_body->get_mask());
 
-						const KinematicRayQResult ray_2_result = test_ray(
+						const BtKinematicRayQResult ray_2_result = test_ray(
 								p_space,
 								p_rigid_body->get_body(),
 								target_position,
@@ -315,7 +315,7 @@ StrafingResult move(
 			// contact.
 			// This step down make sure that this doesn't happen.
 			const btVector3 vertical_motion = up_dir * -p_step_height * 2.0;
-			const KinematicConvexQResult result = test_motion(
+			const BtKinematicConvexQResult result = test_motion(
 					p_space,
 					p_rigid_body->get_body(),
 					&p_motion_shape.main_shape,

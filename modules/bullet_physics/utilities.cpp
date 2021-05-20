@@ -9,6 +9,13 @@
 #define SMOOTH_RESULTS_DISTANCE_TOLERANCE 0.05
 
 /// Returns project p_vec along the perpendicular of the p_norm.
+Vector3 vec_project_perpendicular(const Vector3 &p_vec, const Vector3 &p_normal) {
+	const real_t dot = p_vec.dot(p_normal);
+	const Vector3 ret = p_vec - p_normal * dot;
+	return ret;
+}
+
+/// Returns project p_vec along the perpendicular of the p_norm.
 btVector3 vec_project_perpendicular(const btVector3 &p_vec, const btVector3 &p_normal) {
 	const real_t dot = p_vec.dot(p_normal);
 	const btVector3 ret = p_vec - p_normal * dot;
@@ -53,7 +60,7 @@ public:
 	}
 };
 
-bool KinematicConvexQResult::needsCollision(btBroadphaseProxy *proxy0) const {
+bool BtKinematicConvexQResult::needsCollision(btBroadphaseProxy *proxy0) const {
 	btCollisionObject *oco = static_cast<btCollisionObject *>(proxy0->m_clientObject);
 	if (m_self_object != nullptr) {
 		if (oco == m_self_object) {
@@ -75,7 +82,7 @@ bool KinematicConvexQResult::needsCollision(btBroadphaseProxy *proxy0) const {
 			proxy0->m_collisionFilterMask);
 }
 
-btScalar KinematicConvexQResult::addSingleResult(
+btScalar BtKinematicConvexQResult::addSingleResult(
 		btCollisionWorld::LocalConvexResult &convexResult,
 		bool normalInWorldSpace) {
 #ifdef TOOLS_ENABLED
@@ -103,7 +110,7 @@ btScalar KinematicConvexQResult::addSingleResult(
 	return convexResult.m_hitFraction;
 }
 
-bool KinematicContactQResult::needsCollision(btBroadphaseProxy *proxy0) const {
+bool BtKinematicContactQResult::needsCollision(btBroadphaseProxy *proxy0) const {
 	btCollisionObject *oco = static_cast<btCollisionObject *>(proxy0->m_clientObject);
 	if (m_self_object != nullptr) {
 		if (oco == m_self_object) {
@@ -125,7 +132,7 @@ bool KinematicContactQResult::needsCollision(btBroadphaseProxy *proxy0) const {
 			proxy0->m_collisionFilterMask);
 }
 
-btScalar KinematicContactQResult::addSingleResult(
+btScalar BtKinematicContactQResult::addSingleResult(
 		btManifoldPoint &cp,
 		const btCollisionObjectWrapper *colObj0Wrap,
 		int partId0,
@@ -139,7 +146,7 @@ btScalar KinematicContactQResult::addSingleResult(
 
 	{
 		// TODO this was for debug.
-		KinematicContactQResult::Result debug_res;
+		BtKinematicContactQResult::Result debug_res;
 		debug_res.distance = distance;
 		debug_res.normal = norm;
 		debug_res.position = position;
@@ -214,7 +221,7 @@ btScalar KinematicContactQResult::addSingleResult(
 	return results[least_penetrated].distance;
 }
 
-KinematicRayQResult::KinematicRayQResult(
+BtKinematicRayQResult::BtKinematicRayQResult(
 		const btCollisionObject *p_self,
 		const btVector3 &rayFrom,
 		const btVector3 &rayTo) :
@@ -222,7 +229,7 @@ KinematicRayQResult::KinematicRayQResult(
 		m_self_object(p_self) {
 }
 
-bool KinematicRayQResult::needsCollision(btBroadphaseProxy *proxy0) const {
+bool BtKinematicRayQResult::needsCollision(btBroadphaseProxy *proxy0) const {
 	btCollisionObject *oco = static_cast<btCollisionObject *>(proxy0->m_clientObject);
 	if (m_self_object != nullptr) {
 		if (oco == m_self_object) {

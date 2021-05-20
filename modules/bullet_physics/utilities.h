@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/math/math_defs.h"
+#include "core/math/vector3.h"
 #include "core/string/ustring.h"
 #include "core/templates/local_vector.h"
 #include <BulletCollision/CollisionDispatch/btCollisionWorld.h>
@@ -20,6 +21,9 @@ union EntityIDConverter {
 };
 
 /// Returns project p_vec along the perpendicular of the p_norm.
+Vector3 vec_project_perpendicular(const Vector3 &p_vec, const Vector3 &p_normal);
+
+/// Returns project p_vec along the perpendicular of the p_norm.
 btVector3 vec_project_perpendicular(const btVector3 &p_vec, const btVector3 &p_normal);
 
 /// Returns the p_vec project on the normal.
@@ -33,7 +37,15 @@ btVector3 bounce(const btVector3 &p_vec, const btVector3 &p_normal);
 
 String vtos(const btVector3 &p_vec);
 
-struct KinematicConvexQResult : public btCollisionWorld::ConvexResultCallback {
+struct KinematicConvexQResult {
+	real_t closest_hit_fraction;
+	Vector3 hit_normal;
+	// Relative to world.
+	Vector3 hit_point;
+	const btCollisionObject *hit_collision_object;
+};
+
+struct BtKinematicConvexQResult : public btCollisionWorld::ConvexResultCallback {
 	const btCollisionObject *m_self_object;
 	const btVector3 motion_direction;
 	const bool skip_if_moving_away;
@@ -41,7 +53,7 @@ struct KinematicConvexQResult : public btCollisionWorld::ConvexResultCallback {
 	btVector3 m_hitPointWorld;
 	const btCollisionObject *m_hitCollisionObject = nullptr;
 
-	KinematicConvexQResult(const btCollisionObject *p_self_object, const btVector3 &p_motion_direction, bool p_skip_if_moving_away) :
+	BtKinematicConvexQResult(const btCollisionObject *p_self_object, const btVector3 &p_motion_direction, bool p_skip_if_moving_away) :
 			m_self_object(p_self_object),
 			motion_direction(p_motion_direction),
 			skip_if_moving_away(p_skip_if_moving_away) {}
@@ -50,11 +62,24 @@ struct KinematicConvexQResult : public btCollisionWorld::ConvexResultCallback {
 	virtual btScalar addSingleResult(btCollisionWorld::LocalConvexResult &convexResult, bool normalInWorldSpace);
 };
 
+struct KinematicContactQResult {
+	struct Result {
+		real_t distance;
+		Vector3 hit_normal;
+		// Relative to world.
+		Vector3 hit_point;
+		const btCollisionObject *hit_collision_object;
+	};
+
+	uint32_t result_count;
+	Result results[KINEMATIC_CONTACT_MAX_RESULTS];
+};
+
 /// Takes the six deepest penetrations.
 /// The results that have `distance` > `0.0` can be considered not penetratig.
 /// Keep in mind that collision detection may not be precise at 100%, but
 /// leaving `smooth_results` to true an extra check will run to smooth them out.
-struct KinematicContactQResult : public btCollisionWorld::ContactResultCallback {
+struct BtKinematicContactQResult : public btCollisionWorld::ContactResultCallback {
 	struct Result {
 		/// Negative, mean penetration.
 		real_t distance = 100.0;
@@ -79,7 +104,7 @@ struct KinematicContactQResult : public btCollisionWorld::ContactResultCallback 
 	/// If true, a new result is inserted only if there is not a similar one.
 	bool smooth_results = true;
 
-	KinematicContactQResult(const btCollisionObject *p_self_object, btCollisionObject *p_query_object) :
+	BtKinematicContactQResult(const btCollisionObject *p_self_object, btCollisionObject *p_query_object) :
 			m_self_object(p_self_object),
 			m_query_object(p_query_object) {}
 
@@ -87,10 +112,22 @@ struct KinematicContactQResult : public btCollisionWorld::ContactResultCallback 
 	virtual btScalar addSingleResult(btManifoldPoint &cp, const btCollisionObjectWrapper *colObj0Wrap, int partId0, int index0, const btCollisionObjectWrapper *colObj1Wrap, int partId1, int index1);
 };
 
-struct KinematicRayQResult : public btCollisionWorld::ClosestRayResultCallback {
+struct KinematicRayQResult {
+	Vector3 hit_normal;
+	// Relative to world.
+	Vector3 hit_point;
+	real_t closest_hit_fraction;
+	const btCollisionObject *collision_object;
+
+	bool has_hit() const {
+		return collision_object != nullptr;
+	}
+};
+
+struct BtKinematicRayQResult : public btCollisionWorld::ClosestRayResultCallback {
 	const btCollisionObject *m_self_object;
 
-	KinematicRayQResult(
+	BtKinematicRayQResult(
 			const btCollisionObject *p_self,
 			const btVector3 &rayFromWorld,
 			const btVector3 &rayToWorld);
