@@ -14,7 +14,7 @@ private:
 	real_t margin = 0.01;
 
 public:
-	btVector3 offset = btVector3(0.0, 0.0, 0.0);
+	Vector3 offset;
 
 	/// Main shape.
 	btCapsuleShape main_shape = btCapsuleShape(0.3, 1.5);
