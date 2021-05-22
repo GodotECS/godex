@@ -354,8 +354,8 @@ StrafingResult move(
 void bt_pawn_walk(
 		const FrameTime *frame_time,
 		BtPhysicsSpaces *p_spaces,
-		Query<BtRigidBody, BtStreamedShape, BtPawn> &p_query) {
-	for (auto [body, shape, pawn] : p_query) {
+		Query<BtRigidBody, BtStreamedShape, BtPawn, const TransformComponent> &p_query) {
+	for (auto [body, shape, pawn, transform] : p_query.space(GLOBAL)) {
 		if (pawn->disabled) {
 			continue;
 		}
@@ -381,7 +381,12 @@ void bt_pawn_walk(
 		G_TO_B(pawn->velocity, velocity);
 		btVector3 motion = velocity * frame_time->physics_delta;
 
-		btTransform position = body->get_transform();
+		btVector3 offset;
+		G_TO_B(pawn_shape.offset, offset);
+		btVector3 position;
+		G_TO_B(transform->origin, position);
+
+		position += offset;
 
 		// Execute the motion
 		const StrafingResult strafing_res = move(
@@ -389,7 +394,7 @@ void bt_pawn_walk(
 				body,
 				pawn_shape,
 				ground_dir,
-				position.getOrigin(),
+				position,
 				motion,
 				pawn->step_height,
 				pawn->snap_to_ground);
@@ -403,7 +408,11 @@ void bt_pawn_walk(
 		velocity = velocity.lerp(motion_velocity, pawn->on_impact_speed_change_factor); // TODO make this frame independent.
 		B_TO_G(velocity, pawn->velocity);
 
+		position -= offset;
+
 		// Set the new position
-		body->set_transform(position, true);
+		btTransform t = body->get_transform();
+		t.setOrigin(position);
+		body->set_transform(t, true);
 	}
 }
