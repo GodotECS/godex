@@ -98,7 +98,7 @@ btVector3 unstuck(
 
 	// Computes the unstuck movement normal.
 	const btVector3 n = r_position - initial;
-	if (n.length2() > 0.0) {
+	if (n.length2() >= CMP_EPSILON2) {
 		return n.normalized();
 	} else {
 		return btVector3(0.0, 0.0, 0.0);
@@ -356,6 +356,9 @@ void bt_pawn_walk(
 		BtPhysicsSpaces *p_spaces,
 		Query<BtRigidBody, BtStreamedShape, BtPawn> &p_query) {
 	for (auto [body, shape, pawn] : p_query) {
+		if (pawn->disabled) {
+			continue;
+		}
 		ERR_CONTINUE_MSG(body->get_body_mode() != BtRigidBody::RIGID_MODE_KINEMATIC, "The mode of this body is not KINEMATIC");
 		ERR_CONTINUE_MSG(body->__current_space == BtSpaceIndex::BT_SPACE_NONE, "Thid body is not in world, skip.");
 
