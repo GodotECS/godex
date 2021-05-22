@@ -83,6 +83,9 @@ struct BtPawn {
 	/// your pawn is falling or jumping, so to have a more natural motion.
 	bool snap_to_ground = true;
 
+	/// Disable pawn processing.
+	bool disabled = false;
+
 public:
 	BtPawn();
 

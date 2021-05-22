@@ -58,6 +58,7 @@ void BtPawn::_bind_methods() {
 	ECS_BIND_PROPERTY(BtPawn, PropertyInfo(Variant::FLOAT, "step_height"), step_height);
 	ECS_BIND_PROPERTY(BtPawn, PropertyInfo(Variant::BASIS, "ground_direction"), ground_direction);
 	ECS_BIND_PROPERTY(BtPawn, PropertyInfo(Variant::BOOL, "snap_to_ground"), snap_to_ground);
+	ECS_BIND_PROPERTY(BtPawn, PropertyInfo(Variant::BOOL, "disabled"), disabled);
 
 	ECS_BIND_PROPERTY_FUNC(BtPawn, PropertyInfo(Variant::FLOAT, "stance0_pawn_height"), stance0_set_pawn_height, stance0_get_pawn_height);
 	ECS_BIND_PROPERTY_FUNC(BtPawn, PropertyInfo(Variant::FLOAT, "stance0_pawn_radius"), stance0_set_pawn_radius, stance0_get_pawn_radius);
