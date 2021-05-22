@@ -24,7 +24,7 @@ The [wiki](https://github.com/GodotECS/godex/wiki/) is available; useful links:
 - [Create a new Godex project](https://github.com/GodotECS/godex/wiki/Create-a-new-Godex-Project)
 
 ### Examples
-Check the [Unit tests](https://github.com/GodotECS/godex/tree/main/tests) to see some examples or the [Bench Test](https://github.com/GodotECS/godex_tests)
+You can find some example projects [here](https://github.com/GodotECS/godex/wiki/Example-Projects). The [Unit tests](https://github.com/GodotECS/godex/tree/main/tests) are also a good resource to see how specific things works.
 
 ### Community
 If you want to chat about Godex, you can join the community on [Discord](https://discord.gg/EFmWpf869q).
