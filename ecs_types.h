@@ -121,6 +121,9 @@ constexpr databag_id DATABAG_NONE = UINT32_MAX;
 typedef uint32_t system_id;
 constexpr system_id SYSTEM_NONE = UINT32_MAX;
 
+typedef uint32_t system_bundle_id;
+constexpr system_bundle_id SYSTEM_BUNDLE_NONE = UINT32_MAX;
+
 /// Shared Component ID, used to identify a component.
 typedef uint32_t SID;
 constexpr SID SID_NONE = UINT32_MAX;

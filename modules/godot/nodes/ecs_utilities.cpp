@@ -565,7 +565,7 @@ void EditorEcs::register_dynamic_systems() {
 	load_systems();
 
 	for (uint32_t i = 0; i < systems.size(); i += 1) {
-		systems[i]->id = ECS::register_dynamic_system(system_names[i]);
+		systems[i]->id = ECS::register_dynamic_system(system_names[i]).get_id();
 		systems[i]->prepare(
 				ECS::get_dynamic_system_info(systems[i]->id),
 				systems[i]->id);

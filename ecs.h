@@ -57,9 +57,26 @@ struct DatabagInfo {
 	DataAccessorFuncs accessor_funcs;
 };
 
+struct Dependency {
+	bool execute_before;
+	StringName system_name;
+};
+
+enum Phase {
+	PHASE_CONFIG,
+	PHASE_INPUT,
+	PHASE_PRE_PROCESS,
+	PHASE_PROCESS,
+	PHASE_POST_PROCESS,
+};
+
 class SystemInfo {
 	friend class ECS;
+	friend class SystemBundleInfo;
 
+	godex::system_id id;
+	Phase phase = PHASE_PROCESS;
+	LocalVector<Dependency> dependencies;
 	String description;
 
 	// Only one of those is assigned (depending on the system type).
@@ -68,7 +85,26 @@ class SystemInfo {
 	func_temporary_system_execute temporary_exec = nullptr;
 
 public:
+	godex::system_id get_id() const;
+	SystemInfo &set_phase(Phase p_phase);
 	SystemInfo &set_description(const String &p_description);
+	SystemInfo &after(const StringName &p_system_name);
+	SystemInfo &before(const StringName &p_system_name);
+};
+
+class SystemBundleInfo {
+	friend class ECS;
+
+	String description;
+	LocalVector<godex::system_id> systems;
+	/// Bundle dependencies.
+	LocalVector<Dependency> dependencies;
+
+public:
+	SystemBundleInfo &set_description(const String &p_description);
+	SystemBundleInfo &after(const StringName &p_system_name);
+	SystemBundleInfo &before(const StringName &p_system_name);
+	SystemBundleInfo &add(const SystemInfo &p_system_info);
 };
 
 typedef void (*func_notify_static_destructor)();
@@ -101,6 +137,9 @@ private:
 
 	static LocalVector<StringName> systems;
 	static LocalVector<SystemInfo> systems_info;
+
+	static LocalVector<StringName> system_bundles;
+	static LocalVector<SystemBundleInfo> system_bundles_info;
 
 	// Used to keep track of types that need static memory destruction.
 	static LocalVector<func_notify_static_destructor> notify_static_destructor;
@@ -183,6 +222,11 @@ public:
 	static bool unsafe_databag_get_by_index(godex::databag_id p_databag_id, const void *p_databag, uint32_t p_index, Variant &r_data);
 	static void unsafe_databag_call(godex::databag_id p_databag_id, void *p_databag, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error);
 
+	// ~~ SystemBundle ~~
+	static SystemBundleInfo &register_system_bundle(const StringName &p_name);
+
+	static godex::system_bundle_id get_system_bundle_id(const StringName &p_name);
+
 	// ~~ Systems ~~
 	static SystemInfo &register_system(func_get_system_exe_info p_func_get_exe_info, StringName p_name);
 
@@ -199,7 +243,7 @@ public:
 			name)
 
 	// Register the system and returns the ID.
-	static godex::system_id register_dynamic_system(StringName p_name, const String &p_description = String());
+	static SystemInfo &register_dynamic_system(StringName p_name);
 
 	// This macro save the user the need to pass a `SystemExeInfo`, indeed it wraps
 	// the passed function with a labda function that creates a `SystemExeInfo`.
