@@ -114,7 +114,9 @@ TEST_CASE("[Modules][ECS] Test pipeline get_systems_dependencies") {
 }
 
 TEST_CASE("[Modules][ECS] Test pipeline get_systems_dependencies from a dispatcher.") {
-	const godex::system_id sub_dispatcher_system_id = ECS::register_dynamic_system("SubDispatcherSystemTest", "Unit tests system.");
+	const godex::system_id sub_dispatcher_system_id = ECS::register_dynamic_system("SubDispatcherSystemTest")
+															  .set_description("Unit tests system.")
+															  .get_id();
 
 	Pipeline pipeline;
 	Pipeline sub_pipeline;

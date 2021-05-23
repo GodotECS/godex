@@ -43,7 +43,7 @@ TEST_CASE("[Modules][ECS] Test temporary system.") {
 }
 
 TEST_CASE("[Modules][ECS] Test registered temporary system.") {
-	ECS::register_temporary_system(temporary_system_1_test, "TemporarySystemTest", "");
+	ECS::register_temporary_system(temporary_system_1_test, "TemporarySystemTest");
 
 	World world;
 	world.create_databag<ExecutionCounter>();

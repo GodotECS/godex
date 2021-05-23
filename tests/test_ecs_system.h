@@ -222,7 +222,7 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 	}
 
 	// Build dynamic query.
-	const uint32_t system_id = ECS::register_dynamic_system("TestDynamicSystem.gd");
+	const uint32_t system_id = ECS::register_dynamic_system("TestDynamicSystem.gd").get_id();
 	godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
 	dynamic_system_info->with_component(TransformComponent::get_component_id(), true);
 	dynamic_system_info->maybe_component(test_dyn_component_id, true);
@@ -328,7 +328,7 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 	sub_pipeline.add_system(test_system_transform_add_x);
 	sub_pipeline.build();
 
-	const uint32_t sub_pipeline_system_id = ECS::register_dynamic_system("TestSubPipelineExecute");
+	const uint32_t sub_pipeline_system_id = ECS::register_dynamic_system("TestSubPipelineExecute").get_id();
 	godex::DynamicSystemInfo *sub_pipeline_system = ECS::get_dynamic_system_info(sub_pipeline_system_id);
 	sub_pipeline_system->set_target(test_sub_pipeline_execute);
 	// Used internally by the `test_sub_pipeline_execute`.
@@ -454,7 +454,7 @@ TEST_CASE("[Modules][ECS] Test system databag fetch with dynamic query.") {
 	}
 
 	// Build dynamic query.
-	const uint32_t system_id = ECS::register_dynamic_system("TestDatabagDynamicSystem.gd");
+	const uint32_t system_id = ECS::register_dynamic_system("TestDatabagDynamicSystem.gd").get_id();
 	godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
 	dynamic_system_info->with_databag(TestSystemSubPipeDatabag::get_databag_id(), true);
 	dynamic_system_info->with_component(TransformComponent::get_component_id(), false);
@@ -758,7 +758,7 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 		}
 
 		// Build dynamic query.
-		const uint32_t system_id = ECS::register_dynamic_system("TestMoveHierarchySystem.gd");
+		const uint32_t system_id = ECS::register_dynamic_system("TestMoveHierarchySystem.gd").get_id();
 		godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
 		dynamic_system_info->set_space(Space::GLOBAL);
 		dynamic_system_info->with_component(TransformComponent::get_component_id(), true);
@@ -840,7 +840,7 @@ TEST_CASE("[Modules][ECS] Test Add/remove from dynamic system.") {
 		}
 
 		// Build dynamic query.
-		const uint32_t system_id = ECS::register_dynamic_system("TestSpawnDynamicSystem.gd");
+		const uint32_t system_id = ECS::register_dynamic_system("TestSpawnDynamicSystem.gd").get_id();
 		godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
 		dynamic_system_info->with_databag(WorldCommands::get_databag_id(), true);
 		dynamic_system_info->with_storage(Test1Component::get_component_id());
@@ -889,7 +889,7 @@ TEST_CASE("[Modules][ECS] Test Add/remove from dynamic system.") {
 		}
 
 		// Build dynamic query.
-		const uint32_t system_id = ECS::register_dynamic_system("TestRemoveDynamicSystem.gd");
+		const uint32_t system_id = ECS::register_dynamic_system("TestRemoveDynamicSystem.gd").get_id();
 		godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
 		dynamic_system_info->with_databag(WorldCommands::get_databag_id(), true);
 		dynamic_system_info->with_storage(Test1Component::get_component_id());
@@ -934,7 +934,7 @@ TEST_CASE("[Modules][ECS] Test fetch changed from dynamic system.") {
 	}
 
 	// Build dynamic query.
-	const uint32_t system_id = ECS::register_dynamic_system("TestChangedDynamicSystem.gd");
+	const godex::system_id system_id = ECS::register_dynamic_system("TestChangedDynamicSystem.gd").get_id();
 	godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
 	dynamic_system_info->changed_component(TransformComponent::get_component_id(), true);
 	dynamic_system_info->set_target(target_obj.get_script_instance());
@@ -1054,7 +1054,7 @@ TEST_CASE("[Modules][ECS] Test fetch entity from nodepath, using a dynamic syste
 		}
 
 		// Build dynamic query.
-		const uint32_t system_id = ECS::register_dynamic_system("TestFetchEntityFromNodePath.gd");
+		const uint32_t system_id = ECS::register_dynamic_system("TestFetchEntityFromNodePath.gd").get_id();
 		godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
 		dynamic_system_info->with_databag(World::get_databag_id(), false);
 		dynamic_system_info->with_component(Test1Component::get_component_id(), true);

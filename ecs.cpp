@@ -20,6 +20,52 @@ LocalVector<StringName> ECS::databags;
 LocalVector<DatabagInfo> ECS::databags_info;
 LocalVector<StringName> ECS::systems;
 LocalVector<SystemInfo> ECS::systems_info;
+LocalVector<StringName> ECS::system_bundles;
+LocalVector<SystemBundleInfo> ECS::system_bundles_info;
+
+godex::system_id SystemInfo::get_id() const {
+	return id;
+}
+
+SystemInfo &SystemInfo::set_phase(Phase p_phase) {
+	phase = p_phase;
+	return *this;
+}
+
+SystemInfo &SystemInfo::set_description(const String &p_description) {
+	description = p_description;
+	return *this;
+}
+
+SystemInfo &SystemInfo::after(const StringName &p_system_name) {
+	dependencies.push_back({ false, p_system_name });
+	return *this;
+}
+
+SystemInfo &SystemInfo::before(const StringName &p_system_name) {
+	dependencies.push_back({ true, p_system_name });
+	return *this;
+}
+
+SystemBundleInfo &SystemBundleInfo::set_description(const String &p_description) {
+	description = p_description;
+	return *this;
+}
+
+SystemBundleInfo &SystemBundleInfo::after(const StringName &p_system_name) {
+	dependencies.push_back({ false, p_system_name });
+	return *this;
+}
+
+SystemBundleInfo &SystemBundleInfo::before(const StringName &p_system_name) {
+	dependencies.push_back({ true, p_system_name });
+	return *this;
+}
+
+SystemBundleInfo &SystemBundleInfo::add(const SystemInfo &p_system_info) {
+	systems.push_back(p_system_info.id);
+	return *this;
+}
 
 void ECS::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_active_world"), &ECS::get_active_world_node);
@@ -62,6 +108,10 @@ void ECS::__static_destructor() {
 	// Clear the databags static data.
 	databags.reset();
 	databags_info.reset();
+
+	// Clear the system bundles static data.
+	system_bundles.reset();
+	system_bundles_info.reset();
 
 	// Clear the systems static data.
 	systems.reset();
@@ -255,27 +305,48 @@ void ECS::unsafe_databag_call(
 			r_error);
 }
 
+SystemBundleInfo &ECS::register_system_bundle(const StringName &p_name) {
+	{
+		const uint32_t id = get_system_bundle_id(p_name);
+		CRASH_COND_MSG(id != godex::SYSTEM_BUNDLE_NONE, "The system bundle is already registered.");
+	}
+
+	const godex::system_bundle_id id = system_bundles.size();
+	system_bundles.push_back(p_name);
+	system_bundles_info.push_back(SystemBundleInfo());
+
+	print_line("SystemBundle: " + p_name + " registered with ID: " + itos(id));
+	return system_bundles_info[id];
+}
+
+godex::system_bundle_id ECS::get_system_bundle_id(const StringName &p_name) {
+	system_bundles.find(p_name);
+	const int64_t index = system_bundles.find(p_name);
+	return index >= 0 ? godex::system_bundle_id(index) : godex::SYSTEM_BUNDLE_NONE;
+}
+
 // Undefine the macro defined into `ecs.h` so we can define the method properly.
 #undef register_system
-void ECS::register_system(func_get_system_exe_info p_func_get_exe_info, StringName p_name, String p_description) {
+SystemInfo &ECS::register_system(func_get_system_exe_info p_func_get_exe_info, StringName p_name) {
 	{
 		const uint32_t id = get_system_id(p_name);
-		ERR_FAIL_COND_MSG(id != UINT32_MAX, "The system is already registered.");
+		CRASH_COND_MSG(id != UINT32_MAX, "The system is already registered.");
 	}
 
 	const godex::system_id id = systems.size();
 	systems.push_back(p_name);
-	systems_info.push_back({ p_description,
-			UINT32_MAX,
-			p_func_get_exe_info });
+	systems_info.push_back(SystemInfo());
+	systems_info[id].id = id;
+	systems_info[id].exec_info = p_func_get_exe_info;
 
 	print_line("System: " + p_name + " registered with ID: " + itos(id));
+	return systems_info[id];
 }
 
-godex::system_id ECS::register_dynamic_system(StringName p_name, const String &p_description) {
+SystemInfo &ECS::register_dynamic_system(StringName p_name) {
 	{
 		const uint32_t id = get_system_id(p_name);
-		ERR_FAIL_COND_V_MSG(id != UINT32_MAX, UINT32_MAX, "The system is already registered.");
+		CRASH_COND_MSG(id != godex::SYSTEM_NONE, "The system is already registered.");
 	}
 
 	const godex::system_id id = systems.size();
@@ -285,15 +356,16 @@ godex::system_id ECS::register_dynamic_system(StringName p_name, const String &p
 	const uint32_t dynamic_system_id = godex::register_dynamic_system();
 
 	systems.push_back(p_name);
-	systems_info.push_back({ p_description,
-			dynamic_system_id,
-			godex::get_func_dynamic_system_exec_info(dynamic_system_id) });
+	systems_info.push_back(SystemInfo());
+	systems_info[id].id = id;
+	systems_info[id].dynamic_system_id = dynamic_system_id;
+	systems_info[id].exec_info = godex::get_func_dynamic_system_exec_info(dynamic_system_id);
 
 	godex::get_dynamic_system_info(dynamic_system_id)->set_system_id(id);
 
 	print_line("Dynamic system: " + p_name + " registered with ID: " + itos(id));
 
-	return id;
+	return systems_info[id];
 }
 
 godex::system_id ECS::get_system_id(const StringName &p_name) {
@@ -359,20 +431,21 @@ void ECS::set_system_pipeline(godex::system_id p_id, Pipeline *p_pipeline) {
 
 // Undefine the macro defined into `ecs.h` so we can define the method properly.
 #undef register_temporary_system
-void ECS::register_temporary_system(func_temporary_system_execute p_func_temporary_systems_exe, StringName p_name, const String &p_description) {
+SystemInfo &ECS::register_temporary_system(func_temporary_system_execute p_func_temporary_systems_exe, StringName p_name) {
 	{
 		const uint32_t id = get_system_id(p_name);
-		ERR_FAIL_COND_MSG(id != UINT32_MAX, "The system is already registered.");
+		CRASH_COND_MSG(id != UINT32_MAX, "The system is already registered.");
 	}
 
 	const godex::system_id id = systems.size();
 	systems.push_back(p_name);
-	systems_info.push_back({ p_description,
-			UINT32_MAX,
-			nullptr,
-			p_func_temporary_systems_exe });
+	systems_info.push_back(SystemInfo());
+	systems_info[id].id = id;
+	systems_info[id].temporary_exec = p_func_temporary_systems_exe;
 
 	print_line("TemporarySystem: " + p_name + " registered with ID: " + itos(id));
+
+	return systems_info[id];
 }
 
 bool ECS::is_temporary_system(godex::system_id p_id) {
