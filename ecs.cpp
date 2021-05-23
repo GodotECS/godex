@@ -21,6 +21,11 @@ LocalVector<DatabagInfo> ECS::databags_info;
 LocalVector<StringName> ECS::systems;
 LocalVector<SystemInfo> ECS::systems_info;
 
+SystemInfo &SystemInfo::set_description(const String &p_description) {
+	description = p_description;
+	return *this;
+}
+
 void ECS::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_active_world"), &ECS::get_active_world_node);
 
@@ -257,19 +262,19 @@ void ECS::unsafe_databag_call(
 
 // Undefine the macro defined into `ecs.h` so we can define the method properly.
 #undef register_system
-void ECS::register_system(func_get_system_exe_info p_func_get_exe_info, StringName p_name, String p_description) {
+SystemInfo &ECS::register_system(func_get_system_exe_info p_func_get_exe_info, StringName p_name) {
 	{
 		const uint32_t id = get_system_id(p_name);
-		ERR_FAIL_COND_MSG(id != UINT32_MAX, "The system is already registered.");
+		CRASH_COND_MSG(id != UINT32_MAX, "The system is already registered.");
 	}
 
 	const godex::system_id id = systems.size();
 	systems.push_back(p_name);
-	systems_info.push_back({ p_description,
-			UINT32_MAX,
-			p_func_get_exe_info });
+	systems_info.push_back(SystemInfo());
+	systems_info[id].exec_info = p_func_get_exe_info;
 
 	print_line("System: " + p_name + " registered with ID: " + itos(id));
+	return systems_info[id];
 }
 
 godex::system_id ECS::register_dynamic_system(StringName p_name, const String &p_description) {
@@ -285,9 +290,10 @@ godex::system_id ECS::register_dynamic_system(StringName p_name, const String &p
 	const uint32_t dynamic_system_id = godex::register_dynamic_system();
 
 	systems.push_back(p_name);
-	systems_info.push_back({ p_description,
-			dynamic_system_id,
-			godex::get_func_dynamic_system_exec_info(dynamic_system_id) });
+	systems_info.push_back(SystemInfo());
+	systems_info[id].description = p_description;
+	systems_info[id].dynamic_system_id = dynamic_system_id;
+	systems_info[id].exec_info = godex::get_func_dynamic_system_exec_info(dynamic_system_id);
 
 	godex::get_dynamic_system_info(dynamic_system_id)->set_system_id(id);
 
@@ -359,20 +365,20 @@ void ECS::set_system_pipeline(godex::system_id p_id, Pipeline *p_pipeline) {
 
 // Undefine the macro defined into `ecs.h` so we can define the method properly.
 #undef register_temporary_system
-void ECS::register_temporary_system(func_temporary_system_execute p_func_temporary_systems_exe, StringName p_name, const String &p_description) {
+SystemInfo &ECS::register_temporary_system(func_temporary_system_execute p_func_temporary_systems_exe, StringName p_name) {
 	{
 		const uint32_t id = get_system_id(p_name);
-		ERR_FAIL_COND_MSG(id != UINT32_MAX, "The system is already registered.");
+		CRASH_COND_MSG(id != UINT32_MAX, "The system is already registered.");
 	}
 
 	const godex::system_id id = systems.size();
 	systems.push_back(p_name);
-	systems_info.push_back({ p_description,
-			UINT32_MAX,
-			nullptr,
-			p_func_temporary_systems_exe });
+	systems_info.push_back(SystemInfo());
+	systems_info[id].temporary_exec = p_func_temporary_systems_exe;
 
 	print_line("TemporarySystem: " + p_name + " registered with ID: " + itos(id));
+
+	return systems_info[id];
 }
 
 bool ECS::is_temporary_system(godex::system_id p_id) {

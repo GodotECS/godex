@@ -46,15 +46,15 @@ void register_bullet_physics_types() {
 	ECS::register_component<TorqueImpulse>();
 
 	// Register Base `System`s
-	ECS::register_system(bt_body_config, "BtBodyConfig", "Bullet Physics - Manage the lifetime of the Bodies.");
-	ECS::register_system(bt_area_config, "BtAreaConfig", "Bullet Physics - Manage the lifetime of the Area.");
-	ECS::register_system(bt_apply_forces, "BtApplyForces", "Bullet Physics - Apply `Forces` and `Impulses` to bodies.");
-	ECS::register_system(bt_spaces_step, "BtSpacesStep", "Bullet Physics - Steps the physics spaces.");
-	ECS::register_system(bt_overlap_check, "BtOverlapCheck", "Bullet Physics - Allow the areas to detect ovelapped bodies.");
-	ECS::register_system(bt_body_sync, "BtBodySync", "Bullet Physics - Read the Physics Engine and update the Bodies.");
+	ECS::register_system(bt_body_config, "BtBodyConfig").set_description("Bullet Physics - Manage the lifetime of the Bodies.");
+	ECS::register_system(bt_area_config, "BtAreaConfig").set_description("Bullet Physics - Manage the lifetime of the Area.");
+	ECS::register_system(bt_apply_forces, "BtApplyForces").set_description("Bullet Physics - Apply `Forces` and `Impulses` to bodies.");
+	ECS::register_system(bt_spaces_step, "BtSpacesStep").set_description("Bullet Physics - Steps the physics spaces.");
+	ECS::register_system(bt_overlap_check, "BtOverlapCheck").set_description("Bullet Physics - Allow the areas to detect ovelapped bodies.");
+	ECS::register_system(bt_body_sync, "BtBodySync").set_description("Bullet Physics - Read the Physics Engine and update the Bodies.");
 
 	// Register Walk `System`s
-	ECS::register_system(bt_pawn_walk, "BtPawnWalk", "Bullet Physics - Make the Rigidbody in kinematic mode walk according to Pawn settings.");
+	ECS::register_system(bt_pawn_walk, "BtPawnWalk").set_description("Bullet Physics - Make the Rigidbody in kinematic mode walk according to Pawn settings.");
 
 	// Register gizmos
 	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtBoxGizmo));

@@ -91,19 +91,19 @@ void register_godot_types() {
 	ECS::register_databag<InputDatabag>();
 
 	// Engine
-	ECS::register_system(call_physics_process, "CallPhysicsProcess", "Updates the Godot Nodes (2D/3D) transform and fetches the events from the physics engine.");
+	ECS::register_system(call_physics_process, "CallPhysicsProcess").set_description("Updates the Godot Nodes (2D/3D) transform and fetches the events from the physics engine.");
 
 	// Rendering
-	ECS::register_system(scenario_manager_system, "ScenarioManagerSystem", "Compatibility layer that allow to read the main window scenario and put in the ECS lifecycle; so that `MeshComponent` can properly show the mesh.");
-	ECS::register_system(mesh_updater_system, "MeshUpdaterSystem", "Handles the mesh lifetime. This is required if you want to use `MeshComponent`");
-	ECS::register_system(mesh_transform_updater_system, "MeshTransformUpdaterSystem", "Handles the mesh transformation. This is required if you want to use `MeshComponent`");
+	ECS::register_system(scenario_manager_system, "ScenarioManagerSystem").set_description("Compatibility layer that allow to read the main window scenario and put in the ECS lifecycle; so that `MeshComponent` can properly show the mesh.");
+	ECS::register_system(mesh_updater_system, "MeshUpdaterSystem").set_description("Handles the mesh lifetime. This is required if you want to use `MeshComponent`");
+	ECS::register_system(mesh_transform_updater_system, "MeshTransformUpdaterSystem").set_description("Handles the mesh transformation. This is required if you want to use `MeshComponent`");
 
 	// Physics 3D
 	{
 		const godex::system_id id = ECS::register_dynamic_system("PhysicsSystemDispatcher", "System that dispatches the specified pipeline at fixed rate. The rate is defined by `Physics Hz` in the project settings.");
 		create_physics_system_dispatcher(ECS::get_dynamic_system_info(id));
 	}
-	ECS::register_system(step_physics_server_3d, "StepPhysicsServer3D", "Steps the PhysicsServer3D.");
+	ECS::register_system(step_physics_server_3d, "StepPhysicsServer3D").set_description("Steps the PhysicsServer3D.");
 
 	ClassDB::register_class<SharedComponentResource>();
 }

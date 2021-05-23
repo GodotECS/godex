@@ -57,13 +57,18 @@ struct DatabagInfo {
 	DataAccessorFuncs accessor_funcs;
 };
 
-struct SystemInfo {
+class SystemInfo {
+	friend class ECS;
+
 	String description;
 
 	// Only one of those is assigned (depending on the system type).
 	uint32_t dynamic_system_id = UINT32_MAX;
 	func_get_system_exe_info exec_info = nullptr;
 	func_temporary_system_execute temporary_exec = nullptr;
+
+public:
+	SystemInfo &set_description(const String &p_description);
 };
 
 typedef void (*func_notify_static_destructor)();
@@ -179,19 +184,19 @@ public:
 	static void unsafe_databag_call(godex::databag_id p_databag_id, void *p_databag, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error);
 
 	// ~~ Systems ~~
-	static void register_system(func_get_system_exe_info p_func_get_exe_info, StringName p_name, String p_description = "");
+	static SystemInfo &register_system(func_get_system_exe_info p_func_get_exe_info, StringName p_name);
 
 // By defining the same name of the method, the IDE autocomplete shows the
 // method name `register_system`, properly + it's impossible use the function
 // directly by mistake.
-#define register_system(func, name, desc)                           \
+#define register_system(func, name)                                 \
 	register_system([](SystemExeInfo &r_info) {                     \
 		SystemBuilder::get_system_info_from_function(r_info, func); \
 		r_info.system_func = [](World *p_world) {                   \
 			SystemBuilder::system_exec_func(p_world, func);         \
 		};                                                          \
 	},                                                              \
-			name, desc)
+			name)
 
 	// Register the system and returns the ID.
 	static godex::system_id register_dynamic_system(StringName p_name, const String &p_description = String());
@@ -220,16 +225,16 @@ public:
 	static void set_system_pipeline(godex::system_id p_id, Pipeline *p_pipeline);
 
 	/// Register the temporary system and returns the ID.
-	static void register_temporary_system(func_temporary_system_execute p_func_temporary_systems_exe, StringName p_name, const String &p_description = String());
+	static SystemInfo &register_temporary_system(func_temporary_system_execute p_func_temporary_systems_exe, StringName p_name);
 
 // By defining the same name of the method, the IDE autocomplete shows the
 // method name `register_temporary_system`, properly + it's impossible use the function
 // directly by mistake.
-#define register_temporary_system(func, name, desc)                      \
+#define register_temporary_system(func, name)                            \
 	register_temporary_system([](World *p_world) -> bool {               \
 		return SystemBuilder::temporary_system_exec_func(p_world, func); \
 	},                                                                   \
-			name, desc)
+			name)
 
 	/// Returns `true` when the system is a temporary `System`.
 	static bool is_temporary_system(godex::system_id p_id);
