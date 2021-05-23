@@ -109,6 +109,10 @@ void ECS::__static_destructor() {
 	databags.reset();
 	databags_info.reset();
 
+	// Clear the system bundles static data.
+	system_bundles.reset();
+	system_bundles_info.reset();
+
 	// Clear the systems static data.
 	systems.reset();
 	systems_info.reset();
