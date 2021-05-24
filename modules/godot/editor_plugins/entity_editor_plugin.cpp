@@ -64,7 +64,7 @@ void EntityEditor::update_editors() {
 		}
 
 		// Make sure to load all the components.
-		const LocalVector<Ref<Component>> &scripts = EditorEcs::get_components();
+		const LocalVector<Ref<Component>> &scripts = ScriptEcs::get_singleton()->get_components();
 		for (uint32_t i = 0; i < scripts.size(); i += 1) {
 			add_component_menu->get_popup()->add_item(scripts[i]->get_name());
 		}
@@ -103,7 +103,7 @@ void EntityEditor::update_editors() {
 void EntityEditor::create_component_inspector(StringName p_component_name, VBoxContainer *p_container) {
 	List<PropertyInfo> properties;
 
-	if (EditorEcs::component_is_shared(p_component_name)) {
+	if (ScriptEcs::get_singleton()->component_is_shared(p_component_name)) {
 		// The sharable components just have a field that accepts a
 		// `SharableComponentResource`.
 		EditorPropertyResource *prop_res = memnew(EditorPropertyResource);
@@ -120,7 +120,7 @@ void EntityEditor::create_component_inspector(StringName p_component_name, VBoxC
 		components_properties.insert(p_component_name, editor_properties);
 
 	} else {
-		EditorEcs::component_get_properties(p_component_name, &properties);
+		ScriptEcs::get_singleton()->component_get_properties(p_component_name, &properties);
 
 		const float default_float_step = EDITOR_GET("interface/inspector/default_float_step");
 
@@ -273,7 +273,7 @@ void EntityEditor::create_component_inspector(StringName p_component_name, VBoxC
 
 					} else if (e->get().hint == godex::PROPERTY_HINT_ECS_SPAWNER) {
 						const StringName spawner_name = e->get().hint_string;
-						const Vector<StringName> components = EditorEcs::spawner_get_components(spawner_name);
+						const Vector<StringName> components = ScriptEcs::get_singleton()->spawner_get_components(spawner_name);
 
 						Vector<String> enum_component_list;
 						{
@@ -474,7 +474,7 @@ void EntityEditor::create_component_inspector(StringName p_component_name, VBoxC
 
 					} else if (e->get().hint == godex::PROPERTY_HINT_ECS_SPAWNER) {
 						const StringName spawner_name = e->get().hint_string;
-						const Vector<StringName> components = EditorEcs::spawner_get_components(spawner_name);
+						const Vector<StringName> components = ScriptEcs::get_singleton()->spawner_get_components(spawner_name);
 
 						Vector<String> enum_component_list;
 						{

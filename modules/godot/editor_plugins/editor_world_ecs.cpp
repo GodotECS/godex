@@ -1,8 +1,8 @@
 #include "editor_world_ecs.h"
 
 #include "../../../ecs.h"
-#include "../nodes/ecs_utilities.h"
 #include "../nodes/ecs_world.h"
+#include "../nodes/script_ecs.h"
 #include "core/io/resource_loader.h"
 #include "editor/editor_node.h"
 #include "editor/editor_scale.h"
@@ -1136,10 +1136,10 @@ void EditorWorldECS::add_script_do() {
 
 	String err = "";
 	if ("System" == script->get_instance_base_type()) {
-		err = EditorEcs::system_save_script(script_path, script);
+		err = ScriptEcs::get_singleton()->system_save_script(script_path, script);
 
 	} else if ("Component" == script->get_instance_base_type()) {
-		err = EditorEcs::component_save_script(script_path, script);
+		err = ScriptEcs::get_singleton()->component_save_script(script_path, script);
 
 	} else if ("Databag" == script->get_instance_base_type()) {
 		err = databag_validate_script(script);

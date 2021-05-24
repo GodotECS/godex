@@ -6,7 +6,7 @@
 #include "../components/component.h"
 #include "../ecs.h"
 #include "../modules/godot/components/transform_component.h"
-#include "../modules/godot/nodes/ecs_utilities.h"
+#include "../modules/godot/nodes/script_ecs.h"
 #include "../pipeline/pipeline.h"
 #include "../spawners/spawner.h"
 #include "../storage/dense_vector_storage.h"
@@ -93,7 +93,7 @@ TEST_CASE("[Modules][ECS] Test spawner Script registration.") {
 	}
 
 	// Register the component.
-	EditorEcs::register_dynamic_component(component.ptr());
+	ScriptEcs::get_singleton()->register_dynamic_component(component.ptr());
 
 	// Make sure the spawners are correctly set during component initialization.
 	{

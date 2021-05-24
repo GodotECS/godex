@@ -3,10 +3,10 @@
 #include "../../../components/child.h"
 #include "core/templates/list.h"
 #include "core/templates/local_vector.h"
-#include "ecs_utilities.h"
 #include "ecs_world.h"
 #include "scene/2d/node_2d.h"
 #include "scene/3d/node_3d.h"
+#include "script_ecs.h"
 #include "shared_component_resource.h"
 
 class WorldECS;
@@ -401,7 +401,7 @@ void EntityInternal<C>::_get_property_list(List<PropertyInfo> *p_list) const {
 		} else {
 			// This is a common component.
 			List<PropertyInfo> properties;
-			EditorEcs::component_get_properties(*it.key, &properties);
+			ScriptEcs::get_singleton()->component_get_properties(*it.key, &properties);
 
 			for (List<PropertyInfo>::Element *e = properties.front(); e; e = e->next()) {
 				if ((e->get().usage & PROPERTY_USAGE_STORAGE) == 0) {
@@ -413,7 +413,7 @@ void EntityInternal<C>::_get_property_list(List<PropertyInfo> *p_list) const {
 
 				// Set the component defaults.
 				Variant def;
-				if (EditorEcs::component_get_property_default_value(*it.key, e->get().name, def)) {
+				if (ScriptEcs::get_singleton()->component_get_property_default_value(*it.key, e->get().name, def)) {
 					ClassDB::set_property_default_value(owner->get_class_name(), prop_name, def);
 				}
 			}
@@ -516,12 +516,12 @@ void EntityInternal<C>::add_component(const StringName &p_component_name, const 
 	if (entity_id.is_null()) {
 		// We are on editor.
 		Ref<ComponentDepot> depot;
-		if (EditorEcs::component_is_shared(p_component_name)) {
+		if (ScriptEcs::get_singleton()->component_is_shared(p_component_name)) {
 			// This is a shared component.
 			Ref<SharedComponentDepot> d;
 			d.instance();
 			depot = d;
-		} else if (EditorEcs::is_script_component(p_component_name)) {
+		} else if (ScriptEcs::get_singleton()->is_script_component(p_component_name)) {
 			Ref<ScriptComponentDepot> d;
 			d.instance();
 			depot = d;
@@ -565,7 +565,7 @@ void EntityInternal<C>::remove_component(const StringName &p_component_name) {
 template <class C>
 bool EntityInternal<C>::has_component(const StringName &p_component_name) const {
 	if (entity_id.is_null()) {
-		if (EditorEcs::component_is_shared(p_component_name)) {
+		if (ScriptEcs::get_singleton()->component_is_shared(p_component_name)) {
 			const Ref<ComponentDepot> *val = components_data.lookup_ptr(p_component_name);
 			if (val && val->is_valid()) {
 				Ref<SharedComponentResource> shared = (*val)->get("resource");

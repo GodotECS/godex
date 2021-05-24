@@ -287,7 +287,7 @@ void WorldECS::_notification(int p_what) {
 		case NOTIFICATION_READY:
 			// Make sure to register all scripted components/databags/systems
 			// at this point.
-			EditorEcs::register_runtime_scripts();
+			ScriptEcs::get_singleton()->register_runtime_scripts();
 
 			add_to_group("_world_ecs");
 			if (Engine::get_singleton()->is_editor_hint() == false) {

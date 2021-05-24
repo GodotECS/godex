@@ -494,4 +494,5 @@ void ECS::register_databag() {
 	ClassDB::bind_integer_constant(get_class_static(), StringName(), databag_name, R::databag_id);
 }
 
-VARIANT_ENUM_CAST(Space);
+VARIANT_ENUM_CAST(Space)
+VARIANT_ENUM_CAST(Phase)
