@@ -6,6 +6,8 @@
 #include "core/templates/oa_hash_map.h"
 #include "ecs_utilities.h"
 
+class EditorFileSystemDirectory;
+
 /// This is an utility that is intended for in editor usage that allow:
 /// - Save script components.
 /// - Load script components.
@@ -16,6 +18,8 @@
 /// - Load script systems.
 class ScriptEcs : public Object {
 	GDCLASS(ScriptEcs, Object)
+
+	uint64_t recent_modification_detected_time = 0;
 
 	bool def_defined_static_components = false;
 	/// Used to know if the previously stored `Component`s got loaded.
@@ -95,6 +99,9 @@ public:
 	String system_save_script(const String &p_script_path, Ref<Script> p_script);
 
 	// ------------------------------------------------------------------ Runtime
+
+	void reload_scripts();
+	uint64_t load_scripts(EditorFileSystemDirectory *p_dir);
 
 	void define_editor_default_component_properties();
 

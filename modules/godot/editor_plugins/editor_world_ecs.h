@@ -128,6 +128,7 @@ public:
 	EditorWorldECS(EditorNode *p_editor);
 
 	void _notification(int p_what);
+	void _filesystem_changed();
 
 	void show_editor();
 	void hide_editor();

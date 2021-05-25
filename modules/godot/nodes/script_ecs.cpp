@@ -6,6 +6,7 @@
 #include "core/config/project_settings.h"
 #include "core/io/resource_loader.h"
 #include "core/object/script_language.h"
+#include "editor/editor_file_system.h"
 #include "editor/editor_node.h"
 #include "entity.h"
 #include "shared_component_resource.h"
@@ -268,6 +269,40 @@ String ScriptEcs::system_save_script(const String &p_script_path, Ref<Script> p_
 
 	// Success
 	return "";
+}
+
+void ScriptEcs::reload_scripts() {
+	// Scan the script classes.
+	if (EditorFileSystem::get_singleton()->get_filesystem()) {
+		const uint64_t modificatio_time =
+				load_scripts(EditorFileSystem::get_singleton()->get_filesystem());
+		recent_modification_detected_time =
+				MAX(recent_modification_detected_time, modificatio_time);
+	}
+}
+
+uint64_t ScriptEcs::load_scripts(EditorFileSystemDirectory *p_dir) {
+	uint64_t recent_modification = 0;
+	for (int i = 0; i < p_dir->get_file_count(); i += 1) {
+		if (p_dir->get_file_import_is_valid(i) == false) {
+			continue;
+		} else if (p_dir->get_file_modified_time(i) <= recent_modification_detected_time) {
+			continue;
+		} else if (p_dir->get_file_script_class_extends(i) == "System") {
+			print_line("This file is a System: " + p_dir->get_file_path(i));
+		} else if (p_dir->get_file_script_class_extends(i) == "Component") {
+			print_line("This file is a Component : " + p_dir->get_file_path(i));
+		} else {
+			continue;
+		}
+
+		recent_modification = MAX(recent_modification, p_dir->get_file_modified_time(i));
+	}
+	for (int i = 0; i < p_dir->get_subdir_count(); i += 1) {
+		const uint64_t dir_modification_time = load_scripts(p_dir->get_subdir(i));
+		recent_modification = MAX(recent_modification, dir_modification_time);
+	}
+	return recent_modification;
 }
 
 void ScriptEcs::define_editor_default_component_properties() {

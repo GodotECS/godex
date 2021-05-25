@@ -656,6 +656,17 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 }
 
 void EditorWorldECS::_notification(int p_what) {
+	switch (p_what) {
+		case NOTIFICATION_ENTER_TREE: {
+			EditorFileSystem::get_singleton()->connect("filesystem_changed", callable_mp(this, &EditorWorldECS::_filesystem_changed));
+		}
+	}
+}
+
+void EditorWorldECS::_filesystem_changed() {
+	if (ScriptEcs::get_singleton()) {
+		ScriptEcs::get_singleton()->reload_scripts();
+	}
 }
 
 void EditorWorldECS::show_editor() {
