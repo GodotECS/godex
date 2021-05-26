@@ -23,6 +23,12 @@ ScriptEcs *ScriptEcs::get_singleton() {
 
 ScriptEcs::~ScriptEcs() {
 	singleton = nullptr;
+
+	component_names.reset();
+	components.reset();
+
+	system_names.reset();
+	systems.reset();
 }
 
 Vector<StringName> ScriptEcs::spawner_get_components(const StringName &spawner_name) {
@@ -50,85 +56,57 @@ Vector<StringName> ScriptEcs::spawner_get_components(const StringName &spawner_n
 	return ret;
 }
 
-void ScriptEcs::load_components() {
-	if (component_loaded) {
-		return;
-	}
-	component_loaded = true;
-
-	if (ProjectSettings::get_singleton()->has_setting("ECS/Component/scripts") == false) {
-		return;
-	}
-
-	const Array scripts = ProjectSettings::get_singleton()->get_setting("ECS/Component/scripts");
-	for (int i = 0; i < scripts.size(); i += 1) {
-		reload_component(scripts[i]);
-	}
-}
-
-StringName ScriptEcs::reload_component(const String &p_path) {
+Ref<Component> ScriptEcs::reload_component(const String &p_path) {
 	const StringName name = p_path.get_file();
-	if (is_script_component(name) == false) {
-		// Component doesn't exists.
+	const int64_t index = component_names.find(name);
+	Ref<Component> component = index >= 0 ? components[index] : Ref<Component>();
+	if (component.is_null()) {
+		// Component doesn't exists yet.
 
 		Ref<Script> script = ResourceLoader::load(p_path);
 
-		ERR_FAIL_COND_V_MSG(script.is_null(), StringName(), "The script [" + p_path + "] can't be loaded.");
-		ERR_FAIL_COND_V_MSG(script->is_valid() == false, StringName(), "The script [" + p_path + "] is not a valid script.");
-		ERR_FAIL_COND_V_MSG("Component" != script->get_instance_base_type(), StringName(), "This script [" + p_path + "] is not extending `Component`.");
+		ERR_FAIL_COND_V_MSG(script.is_null(), Ref<Component>(), "The script [" + p_path + "] can't be loaded.");
+		ERR_FAIL_COND_V_MSG(script->is_valid() == false, Ref<Component>(), "The script [" + p_path + "] is not a valid script.");
+		ERR_FAIL_COND_V_MSG("Component" != script->get_instance_base_type(), Ref<Component>(), "This script [" + p_path + "] is not extending `Component`.");
 		const String res = Component::validate_script(script);
-		ERR_FAIL_COND_V_MSG(res != "", StringName(), "This script [" + p_path + "] is not valid: " + res);
+		ERR_FAIL_COND_V_MSG(res != "", Ref<Component>(), "This script [" + p_path + "] is not valid: " + res);
 
-		Ref<Component> component;
 		component.instance();
 		component->internal_set_name(name);
 		component->internal_set_component_script(script);
+		component->script_path = p_path;
 
 		component_names.push_back(name);
 		components.push_back(component);
+	} else {
+		const String res = Component::validate_script(component->get_script());
+		if (res != "") {
+			// This script is no more valid, unlaod it.
+			// Allignement between the vector is kept, since both use the same
+			// removal logic.
+			component_names.remove_unordered(index);
+			components.remove_unordered(index);
 
-		if (Engine::get_singleton()->is_editor_hint()) {
-			// In editor, fetch the spawners.
-
-			Vector<StringName> comp_spawners = component->get_spawners();
-			for (int i = 0; i < comp_spawners.size(); i += 1) {
-				Set<StringName> *spawner_components = spawners.lookup_ptr(comp_spawners[i]);
-				if (spawner_components == nullptr) {
-					spawners.insert(comp_spawners[i], Set<StringName>());
-					spawner_components = spawners.lookup_ptr(comp_spawners[i]);
-				}
-				spawner_components->insert(name);
-			}
+			ERR_FAIL_V_MSG(Ref<Component>(), "This script [" + p_path + "] is not a valid Component: " + res);
 		}
 	}
-	return name;
+
+	return component;
 }
 
 const LocalVector<Ref<Component>> &ScriptEcs::get_components() {
-	load_components();
-
 	return components;
 }
 
-bool ScriptEcs::is_script_component(const StringName &p_name) {
-	const int64_t index = component_names.find(p_name);
-	return index >= 0;
-}
-
 Ref<Component> ScriptEcs::get_script_component(const StringName &p_name) {
-	load_components();
-
 	const int64_t index = component_names.find(p_name);
 	return index < 0 ? Ref<Component>() : components[index];
 }
 
 void ScriptEcs::component_get_properties(const StringName &p_component_name, List<PropertyInfo> *r_properties) {
-	if (Engine::get_singleton()->is_editor_hint() &&
-			is_script_component(p_component_name)) {
-		Ref<Component> component = ScriptEcs::get_script_component(p_component_name);
-		if (component.is_valid()) {
-			component->get_component_property_list(r_properties);
-		}
+	Ref<Component> script_component = ScriptEcs::get_script_component(p_component_name);
+	if (Engine::get_singleton()->is_editor_hint() && script_component.is_valid()) {
+		script_component->get_component_property_list(r_properties);
 	} else {
 		const godex::component_id component = ECS::get_component_id(p_component_name);
 		ERR_FAIL_COND_MSG(component == godex::COMPONENT_NONE, "The component " + p_component_name + " doesn't exists.");
@@ -141,18 +119,17 @@ void ScriptEcs::component_get_properties(const StringName &p_component_name, Lis
 }
 
 bool ScriptEcs::component_get_property_default_value(const StringName &p_component_name, const StringName &p_property_name, Variant &r_ret) {
-	if (Engine::get_singleton()->is_editor_hint() &&
-			is_script_component(p_component_name)) {
-		if (component_is_shared(p_component_name)) {
-			// TODO by default the shared component is null?
-			r_ret = Variant();
-			return true;
-		} else {
-			// This is a Script Component and we are on editor.
-			Ref<Component> c = get_script_component(p_component_name);
-			r_ret = c->get_property_default_value(p_property_name);
-			return true;
-		}
+	if (component_is_shared(p_component_name)) {
+		// TODO by default the shared component is null?
+		r_ret = Variant();
+		return true;
+	}
+
+	Ref<Component> script_component = get_script_component(p_component_name);
+	if (Engine::get_singleton()->is_editor_hint() && script_component.is_valid()) {
+		// This is a Script Component and we are on editor.
+		r_ret = script_component->get_property_default_value(p_property_name);
+		return true;
 	} else {
 		// We are not on editor or this is a native component.
 		const godex::component_id id = ECS::get_component_id(p_component_name);
@@ -163,34 +140,12 @@ bool ScriptEcs::component_get_property_default_value(const StringName &p_compone
 }
 
 bool ScriptEcs::component_is_shared(const StringName &p_component_name) {
-	if (is_script_component(p_component_name)) {
+	if (get_script_component(p_component_name).is_valid()) {
 		// TODO Not yet supported in GDScript.
 		return false;
 	} else {
 		return ECS::is_component_sharable(ECS::get_component_id(p_component_name));
 	}
-}
-
-String ScriptEcs::component_save_script(const String &p_script_path, Ref<Script> p_script) {
-	// The script is valid, store it.
-	ERR_FAIL_COND_V_MSG(Engine::get_singleton()->is_editor_hint() == false, "Not in editor.", "Not in editor.");
-
-	String err = Component::validate_script(p_script);
-	if (err != "") {
-		// Component not valid.
-		return String(TTR("The script [")) + p_script_path + String(TTR("] validation failed: ")) + err;
-	}
-
-	// Save script path.
-	if (save_script("ECS/Component/scripts", p_script_path) == false) {
-		return String(TTR("The")) + " Component [" + p_script_path + "] " + TTR("is already registered.");
-	}
-
-	// Load this component script so we can operate on it.
-	ScriptEcs::reload_component(p_script_path);
-
-	// Success
-	return "";
 }
 
 void ScriptEcs::add_system_to_bundle(const StringName &p_system_name, const StringName &p_system_bundle_name) {
@@ -204,74 +159,58 @@ void ScriptEcs::add_system_to_bundle(const StringName &p_system_name, const Stri
 	system_bundles[index].systems.push_back(p_system_name);
 }
 
-void ScriptEcs::load_systems() {
-	if (systems_loaded) {
-		return;
-	}
-	systems_loaded = true;
-
-	if (ProjectSettings::get_singleton()->has_setting("ECS/System/scripts") == false) {
-		return;
-	}
-
-	const Array scripts = ProjectSettings::get_singleton()->get_setting("ECS/System/scripts");
-	for (int i = 0; i < scripts.size(); i += 1) {
-		reload_system(scripts[i]);
-	}
-}
-
-StringName ScriptEcs::reload_system(const String &p_path) {
+Ref<System> ScriptEcs::reload_system(const String &p_path) {
 	const StringName name = p_path.get_file();
-	if (is_script_system(name) == false) {
-		// System doesn't exists.
-
+	const int64_t index = system_names.find(name);
+	Ref<System> system = index >= 0 ? systems[index] : Ref<System>();
+	if (system.is_null()) {
+		// System doesn't exists, load it.
 		Ref<Script> script = ResourceLoader::load(p_path);
 
-		ERR_FAIL_COND_V_MSG(script.is_null(), StringName(), "The script [" + p_path + "] can't be loaded.");
-		ERR_FAIL_COND_V_MSG(script->is_valid() == false, StringName(), "The script [" + p_path + "] is not a valid script.");
-		ERR_FAIL_COND_V_MSG("System" != script->get_instance_base_type(), StringName(), "This script [" + p_path + "] is not extending `Component`.");
+		ERR_FAIL_COND_V_MSG(script.is_null(), Ref<System>(), "The script [" + p_path + "] can't be loaded.");
+		ERR_FAIL_COND_V_MSG(script->is_valid() == false, Ref<System>(), "The script [" + p_path + "] is not a valid script.");
+		ERR_FAIL_COND_V_MSG("System" != script->get_instance_base_type(), Ref<System>(), "This script [" + p_path + "] is not extending `Component`.");
 		const String res = System::validate_script(script);
-		ERR_FAIL_COND_V_MSG(res != "", StringName(), "This script [" + p_path + "] is not valid: " + res);
+		ERR_FAIL_COND_V_MSG(res != "", Ref<System>(), "This script [" + p_path + "] is not a valid System: " + res);
 
-		Ref<System> system;
 		system.instance();
+		system->set_script(script);
+		system->script_path = p_path;
 
 		system_names.push_back(name);
 		systems.push_back(system);
+	} else {
+		// The system exists, validate it.
+		const String res = System::validate_script(system->get_script());
+		if (res != "") {
+			// This script is no more valid, unlaod it.
+			// Allignement between the vector is kept, since both use the same
+			// removal logic.
+			system_names.remove_unordered(index);
+			systems.remove_unordered(index);
 
-		system->set_script(script);
+			ERR_FAIL_V_MSG(Ref<System>(), "This script [" + p_path + "] is not a valid System: " + res);
+		}
 	}
-	return name;
+
+	return system;
 }
 
-bool ScriptEcs::is_script_system(const StringName &p_name) {
+Ref<System> ScriptEcs::get_script_system(const StringName &p_name) {
 	const int64_t index = system_names.find(p_name);
-	return index >= 0;
-}
-
-String ScriptEcs::system_save_script(const String &p_script_path, Ref<Script> p_script) {
-	// The script is valid, store it.
-	ERR_FAIL_COND_V_MSG(Engine::get_singleton()->is_editor_hint() == false, "Not in editor.", "Not in editor.");
-
-	String err = System::validate_script(p_script);
-	if (err != "") {
-		// System not valid.
-		return String(TTR("The script [")) + p_script_path + String(TTR("] validation failed: ")) + err;
-	}
-
-	// Save script path.
-	if (save_script("ECS/System/scripts", p_script_path) == false) {
-		return String(TTR("The")) + " System [" + p_script_path + "] " + TTR("is already registered.");
-	}
-
-	// Make this script available so we can operate on it.
-	reload_system(p_script_path);
-
-	// Success
-	return "";
+	return index >= 0 ? systems[index] : Ref<System>();
 }
 
 void ScriptEcs::reload_scripts() {
+	// Mark the systems and components as not verified. This allow to detect the
+	// deleted scripts.
+	for (uint32_t i = 0; i < systems.size(); i += 1) {
+		systems[i]->verified = false;
+	}
+	for (uint32_t i = 0; i < components.size(); i += 1) {
+		components[i]->verified = false;
+	}
+
 	// Scan the script classes.
 	if (EditorFileSystem::get_singleton()->get_filesystem()) {
 		const uint64_t modificatio_time =
@@ -279,25 +218,100 @@ void ScriptEcs::reload_scripts() {
 		recent_modification_detected_time =
 				MAX(recent_modification_detected_time, modificatio_time);
 	}
+
+	for (int i = int(systems.size()) - 1; i >= 0; i -= 1) {
+		if (systems[i]->verified == false) {
+			// Remove the path from the stored systems.
+			remove_script("ECS/System/scripts", systems[i]->get_script_path());
+			// The script for this system doesn't exist anymore.
+			// Remove it.
+			system_names.remove_unordered(i);
+			systems.remove_unordered(i);
+		}
+	}
+	for (int i = int(components.size()) - 1; i >= 0; i -= 1) {
+		if (components[i]->verified == false) {
+			// Remove the path from the stored systems.
+			remove_script("ECS/Component/scripts", components[i]->get_script_path());
+			// The script for this system doesn't exist anymore.
+			// Remove it.
+			component_names.remove_unordered(i);
+			components.remove_unordered(i);
+		}
+	}
+
+	define_editor_default_component_properties();
 }
 
 uint64_t ScriptEcs::load_scripts(EditorFileSystemDirectory *p_dir) {
 	uint64_t recent_modification = 0;
 	for (int i = 0; i < p_dir->get_file_count(); i += 1) {
+		const bool changed = p_dir->get_file_modified_time(i) > recent_modification_detected_time;
+		const String class_extends = p_dir->get_file_script_class_extends(i);
+
 		if (p_dir->get_file_import_is_valid(i) == false) {
 			continue;
-		} else if (p_dir->get_file_modified_time(i) <= recent_modification_detected_time) {
-			continue;
-		} else if (p_dir->get_file_script_class_extends(i) == "System") {
-			print_line("This file is a System: " + p_dir->get_file_path(i));
-		} else if (p_dir->get_file_script_class_extends(i) == "Component") {
-			print_line("This file is a Component : " + p_dir->get_file_path(i));
+		} else if (class_extends == "System") {
+			Ref<System> system;
+			if (changed) {
+				system = reload_system(p_dir->get_file_path(i));
+			} else {
+				// Just use the previos one.
+				system = get_script_system(p_dir->get_file(i));
+			}
+			if (system.is_valid()) {
+				system->verified = true;
+				// Make sure the path is stored.
+				save_script("ECS/System/scripts", p_dir->get_file_path(i));
+			} else {
+				// Make sure the path removed.
+				remove_script("ECS/System/scripts", p_dir->get_file_path(i));
+			}
+
+		} else if (class_extends == "Component") {
+			Ref<Component> component;
+			if (changed) {
+				// Reload the script.
+				component = reload_component(p_dir->get_file_path(i));
+			} else {
+				// Just use the previos one.
+				component = get_script_component(p_dir->get_file(i));
+			}
+			if (component.is_valid()) {
+				component->verified = true;
+
+				if (changed) {
+					// Fetch the spawners.
+					Vector<StringName> comp_spawners = component->get_spawners();
+					for (int y = 0; y < comp_spawners.size(); y += 1) {
+						Set<StringName> *spawner_components = spawners.lookup_ptr(comp_spawners[y]);
+						if (spawner_components == nullptr) {
+							spawners.insert(comp_spawners[y], Set<StringName>());
+							spawner_components = spawners.lookup_ptr(comp_spawners[y]);
+						}
+						spawner_components->insert(p_dir->get_file(i));
+					}
+				}
+
+				save_script("ECS/Component/scripts", p_dir->get_file_path(i));
+			} else {
+				if (changed) {
+					// Make sure this component is not part of any spawner.
+					for (OAHashMap<StringName, Set<StringName>>::Iterator it = spawners.iter(); it.valid; it = spawners.next_iter(it)) {
+						it.value->erase(p_dir->get_file(i));
+					}
+				}
+
+				remove_script("ECS/Component/scripts", p_dir->get_file_path(i));
+			}
 		} else {
 			continue;
 		}
 
 		recent_modification = MAX(recent_modification, p_dir->get_file_modified_time(i));
 	}
+
+	// Load the script on the sub directories.
 	for (int i = 0; i < p_dir->get_subdir_count(); i += 1) {
 		const uint64_t dir_modification_time = load_scripts(p_dir->get_subdir(i));
 		recent_modification = MAX(recent_modification, dir_modification_time);
@@ -309,15 +323,12 @@ void ScriptEcs::define_editor_default_component_properties() {
 	const StringName entity_3d_name = Entity3D::get_class_static();
 	const StringName entity_2d_name = Entity2D::get_class_static();
 
-	if (def_defined_static_components == false) {
-		def_defined_static_components = true;
-		for (godex::component_id id = 0; id < ECS::get_components_count(); id += 1) {
-			const LocalVector<PropertyInfo> *props = ECS::get_component_properties(id);
-			for (uint32_t p = 0; p < props->size(); p += 1) {
-				Variant def = ECS::get_component_property_default(id, (*props)[p].name);
-				ClassDB::set_property_default_value(entity_3d_name, StringName(String(ECS::get_component_name(id)) + "/" + (*props)[p].name), def);
-				ClassDB::set_property_default_value(entity_2d_name, StringName(String(ECS::get_component_name(id)) + "/" + (*props)[p].name), def);
-			}
+	for (godex::component_id id = 0; id < ECS::get_components_count(); id += 1) {
+		const LocalVector<PropertyInfo> *props = ECS::get_component_properties(id);
+		for (uint32_t p = 0; p < props->size(); p += 1) {
+			Variant def = ECS::get_component_property_default(id, (*props)[p].name);
+			ClassDB::set_property_default_value(entity_3d_name, StringName(String(ECS::get_component_name(id)) + "/" + (*props)[p].name), def);
+			ClassDB::set_property_default_value(entity_2d_name, StringName(String(ECS::get_component_name(id)) + "/" + (*props)[p].name), def);
 		}
 	}
 
@@ -342,7 +353,6 @@ void ScriptEcs::register_runtime_scripts() {
 	if (ecs_initialized) {
 		return;
 	}
-
 	ecs_initialized = true;
 
 	register_dynamic_components();
@@ -351,7 +361,14 @@ void ScriptEcs::register_runtime_scripts() {
 }
 
 void ScriptEcs::register_dynamic_components() {
-	load_components();
+	if (ProjectSettings::get_singleton()->has_setting("ECS/Component/scripts") == false) {
+		return;
+	}
+
+	const Array scripts = ProjectSettings::get_singleton()->get_setting("ECS/Component/scripts");
+	for (int i = 0; i < scripts.size(); i += 1) {
+		reload_component(scripts[i]);
+	}
 
 	for (uint32_t i = 0; i < components.size(); i += 1) {
 		components[i]->internal_set_name(component_names[i]);
@@ -380,7 +397,14 @@ void ScriptEcs::register_dynamic_component(Component *p_component) {
 }
 
 void ScriptEcs::register_dynamic_systems() {
-	load_systems();
+	if (ProjectSettings::get_singleton()->has_setting("ECS/System/scripts") == false) {
+		return;
+	}
+
+	const Array scripts = ProjectSettings::get_singleton()->get_setting("ECS/System/scripts");
+	for (int i = 0; i < scripts.size(); i += 1) {
+		reload_system(scripts[i]);
+	}
 
 	for (uint32_t i = 0; i < systems.size(); i += 1) {
 		systems[i]->id = ECS::register_dynamic_system(system_names[i]).get_id();
@@ -390,39 +414,35 @@ void ScriptEcs::register_dynamic_systems() {
 	}
 }
 
-void ScriptEcs::fetch_systems_execution_info() {
-	load_systems();
-
-	system_bundle_names.clear();
-	system_bundles.clear();
-
-	for (uint32_t i = 0; i < systems.size(); i += 1) {
-		systems[i]->fetch_execution_data();
-	}
-}
-
-bool ScriptEcs::save_script(const String &p_setting_list_name, const String &p_script_path) {
-	ERR_FAIL_COND_V_MSG(EditorNode::get_singleton() == nullptr, false, "The editor is not defined.");
+void ScriptEcs::save_script(const String &p_setting_list_name, const String &p_script_path) {
+	ERR_FAIL_COND_MSG(EditorNode::get_singleton() == nullptr, "The editor is not defined.");
 
 	Array scripts;
 	if (ProjectSettings::get_singleton()->has_setting(p_setting_list_name)) {
 		scripts = ProjectSettings::get_singleton()->get_setting(p_setting_list_name);
 	}
 
-	if (scripts.find(p_script_path) >= 0) {
-		// Script already stored.
-		return false;
-	} else {
-		Array prev_scripts = scripts.duplicate(true);
+	if (scripts.find(p_script_path) < 0) {
 		scripts.push_back(p_script_path);
+		ProjectSettings::get_singleton()->set_setting(p_setting_list_name, scripts);
+		ProjectSettings::get_singleton()->save();
+	}
+}
 
-		EditorNode::get_undo_redo()->create_action(TTR("Save script " + p_setting_list_name));
-		EditorNode::get_undo_redo()->add_do_method(ProjectSettings::get_singleton(), "set_setting", p_setting_list_name, scripts);
-		EditorNode::get_undo_redo()->add_do_method(ProjectSettings::get_singleton(), "save");
-		EditorNode::get_undo_redo()->add_undo_method(ProjectSettings::get_singleton(), "set_setting", p_setting_list_name, prev_scripts);
-		EditorNode::get_undo_redo()->add_undo_method(ProjectSettings::get_singleton(), "save");
-		EditorNode::get_undo_redo()->commit_action();
+void ScriptEcs::remove_script(const String &p_setting_list_name, const String &p_script_path) {
+	ERR_FAIL_COND_MSG(EditorNode::get_singleton() == nullptr, "The editor is not defined.");
 
-		return true;
+	if (ProjectSettings::get_singleton()->has_setting(p_setting_list_name) == false) {
+		// Nothing to do.
+		return;
+	}
+
+	Array scripts = ProjectSettings::get_singleton()->get_setting(p_setting_list_name);
+	const int index = scripts.find(p_script_path);
+
+	if (index >= 0) {
+		scripts.remove(index);
+		ProjectSettings::get_singleton()->set_setting(p_setting_list_name, scripts);
+		ProjectSettings::get_singleton()->save();
 	}
 }

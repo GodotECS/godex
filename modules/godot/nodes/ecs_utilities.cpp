@@ -52,18 +52,19 @@ void System::prepare(godex::DynamicSystemInfo *p_info, godex::system_id p_id) {
 	info->build();
 }
 
-void System::fetch_execution_data() {
+void System::fetch_execution_data(ScriptSystemExecutionInfo *r_info) {
 	ERR_FAIL_COND_MSG(get_script_instance() == nullptr, "[FATAL] This is not supposed to happen.");
 
-	execution_phase = PHASE_PROCESS;
-	dependencies.clear();
+	execution_info = r_info;
 
 	Callable::CallError err;
-	fetching_execution_data = true;
-	prepare_in_progress = true;
 	get_script_instance()->call("_prepare", nullptr, 0, err);
-	fetching_execution_data = false;
-	prepare_in_progress = false;
+
+	execution_info = nullptr;
+}
+
+const String &System::get_script_path() const {
+	return script_path;
 }
 
 void System::__force_set_system_info(godex::DynamicSystemInfo *p_info, godex::system_id p_id) {
@@ -81,18 +82,21 @@ System::~System() {
 }
 
 void System::execute_in_phase(Phase p_phase) {
-	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
-	execution_phase = p_phase;
+	if (execution_info != nullptr) {
+		execution_info->execution_phase = p_phase;
+	}
 }
 
 void System::execute_after(const StringName &p_system_name) {
-	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
-	dependencies.push_back({ false, p_system_name });
+	if (execution_info != nullptr) {
+		execution_info->dependencies.push_back({ false, p_system_name });
+	}
 }
 
 void System::execute_before(const StringName &p_system_name) {
-	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
-	dependencies.push_back({ true, p_system_name });
+	if (execution_info != nullptr) {
+		execution_info->dependencies.push_back({ true, p_system_name });
+	}
 }
 
 void System::add_to_bundle(const StringName &p_bundle_name) {
@@ -102,7 +106,8 @@ void System::add_to_bundle(const StringName &p_bundle_name) {
 }
 
 void System::set_space(Space p_space) {
-	if (fetching_execution_data == true) {
+	if (execution_info != nullptr) {
+		// Nothing to do.
 		return;
 	}
 	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
@@ -110,7 +115,8 @@ void System::set_space(Space p_space) {
 }
 
 void System::with_databag(uint32_t p_databag_id, Mutability p_mutability) {
-	if (fetching_execution_data == true) {
+	if (execution_info != nullptr) {
+		// Nothing to do.
 		return;
 	}
 	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
@@ -118,7 +124,8 @@ void System::with_databag(uint32_t p_databag_id, Mutability p_mutability) {
 }
 
 void System::with_storage(uint32_t p_component_id) {
-	if (fetching_execution_data == true) {
+	if (execution_info != nullptr) {
+		// Nothing to do.
 		return;
 	}
 	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
@@ -126,7 +133,8 @@ void System::with_storage(uint32_t p_component_id) {
 }
 
 void System::with_component(uint32_t p_component_id, Mutability p_mutability) {
-	if (fetching_execution_data == true) {
+	if (execution_info != nullptr) {
+		// Nothing to do.
 		return;
 	}
 	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
@@ -134,7 +142,8 @@ void System::with_component(uint32_t p_component_id, Mutability p_mutability) {
 }
 
 void System::maybe_component(uint32_t p_component_id, Mutability p_mutability) {
-	if (fetching_execution_data == true) {
+	if (execution_info != nullptr) {
+		// Nothing to do.
 		return;
 	}
 	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
@@ -142,7 +151,8 @@ void System::maybe_component(uint32_t p_component_id, Mutability p_mutability) {
 }
 
 void System::changed_component(uint32_t p_component_id, Mutability p_mutability) {
-	if (fetching_execution_data == true) {
+	if (execution_info != nullptr) {
+		// Nothing to do.
 		return;
 	}
 	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
@@ -150,7 +160,8 @@ void System::changed_component(uint32_t p_component_id, Mutability p_mutability)
 }
 
 void System::not_component(uint32_t p_component_id) {
-	if (fetching_execution_data == true) {
+	if (execution_info != nullptr) {
+		// Nothing to do.
 		return;
 	}
 	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
@@ -182,6 +193,10 @@ String System::validate_script(Ref<Script> p_script) {
 }
 
 void Component::_bind_methods() {}
+
+const String &Component::get_script_path() const {
+	return script_path;
+}
 
 Component::Component() {}
 
@@ -342,7 +357,7 @@ Dictionary StaticComponentDepot::get_properties_data() const {
 
 void ScriptComponentDepot::init(const StringName &p_name) {
 	ERR_FAIL_COND_MSG(component_name != StringName(), "The component is already initialized.");
-	ERR_FAIL_COND_MSG(ScriptEcs::get_singleton()->is_script_component(p_name) == false, "Thid component " + p_name + " is not a script component.");
+	ERR_FAIL_COND_MSG(ScriptEcs::get_singleton()->get_script_component(p_name).is_valid() == false, "Thid component " + p_name + " is not a script component.");
 	component_name = p_name;
 }
 

@@ -521,7 +521,7 @@ void EntityInternal<C>::add_component(const StringName &p_component_name, const 
 			Ref<SharedComponentDepot> d;
 			d.instance();
 			depot = d;
-		} else if (ScriptEcs::get_singleton()->is_script_component(p_component_name)) {
+		} else if (ScriptEcs::get_singleton()->get_script_component(p_component_name).is_valid()) {
 			Ref<ScriptComponentDepot> d;
 			d.instance();
 			depot = d;

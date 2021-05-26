@@ -316,15 +316,6 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		menu_wrapper->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 		main_vb->add_child(menu_wrapper);
 
-		Button *create_sys_btn = memnew(Button);
-		create_sys_btn->set_text(TTR("New system / component"));
-		create_sys_btn->set_icon(editor->get_theme_base()->get_theme_icon("ScriptCreate", "EditorIcons"));
-		create_sys_btn->set_flat(true);
-		create_sys_btn->set_h_size_flags(0.0);
-		create_sys_btn->set_v_size_flags(0.0);
-		create_sys_btn->connect("pressed", callable_mp(this, &EditorWorldECS::create_sys_show));
-		menu_wrapper->add_child(create_sys_btn);
-
 		Button *create_comp_btn = memnew(Button);
 		create_comp_btn->set_text(TTR("Components"));
 		create_comp_btn->set_icon(editor->get_theme_base()->get_theme_icon("Load", "EditorIcons"));
@@ -450,7 +441,6 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		pipeline_window_rename->set_title(TTR("Rename pipeline"));
 		pipeline_window_rename->set_hide_on_ok(true);
 		pipeline_window_rename->get_ok_button()->set_text(TTR("Ok"));
-		pipeline_window_rename->connect("confirmed", callable_mp(this, &EditorWorldECS::add_script_do));
 		add_child(pipeline_window_rename);
 
 		VBoxContainer *vert_container = memnew(VBoxContainer);
@@ -508,35 +498,6 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		add_sys_desc->set_readonly(true);
 		add_sys_desc->add_theme_color_override("font_color_readonly", Color(1.0, 1.0, 1.0));
 		vert_container->add_child(add_sys_desc);
-	}
-
-	// ~~ Create script system window ~~
-	{
-		add_script_window = memnew(ConfirmationDialog);
-		add_script_window->set_min_size(Size2i(500, 180));
-		add_script_window->set_title(TTR("Add script System / Component"));
-		add_script_window->set_hide_on_ok(false);
-		add_script_window->get_ok_button()->set_text(TTR("Create"));
-		add_script_window->connect("confirmed", callable_mp(this, &EditorWorldECS::add_script_do));
-		add_child(add_script_window);
-
-		VBoxContainer *vert_container = memnew(VBoxContainer);
-		vert_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		vert_container->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		add_script_window->add_child(vert_container);
-
-		Label *lbl = memnew(Label);
-		lbl->set_text("Script path");
-		vert_container->add_child(lbl);
-
-		add_script_path = memnew(LineEdit);
-		add_script_path->set_placeholder(TTR("Script path"));
-		vert_container->add_child(add_script_path);
-
-		add_script_error_lbl = memnew(Label);
-		add_script_error_lbl->hide();
-		add_script_error_lbl->add_theme_color_override("font_color", Color(1.0, 0.0, 0.0));
-		vert_container->add_child(add_script_error_lbl);
 	}
 
 	// ~~ Component manager ~~
@@ -683,7 +644,6 @@ void EditorWorldECS::show_editor() {
 	}
 
 	add_sys_hide();
-	create_sys_hide();
 	pipeline_window_rename->set_visible(false);
 	pipeline_window_confirm_remove->set_visible(false);
 
@@ -695,7 +655,6 @@ void EditorWorldECS::show_editor() {
 void EditorWorldECS::hide_editor() {
 	hide();
 	add_sys_hide();
-	create_sys_hide();
 }
 
 void EditorWorldECS::set_world_ecs(WorldECS *p_world) {
@@ -1112,60 +1071,6 @@ void EditorWorldECS::add_sys_add() {
 	// the array not trivially.
 	editor->get_undo_redo()->add_undo_method(pipeline.ptr(), "set_systems_name", pipeline->get_systems_name().duplicate(true));
 	editor->get_undo_redo()->commit_action();
-}
-
-void EditorWorldECS::create_sys_show() {
-	// Display the modal window centered.
-	const Vector2i modal_pos = (Vector2i(get_viewport_rect().size) - add_script_window->get_size()) / 2.0;
-	add_script_window->set_position(modal_pos);
-	add_script_window->set_visible(true);
-	add_script_error_lbl->hide();
-}
-
-void EditorWorldECS::create_sys_hide() {
-	add_script_window->set_visible(false);
-}
-
-void EditorWorldECS::add_script_do() {
-	// Test creating script system list.
-
-	const String script_path = add_script_path->get_text().strip_edges();
-
-	Ref<Script> script = ResourceLoader::load(script_path);
-	// Check the script path.
-	if (script.is_null()) {
-		add_script_error_lbl->set_text(String(TTR("The script path [")) + script_path + TTR("] doesn't point to a script."));
-		add_script_error_lbl->show();
-		return;
-	}
-
-	if (script->is_valid() == false) {
-		add_script_error_lbl->set_text(String(TTR("The script [")) + script_path + String(TTR("] has some errors, fix these.")));
-		add_script_error_lbl->show();
-		return;
-	}
-
-	String err = "";
-	if ("System" == script->get_instance_base_type()) {
-		err = ScriptEcs::get_singleton()->system_save_script(script_path, script);
-
-	} else if ("Component" == script->get_instance_base_type()) {
-		err = ScriptEcs::get_singleton()->component_save_script(script_path, script);
-
-	} else if ("Databag" == script->get_instance_base_type()) {
-		err = databag_validate_script(script);
-
-	} else {
-		err = TTR("The script must extend a `System` a `Component` or a `Databag`.");
-	}
-
-	if (err != "") {
-		add_script_error_lbl->set_text(err);
-		add_script_error_lbl->show();
-	} else {
-		add_script_path->set_text("");
-		add_script_window->set_visible(false);
-	}
 }
 
 void EditorWorldECS::components_manage_show() {

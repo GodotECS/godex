@@ -12,22 +12,28 @@ namespace godex {
 class DynamicSystemInfo;
 }
 
+struct ScriptSystemExecutionInfo {
+	Phase execution_phase = PHASE_PROCESS;
+	LocalVector<Dependency> dependencies;
+};
+
 class System : public Resource {
 	GDCLASS(System, Resource)
 
 	friend class ScriptEcs;
 
+	// Used by the editor to know if the associated script exists.
+	bool verified = false;
+	String script_path;
 	godex::DynamicSystemInfo *info = nullptr;
 	godex::system_id id = UINT32_MAX;
-	bool fetching_execution_data = false;
+	ScriptSystemExecutionInfo *execution_info = nullptr;
 	bool prepare_in_progress = false;
-
-	Phase execution_phase = PHASE_PROCESS;
-	LocalVector<Dependency> dependencies;
 
 	static void _bind_methods();
 	void prepare(godex::DynamicSystemInfo *p_info, godex::system_id p_id);
-	void fetch_execution_data();
+	void fetch_execution_data(ScriptSystemExecutionInfo *r_info);
+	const String &get_script_path() const;
 
 public:
 	enum Mutability {
@@ -76,10 +82,14 @@ class Component : public Resource {
 
 	friend class ScriptEcs;
 
+	// Used by the editor to know if the associated script exists.
+	bool verified = false;
+	String script_path;
 	StringName name;
 	Ref<Script> component_script;
 
 	static void _bind_methods();
+	const String &get_script_path() const;
 
 public:
 	Component();

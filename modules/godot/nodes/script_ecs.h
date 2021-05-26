@@ -22,10 +22,6 @@ class ScriptEcs : public Object {
 	uint64_t recent_modification_detected_time = 0;
 
 	bool def_defined_static_components = false;
-	/// Used to know if the previously stored `Component`s got loaded.
-	bool component_loaded = false;
-	/// Used to know if the previously stored `System`s got loaded.
-	bool systems_loaded = false;
 	/// Used to know if the ScriptedEcs components are registered.
 	bool ecs_initialized = false;
 
@@ -56,17 +52,11 @@ public:
 	Vector<StringName> spawner_get_components(const StringName &spawner_name);
 
 	// ---------------------------------------------------------------- Component
-	/// Loads components.
-	void load_components();
-
 	/// Load or Reloads a component. Retuns the component id.
-	StringName reload_component(const String &p_path);
+	Ref<Component> reload_component(const String &p_path);
 
 	/// Returns all the scripted components.
 	const LocalVector<Ref<Component>> &get_components();
-
-	/// Returns `true` if the given name points to a scripted component.
-	bool is_script_component(const StringName &p_name);
 
 	/// Returns a script component.
 	Ref<Component> get_script_component(const StringName &p_name);
@@ -75,28 +65,14 @@ public:
 	bool component_get_property_default_value(const StringName &p_component_name, const StringName &p_property_name, Variant &r_ret);
 	bool component_is_shared(const StringName &p_component_name);
 
-	/// Store this script as component.
-	/// Returns an empty string if succeede or the error message to disaply.
-	/// Must be used in editor.
-	String component_save_script(const String &p_script_path, Ref<Script> p_script);
-
 	// ------------------------------------------------------------------ Databag
 
 	// ----------------------------------------------------------- System Bundles
 	void add_system_to_bundle(const StringName &p_system_name, const StringName &p_system_bundle_name);
 
 	// ------------------------------------------------------------------- System
-
-	/// Loads systems.
-	void load_systems();
-
-	StringName reload_system(const String &p_path);
-	bool is_script_system(const StringName &p_name);
-
-	/// Store this script as System.
-	/// Returns an empty string if succeede or the error message to disaply.
-	/// Must be used in editor.
-	String system_save_script(const String &p_script_path, Ref<Script> p_script);
+	Ref<System> reload_system(const String &p_path);
+	Ref<System> get_script_system(const StringName &p_name);
 
 	// ------------------------------------------------------------------ Runtime
 
@@ -110,8 +86,7 @@ public:
 	void register_dynamic_component(Component *p_component);
 	void register_dynamic_systems();
 
-	void fetch_systems_execution_info();
-
 private:
-	bool save_script(const String &p_setting_list_name, const String &p_script_path);
+	void save_script(const String &p_setting_list_name, const String &p_script_path);
+	void remove_script(const String &p_setting_list_name, const String &p_script_path);
 };
