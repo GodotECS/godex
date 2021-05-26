@@ -56,44 +56,6 @@ Vector<StringName> ScriptEcs::spawner_get_components(const StringName &spawner_n
 	return ret;
 }
 
-Ref<Component> ScriptEcs::reload_component(const String &p_path) {
-	const StringName name = p_path.get_file();
-	const int64_t index = component_names.find(name);
-	Ref<Component> component = index >= 0 ? components[index] : Ref<Component>();
-	if (component.is_null()) {
-		// Component doesn't exists yet.
-
-		Ref<Script> script = ResourceLoader::load(p_path);
-
-		ERR_FAIL_COND_V_MSG(script.is_null(), Ref<Component>(), "The script [" + p_path + "] can't be loaded.");
-		ERR_FAIL_COND_V_MSG(script->is_valid() == false, Ref<Component>(), "The script [" + p_path + "] is not a valid script.");
-		ERR_FAIL_COND_V_MSG("Component" != script->get_instance_base_type(), Ref<Component>(), "This script [" + p_path + "] is not extending `Component`.");
-		const String res = Component::validate_script(script);
-		ERR_FAIL_COND_V_MSG(res != "", Ref<Component>(), "This script [" + p_path + "] is not valid: " + res);
-
-		component.instance();
-		component->internal_set_name(name);
-		component->internal_set_component_script(script);
-		component->script_path = p_path;
-
-		component_names.push_back(name);
-		components.push_back(component);
-	} else {
-		const String res = Component::validate_script(component->get_script());
-		if (res != "") {
-			// This script is no more valid, unlaod it.
-			// Allignement between the vector is kept, since both use the same
-			// removal logic.
-			component_names.remove_unordered(index);
-			components.remove_unordered(index);
-
-			ERR_FAIL_V_MSG(Ref<Component>(), "This script [" + p_path + "] is not a valid Component: " + res);
-		}
-	}
-
-	return component;
-}
-
 const LocalVector<Ref<Component>> &ScriptEcs::get_components() {
 	return components;
 }
@@ -159,41 +121,12 @@ void ScriptEcs::add_system_to_bundle(const StringName &p_system_name, const Stri
 	system_bundles[index].systems.push_back(p_system_name);
 }
 
-Ref<System> ScriptEcs::reload_system(const String &p_path) {
-	const StringName name = p_path.get_file();
-	const int64_t index = system_names.find(name);
-	Ref<System> system = index >= 0 ? systems[index] : Ref<System>();
-	if (system.is_null()) {
-		// System doesn't exists, load it.
-		Ref<Script> script = ResourceLoader::load(p_path);
+const LocalVector<StringName> &ScriptEcs::get_script_system_names() {
+	return system_names;
+}
 
-		ERR_FAIL_COND_V_MSG(script.is_null(), Ref<System>(), "The script [" + p_path + "] can't be loaded.");
-		ERR_FAIL_COND_V_MSG(script->is_valid() == false, Ref<System>(), "The script [" + p_path + "] is not a valid script.");
-		ERR_FAIL_COND_V_MSG("System" != script->get_instance_base_type(), Ref<System>(), "This script [" + p_path + "] is not extending `Component`.");
-		const String res = System::validate_script(script);
-		ERR_FAIL_COND_V_MSG(res != "", Ref<System>(), "This script [" + p_path + "] is not a valid System: " + res);
-
-		system.instance();
-		system->set_script(script);
-		system->script_path = p_path;
-
-		system_names.push_back(name);
-		systems.push_back(system);
-	} else {
-		// The system exists, validate it.
-		const String res = System::validate_script(system->get_script());
-		if (res != "") {
-			// This script is no more valid, unlaod it.
-			// Allignement between the vector is kept, since both use the same
-			// removal logic.
-			system_names.remove_unordered(index);
-			systems.remove_unordered(index);
-
-			ERR_FAIL_V_MSG(Ref<System>(), "This script [" + p_path + "] is not a valid System: " + res);
-		}
-	}
-
-	return system;
+const LocalVector<Ref<System>> &ScriptEcs::get_script_systems() {
+	return systems;
 }
 
 Ref<System> ScriptEcs::get_script_system(const StringName &p_name) {
@@ -222,7 +155,7 @@ void ScriptEcs::reload_scripts() {
 	for (int i = int(systems.size()) - 1; i >= 0; i -= 1) {
 		if (systems[i]->verified == false) {
 			// Remove the path from the stored systems.
-			remove_script("ECS/System/scripts", systems[i]->get_script_path());
+			remove_script("ECS/Autoload/scripts", systems[i]->get_script_path());
 			// The script for this system doesn't exist anymore.
 			// Remove it.
 			system_names.remove_unordered(i);
@@ -232,7 +165,7 @@ void ScriptEcs::reload_scripts() {
 	for (int i = int(components.size()) - 1; i >= 0; i -= 1) {
 		if (components[i]->verified == false) {
 			// Remove the path from the stored systems.
-			remove_script("ECS/Component/scripts", components[i]->get_script_path());
+			remove_script("ECS/Autoload/scripts", components[i]->get_script_path());
 			// The script for this system doesn't exist anymore.
 			// Remove it.
 			component_names.remove_unordered(i);
@@ -246,69 +179,20 @@ void ScriptEcs::reload_scripts() {
 uint64_t ScriptEcs::load_scripts(EditorFileSystemDirectory *p_dir) {
 	uint64_t recent_modification = 0;
 	for (int i = 0; i < p_dir->get_file_count(); i += 1) {
-		const bool changed = p_dir->get_file_modified_time(i) > recent_modification_detected_time;
-		const String class_extends = p_dir->get_file_script_class_extends(i);
+		const String file_type = p_dir->get_file_type(i);
 
-		if (p_dir->get_file_import_is_valid(i) == false) {
-			continue;
-		} else if (class_extends == "System") {
-			Ref<System> system;
-			if (changed) {
-				system = reload_system(p_dir->get_file_path(i));
-			} else {
-				// Just use the previos one.
-				system = get_script_system(p_dir->get_file(i));
-			}
-			if (system.is_valid()) {
-				system->verified = true;
-				// Make sure the path is stored.
-				save_script("ECS/System/scripts", p_dir->get_file_path(i));
-			} else {
-				// Make sure the path removed.
-				remove_script("ECS/System/scripts", p_dir->get_file_path(i));
-			}
+		if (p_dir->get_file_import_is_valid(i) &&
+				(file_type == "GDScript" ||
+						file_type == "VisualScript" ||
+						file_type == "NativeScript" ||
+						file_type == "C#" ||
+						file_type == "Rust")) { //TODO add more?
 
-		} else if (class_extends == "Component") {
-			Ref<Component> component;
-			if (changed) {
-				// Reload the script.
-				component = reload_component(p_dir->get_file_path(i));
-			} else {
-				// Just use the previos one.
-				component = get_script_component(p_dir->get_file(i));
-			}
-			if (component.is_valid()) {
-				component->verified = true;
-
-				if (changed) {
-					// Fetch the spawners.
-					Vector<StringName> comp_spawners = component->get_spawners();
-					for (int y = 0; y < comp_spawners.size(); y += 1) {
-						Set<StringName> *spawner_components = spawners.lookup_ptr(comp_spawners[y]);
-						if (spawner_components == nullptr) {
-							spawners.insert(comp_spawners[y], Set<StringName>());
-							spawner_components = spawners.lookup_ptr(comp_spawners[y]);
-						}
-						spawner_components->insert(p_dir->get_file(i));
-					}
-				}
-
-				save_script("ECS/Component/scripts", p_dir->get_file_path(i));
-			} else {
-				if (changed) {
-					// Make sure this component is not part of any spawner.
-					for (OAHashMap<StringName, Set<StringName>>::Iterator it = spawners.iter(); it.valid; it = spawners.next_iter(it)) {
-						it.value->erase(p_dir->get_file(i));
-					}
-				}
-
-				remove_script("ECS/Component/scripts", p_dir->get_file_path(i));
-			}
-		} else {
-			continue;
+			const bool changed =
+					p_dir->get_file_modified_time(i) > recent_modification_detected_time;
+			reload_script(p_dir->get_file_path(i), p_dir->get_file(i), changed);
+			recent_modification = MAX(recent_modification, p_dir->get_file_modified_time(i));
 		}
-
-		recent_modification = MAX(recent_modification, p_dir->get_file_modified_time(i));
 	}
 
 	// Load the script on the sub directories.
@@ -355,21 +239,21 @@ void ScriptEcs::register_runtime_scripts() {
 	}
 	ecs_initialized = true;
 
+	if (ProjectSettings::get_singleton()->has_setting("ECS/Autoload/scripts") == false) {
+		return;
+	}
+
+	const Array scripts = ProjectSettings::get_singleton()->get_setting("ECS/Autoload/scripts");
+	for (int i = 0; i < scripts.size(); i += 1) {
+		reload_script(scripts[i], String(scripts[i]).get_file(), true);
+	}
+
 	register_dynamic_components();
 	// TODO register databags
 	register_dynamic_systems();
 }
 
 void ScriptEcs::register_dynamic_components() {
-	if (ProjectSettings::get_singleton()->has_setting("ECS/Component/scripts") == false) {
-		return;
-	}
-
-	const Array scripts = ProjectSettings::get_singleton()->get_setting("ECS/Component/scripts");
-	for (int i = 0; i < scripts.size(); i += 1) {
-		reload_component(scripts[i]);
-	}
-
 	for (uint32_t i = 0; i < components.size(); i += 1) {
 		components[i]->internal_set_name(component_names[i]);
 		register_dynamic_component(components[i].ptr());
@@ -397,21 +281,148 @@ void ScriptEcs::register_dynamic_component(Component *p_component) {
 }
 
 void ScriptEcs::register_dynamic_systems() {
-	if (ProjectSettings::get_singleton()->has_setting("ECS/System/scripts") == false) {
-		return;
-	}
-
-	const Array scripts = ProjectSettings::get_singleton()->get_setting("ECS/System/scripts");
-	for (int i = 0; i < scripts.size(); i += 1) {
-		reload_system(scripts[i]);
-	}
-
 	for (uint32_t i = 0; i < systems.size(); i += 1) {
 		systems[i]->id = ECS::register_dynamic_system(system_names[i]).get_id();
 		systems[i]->prepare(
 				ECS::get_dynamic_system_info(systems[i]->id),
 				systems[i]->id);
 	}
+}
+
+void ScriptEcs::reload_script(const String &p_path, const String &p_name, const bool p_force_reload) {
+	if (p_force_reload) {
+		bool is_valid = false;
+
+		Ref<Script> script = ResourceLoader::load(p_path);
+		ERR_FAIL_COND(script.is_null());
+
+		const StringName base_type = script->get_instance_base_type();
+		if (base_type == "System") {
+			Ref<System> system = reload_system(script, p_path, p_name);
+			if (system.is_valid()) {
+				system->verified = true;
+				is_valid = true;
+			}
+		} else if (base_type == "Component") {
+			Ref<Component> component = reload_component(script, p_path, p_name);
+			if (component.is_valid()) {
+				component->verified = true;
+				is_valid = true;
+
+				// Fetch the spawners.
+				Vector<StringName> comp_spawners = component->get_spawners();
+				for (int y = 0; y < comp_spawners.size(); y += 1) {
+					Set<StringName> *spawner_components = spawners.lookup_ptr(comp_spawners[y]);
+					if (spawner_components == nullptr) {
+						spawners.insert(comp_spawners[y], Set<StringName>());
+						spawner_components = spawners.lookup_ptr(comp_spawners[y]);
+					}
+					spawner_components->insert(p_name);
+				}
+			} else {
+				if (p_force_reload) {
+					// Make sure this component is not part of any spawner.
+					for (OAHashMap<StringName, Set<StringName>>::Iterator it = spawners.iter(); it.valid; it = spawners.next_iter(it)) {
+						it.value->erase(p_name);
+					}
+				}
+			}
+		} else {
+			// Not an ecs script, nothing to do.
+			return;
+		}
+
+		if (is_valid) {
+			// Make sure the path is stored.
+			save_script("ECS/Autoload/scripts", p_path);
+		} else {
+			// Make sure the path removed.
+			remove_script("ECS/Autoload/scripts", p_path);
+		}
+	} else {
+		Ref<System> system = get_script_system(p_name);
+		if (system.is_valid()) {
+			system->verified = true;
+		} else {
+			Ref<Component> component = get_script_component(p_name);
+			if (component.is_valid()) {
+				component->verified = true;
+			}
+		}
+	}
+}
+
+Ref<System> ScriptEcs::reload_system(Ref<Script> p_script, const String &p_path, const String &p_name) {
+	const StringName name = p_name;
+	const int64_t index = system_names.find(name);
+	Ref<System> system = index >= 0 ? systems[index] : Ref<System>();
+	if (system.is_null()) {
+		// System doesn't exists, create it.
+		ERR_FAIL_COND_V_MSG(p_script.is_null(), Ref<System>(), "The script [" + p_path + "] can't be loaded.");
+		ERR_FAIL_COND_V_MSG(p_script->is_valid() == false, Ref<System>(), "The script [" + p_path + "] is not a valid script.");
+		ERR_FAIL_COND_V_MSG("System" != p_script->get_instance_base_type(), Ref<System>(), "This script [" + p_path + "] is not extending `Component`.");
+		const String res = System::validate_script(p_script);
+		ERR_FAIL_COND_V_MSG(res != "", Ref<System>(), "This script [" + p_path + "] is not a valid System: " + res);
+
+		system.instance();
+		system->set_script(p_script);
+		system->script_path = p_path;
+
+		system_names.push_back(name);
+		systems.push_back(system);
+	} else {
+		// The system exists, validate it.
+		const String res = System::validate_script(system->get_script());
+		if (res != "") {
+			// This script is no more valid, unlaod it.
+			// Allignement between the vector is kept, since both use the same
+			// removal logic.
+			system_names.remove_unordered(index);
+			systems.remove_unordered(index);
+
+			ERR_FAIL_V_MSG(Ref<System>(), "This script [" + p_path + "] is not a valid System: " + res);
+		}
+	}
+
+	return system;
+}
+
+Ref<Component> ScriptEcs::reload_component(Ref<Script> p_script, const String &p_path, const String &p_name) {
+	const StringName name = p_name;
+	const int64_t index = component_names.find(name);
+	Ref<Component> component = index >= 0 ? components[index] : Ref<Component>();
+	if (component.is_null()) {
+		// Component doesn't exists yet.
+
+		Ref<Script> script = ResourceLoader::load(p_path);
+
+		ERR_FAIL_COND_V_MSG(script.is_null(), Ref<Component>(), "The script [" + p_path + "] can't be loaded.");
+		ERR_FAIL_COND_V_MSG(script->is_valid() == false, Ref<Component>(), "The script [" + p_path + "] is not a valid script.");
+		ERR_FAIL_COND_V_MSG("Component" != script->get_instance_base_type(), Ref<Component>(), "This script [" + p_path + "] is not extending `Component`.");
+		const String res = Component::validate_script(script);
+		ERR_FAIL_COND_V_MSG(res != "", Ref<Component>(), "This script [" + p_path + "] is not valid: " + res);
+
+		component.instance();
+		component->internal_set_name(name);
+		component->internal_set_component_script(script);
+		component->script_path = p_path;
+
+		component_names.push_back(name);
+		components.push_back(component);
+	} else {
+		const String res = Component::validate_script(component->get_script());
+		if (res != "") {
+			// This script is no more valid, unlaod it.
+			// Allignement between the vector is kept, since both use the same
+			// removal logic.
+			component_names.remove_unordered(index);
+			components.remove_unordered(index);
+
+			ERR_FAIL_V_MSG(Ref<Component>(), "This script [" + p_path + "] is not a valid Component: " + res);
+		}
+	}
+
+	return component;
 }
 
 void ScriptEcs::save_script(const String &p_setting_list_name, const String &p_script_path) {

@@ -999,31 +999,28 @@ void EditorWorldECS::add_sys_update(const String &p_search) {
 	// Scripts systems
 	TreeItem *script_root = nullptr;
 
-	if (ProjectSettings::get_singleton()->has_setting("ECS/System/scripts")) {
-		Array sys_scripts = ProjectSettings::get_singleton()->get_setting("ECS/System/scripts");
-		for (int i = 0; i < sys_scripts.size(); i += 1) {
-			const String sys_script_path = sys_scripts[i];
-			const String system_name = sys_script_path.get_file();
+	const LocalVector<StringName> &script_systems = ScriptEcs::get_singleton()->get_script_system_names();
+	for (uint32_t i = 0; i < script_systems.size(); i += 1) {
+		const String system_name = script_systems[i];
 
-			if (search.is_empty() == false && system_name.to_lower().find(search) == -1) {
-				// System filtered.
-				continue;
-			}
-
-			if (script_root == nullptr) {
-				// Add only if needed.
-				script_root = add_sys_tree->create_item(root);
-				script_root->set_text(0, "Script Systems");
-				script_root->set_selectable(0, false);
-				script_root->set_custom_color(0, Color(0.0, 0.3, 0.9));
-			}
-
-			TreeItem *item = add_sys_tree->create_item(script_root);
-			item->set_icon(0, editor->get_theme_base()->get_theme_icon("Script", "EditorIcons"));
-			item->set_text(0, system_name);
-			item->set_meta("system_name", system_name);
-			item->set_meta("desc", "GDScript: " + sys_script_path);
+		if (search.is_empty() == false && system_name.to_lower().find(search) == -1) {
+			// System filtered.
+			continue;
 		}
+
+		if (script_root == nullptr) {
+			// Add only if needed.
+			script_root = add_sys_tree->create_item(root);
+			script_root->set_text(0, "Script Systems");
+			script_root->set_selectable(0, false);
+			script_root->set_custom_color(0, Color(0.0, 0.3, 0.9));
+		}
+
+		TreeItem *item = add_sys_tree->create_item(script_root);
+		item->set_icon(0, editor->get_theme_base()->get_theme_icon("Script", "EditorIcons"));
+		item->set_text(0, system_name);
+		item->set_meta("system_name", system_name);
+		item->set_meta("desc", "Scripted System");
 	}
 
 	add_sys_update_desc();

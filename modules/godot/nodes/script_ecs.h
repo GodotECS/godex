@@ -53,7 +53,6 @@ public:
 
 	// ---------------------------------------------------------------- Component
 	/// Load or Reloads a component. Retuns the component id.
-	Ref<Component> reload_component(const String &p_path);
 
 	/// Returns all the scripted components.
 	const LocalVector<Ref<Component>> &get_components();
@@ -71,7 +70,9 @@ public:
 	void add_system_to_bundle(const StringName &p_system_name, const StringName &p_system_bundle_name);
 
 	// ------------------------------------------------------------------- System
-	Ref<System> reload_system(const String &p_path);
+	const LocalVector<StringName> &get_script_system_names();
+	const LocalVector<Ref<System>> &get_script_systems();
+
 	Ref<System> get_script_system(const StringName &p_name);
 
 	// ------------------------------------------------------------------ Runtime
@@ -87,6 +88,10 @@ public:
 	void register_dynamic_systems();
 
 private:
+	void reload_script(const String &p_path, const String &p_name, const bool p_force_reload);
+	Ref<System> reload_system(Ref<Script> p_script, const String &p_path, const String &p_name);
+	Ref<Component> reload_component(Ref<Script> p_script, const String &p_path, const String &p_name);
+
 	void save_script(const String &p_setting_list_name, const String &p_script_path);
 	void remove_script(const String &p_setting_list_name, const String &p_script_path);
 };
