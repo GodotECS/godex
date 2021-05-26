@@ -111,11 +111,6 @@ class EditorWorldECS : public PanelContainer {
 	class Tree *add_sys_tree = nullptr;
 	class TextEdit *add_sys_desc = nullptr;
 
-	// Create script system window.
-	ConfirmationDialog *add_script_window = nullptr;
-	LineEdit *add_script_path = nullptr;
-	Label *add_script_error_lbl = nullptr;
-
 	AcceptDialog *components_window = nullptr;
 	Tree *components_tree = nullptr;
 	LineEdit *component_name_le = nullptr;
@@ -128,6 +123,7 @@ public:
 	EditorWorldECS(EditorNode *p_editor);
 
 	void _notification(int p_what);
+	void _filesystem_changed();
 
 	void show_editor();
 	void hide_editor();
@@ -155,10 +151,6 @@ public:
 	void add_sys_update(const String &p_search = String());
 	void add_sys_update_desc();
 	void add_sys_add();
-
-	void create_sys_show();
-	void create_sys_hide();
-	void add_script_do();
 
 	void components_manage_show();
 	void components_manage_on_component_select();

@@ -1,6 +1,7 @@
 #include "shared_component_resource.h"
 
 #include "ecs_utilities.h"
+#include "script_ecs.h"
 
 void SharedComponentResource::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("__set_component_name", "name"), &SharedComponentResource::set_component_name);
@@ -27,9 +28,9 @@ bool SharedComponentResource::_get(const StringName &p_name, Variant &r_property
 
 void SharedComponentResource::_get_property_list(List<PropertyInfo> *p_list) const {
 	ERR_FAIL_COND_MSG(is_init() == false, "This shared component is not init. So you can't use it.");
-	ERR_FAIL_COND_MSG(EditorEcs::component_is_shared(component_name) == false, "This component is not shared, this is not supposed to happen.");
+	ERR_FAIL_COND_MSG(ScriptEcs::get_singleton()->component_is_shared(component_name) == false, "This component is not shared, this is not supposed to happen.");
 
-	EditorEcs::component_get_properties(component_name, p_list);
+	ScriptEcs::get_singleton()->component_get_properties(component_name, p_list);
 }
 
 SharedComponentResource::SharedComponentResource() {

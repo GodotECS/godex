@@ -13,9 +13,9 @@
 #include "editor_plugins/components_transform_gizmo_3d.h"
 #include "editor_plugins/editor_world_ecs.h"
 #include "editor_plugins/entity_editor_plugin.h"
-#include "nodes/ecs_utilities.h"
 #include "nodes/ecs_world.h"
 #include "nodes/entity.h"
+#include "nodes/script_ecs.h"
 #include "nodes/shared_component_resource.h"
 #include "systems/mesh_updater_system.h"
 #include "systems/physics_process_system.h"
@@ -36,10 +36,9 @@ public:
 				// Add component gizmos:
 				Node3DEditor::get_singleton()->add_gizmo_plugin(Ref<Components3DGizmoPlugin>(Components3DGizmoPlugin::get_singleton()));
 			}
-			EditorEcs::define_editor_default_component_properties();
 		} else {
 			// Load the Scripted Components/Databags/Systems
-			EditorEcs::register_runtime_scripts();
+			ScriptEcs::get_singleton()->register_runtime_scripts();
 		}
 	}
 };
@@ -50,6 +49,7 @@ void register_godot_types() {
 	rep = memnew(REP);
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Nodes
+	ClassDB::register_class<ScriptEcs>();
 	ClassDB::register_class<WorldECS>();
 	ClassDB::register_class<PipelineECS>();
 	ClassDB::register_class<Entity3D>();
@@ -127,11 +127,12 @@ void register_godot_types() {
 							.after("CallPhysicsProcess"));
 
 	ClassDB::register_class<SharedComponentResource>();
+
+	memnew(ScriptEcs());
 }
 
 void unregister_godot_types() {
-	// Clear ScriptECS static memory.
-	EditorEcs::__static_destructor();
+	memdelete(ScriptEcs::get_singleton());
 
 	memdelete(rep);
 	rep = nullptr;
