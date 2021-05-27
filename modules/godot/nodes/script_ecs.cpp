@@ -110,15 +110,9 @@ bool ScriptEcs::component_is_shared(const StringName &p_component_name) {
 	}
 }
 
-void ScriptEcs::add_system_to_bundle(const StringName &p_system_name, const StringName &p_system_bundle_name) {
-	int64_t index = system_bundle_names.find(p_system_bundle_name);
-	if (index == -1) {
-		index = system_bundle_names.size();
-		system_bundle_names.push_back(p_system_bundle_name);
-		system_bundles.push_back(SystemBundle());
-	}
-
-	system_bundles[index].systems.push_back(p_system_name);
+Ref<SystemBundle> ScriptEcs::get_script_system_bundle(const StringName &p_name) {
+	const int64_t index = system_bundle_names.find(p_name);
+	return index >= 0 ? system_bundles[index] : Ref<SystemBundle>();
 }
 
 const LocalVector<StringName> &ScriptEcs::get_script_system_names() {
@@ -142,6 +136,9 @@ void ScriptEcs::reload_scripts() {
 	}
 	for (uint32_t i = 0; i < components.size(); i += 1) {
 		components[i]->verified = false;
+	}
+	for (uint32_t i = 0; i < system_bundles.size(); i += 1) {
+		system_bundles[i]->verified = false;
 	}
 
 	// Scan the script classes.
@@ -170,6 +167,16 @@ void ScriptEcs::reload_scripts() {
 			// Remove it.
 			component_names.remove_unordered(i);
 			components.remove_unordered(i);
+		}
+	}
+	for (int i = int(system_bundles.size()) - 1; i >= 0; i -= 1) {
+		if (system_bundles[i]->verified == false) {
+			// Remove the path from the stored systems.
+			remove_script("ECS/Autoload/scripts", system_bundles[i]->get_script_path());
+			// The script for this system doesn't exist anymore.
+			// Remove it.
+			system_bundle_names.remove_unordered(i);
+			system_bundles.remove_unordered(i);
 		}
 	}
 
@@ -251,6 +258,7 @@ void ScriptEcs::register_runtime_scripts() {
 	register_dynamic_components();
 	// TODO register databags
 	register_dynamic_systems();
+	register_dynamic_system_bundles();
 }
 
 void ScriptEcs::register_dynamic_components() {
@@ -287,6 +295,9 @@ void ScriptEcs::register_dynamic_systems() {
 				ECS::get_dynamic_system_info(systems[i]->id),
 				systems[i]->id);
 	}
+}
+
+void ScriptEcs::register_dynamic_system_bundles() {
 }
 
 void ScriptEcs::reload_script(const String &p_path, const String &p_name, const bool p_force_reload) {
@@ -327,6 +338,12 @@ void ScriptEcs::reload_script(const String &p_path, const String &p_name, const 
 					}
 				}
 			}
+		} else if (base_type == "SystemBundle") {
+			Ref<SystemBundle> bundle = reload_system_bundle(script, p_path, p_name);
+			if (bundle.is_valid()) {
+				bundle->verified = true;
+				is_valid = true;
+			}
 		} else {
 			// Not an ecs script, nothing to do.
 			return;
@@ -347,9 +364,48 @@ void ScriptEcs::reload_script(const String &p_path, const String &p_name, const 
 			Ref<Component> component = get_script_component(p_name);
 			if (component.is_valid()) {
 				component->verified = true;
+			} else {
+				Ref<SystemBundle> bundle = get_script_system_bundle(p_name);
+				if (bundle.is_valid()) {
+					bundle->verified = true;
+				}
 			}
 		}
 	}
+}
+
+Ref<SystemBundle> ScriptEcs::reload_system_bundle(Ref<Script> p_script, const String &p_path, const String &p_name) {
+	const StringName name = p_name;
+	const int64_t index = system_bundle_names.find(name);
+	Ref<SystemBundle> bundle = index >= 0 ? system_bundles[index] : Ref<SystemBundle>();
+	if (bundle.is_null()) {
+		// SystemBundle doesn't exists, create it.
+		ERR_FAIL_COND_V_MSG(p_script.is_null(), Ref<SystemBundle>(), "The script [" + p_path + "] can't be loaded.");
+		ERR_FAIL_COND_V_MSG(p_script->is_valid() == false, Ref<SystemBundle>(), "The script [" + p_path + "] is not a valid script.");
+		const String res = SystemBundle::validate_script(p_script);
+		ERR_FAIL_COND_V_MSG(res != "", Ref<SystemBundle>(), "This script [" + p_path + "] is not a valid SystemBundle: " + res);
+
+		bundle.instance();
+		bundle->set_script(p_script);
+		bundle->script_path = p_path;
+
+		system_bundle_names.push_back(name);
+		system_bundles.push_back(bundle);
+	} else {
+		// The SystemBundle exists, validate it.
+		const String res = SystemBundle::validate_script(bundle->get_script());
+		if (res != "") {
+			// This script is no more valid, unlaod it.
+			// Allignement between the vector is kept, since both use the same
+			// removal logic.
+			system_bundle_names.remove_unordered(index);
+			system_bundles.remove_unordered(index);
+
+			ERR_FAIL_V_MSG(Ref<SystemBundle>(), "This script [" + p_path + "] is not a valid System: " + res);
+		}
+	}
+
+	return bundle;
 }
 
 Ref<System> ScriptEcs::reload_system(Ref<Script> p_script, const String &p_path, const String &p_name) {
@@ -360,7 +416,6 @@ Ref<System> ScriptEcs::reload_system(Ref<Script> p_script, const String &p_path,
 		// System doesn't exists, create it.
 		ERR_FAIL_COND_V_MSG(p_script.is_null(), Ref<System>(), "The script [" + p_path + "] can't be loaded.");
 		ERR_FAIL_COND_V_MSG(p_script->is_valid() == false, Ref<System>(), "The script [" + p_path + "] is not a valid script.");
-		ERR_FAIL_COND_V_MSG("System" != p_script->get_instance_base_type(), Ref<System>(), "This script [" + p_path + "] is not extending `Component`.");
 		const String res = System::validate_script(p_script);
 		ERR_FAIL_COND_V_MSG(res != "", Ref<System>(), "This script [" + p_path + "] is not a valid System: " + res);
 
@@ -398,7 +453,6 @@ Ref<Component> ScriptEcs::reload_component(Ref<Script> p_script, const String &p
 
 		ERR_FAIL_COND_V_MSG(script.is_null(), Ref<Component>(), "The script [" + p_path + "] can't be loaded.");
 		ERR_FAIL_COND_V_MSG(script->is_valid() == false, Ref<Component>(), "The script [" + p_path + "] is not a valid script.");
-		ERR_FAIL_COND_V_MSG("Component" != script->get_instance_base_type(), Ref<Component>(), "This script [" + p_path + "] is not extending `Component`.");
 		const String res = Component::validate_script(script);
 		ERR_FAIL_COND_V_MSG(res != "", Ref<Component>(), "This script [" + p_path + "] is not valid: " + res);
 

@@ -56,6 +56,7 @@ void register_godot_types() {
 	ClassDB::register_class<Entity2D>();
 	ClassDB::register_class<Component>();
 	ClassDB::register_class<System>();
+	ClassDB::register_class<SystemBundle>();
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Gizmos
 	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(TransformComponentGizmo));

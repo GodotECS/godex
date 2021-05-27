@@ -14,7 +14,6 @@ void System::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("execute_in_phase", "phase"), &System::execute_in_phase);
 	ClassDB::bind_method(D_METHOD("execute_after", "system_name"), &System::execute_after);
 	ClassDB::bind_method(D_METHOD("execute_before", "system_name"), &System::execute_before);
-	ClassDB::bind_method(D_METHOD("add_to_bundle", "bundle"), &System::add_to_bundle);
 
 	ClassDB::bind_method(D_METHOD("set_space", "space"), &System::set_space);
 	ClassDB::bind_method(D_METHOD("with_databag", "databag_id", "mutability"), &System::with_databag);
@@ -99,12 +98,6 @@ void System::execute_before(const StringName &p_system_name) {
 	}
 }
 
-void System::add_to_bundle(const StringName &p_bundle_name) {
-	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
-	//	EcsServer::get_singleton()->add_system_to_bundle(, p_bundle_name);
-	CRASH_NOW_MSG("TODO");
-}
-
 void System::set_space(Space p_space) {
 	if (execution_info != nullptr) {
 		// Nothing to do.
@@ -178,9 +171,34 @@ uint32_t System::get_current_entity_id() const {
 }
 
 String System::validate_script(Ref<Script> p_script) {
-	ERR_FAIL_COND_V(p_script.is_null(), "Script is null.");
-	ERR_FAIL_COND_V(p_script->is_valid() == false, "Script has some errors.");
-	ERR_FAIL_COND_V("System" != p_script->get_instance_base_type(), "This script is not extending `System`.");
+	if (p_script.is_null()) {
+		return TTR("Script is null.");
+	}
+	if (p_script->is_valid() == false) {
+		return TTR("Script has some errors.");
+	}
+	if ("System" != p_script->get_instance_base_type()) {
+		return TTR("This script is not extending `System`.");
+	}
+	List<MethodInfo> methods;
+	p_script->get_script_method_list(&methods);
+	bool has_prepare = false;
+	bool has_for_each = false;
+	for (List<MethodInfo>::Element *e = methods.front(); e; e = e->next()) {
+		if (e->get().name == "_prepare") {
+			has_prepare = true;
+		}
+		if (e->get().name == "_for_each") {
+			has_for_each = true;
+			// TODO consider add input check, so to notify the user if the system is not valid.
+		}
+	}
+	if (has_prepare == false) {
+		return TTR("This script is not overriding the function `_prepare()`.");
+	}
+	if (has_for_each == false) {
+		return TTR("This script is not overriding the function `_for_each()`.");
+	}
 
 	List<PropertyInfo> properties;
 	p_script->get_script_property_list(&properties);
@@ -188,6 +206,81 @@ String System::validate_script(Ref<Script> p_script) {
 		return TTR("The System script can't have any property in it. It possible to only access `Component`s and `Databag`s.");
 	}
 
+	// This script is safe to use.
+	return "";
+}
+
+void SystemBundle::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("add", "system_name"), &SystemBundle::add);
+	ClassDB::bind_method(D_METHOD("with_description", "desc"), &SystemBundle::with_description);
+	ClassDB::bind_method(D_METHOD("before", "dependency"), &SystemBundle::before);
+	ClassDB::bind_method(D_METHOD("after", "dependency"), &SystemBundle::after);
+}
+
+void SystemBundle::__fetch_systems(String *r_desc, LocalVector<StringName> *r_systems, LocalVector<Dependency> *r_dependencies) {
+	ERR_FAIL_COND_MSG(get_script_instance() == nullptr, "[FATAL] This is not supposed to happen.");
+	CRASH_COND_MSG(r_desc == nullptr, "r_desc is a requited variable.");
+	CRASH_COND_MSG(r_systems == nullptr, "r_system is a requited variable.");
+	CRASH_COND_MSG(r_dependencies == nullptr, "r_dependencies is a requited variable.");
+
+	description = r_desc;
+	systems = r_systems;
+	dependencies = r_dependencies;
+
+	Callable::CallError err;
+	get_script_instance()->call("_prepare", nullptr, 0, err);
+
+	description = nullptr;
+	systems = nullptr;
+	dependencies = nullptr;
+}
+
+const String &SystemBundle::get_script_path() const {
+	return script_path;
+}
+
+void SystemBundle::add(const StringName &p_system_name) {
+	ERR_FAIL_COND_MSG(description == nullptr, "Never call `_prepare` directly. Use `__fetch_systems` instead.");
+	systems->push_back(p_system_name);
+}
+
+void SystemBundle::with_description(const String &p_desc) {
+	ERR_FAIL_COND_MSG(description == nullptr, "Never call `_prepare` directly. Use `__fetch_systems` instead.");
+	*description = p_desc;
+}
+
+void SystemBundle::before(const StringName &p_dependency) {
+	ERR_FAIL_COND_MSG(description == nullptr, "Never call `_prepare` directly. Use `__fetch_systems` instead.");
+	dependencies->push_back({ true, p_dependency });
+}
+
+void SystemBundle::after(const StringName &p_dependency) {
+	ERR_FAIL_COND_MSG(description == nullptr, "Never call `_prepare` directly. Use `__fetch_systems` instead.");
+	dependencies->push_back({ false, p_dependency });
+}
+
+String SystemBundle::validate_script(Ref<Script> p_script) {
+	if (p_script.is_null()) {
+		return TTR("Script is null.");
+	}
+	if (p_script->is_valid() == false) {
+		return TTR("Script has some errors.");
+	}
+	if ("SystemBundle" != p_script->get_instance_base_type()) {
+		return TTR("This script is not extending `SystemBundle`.");
+	}
+	List<MethodInfo> methods;
+	p_script->get_script_method_list(&methods);
+	bool has_prepare = false;
+	for (List<MethodInfo>::Element *e = methods.front(); e; e = e->next()) {
+		if (e->get().name == "_prepare") {
+			has_prepare = true;
+			break;
+		}
+	}
+	if (has_prepare == false) {
+		return TTR("This script is not overriding the function `_prepare()`.");
+	}
 	// This script is safe to use.
 	return "";
 }
@@ -260,9 +353,15 @@ Vector<StringName> Component::get_spawners() {
 }
 
 String Component::validate_script(Ref<Script> p_script) {
-	ERR_FAIL_COND_V(p_script.is_null(), "Script is null.");
-	ERR_FAIL_COND_V(p_script->is_valid() == false, "Script has some errors.");
-	ERR_FAIL_COND_V("Component" != p_script->get_instance_base_type(), "This script is not extending `Component`.");
+	if (p_script.is_null()) {
+		return TTR("Script is null.");
+	}
+	if (p_script->is_valid() == false) {
+		return TTR("Script has some errors.");
+	}
+	if ("Component" != p_script->get_instance_base_type()) {
+		return TTR("This script is not extending `Component`.");
+	}
 
 	// Make sure doesn't have any function in it.
 	List<MethodInfo> methods;
