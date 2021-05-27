@@ -50,7 +50,6 @@ public:
 	void execute_in_phase(Phase p_phase);
 	void execute_after(const StringName &p_system_name);
 	void execute_before(const StringName &p_system_name);
-	void add_to_bundle(const StringName &p_system_name);
 
 	void set_space(Space p_space);
 	void with_databag(uint32_t p_databag_id, Mutability p_mutability);
@@ -67,12 +66,28 @@ public:
 	static String validate_script(Ref<Script> p_script);
 };
 
-class SystemBundle {
+class SystemBundle : public Resource {
+	GDCLASS(SystemBundle, Resource)
+
 	friend class ScriptEcs;
 
-	LocalVector<StringName> systems;
-	//String description;
-	//LocalVector<Dependency> dependencies;
+	bool verified = false;
+	String script_path;
+	String *description = nullptr;
+	LocalVector<StringName> *systems = nullptr;
+	LocalVector<Dependency> *dependencies = nullptr;
+
+	static void _bind_methods();
+	void __fetch_systems(String *r_desc, LocalVector<StringName> *r_systems, LocalVector<Dependency> *r_dependencies);
+	const String &get_script_path() const;
+
+public:
+	void add(const StringName &p_system_name);
+	void with_description(const String &p_desc);
+	void before(const StringName &p_dependency);
+	void after(const StringName &p_dependency);
+
+	static String validate_script(Ref<Script> p_script);
 };
 
 VARIANT_ENUM_CAST(System::Mutability)

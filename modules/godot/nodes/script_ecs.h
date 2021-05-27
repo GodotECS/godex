@@ -37,7 +37,7 @@ class ScriptEcs : public Object {
 	LocalVector<Ref<System>> systems;
 
 	LocalVector<StringName> system_bundle_names;
-	LocalVector<SystemBundle> system_bundles;
+	LocalVector<Ref<SystemBundle>> system_bundles;
 
 	static ScriptEcs *singleton;
 
@@ -67,7 +67,7 @@ public:
 	// ------------------------------------------------------------------ Databag
 
 	// ----------------------------------------------------------- System Bundles
-	void add_system_to_bundle(const StringName &p_system_name, const StringName &p_system_bundle_name);
+	Ref<SystemBundle> get_script_system_bundle(const StringName &p_name);
 
 	// ------------------------------------------------------------------- System
 	const LocalVector<StringName> &get_script_system_names();
@@ -86,9 +86,11 @@ public:
 	void register_dynamic_components();
 	void register_dynamic_component(Component *p_component);
 	void register_dynamic_systems();
+	void register_dynamic_system_bundles();
 
 private:
 	void reload_script(const String &p_path, const String &p_name, const bool p_force_reload);
+	Ref<SystemBundle> reload_system_bundle(Ref<Script> p_script, const String &p_path, const String &p_name);
 	Ref<System> reload_system(Ref<Script> p_script, const String &p_path, const String &p_name);
 	Ref<Component> reload_component(Ref<Script> p_script, const String &p_path, const String &p_name);
 
