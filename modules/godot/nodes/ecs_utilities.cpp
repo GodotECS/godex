@@ -171,9 +171,34 @@ uint32_t System::get_current_entity_id() const {
 }
 
 String System::validate_script(Ref<Script> p_script) {
-	ERR_FAIL_COND_V(p_script.is_null(), "Script is null.");
-	ERR_FAIL_COND_V(p_script->is_valid() == false, "Script has some errors.");
-	ERR_FAIL_COND_V("System" != p_script->get_instance_base_type(), "This script is not extending `System`.");
+	if (p_script.is_null()) {
+		return TTR("Script is null.");
+	}
+	if (p_script->is_valid() == false) {
+		return TTR("Script has some errors.");
+	}
+	if ("System" != p_script->get_instance_base_type()) {
+		return TTR("This script is not extending `System`.");
+	}
+	List<MethodInfo> methods;
+	p_script->get_script_method_list(&methods);
+	bool has_prepare = false;
+	bool has_for_each = false;
+	for (List<MethodInfo>::Element *e = methods.front(); e; e = e->next()) {
+		if (e->get().name == "_prepare") {
+			has_prepare = true;
+		}
+		if (e->get().name == "_for_each") {
+			has_for_each = true;
+			// TODO consider add input check, so to notify the user if the system is not valid.
+		}
+	}
+	if (has_prepare == false) {
+		return TTR("This script is not overriding the function `_prepare()`.");
+	}
+	if (has_for_each == false) {
+		return TTR("This script is not overriding the function `_for_each()`.");
+	}
 
 	List<PropertyInfo> properties;
 	p_script->get_script_property_list(&properties);
@@ -235,10 +260,27 @@ void SystemBundle::after(const StringName &p_dependency) {
 }
 
 String SystemBundle::validate_script(Ref<Script> p_script) {
-	ERR_FAIL_COND_V(p_script.is_null(), "Script is null.");
-	ERR_FAIL_COND_V(p_script->is_valid() == false, "Script has some errors.");
-	ERR_FAIL_COND_V("SystemBundle" != p_script->get_instance_base_type(), "This script is not extending `SystemBundle`.");
-	ERR_FAIL_COND_V(p_script->get_method_info("_prepare").name.is_empty(), "This script is not overriding the function `_prepare()`.");
+	if (p_script.is_null()) {
+		return TTR("Script is null.");
+	}
+	if (p_script->is_valid() == false) {
+		return TTR("Script has some errors.");
+	}
+	if ("SystemBundle" != p_script->get_instance_base_type()) {
+		return TTR("This script is not extending `SystemBundle`.");
+	}
+	List<MethodInfo> methods;
+	p_script->get_script_method_list(&methods);
+	bool has_prepare = false;
+	for (List<MethodInfo>::Element *e = methods.front(); e; e = e->next()) {
+		if (e->get().name == "_prepare") {
+			has_prepare = true;
+			break;
+		}
+	}
+	if (has_prepare == false) {
+		return TTR("This script is not overriding the function `_prepare()`.");
+	}
 	// This script is safe to use.
 	return "";
 }
@@ -311,9 +353,15 @@ Vector<StringName> Component::get_spawners() {
 }
 
 String Component::validate_script(Ref<Script> p_script) {
-	ERR_FAIL_COND_V(p_script.is_null(), "Script is null.");
-	ERR_FAIL_COND_V(p_script->is_valid() == false, "Script has some errors.");
-	ERR_FAIL_COND_V("Component" != p_script->get_instance_base_type(), "This script is not extending `Component`.");
+	if (p_script.is_null()) {
+		return TTR("Script is null.");
+	}
+	if (p_script->is_valid() == false) {
+		return TTR("Script has some errors.");
+	}
+	if ("Component" != p_script->get_instance_base_type()) {
+		return TTR("This script is not extending `Component`.");
+	}
 
 	// Make sure doesn't have any function in it.
 	List<MethodInfo> methods;
