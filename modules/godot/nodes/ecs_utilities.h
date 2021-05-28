@@ -31,8 +31,6 @@ class System : public Resource {
 	bool prepare_in_progress = false;
 
 	static void _bind_methods();
-	void prepare(godex::DynamicSystemInfo *p_info, godex::system_id p_id);
-	void fetch_execution_data(ScriptSystemExecutionInfo *r_info);
 	const String &get_script_path() const;
 
 public:
@@ -40,8 +38,6 @@ public:
 		IMMUTABLE,
 		MUTABLE
 	};
-
-	void __force_set_system_info(godex::DynamicSystemInfo *p_info, godex::system_id p_id);
 
 public:
 	System();
@@ -62,6 +58,14 @@ public:
 	godex::system_id get_system_id() const;
 
 	uint32_t get_current_entity_id() const;
+
+	/// This function is only used by few tests. Never use this, use `prepare` instead.
+	// TODO remove this function.
+	void __force_set_system_info(godex::DynamicSystemInfo *p_info, godex::system_id p_id);
+	/// Prepare this System to be executed.
+	void prepare(godex::DynamicSystemInfo *p_info, godex::system_id p_id);
+	/// Fetches the execution data.
+	void fetch_execution_data(ScriptSystemExecutionInfo *r_info);
 
 	static String validate_script(Ref<Script> p_script);
 };

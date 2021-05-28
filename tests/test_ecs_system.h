@@ -177,22 +177,50 @@ TEST_CASE("[Modules][ECS] Test system and query") {
 }
 
 TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
-	LocalVector<ScriptProperty> props;
-	props.push_back({ PropertyInfo(Variant::INT, "variable_1"), 1 });
-	props.push_back({ PropertyInfo(Variant::BOOL, "variable_2"), false });
+	initialize_script_ecs();
 
-	const uint32_t test_dyn_component_id = ECS::register_script_component(
-			"TestDynamicSystemComponent1.gd",
-			props,
-			StorageType::DENSE_VECTOR,
-			Vector<StringName>());
+	{
+		// Create the script.
+		String code;
+		code += "extends Component\n";
+		code += "var variable_1: int = 1\n";
+		code += "var variable_2: bool = false\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("TestDynamicSystemComponent1.gd", code));
+	}
+
+	ScriptEcs::get_singleton()->register_dynamic_components();
+
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	with_component(ECS.TransformComponent, MUTABLE)\n";
+		code += "	maybe_component(ECS.TestDynamicSystemComponent1_gd, MUTABLE)\n";
+		code += "\n";
+		code += "func _for_each(transform_com, test_comp):\n";
+		code += "	assert(transform_com.is_valid())\n";
+		code += "	assert(transform_com.is_mutable())\n";
+		code += "	transform_com.origin.x += 100.0\n";
+		code += "	if test_comp != null:\n";
+		code += "		test_comp.variable_1 += 1\n";
+		code += "		test_comp.variable_2 = Transform()\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("TestDynamicSystem1.gd", code));
+	}
+
+	ScriptEcs::get_singleton()->register_dynamic_systems();
 
 	World world;
 
 	EntityID entity_1 = world
 								.create_entity()
 								.with(TransformComponent())
-								.with(test_dyn_component_id, Dictionary());
+								.with(ECS::get_component_id("TestDynamicSystemComponent1.gd"), Dictionary());
 
 	EntityID entity_2 = world
 								.create_entity()
@@ -201,38 +229,12 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 	EntityID entity_3 = world
 								.create_entity()
 								.with(TransformComponent())
-								.with(test_dyn_component_id, Dictionary());
-
-	Object target_obj;
-	{
-		// Create the script.
-		String code;
-		code += "extends Object\n";
-		code += "\n";
-		code += "func _for_each(transform_com, test_comp):\n";
-		code += "	assert(transform_com.is_valid())\n";
-		code += "	assert(transform_com.is_mutable())\n";
-		code += "	transform_com.transform.origin.x += 100.0\n";
-		code += "	if test_comp != null:\n";
-		code += "		test_comp.variable_1 += 1\n";
-		code += "		test_comp.variable_2 = Transform()\n";
-		code += "\n";
-
-		CHECK(build_and_assign_script(&target_obj, code));
-	}
-
-	// Build dynamic query.
-	const uint32_t system_id = ECS::register_dynamic_system("TestDynamicSystem.gd").get_id();
-	godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
-	dynamic_system_info->with_component(TransformComponent::get_component_id(), true);
-	dynamic_system_info->maybe_component(test_dyn_component_id, true);
-	dynamic_system_info->set_target(target_obj.get_script_instance());
-	dynamic_system_info->build();
+								.with(ECS::get_component_id("TestDynamicSystemComponent1.gd"), Dictionary());
 
 	// Create the pipeline.
 	Pipeline pipeline;
 	// Add the system to the pipeline.
-	pipeline.add_registered_system(system_id);
+	pipeline.add_registered_system(ECS::get_system_id("TestDynamicSystem1.gd"));
 	pipeline.build();
 	pipeline.prepare(&world);
 
@@ -261,6 +263,7 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 
 	// Validate the dynamic component.
 	{
+		godex::component_id test_dyn_component_id = ECS::get_component_id("TestDynamicSystemComponent1.gd");
 		const StorageBase *storage = world.get_storage(test_dyn_component_id);
 		CHECK(ECS::unsafe_component_get_by_name(test_dyn_component_id, storage->get_ptr(entity_1), "variable_1") == Variant(4));
 		// Make sure this doesn't changed.
@@ -272,6 +275,8 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 		// Make sure this doesn't changed.
 		CHECK(ECS::unsafe_component_get_by_name(test_dyn_component_id, storage->get_ptr(entity_3), "variable_2") == Variant(false));
 	}
+
+	finalize_script_ecs();
 }
 
 void test_sub_pipeline_execute(World *p_world, Pipeline *p_pipeline) {
@@ -430,6 +435,28 @@ TEST_CASE("[Modules][ECS] Test system and databag") {
 }
 
 TEST_CASE("[Modules][ECS] Test system databag fetch with dynamic query.") {
+	initialize_script_ecs();
+
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	with_databag(ECS.TestSystemSubPipeDatabag, MUTABLE)\n";
+		code += "	with_component(ECS.TransformComponent, IMMUTABLE)\n";
+		code += "\n";
+		code += "func _for_each(test_databag, transform_com):\n";
+		code += "	assert(test_databag.is_valid())\n";
+		code += "	assert(test_databag.is_mutable())\n";
+		code += "	test_databag.exe_count = 10\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("TestDatabagDynamicSystem.gd", code));
+	}
+
+	ScriptEcs::get_singleton()->register_dynamic_systems();
+
 	World world;
 	world.create_databag<TestSystemSubPipeDatabag>();
 	world.get_databag<TestSystemSubPipeDatabag>()->exe_count = 20;
@@ -438,33 +465,10 @@ TEST_CASE("[Modules][ECS] Test system databag fetch with dynamic query.") {
 			.create_entity()
 			.with(TransformComponent());
 
-	Object target_obj;
-	{
-		// Create the script.
-		String code;
-		code += "extends Object\n";
-		code += "\n";
-		code += "func _for_each(test_databag, transform_com):\n";
-		code += "	assert(test_databag.is_valid())\n";
-		code += "	assert(test_databag.is_mutable())\n";
-		code += "	test_databag.exe_count = 10\n";
-		code += "\n";
-
-		CHECK(build_and_assign_script(&target_obj, code));
-	}
-
-	// Build dynamic query.
-	const uint32_t system_id = ECS::register_dynamic_system("TestDatabagDynamicSystem.gd").get_id();
-	godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
-	dynamic_system_info->with_databag(TestSystemSubPipeDatabag::get_databag_id(), true);
-	dynamic_system_info->with_component(TransformComponent::get_component_id(), false);
-	dynamic_system_info->set_target(target_obj.get_script_instance());
-	dynamic_system_info->build();
-
 	// Create the pipeline.
 	Pipeline pipeline;
 	// Add the system to the pipeline.
-	pipeline.add_registered_system(system_id);
+	pipeline.add_registered_system(ECS::get_system_id("TestDatabagDynamicSystem.gd"));
 	pipeline.build();
 	pipeline.prepare(&world);
 
@@ -473,6 +477,8 @@ TEST_CASE("[Modules][ECS] Test system databag fetch with dynamic query.") {
 
 	// Make sure the `exe_count` is changed to 10 by the script.
 	CHECK(world.get_databag<TestSystemSubPipeDatabag>()->exe_count == 10);
+
+	finalize_script_ecs();
 }
 
 TEST_CASE("[Modules][ECS] Test event mechanism.") {
@@ -742,33 +748,28 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 
 	// Try move `Entity_2` using a GDScript system.
 	{
-		Ref<System> target_obj;
-		target_obj.instance();
+		initialize_script_ecs();
 		{
 			// Create the script.
 			String code;
 			code += "extends System\n";
+			code += "\n";
+			code += "func _prepare():\n";
+			code += "	set_space(ECS.GLOBAL)\n";
+			code += "	with_component(ECS.TransformComponent, MUTABLE)\n";
 			code += "\n";
 			code += "func _for_each(transform_com):\n";
 			code += "	if get_current_entity_id() == 2:\n";
 			code += "		transform_com.transform.origin.x = 10.0\n";
 			code += "\n";
 
-			CHECK(build_and_assign_script(target_obj.ptr(), code));
+			CHECK(build_and_register_ecs_script("TestMoveHierarchySystem.gd", code));
 		}
-
-		// Build dynamic query.
-		const uint32_t system_id = ECS::register_dynamic_system("TestMoveHierarchySystem.gd").get_id();
-		godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
-		dynamic_system_info->set_space(Space::GLOBAL);
-		dynamic_system_info->with_component(TransformComponent::get_component_id(), true);
-		target_obj->__force_set_system_info(dynamic_system_info, system_id);
-		dynamic_system_info->set_target(target_obj->get_script_instance());
-		dynamic_system_info->build();
+		ScriptEcs::get_singleton()->register_dynamic_systems();
 
 		// Create the pipeline.
 		Pipeline pipeline;
-		pipeline.add_registered_system(system_id);
+		pipeline.add_registered_system(ECS::get_system_id("TestMoveHierarchySystem.gd"));
 		pipeline.build();
 		pipeline.prepare(&world);
 
@@ -805,11 +806,52 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 			const TransformComponent *entity_2_transform_g = world.get_storage<TransformComponent>()->get(entity_2, Space::GLOBAL);
 			CHECK(ABS(entity_2_transform_g->origin.x - 10.0) <= CMP_EPSILON);
 		}
+		finalize_script_ecs();
 	}
 }
 
 TEST_CASE("[Modules][ECS] Test Add/remove from dynamic system.") {
+	initialize_script_ecs();
 	ECS::register_component<Test1Component>();
+
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	with_databag(ECS.WorldCommands, MUTABLE)\n";
+		code += "	with_storage(ECS.Test1Component)\n";
+		code += "	with_component(ECS.TransformComponent, IMMUTABLE)\n";
+		code += "\n";
+		code += "func _for_each(world_commands, comp_storage, transform_com):\n";
+		code += "	var entity_2 = world_commands.create_entity()\n";
+		code += "	comp_storage.insert(entity_2, {\"a\": 975})\n";
+		code += "	var entity_3 = world_commands.create_entity()\n";
+		code += "	comp_storage.insert(entity_3)\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("TestSpawnDynamicSystem.gd", code));
+	}
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	with_databag(ECS.WorldCommands, MUTABLE)\n";
+		code += "	with_storage(ECS.Test1Component)\n";
+		code += "	with_component(ECS.TransformComponent, IMMUTABLE)\n";
+		code += "\n";
+		code += "func _for_each(world_commands, comp_storage, transform_com):\n";
+		code += "	comp_storage.remove(2)\n";
+		code += "	comp_storage.remove(1)\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("TestRemoveDynamicSystem.gd", code));
+	}
+
+	ScriptEcs::get_singleton()->register_dynamic_systems();
 
 	World world;
 
@@ -823,35 +865,10 @@ TEST_CASE("[Modules][ECS] Test Add/remove from dynamic system.") {
 
 	// Test add
 	{
-		Object target_obj;
-		{
-			// Create the script.
-			String code;
-			code += "extends Object\n";
-			code += "\n";
-			code += "func _for_each(world_commands, comp_storage, transform_com):\n";
-			code += "	var entity_2 = world_commands.create_entity()\n";
-			code += "	comp_storage.insert(entity_2, {\"a\": 975})\n";
-			code += "	var entity_3 = world_commands.create_entity()\n";
-			code += "	comp_storage.insert(entity_3)\n";
-			code += "\n";
-
-			CHECK(build_and_assign_script(&target_obj, code));
-		}
-
-		// Build dynamic query.
-		const uint32_t system_id = ECS::register_dynamic_system("TestSpawnDynamicSystem.gd").get_id();
-		godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
-		dynamic_system_info->with_databag(WorldCommands::get_databag_id(), true);
-		dynamic_system_info->with_storage(Test1Component::get_component_id());
-		dynamic_system_info->with_component(TransformComponent::get_component_id(), false);
-		dynamic_system_info->set_target(target_obj.get_script_instance());
-		dynamic_system_info->build();
-
 		// Create the pipeline.
 		Pipeline pipeline;
 		// Add the system to the pipeline.
-		pipeline.add_registered_system(system_id);
+		pipeline.add_registered_system(ECS::get_system_id("TestSpawnDynamicSystem.gd"));
 		pipeline.build();
 		pipeline.prepare(&world);
 
@@ -874,33 +891,10 @@ TEST_CASE("[Modules][ECS] Test Add/remove from dynamic system.") {
 
 	// Test remove
 	{
-		Object target_obj;
-		{
-			// Create the script.
-			String code;
-			code += "extends Object\n";
-			code += "\n";
-			code += "func _for_each(world_commands, comp_storage, transform_com):\n";
-			code += "	comp_storage.remove(2)\n";
-			code += "	comp_storage.remove(1)\n";
-			code += "\n";
-
-			CHECK(build_and_assign_script(&target_obj, code));
-		}
-
-		// Build dynamic query.
-		const uint32_t system_id = ECS::register_dynamic_system("TestRemoveDynamicSystem.gd").get_id();
-		godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
-		dynamic_system_info->with_databag(WorldCommands::get_databag_id(), true);
-		dynamic_system_info->with_storage(Test1Component::get_component_id());
-		dynamic_system_info->with_component(TransformComponent::get_component_id(), false);
-		dynamic_system_info->set_target(target_obj.get_script_instance());
-		dynamic_system_info->build();
-
 		// Create the pipeline.
 		Pipeline pipeline;
 		// Add the system to the pipeline.
-		pipeline.add_registered_system(system_id);
+		pipeline.add_registered_system(ECS::get_system_id("TestRemoveDynamicSystem.gd"));
 		pipeline.build();
 		pipeline.prepare(&world);
 
@@ -911,39 +905,38 @@ TEST_CASE("[Modules][ECS] Test Add/remove from dynamic system.") {
 		CHECK(world.get_storage<Test1Component>()->has(entity_2) == false);
 		CHECK(world.get_storage<Test1Component>()->has(entity_3) == false);
 	}
+
+	finalize_script_ecs();
 }
 
 TEST_CASE("[Modules][ECS] Test fetch changed from dynamic system.") {
+	initialize_script_ecs();
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	changed_component(ECS.TransformComponent, MUTABLE)\n";
+		code += "\n";
+		code += "func _for_each(transform_com):\n";
+		code += "	transform_com.transform.origin.x = 100.0\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("TestChangedDynamicSystem.gd", code));
+	}
+	ScriptEcs::get_singleton()->register_dynamic_systems();
+
 	World world;
 
 	const EntityID entity_1 = world
 									  .create_entity()
 									  .with(TransformComponent());
 
-	Object target_obj;
-	{
-		// Create the script.
-		String code;
-		code += "extends Object\n";
-		code += "\n";
-		code += "func _for_each(transform_com):\n";
-		code += "	transform_com.transform.origin.x = 100.0\n";
-		code += "\n";
-
-		CHECK(build_and_assign_script(&target_obj, code));
-	}
-
-	// Build dynamic query.
-	const godex::system_id system_id = ECS::register_dynamic_system("TestChangedDynamicSystem.gd").get_id();
-	godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
-	dynamic_system_info->changed_component(TransformComponent::get_component_id(), true);
-	dynamic_system_info->set_target(target_obj.get_script_instance());
-	dynamic_system_info->build();
-
 	// Create the pipeline.
 	Pipeline pipeline;
 	// Add the system to the pipeline.
-	pipeline.add_registered_system(system_id);
+	pipeline.add_registered_system(ECS::get_system_id("TestChangedDynamicSystem.gd"));
 	pipeline.build();
 	pipeline.prepare(&world);
 
@@ -951,6 +944,8 @@ TEST_CASE("[Modules][ECS] Test fetch changed from dynamic system.") {
 	pipeline.dispatch(&world);
 
 	CHECK(ABS(world.get_storage<TransformComponent>()->get(entity_1)->origin.x - 100.0) <= CMP_EPSILON);
+
+	finalize_script_ecs();
 }
 } // namespace godex_tests_system
 
@@ -1027,6 +1022,26 @@ TEST_CASE("[Modules][ECS] Test system changed query filter.") {
 }
 
 TEST_CASE("[Modules][ECS] Test fetch entity from nodepath, using a dynamic system.") {
+	initialize_script_ecs();
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	with_databag(ECS.World, IMMUTABLE)\n";
+		code += "	with_component(ECS.Test1Component, MUTABLE)\n";
+		code += "\n";
+		code += "func _for_each(world, test_component):\n";
+		code += "	var entity_1 = world.get_entity_from_path(\"/root/node_1\")\n";
+		code += "	if entity_1 == get_current_entity_id():\n";
+		code += "		test_component.a = 1000\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("TestFetchEntityFromNodePath.gd", code));
+	}
+	ScriptEcs::get_singleton()->register_dynamic_systems();
+
 	World world;
 
 	const EntityID entity_1 = world
@@ -1037,35 +1052,10 @@ TEST_CASE("[Modules][ECS] Test fetch entity from nodepath, using a dynamic syste
 
 	// Test add
 	{
-		Ref<System> target_obj;
-		target_obj.instance();
-		{
-			// Create the script.
-			String code;
-			code += "extends System\n";
-			code += "\n";
-			code += "func _for_each(world, test_component):\n";
-			code += "	var entity_1 = world.get_entity_from_path(\"/root/node_1\")\n";
-			code += "	if entity_1 == get_current_entity_id():\n";
-			code += "		test_component.a = 1000\n";
-			code += "\n";
-
-			CHECK(build_and_assign_script(target_obj.ptr(), code));
-		}
-
-		// Build dynamic query.
-		const uint32_t system_id = ECS::register_dynamic_system("TestFetchEntityFromNodePath.gd").get_id();
-		godex::DynamicSystemInfo *dynamic_system_info = ECS::get_dynamic_system_info(system_id);
-		dynamic_system_info->with_databag(World::get_databag_id(), false);
-		dynamic_system_info->with_component(Test1Component::get_component_id(), true);
-		target_obj->__force_set_system_info(dynamic_system_info, system_id);
-		dynamic_system_info->set_target(target_obj->get_script_instance());
-		dynamic_system_info->build();
-
 		// Create the pipeline.
 		Pipeline pipeline;
 		// Add the system to the pipeline.
-		pipeline.add_registered_system(system_id);
+		pipeline.add_registered_system(ECS::get_system_id("TestFetchEntityFromNodePath.gd"));
 		pipeline.build();
 		pipeline.prepare(&world);
 
@@ -1078,6 +1068,8 @@ TEST_CASE("[Modules][ECS] Test fetch entity from nodepath, using a dynamic syste
 		// Make sure the value is correctly changed.
 		CHECK(world.get_storage<Test1Component>()->get(entity_1)->a == 1000);
 	}
+
+	finalize_script_ecs();
 }
 } // namespace godex_tests_system
 

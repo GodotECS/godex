@@ -55,14 +55,28 @@ TEST_CASE("[Modules][ECS] Test spawner C++ registration.") {
 		CHECK(info.mutable_components_storage.has(SpawnTestComponent::get_component_id()));
 	}
 }
+} // namespace godex_tests
 
+void test_spawner_system(Spawner<TestEventSpawner> &p_test_event_spawner) {
+	// Add 1
+	SpawnTestComponent data;
+	data.a = 300;
+	p_test_event_spawner.insert(0, data);
+
+	// Add 2
+	p_test_event_spawner.insert_dynamic(ECS::get_component_id("TestSpawnScriptComponent.gd"), 1, Dictionary());
+
+	// Add 3
+	p_test_event_spawner.insert(2, TransformComponent());
+}
+
+namespace godex_tests {
 TEST_CASE("[Modules][ECS] Test spawner Script registration.") {
-	// Compose the script component
-	Ref<Component> component;
+	initialize_script_ecs();
+
+	StringName component_name = "TestSpawnScriptComponent.gd";
 
 	{
-		Object target_obj;
-
 		// Create the script.
 		String code;
 		code += "extends Component\n";
@@ -74,26 +88,22 @@ TEST_CASE("[Modules][ECS] Test spawner Script registration.") {
 		code += "var bb: int = 0\n";
 		code += "\n";
 
-		CHECK(build_and_assign_script(&target_obj, code));
-
-		const String err = Component::validate_script(target_obj.get_script());
-		CHECK(err == "");
-
-		component.instance();
-		component->internal_set_name("TestSpawnScriptComponent.gd");
-		component->internal_set_component_script(target_obj.get_script());
+		CHECK(build_and_register_ecs_script(component_name, code));
 	}
+
+	// Make sure to register the component to be used in a pipeline.
+	ScriptEcs::get_singleton()->register_dynamic_components();
+
+	// Compose the script component
+	Ref<Component> component = ScriptEcs::get_singleton()->get_script_component(component_name);
+	CHECK(component.is_valid());
 
 	// Make sure the spawners extractions is working
 	{
-		CHECK(component.is_valid());
 		Vector<StringName> spawners = component->get_spawners();
 		CHECK(spawners.size() == 1);
 		CHECK(spawners[0] == StringName("TestEventSpawner"));
 	}
-
-	// Register the component.
-	ScriptEcs::get_singleton()->register_dynamic_component(component.ptr());
 
 	// Make sure the spawners are correctly set during component initialization.
 	{
@@ -115,24 +125,8 @@ TEST_CASE("[Modules][ECS] Test spawner Script registration.") {
 		CHECK(info.mutable_components_storage.has(SpawnTestComponent::get_component_id()));
 		CHECK(info.mutable_components_storage.has(ECS::get_component_id(component->get_name())));
 	}
-}
-} // namespace godex_tests
 
-void test_spawner_system(Spawner<TestEventSpawner> &p_test_event_spawner) {
-	// Add 1
-	SpawnTestComponent data;
-	data.a = 300;
-	p_test_event_spawner.insert(0, data);
-
-	// Add 2
-	p_test_event_spawner.insert_dynamic(ECS::get_component_id("TestSpawnScriptComponent.gd"), 1, Dictionary());
-
-	// Add 3
-	p_test_event_spawner.insert(2, TransformComponent());
-}
-
-namespace godex_tests {
-TEST_CASE("[Modules][ECS] Test spawner system.") {
+	// Try to use the spawner now.
 	World world;
 
 	Pipeline pipeline;
@@ -152,7 +146,7 @@ TEST_CASE("[Modules][ECS] Test spawner system.") {
 
 	// Make sure the `TestSpawnScriptComponent.gd` is added.
 	{
-		const StorageBase *storage = world.get_storage(ECS::get_component_id("TestSpawnScriptComponent.gd"));
+		const StorageBase *storage = world.get_storage(ECS::get_component_id(component_name));
 		CHECK(storage->has(1));
 	}
 
@@ -162,6 +156,7 @@ TEST_CASE("[Modules][ECS] Test spawner system.") {
 		const Storage<const TransformComponent> *storage = world.get_storage<const TransformComponent>();
 		CHECK(storage == nullptr);
 	}
+	finalize_script_ecs();
 }
 } // namespace godex_tests
 
