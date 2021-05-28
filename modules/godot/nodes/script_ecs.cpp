@@ -24,11 +24,7 @@ ScriptEcs *ScriptEcs::get_singleton() {
 ScriptEcs::~ScriptEcs() {
 	singleton = nullptr;
 
-	component_names.reset();
-	components.reset();
-
-	system_names.reset();
-	systems.reset();
+	__empty_scripts();
 }
 
 Vector<StringName> ScriptEcs::spawner_get_components(const StringName &spawner_name) {
@@ -197,7 +193,7 @@ uint64_t ScriptEcs::load_scripts(EditorFileSystemDirectory *p_dir) {
 
 			const bool changed =
 					p_dir->get_file_modified_time(i) > recent_modification_detected_time;
-			reload_script(p_dir->get_file_path(i), p_dir->get_file(i), changed);
+			__reload_script(p_dir->get_file_path(i), p_dir->get_file(i), changed);
 			recent_modification = MAX(recent_modification, p_dir->get_file_modified_time(i));
 		}
 	}
@@ -252,7 +248,7 @@ void ScriptEcs::register_runtime_scripts() {
 
 	const Array scripts = ProjectSettings::get_singleton()->get_setting("ECS/Autoload/scripts");
 	for (int i = 0; i < scripts.size(); i += 1) {
-		reload_script(scripts[i], String(scripts[i]).get_file(), true);
+		__reload_script(scripts[i], String(scripts[i]).get_file(), true);
 	}
 
 	register_dynamic_components();
@@ -300,62 +296,21 @@ void ScriptEcs::register_dynamic_systems() {
 void ScriptEcs::register_dynamic_system_bundles() {
 }
 
-void ScriptEcs::reload_script(const String &p_path, const String &p_name, const bool p_force_reload) {
+void ScriptEcs::__empty_scripts() {
+	component_names.reset();
+	components.reset();
+
+	system_names.reset();
+	systems.reset();
+
+	system_bundle_names.reset();
+	system_bundles.reset();
+}
+
+void ScriptEcs::__reload_script(const String &p_path, const String &p_name, const bool p_force_reload) {
 	if (p_force_reload) {
-		bool is_valid = false;
-
 		Ref<Script> script = ResourceLoader::load(p_path);
-		ERR_FAIL_COND(script.is_null());
-
-		const StringName base_type = script->get_instance_base_type();
-		if (base_type == "System") {
-			Ref<System> system = reload_system(script, p_path, p_name);
-			if (system.is_valid()) {
-				system->verified = true;
-				is_valid = true;
-			}
-		} else if (base_type == "Component") {
-			Ref<Component> component = reload_component(script, p_path, p_name);
-			if (component.is_valid()) {
-				component->verified = true;
-				is_valid = true;
-
-				// Fetch the spawners.
-				Vector<StringName> comp_spawners = component->get_spawners();
-				for (int y = 0; y < comp_spawners.size(); y += 1) {
-					Set<StringName> *spawner_components = spawners.lookup_ptr(comp_spawners[y]);
-					if (spawner_components == nullptr) {
-						spawners.insert(comp_spawners[y], Set<StringName>());
-						spawner_components = spawners.lookup_ptr(comp_spawners[y]);
-					}
-					spawner_components->insert(p_name);
-				}
-			} else {
-				if (p_force_reload) {
-					// Make sure this component is not part of any spawner.
-					for (OAHashMap<StringName, Set<StringName>>::Iterator it = spawners.iter(); it.valid; it = spawners.next_iter(it)) {
-						it.value->erase(p_name);
-					}
-				}
-			}
-		} else if (base_type == "SystemBundle") {
-			Ref<SystemBundle> bundle = reload_system_bundle(script, p_path, p_name);
-			if (bundle.is_valid()) {
-				bundle->verified = true;
-				is_valid = true;
-			}
-		} else {
-			// Not an ecs script, nothing to do.
-			return;
-		}
-
-		if (is_valid) {
-			// Make sure the path is stored.
-			save_script("ECS/Autoload/scripts", p_path);
-		} else {
-			// Make sure the path removed.
-			remove_script("ECS/Autoload/scripts", p_path);
-		}
+		__reload_script(script, p_path, p_name);
 	} else {
 		Ref<System> system = get_script_system(p_name);
 		if (system.is_valid()) {
@@ -374,7 +329,60 @@ void ScriptEcs::reload_script(const String &p_path, const String &p_name, const 
 	}
 }
 
-Ref<SystemBundle> ScriptEcs::reload_system_bundle(Ref<Script> p_script, const String &p_path, const String &p_name) {
+void ScriptEcs::__reload_script(Ref<Script> script, const String &p_path, const String &p_name) {
+	bool is_valid = false;
+	ERR_FAIL_COND(script.is_null());
+
+	const StringName base_type = script->get_instance_base_type();
+	if (base_type == "System") {
+		Ref<System> system = __reload_system(script, p_path, p_name);
+		if (system.is_valid()) {
+			system->verified = true;
+			is_valid = true;
+		}
+	} else if (base_type == "Component") {
+		Ref<Component> component = __reload_component(script, p_path, p_name);
+		if (component.is_valid()) {
+			component->verified = true;
+			is_valid = true;
+
+			// Fetch the spawners.
+			Vector<StringName> comp_spawners = component->get_spawners();
+			for (int y = 0; y < comp_spawners.size(); y += 1) {
+				Set<StringName> *spawner_components = spawners.lookup_ptr(comp_spawners[y]);
+				if (spawner_components == nullptr) {
+					spawners.insert(comp_spawners[y], Set<StringName>());
+					spawner_components = spawners.lookup_ptr(comp_spawners[y]);
+				}
+				spawner_components->insert(p_name);
+			}
+		} else {
+			// Make sure this component is not part of any spawner.
+			for (OAHashMap<StringName, Set<StringName>>::Iterator it = spawners.iter(); it.valid; it = spawners.next_iter(it)) {
+				it.value->erase(p_name);
+			}
+		}
+	} else if (base_type == "SystemBundle") {
+		Ref<SystemBundle> bundle = __reload_system_bundle(script, p_path, p_name);
+		if (bundle.is_valid()) {
+			bundle->verified = true;
+			is_valid = true;
+		}
+	} else {
+		// Not an ecs script, nothing to do.
+		return;
+	}
+
+	if (is_valid) {
+		// Make sure the path is stored.
+		save_script("ECS/Autoload/scripts", p_path);
+	} else {
+		// Make sure the path removed.
+		remove_script("ECS/Autoload/scripts", p_path);
+	}
+}
+
+Ref<SystemBundle> ScriptEcs::__reload_system_bundle(Ref<Script> p_script, const String &p_path, const String &p_name) {
 	const StringName name = p_name;
 	const int64_t index = system_bundle_names.find(name);
 	Ref<SystemBundle> bundle = index >= 0 ? system_bundles[index] : Ref<SystemBundle>();
@@ -408,7 +416,7 @@ Ref<SystemBundle> ScriptEcs::reload_system_bundle(Ref<Script> p_script, const St
 	return bundle;
 }
 
-Ref<System> ScriptEcs::reload_system(Ref<Script> p_script, const String &p_path, const String &p_name) {
+Ref<System> ScriptEcs::__reload_system(Ref<Script> p_script, const String &p_path, const String &p_name) {
 	const StringName name = p_name;
 	const int64_t index = system_names.find(name);
 	Ref<System> system = index >= 0 ? systems[index] : Ref<System>();
@@ -442,23 +450,20 @@ Ref<System> ScriptEcs::reload_system(Ref<Script> p_script, const String &p_path,
 	return system;
 }
 
-Ref<Component> ScriptEcs::reload_component(Ref<Script> p_script, const String &p_path, const String &p_name) {
+Ref<Component> ScriptEcs::__reload_component(Ref<Script> p_script, const String &p_path, const String &p_name) {
 	const StringName name = p_name;
 	const int64_t index = component_names.find(name);
 	Ref<Component> component = index >= 0 ? components[index] : Ref<Component>();
 	if (component.is_null()) {
 		// Component doesn't exists yet.
-
-		Ref<Script> script = ResourceLoader::load(p_path);
-
-		ERR_FAIL_COND_V_MSG(script.is_null(), Ref<Component>(), "The script [" + p_path + "] can't be loaded.");
-		ERR_FAIL_COND_V_MSG(script->is_valid() == false, Ref<Component>(), "The script [" + p_path + "] is not a valid script.");
-		const String res = Component::validate_script(script);
+		ERR_FAIL_COND_V_MSG(p_script.is_null(), Ref<Component>(), "The script [" + p_path + "] can't be loaded.");
+		ERR_FAIL_COND_V_MSG(p_script->is_valid() == false, Ref<Component>(), "The script [" + p_path + "] is not a valid script.");
+		const String res = Component::validate_script(p_script);
 		ERR_FAIL_COND_V_MSG(res != "", Ref<Component>(), "This script [" + p_path + "] is not valid: " + res);
 
 		component.instance();
 		component->internal_set_name(name);
-		component->internal_set_component_script(script);
+		component->internal_set_component_script(p_script);
 		component->script_path = p_path;
 
 		component_names.push_back(name);

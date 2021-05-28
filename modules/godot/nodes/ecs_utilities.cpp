@@ -34,41 +34,8 @@ void System::_bind_methods() {
 	// TODO how to define `_for_each`? It has  dynamic argument, depending on the `_prepare` function.
 }
 
-void System::prepare(godex::DynamicSystemInfo *p_info, godex::system_id p_id) {
-	ERR_FAIL_COND_MSG(p_info == nullptr, "[FATAL] This is not supposed to happen.");
-	ERR_FAIL_COND_MSG(get_script_instance() == nullptr, "[FATAL] This is not supposed to happen.");
-
-	// Set the components and databags
-	id = p_id;
-	info = p_info;
-	Callable::CallError err;
-	prepare_in_progress = true;
-	get_script_instance()->call("_prepare", nullptr, 0, err);
-	prepare_in_progress = false;
-
-	// Set this object as target.
-	info->set_target(get_script_instance());
-	info->build();
-}
-
-void System::fetch_execution_data(ScriptSystemExecutionInfo *r_info) {
-	ERR_FAIL_COND_MSG(get_script_instance() == nullptr, "[FATAL] This is not supposed to happen.");
-
-	execution_info = r_info;
-
-	Callable::CallError err;
-	get_script_instance()->call("_prepare", nullptr, 0, err);
-
-	execution_info = nullptr;
-}
-
 const String &System::get_script_path() const {
 	return script_path;
-}
-
-void System::__force_set_system_info(godex::DynamicSystemInfo *p_info, godex::system_id p_id) {
-	id = p_id;
-	info = p_info;
 }
 
 System::System() {
@@ -170,6 +137,38 @@ uint32_t System::get_current_entity_id() const {
 	return info->get_current_entity_id();
 }
 
+void System::__force_set_system_info(godex::DynamicSystemInfo *p_info, godex::system_id p_id) {
+	id = p_id;
+	info = p_info;
+}
+
+void System::prepare(godex::DynamicSystemInfo *p_info, godex::system_id p_id) {
+	ERR_FAIL_COND_MSG(p_info == nullptr, "[FATAL] This is not supposed to happen.");
+	ERR_FAIL_COND_MSG(get_script_instance() == nullptr, "[FATAL] This is not supposed to happen.");
+
+	// Set the components and databags
+	id = p_id;
+	info = p_info;
+	Callable::CallError err;
+	prepare_in_progress = true;
+	get_script_instance()->call("_prepare", nullptr, 0, err);
+	prepare_in_progress = false;
+
+	// Set this object as target.
+	info->set_target(get_script_instance());
+	info->build();
+}
+
+void System::fetch_execution_data(ScriptSystemExecutionInfo *r_info) {
+	ERR_FAIL_COND_MSG(get_script_instance() == nullptr, "[FATAL] This is not supposed to happen.");
+
+	execution_info = r_info;
+
+	Callable::CallError err;
+	get_script_instance()->call("_prepare", nullptr, 0, err);
+
+	execution_info = nullptr;
+}
 String System::validate_script(Ref<Script> p_script) {
 	if (p_script.is_null()) {
 		return TTR("Script is null.");

@@ -88,12 +88,14 @@ public:
 	void register_dynamic_systems();
 	void register_dynamic_system_bundles();
 
-private:
-	void reload_script(const String &p_path, const String &p_name, const bool p_force_reload);
-	Ref<SystemBundle> reload_system_bundle(Ref<Script> p_script, const String &p_path, const String &p_name);
-	Ref<System> reload_system(Ref<Script> p_script, const String &p_path, const String &p_name);
-	Ref<Component> reload_component(Ref<Script> p_script, const String &p_path, const String &p_name);
+	void __empty_scripts();
+	void __reload_script(const String &p_path, const String &p_name, const bool p_force_reload);
+	void __reload_script(Ref<Script> p_script, const String &p_path, const String &p_name);
+	Ref<SystemBundle> __reload_system_bundle(Ref<Script> p_script, const String &p_path, const String &p_name);
+	Ref<System> __reload_system(Ref<Script> p_script, const String &p_path, const String &p_name);
+	Ref<Component> __reload_component(Ref<Script> p_script, const String &p_path, const String &p_name);
 
+private:
 	void save_script(const String &p_setting_list_name, const String &p_script_path);
 	void remove_script(const String &p_setting_list_name, const String &p_script_path);
 };
