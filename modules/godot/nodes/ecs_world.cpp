@@ -49,12 +49,12 @@ StringName PipelineECS::get_pipeline_name() const {
 	return pipeline_name;
 }
 
-void PipelineECS::set_systems_name(Array p_system_names) {
+void PipelineECS::set_systems_name(Vector<StringName> p_system_names) {
 	systems_name = p_system_names;
 	notify_property_list_changed();
 }
 
-Array PipelineECS::get_systems_name() const {
+Vector<StringName> PipelineECS::get_systems_name() const {
 	return systems_name;
 }
 

@@ -106,9 +106,21 @@ bool ScriptEcs::component_is_shared(const StringName &p_component_name) {
 	}
 }
 
-Ref<SystemBundle> ScriptEcs::get_script_system_bundle(const StringName &p_name) {
+Ref<SystemBundle> ScriptEcs::get_script_system_bundle(const StringName &p_name) const {
 	const int64_t index = system_bundle_names.find(p_name);
 	return index >= 0 ? system_bundles[index] : Ref<SystemBundle>();
+}
+
+void ScriptEcs::system_bundle_fetch_descriptor(
+		const StringName &p_name,
+		SystmeDescriptor &r_descriptor) const {
+	/*
+	Ref<SystemBundle> bundle = get_script_system_bundle(p_name);
+	if (bundle.is_valid()) {
+		bundle->__fetch_descriptor(r_descriptor);
+		return;
+	}
+	*/
 }
 
 const LocalVector<StringName> &ScriptEcs::get_script_system_names() {

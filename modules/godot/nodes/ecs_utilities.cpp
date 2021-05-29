@@ -48,25 +48,25 @@ System::~System() {
 }
 
 void System::execute_in_phase(Phase p_phase) {
-	if (execution_info != nullptr) {
-		execution_info->execution_phase = p_phase;
+	if (system_descriptor != nullptr) {
+		system_descriptor->phase = p_phase;
 	}
 }
 
 void System::execute_after(const StringName &p_system_name) {
-	if (execution_info != nullptr) {
-		execution_info->dependencies.push_back({ false, p_system_name });
+	if (system_descriptor != nullptr) {
+		system_descriptor->dependencies.push_back({ false, p_system_name });
 	}
 }
 
 void System::execute_before(const StringName &p_system_name) {
-	if (execution_info != nullptr) {
-		execution_info->dependencies.push_back({ true, p_system_name });
+	if (system_descriptor != nullptr) {
+		system_descriptor->dependencies.push_back({ true, p_system_name });
 	}
 }
 
 void System::set_space(Space p_space) {
-	if (execution_info != nullptr) {
+	if (system_descriptor != nullptr) {
 		// Nothing to do.
 		return;
 	}
@@ -75,16 +75,16 @@ void System::set_space(Space p_space) {
 }
 
 void System::with_databag(uint32_t p_databag_id, Mutability p_mutability) {
-	if (execution_info != nullptr) {
-		// Nothing to do.
-		return;
+	if (system_descriptor != nullptr) {
+		//system_descriptor->;
+	} else {
+		ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
+		info->with_databag(p_databag_id, p_mutability == MUTABLE);
 	}
-	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
-	info->with_databag(p_databag_id, p_mutability == MUTABLE);
 }
 
 void System::with_storage(uint32_t p_component_id) {
-	if (execution_info != nullptr) {
+	if (system_descriptor != nullptr) {
 		// Nothing to do.
 		return;
 	}
@@ -93,7 +93,7 @@ void System::with_storage(uint32_t p_component_id) {
 }
 
 void System::with_component(uint32_t p_component_id, Mutability p_mutability) {
-	if (execution_info != nullptr) {
+	if (system_descriptor != nullptr) {
 		// Nothing to do.
 		return;
 	}
@@ -102,7 +102,7 @@ void System::with_component(uint32_t p_component_id, Mutability p_mutability) {
 }
 
 void System::maybe_component(uint32_t p_component_id, Mutability p_mutability) {
-	if (execution_info != nullptr) {
+	if (system_descriptor != nullptr) {
 		// Nothing to do.
 		return;
 	}
@@ -111,7 +111,7 @@ void System::maybe_component(uint32_t p_component_id, Mutability p_mutability) {
 }
 
 void System::changed_component(uint32_t p_component_id, Mutability p_mutability) {
-	if (execution_info != nullptr) {
+	if (system_descriptor != nullptr) {
 		// Nothing to do.
 		return;
 	}
@@ -120,7 +120,7 @@ void System::changed_component(uint32_t p_component_id, Mutability p_mutability)
 }
 
 void System::not_component(uint32_t p_component_id) {
-	if (execution_info != nullptr) {
+	if (system_descriptor != nullptr) {
 		// Nothing to do.
 		return;
 	}
@@ -159,16 +159,17 @@ void System::prepare(godex::DynamicSystemInfo *p_info, godex::system_id p_id) {
 	info->build();
 }
 
-void System::fetch_execution_data(ScriptSystemExecutionInfo *r_info) {
+void System::__fetch_descriptor(SystmeDescriptor *r_descriptor) {
 	ERR_FAIL_COND_MSG(get_script_instance() == nullptr, "[FATAL] This is not supposed to happen.");
 
-	execution_info = r_info;
+	system_descriptor = r_descriptor;
 
 	Callable::CallError err;
 	get_script_instance()->call("_prepare", nullptr, 0, err);
 
-	execution_info = nullptr;
+	system_descriptor = nullptr;
 }
+
 String System::validate_script(Ref<Script> p_script) {
 	if (p_script.is_null()) {
 		return TTR("Script is null.");
@@ -216,22 +217,16 @@ void SystemBundle::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("after", "dependency"), &SystemBundle::after);
 }
 
-void SystemBundle::__fetch_systems(String *r_desc, LocalVector<StringName> *r_systems, LocalVector<Dependency> *r_dependencies) {
+void SystemBundle::__fetch_descriptor(SystemBundleDescriptor *r_descriptor) {
 	ERR_FAIL_COND_MSG(get_script_instance() == nullptr, "[FATAL] This is not supposed to happen.");
-	CRASH_COND_MSG(r_desc == nullptr, "r_desc is a requited variable.");
-	CRASH_COND_MSG(r_systems == nullptr, "r_system is a requited variable.");
-	CRASH_COND_MSG(r_dependencies == nullptr, "r_dependencies is a requited variable.");
+	CRASH_COND_MSG(r_descriptor == nullptr, "r_desc is a requited variable.");
 
-	description = r_desc;
-	systems = r_systems;
-	dependencies = r_dependencies;
+	descriptor = r_descriptor;
 
 	Callable::CallError err;
 	get_script_instance()->call("_prepare", nullptr, 0, err);
 
-	description = nullptr;
-	systems = nullptr;
-	dependencies = nullptr;
+	descriptor = nullptr;
 }
 
 const String &SystemBundle::get_script_path() const {
@@ -239,23 +234,23 @@ const String &SystemBundle::get_script_path() const {
 }
 
 void SystemBundle::add(const StringName &p_system_name) {
-	ERR_FAIL_COND_MSG(description == nullptr, "Never call `_prepare` directly. Use `__fetch_systems` instead.");
-	systems->push_back(p_system_name);
+	ERR_FAIL_COND_MSG(descriptor == nullptr, "Never call `_prepare` directly. Use `__fetch_descriptor` instead.");
+	descriptor->systems.push_back(p_system_name);
 }
 
 void SystemBundle::with_description(const String &p_desc) {
-	ERR_FAIL_COND_MSG(description == nullptr, "Never call `_prepare` directly. Use `__fetch_systems` instead.");
-	*description = p_desc;
+	ERR_FAIL_COND_MSG(descriptor == nullptr, "Never call `_prepare` directly. Use `__fetch_descriptor` instead.");
+	descriptor->description = p_desc;
 }
 
 void SystemBundle::before(const StringName &p_dependency) {
-	ERR_FAIL_COND_MSG(description == nullptr, "Never call `_prepare` directly. Use `__fetch_systems` instead.");
-	dependencies->push_back({ true, p_dependency });
+	ERR_FAIL_COND_MSG(descriptor == nullptr, "Never call `_prepare` directly. Use `__fetch_descriptor` instead.");
+	descriptor->dependencies.push_back({ true, p_dependency });
 }
 
 void SystemBundle::after(const StringName &p_dependency) {
-	ERR_FAIL_COND_MSG(description == nullptr, "Never call `_prepare` directly. Use `__fetch_systems` instead.");
-	dependencies->push_back({ false, p_dependency });
+	ERR_FAIL_COND_MSG(descriptor == nullptr, "Never call `_prepare` directly. Use `__fetch_descriptor` instead.");
+	descriptor->dependencies.push_back({ false, p_dependency });
 }
 
 String SystemBundle::validate_script(Ref<Script> p_script) {

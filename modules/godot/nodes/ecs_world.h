@@ -18,7 +18,7 @@ class PipelineECS : public Resource {
 	/// This name is used to reference this pipeline.
 	StringName pipeline_name;
 
-	Array systems_name;
+	Vector<StringName> systems_name;
 	// TODO add the physics stage
 
 	// This is just a cache value so to avoid rebuild the pipeline each time
@@ -35,8 +35,8 @@ public:
 	void set_pipeline_name(StringName p_name);
 	StringName get_pipeline_name() const;
 
-	void set_systems_name(Array p_system_names);
-	Array get_systems_name() const;
+	void set_systems_name(Vector<StringName>p_system_names);
+	Vector<StringName> get_systems_name() const;
 
 	/// Insert a new system into the world. This `System` is not immediately
 	/// added to the world. This function is mainly used by the editor to
