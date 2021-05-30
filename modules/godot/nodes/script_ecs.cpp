@@ -61,51 +61,6 @@ Ref<Component> ScriptEcs::get_script_component(const StringName &p_name) {
 	return index < 0 ? Ref<Component>() : components[index];
 }
 
-void ScriptEcs::component_get_properties(const StringName &p_component_name, List<PropertyInfo> *r_properties) {
-	Ref<Component> script_component = ScriptEcs::get_script_component(p_component_name);
-	if (Engine::get_singleton()->is_editor_hint() && script_component.is_valid()) {
-		script_component->get_component_property_list(r_properties);
-	} else {
-		const godex::component_id component = ECS::get_component_id(p_component_name);
-		ERR_FAIL_COND_MSG(component == godex::COMPONENT_NONE, "The component " + p_component_name + " doesn't exists.");
-
-		const LocalVector<PropertyInfo> *props = ECS::get_component_properties(component);
-		for (uint32_t i = 0; i < props->size(); i += 1) {
-			r_properties->push_back((*props)[i]);
-		}
-	}
-}
-
-bool ScriptEcs::component_get_property_default_value(const StringName &p_component_name, const StringName &p_property_name, Variant &r_ret) {
-	if (component_is_shared(p_component_name)) {
-		// TODO by default the shared component is null?
-		r_ret = Variant();
-		return true;
-	}
-
-	Ref<Component> script_component = get_script_component(p_component_name);
-	if (Engine::get_singleton()->is_editor_hint() && script_component.is_valid()) {
-		// This is a Script Component and we are on editor.
-		r_ret = script_component->get_property_default_value(p_property_name);
-		return true;
-	} else {
-		// We are not on editor or this is a native component.
-		const godex::component_id id = ECS::get_component_id(p_component_name);
-		ERR_FAIL_COND_V_MSG(id == UINT32_MAX, false, "The component " + p_component_name + " doesn't exists.");
-		r_ret = ECS::get_component_property_default(id, p_property_name);
-		return true;
-	}
-}
-
-bool ScriptEcs::component_is_shared(const StringName &p_component_name) {
-	if (get_script_component(p_component_name).is_valid()) {
-		// TODO Not yet supported in GDScript.
-		return false;
-	} else {
-		return ECS::is_component_sharable(ECS::get_component_id(p_component_name));
-	}
-}
-
 Ref<SystemBundle> ScriptEcs::get_script_system_bundle(const StringName &p_name) const {
 	const int64_t index = system_bundle_names.find(p_name);
 	return index >= 0 ? system_bundles[index] : Ref<SystemBundle>();
@@ -262,50 +217,6 @@ void ScriptEcs::register_runtime_scripts() {
 	for (int i = 0; i < scripts.size(); i += 1) {
 		__reload_script(scripts[i], String(scripts[i]).get_file(), true);
 	}
-
-	register_dynamic_components();
-	// TODO register databags
-	register_dynamic_systems();
-	register_dynamic_system_bundles();
-}
-
-void ScriptEcs::register_dynamic_components() {
-	for (uint32_t i = 0; i < components.size(); i += 1) {
-		components[i]->internal_set_name(component_names[i]);
-		register_dynamic_component(components[i].ptr());
-	}
-}
-
-void ScriptEcs::register_dynamic_component(Component *p_component) {
-	List<PropertyInfo> raw_properties;
-	p_component->get_component_property_list(&raw_properties);
-
-	LocalVector<ScriptProperty> properties;
-	properties.reserve(raw_properties.size());
-	for (List<PropertyInfo>::Element *e = raw_properties.front(); e; e = e->next()) {
-		properties.push_back({ e->get(),
-				// TODO use a way to get all the values at once.
-				p_component->get_property_default_value(e->get().name) });
-	}
-
-	ECS::register_script_component(
-			p_component->get_name(),
-			properties,
-			// TODO make the storage customizable.
-			StorageType::DENSE_VECTOR,
-			p_component->get_spawners());
-}
-
-void ScriptEcs::register_dynamic_systems() {
-	for (uint32_t i = 0; i < systems.size(); i += 1) {
-		systems[i]->id = ECS::register_dynamic_system(system_names[i]).get_id();
-		systems[i]->prepare(
-				ECS::get_dynamic_system_info(systems[i]->id),
-				systems[i]->id);
-	}
-}
-
-void ScriptEcs::register_dynamic_system_bundles() {
 }
 
 void ScriptEcs::__empty_scripts() {
@@ -319,31 +230,35 @@ void ScriptEcs::__empty_scripts() {
 	system_bundles.reset();
 }
 
-void ScriptEcs::__reload_script(const String &p_path, const String &p_name, const bool p_force_reload) {
+bool ScriptEcs::__reload_script(const String &p_path, const String &p_name, const bool p_force_reload) {
 	if (p_force_reload) {
 		Ref<Script> script = ResourceLoader::load(p_path);
-		__reload_script(script, p_path, p_name);
+		return __reload_script(script, p_path, p_name);
 	} else {
 		Ref<System> system = get_script_system(p_name);
 		if (system.is_valid()) {
 			system->verified = true;
+			return true;
 		} else {
 			Ref<Component> component = get_script_component(p_name);
 			if (component.is_valid()) {
 				component->verified = true;
+				return true;
 			} else {
 				Ref<SystemBundle> bundle = get_script_system_bundle(p_name);
 				if (bundle.is_valid()) {
 					bundle->verified = true;
+					return true;
 				}
 			}
 		}
 	}
+	return false;
 }
 
-void ScriptEcs::__reload_script(Ref<Script> script, const String &p_path, const String &p_name) {
+bool ScriptEcs::__reload_script(Ref<Script> script, const String &p_path, const String &p_name) {
 	bool is_valid = false;
-	ERR_FAIL_COND(script.is_null());
+	ERR_FAIL_COND_V(script.is_null(), false);
 
 	const StringName base_type = script->get_instance_base_type();
 	if (base_type == "System") {
@@ -382,7 +297,7 @@ void ScriptEcs::__reload_script(Ref<Script> script, const String &p_path, const 
 		}
 	} else {
 		// Not an ecs script, nothing to do.
-		return;
+		return false;
 	}
 
 	if (is_valid) {
@@ -392,6 +307,7 @@ void ScriptEcs::__reload_script(Ref<Script> script, const String &p_path, const 
 		// Make sure the path removed.
 		remove_script("ECS/Autoload/scripts", p_path);
 	}
+	return is_valid;
 }
 
 Ref<SystemBundle> ScriptEcs::__reload_system_bundle(Ref<Script> p_script, const String &p_path, const String &p_name) {
@@ -459,6 +375,11 @@ Ref<System> ScriptEcs::__reload_system(Ref<Script> p_script, const String &p_pat
 		}
 	}
 
+	system->id = ECS::register_dynamic_system(name).get_id();
+	system->prepare(
+			ECS::get_dynamic_system_info(system->id),
+			system->id);
+
 	return system;
 }
 
@@ -474,8 +395,6 @@ Ref<Component> ScriptEcs::__reload_component(Ref<Script> p_script, const String 
 		ERR_FAIL_COND_V_MSG(res != "", Ref<Component>(), "This script [" + p_path + "] is not valid: " + res);
 
 		component.instance();
-		component->internal_set_name(name);
-		component->internal_set_component_script(p_script);
 		component->script_path = p_path;
 
 		component_names.push_back(name);
@@ -492,6 +411,27 @@ Ref<Component> ScriptEcs::__reload_component(Ref<Script> p_script, const String 
 			ERR_FAIL_V_MSG(Ref<Component>(), "This script [" + p_path + "] is not a valid Component: " + res);
 		}
 	}
+
+	component->internal_set_name(name);
+	component->internal_set_component_script(p_script);
+
+	List<PropertyInfo> raw_properties;
+	component->get_component_property_list(&raw_properties);
+
+	LocalVector<ScriptProperty> properties;
+	properties.reserve(raw_properties.size());
+	for (List<PropertyInfo>::Element *e = raw_properties.front(); e; e = e->next()) {
+		properties.push_back({ e->get(),
+				// TODO use a way to get all the values at once.
+				component->get_property_default_value(e->get().name) });
+	}
+
+	ECS::register_or_update_script_component(
+			component->get_name(),
+			properties,
+			// TODO make the storage customizable.
+			StorageType::DENSE_VECTOR,
+			component->get_spawners());
 
 	return component;
 }

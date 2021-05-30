@@ -52,7 +52,7 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 	props.push_back({ PropertyInfo(Variant::BOOL, "variable_2"), false });
 	props.push_back({ PropertyInfo(Variant::TRANSFORM, "variable_3"), Transform() });
 
-	const uint32_t test_world_component_id = ECS::register_script_component(
+	const uint32_t test_world_component_id = ECS::register_or_update_script_component(
 			"TestWorldComponent1.gd",
 			props,
 			StorageType::DENSE_VECTOR,

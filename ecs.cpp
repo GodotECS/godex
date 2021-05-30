@@ -352,7 +352,14 @@ SystemInfo &ECS::register_system(func_get_system_exe_info p_func_get_exe_info, S
 SystemInfo &ECS::register_dynamic_system(StringName p_name) {
 	{
 		const uint32_t id = get_system_id(p_name);
-		CRASH_COND_MSG(id != godex::SYSTEM_NONE, "The system is already registered.");
+		if (id != godex::SYSTEM_NONE) {
+			// The system is already registered, if it's a dynamic system reset it.
+			CRASH_COND_MSG(systems_info[id].dynamic_system_id == UINT32_MAX, "You can't register a dynamic system with the same name of a static one. Name used: " + p_name);
+			godex::DynamicSystemInfo *si = godex::get_dynamic_system_info(systems_info[id].dynamic_system_id);
+			si->reset();
+			si->set_system_id(id);
+			return systems_info[id];
+		}
 	}
 
 	const godex::system_id id = systems.size();
@@ -610,19 +617,30 @@ const LocalVector<godex::component_id> &ECS::get_spawnable_components(godex::spa
 	return spawners_info[p_spawner].components;
 }
 
-uint32_t ECS::register_script_component(
+uint32_t ECS::register_or_update_script_component(
 		const StringName &p_name,
 		const LocalVector<ScriptProperty> &p_properties,
 		StorageType p_storage_type,
 		Vector<StringName> p_spawners) {
-	{
-		const uint32_t id = get_component_id(p_name);
-		ERR_FAIL_COND_V_MSG(id != UINT32_MAX, UINT32_MAX, "The script component " + p_name + " is already registered.");
+	godex::component_id id = get_component_id(p_name);
+	DynamicComponentInfo *info;
+
+	if (id == godex::COMPONENT_NONE) {
+		// This is a new component.
+		id = components_info.size();
+		info = memnew(DynamicComponentInfo);
+		info->component_id = id;
+
+		components.push_back(p_name);
+		components_info.push_back(ComponentInfo());
+		components_info[id].dynamic_component_info = info;
+	} else {
+		// This is an old component, verify is a script component.
+		ERR_FAIL_COND_V_MSG(components_info[id].dynamic_component_info == nullptr, godex::COMPONENT_NONE, "This component " + p_name + " is not a script component and can't be updated. Your component must be an unique name.");
+		info = components_info[id].dynamic_component_info;
 	}
 
-	// This component is not registered, go ahead.
-	DynamicComponentInfo *info = memnew(DynamicComponentInfo);
-
+	info->property_map.resize(p_properties.size());
 	info->properties.resize(p_properties.size());
 	info->defaults.resize(p_properties.size());
 
@@ -636,7 +654,6 @@ uint32_t ECS::register_script_component(
 			case Variant::SIGNAL:
 			case Variant::CALLABLE:
 				// TODO what about dictionary and arrays?
-				memdelete(info);
 				ERR_PRINT("The script component " + p_name + " is using a pointer variable. This is unsafe, so not supported. Please use a databag.");
 				return UINT32_MAX;
 			default:
@@ -646,57 +663,40 @@ uint32_t ECS::register_script_component(
 
 		// Is default type correct?
 		if (p_properties[i].property.type != p_properties[i].default_value.get_type()) {
-			memdelete(info);
 			ERR_PRINT("The script variable " + p_name + "::" + p_properties[i].property.name + " is being initialized with a different default variable type.");
 			return UINT32_MAX;
 		}
 
-		info->property_map.push_back(p_properties[i].property.name);
+		info->property_map[i] = p_properties[i].property.name;
 		info->properties[i] = p_properties[i].property;
 		info->defaults[i] = p_properties[i].default_value;
 	}
 
-	info->component_id = components.size();
 	info->storage_type = p_storage_type;
 
 	// Extract the spawners.
-	LocalVector<godex::spawner_id> spawners;
+	components_info[id].spawners.clear();
 	for (int i = 0; i < p_spawners.size(); i += 1) {
 		const godex::spawner_id spawner = get_spawner_id(p_spawners[i]);
 		ERR_CONTINUE_MSG(ECS::verify_spawner_id(spawner) == false, "The script component " + p_name + " has an invalid spawner with name: " + p_spawners[i]);
 
-		spawners.push_back(spawner);
+		components_info[id].spawners.push_back(spawner);
 		spawners_info[spawner].components.push_back(info->component_id);
 	}
 
-	components.push_back(p_name);
-	components_info.push_back(
-			ComponentInfo{
-					nullptr,
-					nullptr,
-					nullptr,
-					nullptr,
-					info,
-					false,
-					false,
-					false, // is_shared_component_storage?
-					spawners,
-					DataAccessorFuncs() });
-
 	// Add a new scripting constant, for fast and easy `component` access.
-	ClassDB::bind_integer_constant(get_class_static(), StringName(), String(p_name).replace(".", "_"), info->component_id);
+	ClassDB::bind_integer_constant(get_class_static(), StringName(), String(p_name).replace(".", "_"), id);
+	print_line("ComponentScript: " + p_name + " registered with ID: " + itos(id));
 
-	print_line("ComponentScript: " + p_name + " registered with ID: " + itos(info->component_id));
-
-	return info->component_id;
+	return id;
 }
 
-uint32_t ECS::register_script_component_event(
+uint32_t ECS::register_or_update_script_component_event(
 		const StringName &p_name,
 		const LocalVector<ScriptProperty> &p_properties,
 		StorageType p_storage_type,
 		Vector<StringName> p_spawners) {
-	const uint32_t cid = register_script_component(p_name, p_properties, p_storage_type, p_spawners);
+	const uint32_t cid = register_or_update_script_component(p_name, p_properties, p_storage_type, p_spawners);
 	ERR_FAIL_COND_V(cid == UINT32_MAX, UINT32_MAX);
 
 	components_info[cid].is_event = true;

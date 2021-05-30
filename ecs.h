@@ -36,10 +36,10 @@ struct SpawnerInfo {
 /// These functions are implemented by the `COMPONENT` macro and assigned during
 /// component registration.
 struct ComponentInfo {
-	StorageBase *(*create_storage)();
-	void *(*new_component)();
-	void (*free_component)(void *);
-	void (*get_storage_config)(Dictionary &);
+	StorageBase *(*create_storage)() = nullptr;
+	void *(*new_component)() = nullptr;
+	void (*free_component)(void *) = nullptr;
+	void (*get_storage_config)(Dictionary &) = nullptr;
 	DynamicComponentInfo *dynamic_component_info = nullptr;
 	bool notify_release_write = false;
 	bool is_event = false;
@@ -52,7 +52,7 @@ struct ComponentInfo {
 /// These functions are implemented by the `DATABAG` macro and assigned during
 /// component registration.
 struct DatabagInfo {
-	godex::Databag *(*create_databag)();
+	godex::Databag *(*create_databag)() = nullptr;
 
 	DataAccessorFuncs accessor_funcs;
 };
@@ -61,7 +61,7 @@ class SystemInfo {
 	friend class ECS;
 	friend class SystemBundleInfo;
 
-	godex::system_id id;
+	godex::system_id id = godex::SYSTEM_NONE;
 	Phase phase = PHASE_PROCESS;
 	LocalVector<Dependency> dependencies;
 	String description;
@@ -161,9 +161,8 @@ public:
 	template <class C>
 	static void register_component(StorageBase *(*create_storage)());
 
-	// TODO specify the storage here?
-	static uint32_t register_script_component(const StringName &p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type, Vector<StringName> p_spawners);
-	static uint32_t register_script_component_event(const StringName &p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type, Vector<StringName> p_spawners);
+	static uint32_t register_or_update_script_component(const StringName &p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type, Vector<StringName> p_spawners);
+	static uint32_t register_or_update_script_component_event(const StringName &p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type, Vector<StringName> p_spawners);
 
 	static uint32_t get_components_count();
 	static bool verify_component_id(uint32_t p_component_id);

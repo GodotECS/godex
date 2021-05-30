@@ -91,9 +91,6 @@ TEST_CASE("[Modules][ECS] Test spawner Script registration.") {
 		CHECK(build_and_register_ecs_script(component_name, code));
 	}
 
-	// Make sure to register the component to be used in a pipeline.
-	ScriptEcs::get_singleton()->register_dynamic_components();
-
 	// Compose the script component
 	Ref<Component> component = ScriptEcs::get_singleton()->get_script_component(component_name);
 	CHECK(component.is_valid());

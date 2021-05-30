@@ -465,7 +465,10 @@ bool ScriptComponentDepot::_getv(const StringName &p_name, Variant &r_ret) const
 	const Variant *v = data.getptr(p_name);
 	if (v == nullptr) {
 		// Take the default.
-		return ScriptEcs::get_singleton()->component_get_property_default_value(component_name, p_name, r_ret);
+		const godex::component_id id = ECS::get_component_id(p_name);
+		ERR_FAIL_COND_V(id == godex::COMPONENT_NONE, false);
+		r_ret = ECS::get_component_property_default(id, p_name);
+		return true;
 	} else {
 		r_ret = v->duplicate(true);
 		return true;
@@ -478,7 +481,7 @@ Dictionary ScriptComponentDepot::get_properties_data() const {
 
 void SharedComponentDepot::init(const StringName &p_name) {
 	ERR_FAIL_COND_MSG(component_name != StringName(), "The component is already initialized.");
-	ERR_FAIL_COND_MSG(ScriptEcs::get_singleton()->component_is_shared(p_name) == false, "Thid component " + p_name + " is not a shared component.");
+	ERR_FAIL_COND_MSG(ECS::is_component_sharable(ECS::get_component_id(p_name)) == false, "Thid component " + p_name + " is not a shared component.");
 	component_name = p_name;
 }
 
@@ -521,7 +524,10 @@ bool SharedComponentDepot::_getv(const StringName &p_name, Variant &r_ret) const
 		r_ret = data->get(p_name, &success);
 		if (success == false) {
 			// Take the default
-			return ScriptEcs::get_singleton()->component_get_property_default_value(component_name, p_name, r_ret);
+			const godex::component_id id = ECS::get_component_id(p_name);
+			ERR_FAIL_COND_V(id == godex::COMPONENT_NONE, false);
+			r_ret = ECS::get_component_property_default(id, p_name);
+			return true;
 		} else {
 			return true;
 		}

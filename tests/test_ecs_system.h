@@ -190,8 +190,6 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 		CHECK(build_and_register_ecs_script("TestDynamicSystemComponent1.gd", code));
 	}
 
-	ScriptEcs::get_singleton()->register_dynamic_components();
-
 	{
 		// Create the script.
 		String code;
@@ -212,8 +210,6 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 
 		CHECK(build_and_register_ecs_script("TestDynamicSystem1.gd", code));
 	}
-
-	ScriptEcs::get_singleton()->register_dynamic_systems();
 
 	World world;
 
@@ -454,8 +450,6 @@ TEST_CASE("[Modules][ECS] Test system databag fetch with dynamic query.") {
 
 		CHECK(build_and_register_ecs_script("TestDatabagDynamicSystem.gd", code));
 	}
-
-	ScriptEcs::get_singleton()->register_dynamic_systems();
 
 	World world;
 	world.create_databag<TestSystemSubPipeDatabag>();
@@ -765,7 +759,6 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 
 			CHECK(build_and_register_ecs_script("TestMoveHierarchySystem.gd", code));
 		}
-		ScriptEcs::get_singleton()->register_dynamic_systems();
 
 		// Create the pipeline.
 		Pipeline pipeline;
@@ -851,8 +844,6 @@ TEST_CASE("[Modules][ECS] Test Add/remove from dynamic system.") {
 		CHECK(build_and_register_ecs_script("TestRemoveDynamicSystem.gd", code));
 	}
 
-	ScriptEcs::get_singleton()->register_dynamic_systems();
-
 	World world;
 
 	const EntityID entity_1 = world
@@ -925,7 +916,6 @@ TEST_CASE("[Modules][ECS] Test fetch changed from dynamic system.") {
 
 		CHECK(build_and_register_ecs_script("TestChangedDynamicSystem.gd", code));
 	}
-	ScriptEcs::get_singleton()->register_dynamic_systems();
 
 	World world;
 
@@ -1040,7 +1030,6 @@ TEST_CASE("[Modules][ECS] Test fetch entity from nodepath, using a dynamic syste
 
 		CHECK(build_and_register_ecs_script("TestFetchEntityFromNodePath.gd", code));
 	}
-	ScriptEcs::get_singleton()->register_dynamic_systems();
 
 	World world;
 

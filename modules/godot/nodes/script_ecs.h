@@ -60,10 +60,6 @@ public:
 	/// Returns a script component.
 	Ref<Component> get_script_component(const StringName &p_name);
 
-	void component_get_properties(const StringName &p_component_name, List<PropertyInfo> *r_properties);
-	bool component_get_property_default_value(const StringName &p_component_name, const StringName &p_property_name, Variant &r_ret);
-	bool component_is_shared(const StringName &p_component_name);
-
 	// ------------------------------------------------------------------ Databag
 
 	// ----------------------------------------------------------- System Bundles
@@ -84,14 +80,10 @@ public:
 	void define_editor_default_component_properties();
 
 	void register_runtime_scripts();
-	void register_dynamic_components();
-	void register_dynamic_component(Component *p_component);
-	void register_dynamic_systems();
-	void register_dynamic_system_bundles();
 
 	void __empty_scripts();
-	void __reload_script(const String &p_path, const String &p_name, const bool p_force_reload);
-	void __reload_script(Ref<Script> p_script, const String &p_path, const String &p_name);
+	bool __reload_script(const String &p_path, const String &p_name, const bool p_force_reload);
+	bool __reload_script(Ref<Script> p_script, const String &p_path, const String &p_name);
 	Ref<SystemBundle> __reload_system_bundle(Ref<Script> p_script, const String &p_path, const String &p_name);
 	Ref<System> __reload_system(Ref<Script> p_script, const String &p_path, const String &p_name);
 	Ref<Component> __reload_component(Ref<Script> p_script, const String &p_path, const String &p_name);
