@@ -72,17 +72,17 @@ class SystemBundle : public Resource {
 
 	bool verified = false;
 	String script_path;
-	SystemBundleDescriptor *descriptor = nullptr;
+	StringName name;
 
 	static void _bind_methods();
-	void __fetch_descriptor(SystemBundleDescriptor *r_descriptor);
+	void __prepare(const StringName &p_name);
 	const String &get_script_path() const;
 
 public:
-	void add(const StringName &p_system_name);
+	void add(uint32_t p_system_id);
 	void with_description(const String &p_desc);
-	void before(const StringName &p_dependency);
-	void after(const StringName &p_dependency);
+	void before(uint32_t p_system_id);
+	void after(uint32_t p_system_id);
 
 	static String validate_script(Ref<Script> p_script);
 };

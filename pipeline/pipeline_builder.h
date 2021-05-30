@@ -1,8 +1,8 @@
 #pragma once
 
 #include "core/string/string_name.h"
-#include "core/templates/vector.h"
 #include "core/templates/local_vector.h"
+#include "core/templates/vector.h"
 
 class Pipeline;
 

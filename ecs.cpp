@@ -63,8 +63,19 @@ SystemBundleInfo &SystemBundleInfo::before(const StringName &p_system_name) {
 }
 
 SystemBundleInfo &SystemBundleInfo::add(const SystemInfo &p_system_info) {
-	systems.push_back(p_system_info.id);
+	systems.push_back(ECS::get_system_name(p_system_info.id));
 	return *this;
+}
+
+SystemBundleInfo &SystemBundleInfo::add(const StringName &p_system_name) {
+	systems.push_back(p_system_name);
+	return *this;
+}
+
+void SystemBundleInfo::reset() {
+	description = String();
+	systems.reset();
+	dependencies.reset();
 }
 
 void ECS::_bind_methods() {
@@ -314,7 +325,11 @@ void ECS::unsafe_databag_call(
 SystemBundleInfo &ECS::register_system_bundle(const StringName &p_name) {
 	{
 		const uint32_t id = get_system_bundle_id(p_name);
-		CRASH_COND_MSG(id != godex::SYSTEM_BUNDLE_NONE, "The system bundle is already registered.");
+		if (id != godex::SYSTEM_BUNDLE_NONE) {
+			// The system bundle is already registered.
+			system_bundles_info[id].reset();
+			return system_bundles_info[id];
+		}
 	}
 
 	const godex::system_bundle_id id = system_bundles.size();
@@ -331,6 +346,11 @@ godex::system_bundle_id ECS::get_system_bundle_id(const StringName &p_name) {
 	return index >= 0 ? godex::system_bundle_id(index) : godex::SYSTEM_BUNDLE_NONE;
 }
 
+SystemBundleInfo &ECS::get_system_bundle(godex::system_bundle_id p_id) {
+	CRASH_COND_MSG(system_bundles.size() <= p_id, "The sysetm bundle " + itos(p_id) + " doesn't exists.");
+	return system_bundles_info[p_id];
+}
+
 // Undefine the macro defined into `ecs.h` so we can define the method properly.
 #undef register_system
 SystemInfo &ECS::register_system(func_get_system_exe_info p_func_get_exe_info, StringName p_name) {
@@ -345,6 +365,7 @@ SystemInfo &ECS::register_system(func_get_system_exe_info p_func_get_exe_info, S
 	systems_info[id].id = id;
 	systems_info[id].exec_info = p_func_get_exe_info;
 
+	ClassDB::bind_integer_constant(get_class_static(), StringName(), p_name, id);
 	print_line("System: " + p_name + " registered with ID: " + itos(id));
 	return systems_info[id];
 }
@@ -376,6 +397,7 @@ SystemInfo &ECS::register_dynamic_system(StringName p_name) {
 
 	godex::get_dynamic_system_info(dynamic_system_id)->set_system_id(id);
 
+	ClassDB::bind_integer_constant(get_class_static(), StringName(), String(p_name).replace(".", "_"), id);
 	print_line("Dynamic system: " + p_name + " registered with ID: " + itos(id));
 
 	return systems_info[id];

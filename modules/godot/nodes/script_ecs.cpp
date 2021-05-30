@@ -322,7 +322,6 @@ Ref<SystemBundle> ScriptEcs::__reload_system_bundle(Ref<Script> p_script, const 
 		ERR_FAIL_COND_V_MSG(res != "", Ref<SystemBundle>(), "This script [" + p_path + "] is not a valid SystemBundle: " + res);
 
 		bundle.instance();
-		bundle->set_script(p_script);
 		bundle->script_path = p_path;
 
 		system_bundle_names.push_back(name);
@@ -341,6 +340,10 @@ Ref<SystemBundle> ScriptEcs::__reload_system_bundle(Ref<Script> p_script, const 
 		}
 	}
 
+	// Create and assign the script instance, so we can use in editor.
+	bundle->set_script_instance(p_script->instance_create(bundle.ptr()));
+	bundle->__prepare(name);
+
 	return bundle;
 }
 
@@ -356,7 +359,6 @@ Ref<System> ScriptEcs::__reload_system(Ref<Script> p_script, const String &p_pat
 		ERR_FAIL_COND_V_MSG(res != "", Ref<System>(), "This script [" + p_path + "] is not a valid System: " + res);
 
 		system.instance();
-		system->set_script(p_script);
 		system->script_path = p_path;
 
 		system_names.push_back(name);
@@ -375,6 +377,8 @@ Ref<System> ScriptEcs::__reload_system(Ref<Script> p_script, const String &p_pat
 		}
 	}
 
+	// Create and assign the script instance, so we can use in editor.
+	system->set_script_instance(p_script->instance_create(system.ptr()));
 	system->id = ECS::register_dynamic_system(name).get_id();
 	system->prepare(
 			ECS::get_dynamic_system_info(system->id),

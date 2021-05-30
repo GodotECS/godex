@@ -211,46 +211,55 @@ String System::validate_script(Ref<Script> p_script) {
 }
 
 void SystemBundle::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("add", "system_name"), &SystemBundle::add);
+	ClassDB::bind_method(D_METHOD("add", "system_id"), &SystemBundle::add);
 	ClassDB::bind_method(D_METHOD("with_description", "desc"), &SystemBundle::with_description);
-	ClassDB::bind_method(D_METHOD("before", "dependency"), &SystemBundle::before);
-	ClassDB::bind_method(D_METHOD("after", "dependency"), &SystemBundle::after);
+	ClassDB::bind_method(D_METHOD("before", "system_id"), &SystemBundle::before);
+	ClassDB::bind_method(D_METHOD("after", "system_id"), &SystemBundle::after);
+
+	ClassDB::add_virtual_method(get_class_static(), MethodInfo("_prepare"));
 }
 
-void SystemBundle::__fetch_descriptor(SystemBundleDescriptor *r_descriptor) {
+void SystemBundle::__prepare(const StringName &p_name) {
 	ERR_FAIL_COND_MSG(get_script_instance() == nullptr, "[FATAL] This is not supposed to happen.");
-	CRASH_COND_MSG(r_descriptor == nullptr, "r_desc is a requited variable.");
 
-	descriptor = r_descriptor;
+	name = p_name;
+	// Register the system bundle.
+	ECS::register_system_bundle(name);
 
 	Callable::CallError err;
 	get_script_instance()->call("_prepare", nullptr, 0, err);
 
-	descriptor = nullptr;
+	name = StringName();
 }
 
 const String &SystemBundle::get_script_path() const {
 	return script_path;
 }
 
-void SystemBundle::add(const StringName &p_system_name) {
-	ERR_FAIL_COND_MSG(descriptor == nullptr, "Never call `_prepare` directly. Use `__fetch_descriptor` instead.");
-	descriptor->systems.push_back(p_system_name);
+void SystemBundle::add(uint32_t p_system_id) {
+	ERR_FAIL_COND_MSG(name == StringName(), "Never call `_prepare` directly. Use `__fetch_descriptor` instead.");
+	const StringName system_name = ECS::get_system_name(p_system_id);
+	ERR_FAIL_COND_MSG(system_name == StringName(), "The system id `" + itos(p_system_id) + "` is not associated with any system.");
+	ECS::get_system_bundle(ECS::get_system_bundle_id(name)).add(system_name);
 }
 
 void SystemBundle::with_description(const String &p_desc) {
-	ERR_FAIL_COND_MSG(descriptor == nullptr, "Never call `_prepare` directly. Use `__fetch_descriptor` instead.");
-	descriptor->description = p_desc;
+	ERR_FAIL_COND_MSG(name == StringName(), "Never call `_prepare` directly. Use `__fetch_descriptor` instead.");
+	ECS::get_system_bundle(ECS::get_system_bundle_id(name)).set_description(p_desc);
 }
 
-void SystemBundle::before(const StringName &p_dependency) {
-	ERR_FAIL_COND_MSG(descriptor == nullptr, "Never call `_prepare` directly. Use `__fetch_descriptor` instead.");
-	descriptor->dependencies.push_back({ true, p_dependency });
+void SystemBundle::before(uint32_t p_system_id) {
+	ERR_FAIL_COND_MSG(name == StringName(), "Never call `_prepare` directly. Use `__fetch_descriptor` instead.");
+	const StringName system_name = ECS::get_system_name(p_system_id);
+	ERR_FAIL_COND_MSG(system_name == StringName(), "The system id `" + itos(p_system_id) + "` is not associated with any system.");
+	ECS::get_system_bundle(ECS::get_system_bundle_id(name)).before(system_name);
 }
 
-void SystemBundle::after(const StringName &p_dependency) {
-	ERR_FAIL_COND_MSG(descriptor == nullptr, "Never call `_prepare` directly. Use `__fetch_descriptor` instead.");
-	descriptor->dependencies.push_back({ false, p_dependency });
+void SystemBundle::after(uint32_t p_system_id) {
+	ERR_FAIL_COND_MSG(name == StringName(), "Never call `_prepare` directly. Use `__fetch_descriptor` instead.");
+	const StringName system_name = ECS::get_system_name(p_system_id);
+	ERR_FAIL_COND_MSG(system_name == StringName(), "The system id `" + itos(p_system_id) + "` is not associated with any system.");
+	ECS::get_system_bundle(ECS::get_system_bundle_id(name)).after(system_name);
 }
 
 String SystemBundle::validate_script(Ref<Script> p_script) {

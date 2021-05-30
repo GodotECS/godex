@@ -26,10 +26,3 @@ struct SystmeDescriptor {
 	LocalVector<StringName> databag_write;
 	LocalVector<StringName> databag_read;
 };
-
-struct SystemBundleDescriptor {
-	StringName name;
-	String description;
-	LocalVector<StringName> systems;
-	LocalVector<Dependency> dependencies;
-};

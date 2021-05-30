@@ -83,15 +83,20 @@ class SystemBundleInfo {
 	friend class ECS;
 
 	String description;
-	LocalVector<godex::system_id> systems;
+	LocalVector<StringName> systems;
 	/// Bundle dependencies.
 	LocalVector<Dependency> dependencies;
 
 public:
 	SystemBundleInfo &set_description(const String &p_description);
+
 	SystemBundleInfo &after(const StringName &p_system_name);
 	SystemBundleInfo &before(const StringName &p_system_name);
 	SystemBundleInfo &add(const SystemInfo &p_system_info);
+	SystemBundleInfo &add(const StringName &p_system_name);
+
+private:
+	void reset();
 };
 
 typedef void (*func_notify_static_destructor)();
@@ -212,6 +217,7 @@ public:
 	static SystemBundleInfo &register_system_bundle(const StringName &p_name);
 
 	static godex::system_bundle_id get_system_bundle_id(const StringName &p_name);
+	static SystemBundleInfo &get_system_bundle(godex::system_bundle_id p_id);
 
 	// ~~ Systems ~~
 	static SystemInfo &register_system(func_get_system_exe_info p_func_get_exe_info, StringName p_name);
