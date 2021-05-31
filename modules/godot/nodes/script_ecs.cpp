@@ -316,8 +316,6 @@ Ref<SystemBundle> ScriptEcs::__reload_system_bundle(Ref<Script> p_script, const 
 	Ref<SystemBundle> bundle = index >= 0 ? system_bundles[index] : Ref<SystemBundle>();
 	if (bundle.is_null()) {
 		// SystemBundle doesn't exists, create it.
-		ERR_FAIL_COND_V_MSG(p_script.is_null(), Ref<SystemBundle>(), "The script [" + p_path + "] can't be loaded.");
-		ERR_FAIL_COND_V_MSG(p_script->is_valid() == false, Ref<SystemBundle>(), "The script [" + p_path + "] is not a valid script.");
 		const String res = SystemBundle::validate_script(p_script);
 		ERR_FAIL_COND_V_MSG(res != "", Ref<SystemBundle>(), "This script [" + p_path + "] is not a valid SystemBundle: " + res);
 
@@ -328,7 +326,7 @@ Ref<SystemBundle> ScriptEcs::__reload_system_bundle(Ref<Script> p_script, const 
 		system_bundles.push_back(bundle);
 	} else {
 		// The SystemBundle exists, validate it.
-		const String res = SystemBundle::validate_script(bundle->get_script());
+		const String res = SystemBundle::validate_script(p_script);
 		if (res != "") {
 			// This script is no more valid, unlaod it.
 			// Allignement between the vector is kept, since both use the same
@@ -353,8 +351,6 @@ Ref<System> ScriptEcs::__reload_system(Ref<Script> p_script, const String &p_pat
 	Ref<System> system = index >= 0 ? systems[index] : Ref<System>();
 	if (system.is_null()) {
 		// System doesn't exists, create it.
-		ERR_FAIL_COND_V_MSG(p_script.is_null(), Ref<System>(), "The script [" + p_path + "] can't be loaded.");
-		ERR_FAIL_COND_V_MSG(p_script->is_valid() == false, Ref<System>(), "The script [" + p_path + "] is not a valid script.");
 		const String res = System::validate_script(p_script);
 		ERR_FAIL_COND_V_MSG(res != "", Ref<System>(), "This script [" + p_path + "] is not a valid System: " + res);
 
@@ -365,7 +361,7 @@ Ref<System> ScriptEcs::__reload_system(Ref<Script> p_script, const String &p_pat
 		systems.push_back(system);
 	} else {
 		// The system exists, validate it.
-		const String res = System::validate_script(system->get_script());
+		const String res = System::validate_script(p_script);
 		if (res != "") {
 			// This script is no more valid, unlaod it.
 			// Allignement between the vector is kept, since both use the same
@@ -393,8 +389,6 @@ Ref<Component> ScriptEcs::__reload_component(Ref<Script> p_script, const String 
 	Ref<Component> component = index >= 0 ? components[index] : Ref<Component>();
 	if (component.is_null()) {
 		// Component doesn't exists yet.
-		ERR_FAIL_COND_V_MSG(p_script.is_null(), Ref<Component>(), "The script [" + p_path + "] can't be loaded.");
-		ERR_FAIL_COND_V_MSG(p_script->is_valid() == false, Ref<Component>(), "The script [" + p_path + "] is not a valid script.");
 		const String res = Component::validate_script(p_script);
 		ERR_FAIL_COND_V_MSG(res != "", Ref<Component>(), "This script [" + p_path + "] is not valid: " + res);
 
@@ -404,7 +398,7 @@ Ref<Component> ScriptEcs::__reload_component(Ref<Script> p_script, const String 
 		component_names.push_back(name);
 		components.push_back(component);
 	} else {
-		const String res = Component::validate_script(component->get_script());
+		const String res = Component::validate_script(p_script);
 		if (res != "") {
 			// This script is no more valid, unlaod it.
 			// Allignement between the vector is kept, since both use the same
@@ -416,6 +410,7 @@ Ref<Component> ScriptEcs::__reload_component(Ref<Script> p_script, const String 
 		}
 	}
 
+	component->set_script_instance(p_script->instance_create(component.ptr()));
 	component->internal_set_name(name);
 	component->internal_set_component_script(p_script);
 

@@ -517,7 +517,7 @@ void EntityInternal<C>::add_component(const StringName &p_component_name, const 
 			Ref<SharedComponentDepot> d;
 			d.instance();
 			depot = d;
-		} else if (ScriptEcs::get_singleton()->get_script_component(p_component_name).is_valid()) {
+		} else if (ECS::is_component_dynamic(ECS::get_component_id(p_component_name))) {
 			Ref<ScriptComponentDepot> d;
 			d.instance();
 			depot = d;

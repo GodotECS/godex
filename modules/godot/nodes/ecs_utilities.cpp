@@ -474,8 +474,8 @@ bool ScriptComponentDepot::_getv(const StringName &p_name, Variant &r_ret) const
 	const Variant *v = data.getptr(p_name);
 	if (v == nullptr) {
 		// Take the default.
-		const godex::component_id id = ECS::get_component_id(p_name);
-		ERR_FAIL_COND_V(id == godex::COMPONENT_NONE, false);
+		const godex::component_id id = ECS::get_component_id(component_name);
+		ERR_FAIL_COND_V_MSG(id == godex::COMPONENT_NONE, false, "[FATAL] The component `" + component_name + "` doesn't exist. This is not supposed to happen.");
 		r_ret = ECS::get_component_property_default(id, p_name);
 		return true;
 	} else {

@@ -160,6 +160,11 @@ StringName ECS::get_component_name(uint32_t p_component_id) {
 	return components[p_component_id];
 }
 
+bool ECS::is_component_dynamic(godex::component_id p_component_id) {
+	ERR_FAIL_COND_V_MSG(verify_component_id(p_component_id) == false, false, "The component " + itos(p_component_id) + " is invalid.");
+	return components_info[p_component_id].dynamic_component_info != nullptr;
+}
+
 bool ECS::is_component_events(godex::component_id p_component_id) {
 	ERR_FAIL_COND_V_MSG(verify_component_id(p_component_id) == false, false, "The component " + itos(p_component_id) + " is invalid.");
 	return components_info[p_component_id].is_event;

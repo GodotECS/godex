@@ -179,6 +179,7 @@ public:
 	static const LocalVector<StringName> &get_registered_components();
 	static godex::component_id get_component_id(StringName p_component_name);
 	static StringName get_component_name(godex::component_id p_component_id);
+	static bool is_component_dynamic(godex::component_id p_component_id);
 	static bool is_component_events(godex::component_id p_component_id);
 	static bool is_component_sharable(godex::component_id p_component_id);
 	static bool storage_notify_release_write(godex::component_id p_component_id);

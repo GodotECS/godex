@@ -35,7 +35,7 @@ public:
 	void set_pipeline_name(StringName p_name);
 	StringName get_pipeline_name() const;
 
-	void set_systems_name(Vector<StringName>p_system_names);
+	void set_systems_name(Vector<StringName> p_system_names);
 	Vector<StringName> get_systems_name() const;
 
 	/// Insert a new system into the world. This `System` is not immediately
