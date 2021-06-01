@@ -64,7 +64,6 @@ public:
 
 	// ----------------------------------------------------------- System Bundles
 	Ref<SystemBundle> get_script_system_bundle(const StringName &p_name) const;
-	void system_bundle_fetch_descriptor(const StringName &p_name, SystmeDescriptor &r_descriptor) const;
 
 	// ------------------------------------------------------------------- System
 	const LocalVector<StringName> &get_script_system_names();

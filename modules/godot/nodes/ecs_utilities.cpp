@@ -48,82 +48,55 @@ System::~System() {
 }
 
 void System::execute_in_phase(Phase p_phase) {
-	if (system_descriptor != nullptr) {
-		system_descriptor->phase = p_phase;
-	}
+	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
+	info->execute_in_phase(p_phase);
 }
 
-void System::execute_after(const StringName &p_system_name) {
-	if (system_descriptor != nullptr) {
-		system_descriptor->dependencies.push_back({ false, p_system_name });
-	}
+void System::execute_after(uint32_t p_system) {
+	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
+	const StringName name = ECS::get_system_name(p_system);
+	ERR_FAIL_COND(name != StringName());
+	info->execute_after(name);
 }
 
-void System::execute_before(const StringName &p_system_name) {
-	if (system_descriptor != nullptr) {
-		system_descriptor->dependencies.push_back({ true, p_system_name });
-	}
+void System::execute_before(uint32_t p_system) {
+	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
+	const StringName name = ECS::get_system_name(p_system);
+	ERR_FAIL_COND(name != StringName());
+	info->execute_before(name);
 }
 
 void System::set_space(Space p_space) {
-	if (system_descriptor != nullptr) {
-		// Nothing to do.
-		return;
-	}
 	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
 	info->set_space(p_space);
 }
 
 void System::with_databag(uint32_t p_databag_id, Mutability p_mutability) {
-	if (system_descriptor != nullptr) {
-		//system_descriptor->;
-	} else {
-		ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
-		info->with_databag(p_databag_id, p_mutability == MUTABLE);
-	}
+	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
+	info->with_databag(p_databag_id, p_mutability == MUTABLE);
 }
 
 void System::with_storage(uint32_t p_component_id) {
-	if (system_descriptor != nullptr) {
-		// Nothing to do.
-		return;
-	}
 	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
 	info->with_storage(p_component_id);
 }
 
 void System::with_component(uint32_t p_component_id, Mutability p_mutability) {
-	if (system_descriptor != nullptr) {
-		// Nothing to do.
-		return;
-	}
 	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
 	info->with_component(p_component_id, p_mutability == MUTABLE);
 }
 
 void System::maybe_component(uint32_t p_component_id, Mutability p_mutability) {
-	if (system_descriptor != nullptr) {
-		// Nothing to do.
-		return;
-	}
 	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
 	info->maybe_component(p_component_id, p_mutability == MUTABLE);
 }
 
 void System::changed_component(uint32_t p_component_id, Mutability p_mutability) {
-	if (system_descriptor != nullptr) {
-		// Nothing to do.
-		return;
-	}
 	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
 	info->changed_component(p_component_id, p_mutability == MUTABLE);
 }
 
 void System::not_component(uint32_t p_component_id) {
-	if (system_descriptor != nullptr) {
-		// Nothing to do.
-		return;
-	}
 	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
 	info->not_component(p_component_id);
 }
@@ -157,17 +130,6 @@ void System::prepare(godex::DynamicSystemInfo *p_info, godex::system_id p_id) {
 	// Set this object as target.
 	info->set_target(get_script_instance());
 	info->build();
-}
-
-void System::__fetch_descriptor(SystmeDescriptor *r_descriptor) {
-	ERR_FAIL_COND_MSG(get_script_instance() == nullptr, "[FATAL] This is not supposed to happen.");
-
-	system_descriptor = r_descriptor;
-
-	Callable::CallError err;
-	get_script_instance()->call("_prepare", nullptr, 0, err);
-
-	system_descriptor = nullptr;
 }
 
 String System::validate_script(Ref<Script> p_script) {

@@ -4,7 +4,6 @@
 #include "core/object/object.h"
 #include "core/templates/local_vector.h"
 #include "core/templates/oa_hash_map.h"
-#include "pipeline/descriptors.h"
 #include "systems/system.h"
 #include "systems/system_builder.h"
 
@@ -17,6 +16,20 @@ namespace godex {
 class Databag;
 class DynamicSystemInfo;
 } // namespace godex
+
+enum Phase : int {
+	PHASE_CONFIG = 0,
+	PHASE_INPUT,
+	PHASE_PRE_PROCESS,
+	PHASE_PROCESS,
+	PHASE_POST_PROCESS,
+	PHASE_MAX,
+};
+
+struct Dependency {
+	bool execute_before;
+	StringName system_name;
+};
 
 struct DataAccessorFuncs {
 	const LocalVector<PropertyInfo> *(*get_properties)() = nullptr;

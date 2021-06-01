@@ -66,18 +66,6 @@ Ref<SystemBundle> ScriptEcs::get_script_system_bundle(const StringName &p_name) 
 	return index >= 0 ? system_bundles[index] : Ref<SystemBundle>();
 }
 
-void ScriptEcs::system_bundle_fetch_descriptor(
-		const StringName &p_name,
-		SystmeDescriptor &r_descriptor) const {
-	/*
-	Ref<SystemBundle> bundle = get_script_system_bundle(p_name);
-	if (bundle.is_valid()) {
-		bundle->__fetch_descriptor(r_descriptor);
-		return;
-	}
-	*/
-}
-
 const LocalVector<StringName> &ScriptEcs::get_script_system_names() {
 	return system_names;
 }

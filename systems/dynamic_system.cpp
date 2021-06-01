@@ -39,6 +39,18 @@ void godex::DynamicSystemInfo::set_target(ScriptInstance *p_target) {
 	target_sub_pipeline = nullptr;
 }
 
+void godex::DynamicSystemInfo::execute_in_phase(Phase p_phase) {
+	phase = p_phase;
+}
+
+void godex::DynamicSystemInfo::execute_after(const StringName &p_system_name) {
+	dependencies.push_back({ false, p_system_name });
+}
+
+void godex::DynamicSystemInfo::execute_before(const StringName &p_system_name) {
+	dependencies.push_back({ true, p_system_name });
+}
+
 void godex::DynamicSystemInfo::set_space(Space p_space) {
 	CRASH_COND_MSG(compiled, "The query can't be composed, when the system is already been compiled.");
 
@@ -200,6 +212,8 @@ void godex::DynamicSystemInfo::reset() {
 	compiled = false;
 	gdscript_function = nullptr;
 	system_id = UINT32_MAX;
+	phase = PHASE_PROCESS;
+	dependencies.reset();
 	databag_element_map.reset();
 	storage_element_map.reset();
 	query_element_map.reset();
