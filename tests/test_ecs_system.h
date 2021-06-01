@@ -211,6 +211,8 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 		CHECK(build_and_register_ecs_script("TestDynamicSystem1.gd", code));
 	}
 
+	flush_ecs_script_preparation();
+
 	World world;
 
 	EntityID entity_1 = world
@@ -450,6 +452,8 @@ TEST_CASE("[Modules][ECS] Test system databag fetch with dynamic query.") {
 
 		CHECK(build_and_register_ecs_script("TestDatabagDynamicSystem.gd", code));
 	}
+
+	flush_ecs_script_preparation();
 
 	World world;
 	world.create_databag<TestSystemSubPipeDatabag>();
@@ -760,6 +764,8 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 			CHECK(build_and_register_ecs_script("TestMoveHierarchySystem.gd", code));
 		}
 
+		flush_ecs_script_preparation();
+
 		// Create the pipeline.
 		Pipeline pipeline;
 		pipeline.add_registered_system(ECS::get_system_id("TestMoveHierarchySystem.gd"));
@@ -844,6 +850,8 @@ TEST_CASE("[Modules][ECS] Test Add/remove from dynamic system.") {
 		CHECK(build_and_register_ecs_script("TestRemoveDynamicSystem.gd", code));
 	}
 
+	flush_ecs_script_preparation();
+
 	World world;
 
 	const EntityID entity_1 = world
@@ -916,6 +924,8 @@ TEST_CASE("[Modules][ECS] Test fetch changed from dynamic system.") {
 
 		CHECK(build_and_register_ecs_script("TestChangedDynamicSystem.gd", code));
 	}
+
+	flush_ecs_script_preparation();
 
 	World world;
 
@@ -1030,6 +1040,8 @@ TEST_CASE("[Modules][ECS] Test fetch entity from nodepath, using a dynamic syste
 
 		CHECK(build_and_register_ecs_script("TestFetchEntityFromNodePath.gd", code));
 	}
+
+	flush_ecs_script_preparation();
 
 	World world;
 

@@ -48,3 +48,7 @@ bool build_and_register_ecs_script(const StringName &p_script_name, const String
 
 	return ScriptEcs::get_singleton()->__reload_script(script, "res://test/justs/a/test/path/" + p_script_name, p_script_name);
 }
+
+void flush_ecs_script_preparation() {
+	ScriptEcs::get_singleton()->flush_scripts_preparation();
+}

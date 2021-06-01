@@ -91,6 +91,8 @@ TEST_CASE("[Modules][ECS] Test spawner Script registration.") {
 		CHECK(build_and_register_ecs_script(component_name, code));
 	}
 
+	flush_ecs_script_preparation();
+
 	// Compose the script component
 	Ref<Component> component = ScriptEcs::get_singleton()->get_script_component(component_name);
 	CHECK(component.is_valid());

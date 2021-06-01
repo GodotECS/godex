@@ -66,18 +66,6 @@ Ref<SystemBundle> ScriptEcs::get_script_system_bundle(const StringName &p_name) 
 	return index >= 0 ? system_bundles[index] : Ref<SystemBundle>();
 }
 
-void ScriptEcs::system_bundle_fetch_descriptor(
-		const StringName &p_name,
-		SystmeDescriptor &r_descriptor) const {
-	/*
-	Ref<SystemBundle> bundle = get_script_system_bundle(p_name);
-	if (bundle.is_valid()) {
-		bundle->__fetch_descriptor(r_descriptor);
-		return;
-	}
-	*/
-}
-
 const LocalVector<StringName> &ScriptEcs::get_script_system_names() {
 	return system_names;
 }
@@ -143,6 +131,7 @@ void ScriptEcs::reload_scripts() {
 		}
 	}
 
+	flush_scripts_preparation();
 	define_editor_default_component_properties();
 }
 
@@ -217,6 +206,8 @@ void ScriptEcs::register_runtime_scripts() {
 	for (int i = 0; i < scripts.size(); i += 1) {
 		__reload_script(scripts[i], String(scripts[i]).get_file(), true);
 	}
+
+	flush_scripts_preparation();
 }
 
 void ScriptEcs::__empty_scripts() {
@@ -228,6 +219,8 @@ void ScriptEcs::__empty_scripts() {
 
 	system_bundle_names.reset();
 	system_bundles.reset();
+
+	scripts_with_pending_prepare.reset();
 }
 
 bool ScriptEcs::__reload_script(const String &p_path, const String &p_name, const bool p_force_reload) {
@@ -340,7 +333,8 @@ Ref<SystemBundle> ScriptEcs::__reload_system_bundle(Ref<Script> p_script, const 
 
 	// Create and assign the script instance, so we can use in editor.
 	bundle->set_script_instance(p_script->instance_create(bundle.ptr()));
-	bundle->__prepare(name);
+	bundle->name = name;
+	scripts_with_pending_prepare.push_back(bundle);
 
 	return bundle;
 }
@@ -376,9 +370,7 @@ Ref<System> ScriptEcs::__reload_system(Ref<Script> p_script, const String &p_pat
 	// Create and assign the script instance, so we can use in editor.
 	system->set_script_instance(p_script->instance_create(system.ptr()));
 	system->id = ECS::register_dynamic_system(name).get_id();
-	system->prepare(
-			ECS::get_dynamic_system_info(system->id),
-			system->id);
+	scripts_with_pending_prepare.push_back(system);
 
 	return system;
 }
@@ -420,7 +412,6 @@ Ref<Component> ScriptEcs::__reload_component(Ref<Script> p_script, const String 
 	properties.reserve(raw_properties.size());
 	for (List<PropertyInfo>::Element *e = raw_properties.front(); e; e = e->next()) {
 		properties.push_back({ e->get(),
-				// TODO use a way to get all the values at once.
 				component->get_property_default_value(e->get().name) });
 	}
 
@@ -432,6 +423,28 @@ Ref<Component> ScriptEcs::__reload_component(Ref<Script> p_script, const String 
 			component->get_spawners());
 
 	return component;
+}
+
+void ScriptEcs::flush_scripts_preparation() {
+	for (uint32_t i = 0; i < scripts_with_pending_prepare.size(); i += 1) {
+		Ref<System> system = scripts_with_pending_prepare[i];
+		if (system.is_valid()) {
+			system->prepare(
+					ECS::get_dynamic_system_info(system->id),
+					system->id);
+			continue;
+		}
+
+		Ref<SystemBundle> system_bundle = scripts_with_pending_prepare[i];
+		if (system_bundle.is_valid()) {
+			system_bundle->__prepare();
+			continue;
+		}
+
+		ERR_CONTINUE_MSG(true, "A resource type was not recognized so wasn't possible to perform the preparation.");
+	}
+
+	scripts_with_pending_prepare.clear();
 }
 
 void ScriptEcs::save_script(const String &p_setting_list_name, const String &p_script_path) {

@@ -39,6 +39,14 @@ class ScriptEcs : public Object {
 	LocalVector<StringName> system_bundle_names;
 	LocalVector<Ref<SystemBundle>> system_bundles;
 
+	// This vector contains the `System` and `SystemBundle` which preparation is
+	// still in pending. When a new script is fetched its constant id is immediately
+	// registered, so it's possible to fetch it using `ECS.MySystemName`.
+	// The preparation is delayed, so it can be executed when all the systems are
+	// known, and the various dependency can be safely resolved using the
+	// syntax: `ECS.MySystemName`.
+	LocalVector<Ref<Resource>> scripts_with_pending_prepare;
+
 	static ScriptEcs *singleton;
 
 public:
@@ -64,7 +72,6 @@ public:
 
 	// ----------------------------------------------------------- System Bundles
 	Ref<SystemBundle> get_script_system_bundle(const StringName &p_name) const;
-	void system_bundle_fetch_descriptor(const StringName &p_name, SystmeDescriptor &r_descriptor) const;
 
 	// ------------------------------------------------------------------- System
 	const LocalVector<StringName> &get_script_system_names();
@@ -87,6 +94,8 @@ public:
 	Ref<SystemBundle> __reload_system_bundle(Ref<Script> p_script, const String &p_path, const String &p_name);
 	Ref<System> __reload_system(Ref<Script> p_script, const String &p_path, const String &p_name);
 	Ref<Component> __reload_component(Ref<Script> p_script, const String &p_path, const String &p_name);
+
+	void flush_scripts_preparation();
 
 private:
 	void save_script(const String &p_setting_list_name, const String &p_script_path);

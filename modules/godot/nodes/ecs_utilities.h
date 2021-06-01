@@ -22,7 +22,6 @@ class System : public Resource {
 	String script_path;
 	godex::DynamicSystemInfo *info = nullptr;
 	godex::system_id id = UINT32_MAX;
-	SystmeDescriptor *system_descriptor = nullptr;
 	bool prepare_in_progress = false;
 
 	static void _bind_methods();
@@ -39,8 +38,8 @@ public:
 	~System();
 
 	void execute_in_phase(Phase p_phase);
-	void execute_after(const StringName &p_system_name);
-	void execute_before(const StringName &p_system_name);
+	void execute_after(uint32_t p_system);
+	void execute_before(uint32_t p_system);
 
 	void set_space(Space p_space);
 	void with_databag(uint32_t p_databag_id, Mutability p_mutability);
@@ -59,8 +58,6 @@ public:
 	void __force_set_system_info(godex::DynamicSystemInfo *p_info, godex::system_id p_id);
 	/// Prepare this System to be executed.
 	void prepare(godex::DynamicSystemInfo *p_info, godex::system_id p_id);
-	/// Fetches the execution data.
-	void __fetch_descriptor(SystmeDescriptor *r_descriptor);
 
 	static String validate_script(Ref<Script> p_script);
 };
@@ -75,7 +72,7 @@ class SystemBundle : public Resource {
 	StringName name;
 
 	static void _bind_methods();
-	void __prepare(const StringName &p_name);
+	void __prepare();
 	const String &get_script_path() const;
 
 public:
