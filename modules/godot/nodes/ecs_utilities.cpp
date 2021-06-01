@@ -302,56 +302,30 @@ void Component::internal_set_name(StringName p_name) {
 	name = p_name;
 }
 
-void Component::internal_set_component_script(Ref<Script> p_script) {
-	component_script = p_script;
-}
-
 StringName Component::get_name() const {
 	return name;
 }
 
 void Component::get_component_property_list(List<PropertyInfo> *r_info) {
-	if (component_script.is_null()) {
+	Ref<Script> script = get_script();
+	if (script.is_null()) {
 		return;
 	}
 
-	component_script->get_script_property_list(r_info);
+	script->get_script_property_list(r_info);
 }
 
 Variant Component::get_property_default_value(StringName p_property_name) {
-	// TODO this function is EXTREMELY bad! create a `ScriptInstance` is an
-	// TODO heavy task. Keep a script instance alive in editor seems unsafe because
-	// TODO the script can change anytime and all the instances are immediately
-	// TODO invalidated.
-	// TODO Please optimize it.
-	WARN_PRINT_ONCE("!IMPORTANT [TODO] please optimize the GDScript component get defaul val which is extremely slow!!!!!");
-
-	ERR_FAIL_COND_V(component_script.is_null(), Variant());
-	ScriptInstance *si = component_script->instance_create(this);
-	ERR_FAIL_COND_V(si == nullptr, Variant());
-	Variant ret;
-	si->get(p_property_name, ret);
-	// Make sure to clear the script, so it's correctly destroyed.
-	set_script_instance(nullptr);
-	set_script(Ref<Script>());
-	return ret;
+	bool valid = false;
+	const Variant ret = get(p_property_name, &valid);
+	return valid ? ret : Variant();
 }
 
 Vector<StringName> Component::get_spawners() {
-	ERR_FAIL_COND_V(component_script.is_null(), Vector<StringName>());
-
-	ScriptInstance *si = component_script->instance_create(this);
-	ERR_FAIL_COND_V(si == nullptr, Vector<StringName>());
-
 	Vector<StringName> spawners;
-	if (si->has_method("get_spawners")) {
-		spawners = si->call("get_spawners");
+	if (has_method("get_spawners")) {
+		spawners = call("get_spawners");
 	}
-
-	// Make sure to clear the script, so it's correctly destroyed.
-	set_script_instance(nullptr);
-	set_script(Ref<Script>());
-
 	return spawners;
 }
 
