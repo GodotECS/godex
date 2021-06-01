@@ -72,7 +72,7 @@ class SystemBundle : public Resource {
 	StringName name;
 
 	static void _bind_methods();
-	void __prepare(const StringName &p_name);
+	void __prepare();
 	const String &get_script_path() const;
 
 public:

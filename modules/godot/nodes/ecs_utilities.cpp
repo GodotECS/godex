@@ -181,17 +181,15 @@ void SystemBundle::_bind_methods() {
 	ClassDB::add_virtual_method(get_class_static(), MethodInfo("_prepare"));
 }
 
-void SystemBundle::__prepare(const StringName &p_name) {
+void SystemBundle::__prepare() {
 	ERR_FAIL_COND_MSG(get_script_instance() == nullptr, "[FATAL] This is not supposed to happen.");
+	ERR_FAIL_COND_MSG(name == StringName(), "[FATAL] The name of this bundle is not set.");
 
-	name = p_name;
 	// Register the system bundle.
 	ECS::register_system_bundle(name);
 
 	Callable::CallError err;
 	get_script_instance()->call("_prepare", nullptr, 0, err);
-
-	name = StringName();
 }
 
 const String &SystemBundle::get_script_path() const {
