@@ -98,7 +98,6 @@ class Component : public Resource {
 	bool verified = false;
 	String script_path;
 	StringName name;
-	Ref<Script> component_script;
 
 	static void _bind_methods();
 	const String &get_script_path() const;
@@ -108,7 +107,6 @@ public:
 	~Component();
 
 	void internal_set_name(StringName p_name);
-	void internal_set_component_script(Ref<Script> p_script);
 
 	StringName get_name() const;
 

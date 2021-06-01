@@ -412,7 +412,6 @@ Ref<Component> ScriptEcs::__reload_component(Ref<Script> p_script, const String 
 
 	component->set_script_instance(p_script->instance_create(component.ptr()));
 	component->internal_set_name(name);
-	component->internal_set_component_script(p_script);
 
 	List<PropertyInfo> raw_properties;
 	component->get_component_property_list(&raw_properties);
