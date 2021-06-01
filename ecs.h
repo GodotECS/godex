@@ -4,7 +4,7 @@
 #include "core/object/object.h"
 #include "core/templates/local_vector.h"
 #include "core/templates/oa_hash_map.h"
-
+#include "pipeline/descriptors.h"
 #include "systems/system.h"
 #include "systems/system_builder.h"
 
@@ -36,10 +36,10 @@ struct SpawnerInfo {
 /// These functions are implemented by the `COMPONENT` macro and assigned during
 /// component registration.
 struct ComponentInfo {
-	StorageBase *(*create_storage)();
-	void *(*new_component)();
-	void (*free_component)(void *);
-	void (*get_storage_config)(Dictionary &);
+	StorageBase *(*create_storage)() = nullptr;
+	void *(*new_component)() = nullptr;
+	void (*free_component)(void *) = nullptr;
+	void (*get_storage_config)(Dictionary &) = nullptr;
 	DynamicComponentInfo *dynamic_component_info = nullptr;
 	bool notify_release_write = false;
 	bool is_event = false;
@@ -52,29 +52,16 @@ struct ComponentInfo {
 /// These functions are implemented by the `DATABAG` macro and assigned during
 /// component registration.
 struct DatabagInfo {
-	godex::Databag *(*create_databag)();
+	godex::Databag *(*create_databag)() = nullptr;
 
 	DataAccessorFuncs accessor_funcs;
-};
-
-struct Dependency {
-	bool execute_before;
-	StringName system_name;
-};
-
-enum Phase {
-	PHASE_CONFIG,
-	PHASE_INPUT,
-	PHASE_PRE_PROCESS,
-	PHASE_PROCESS,
-	PHASE_POST_PROCESS,
 };
 
 class SystemInfo {
 	friend class ECS;
 	friend class SystemBundleInfo;
 
-	godex::system_id id;
+	godex::system_id id = godex::SYSTEM_NONE;
 	Phase phase = PHASE_PROCESS;
 	LocalVector<Dependency> dependencies;
 	String description;
@@ -96,15 +83,20 @@ class SystemBundleInfo {
 	friend class ECS;
 
 	String description;
-	LocalVector<godex::system_id> systems;
+	LocalVector<StringName> systems;
 	/// Bundle dependencies.
 	LocalVector<Dependency> dependencies;
 
 public:
 	SystemBundleInfo &set_description(const String &p_description);
+
 	SystemBundleInfo &after(const StringName &p_system_name);
 	SystemBundleInfo &before(const StringName &p_system_name);
 	SystemBundleInfo &add(const SystemInfo &p_system_info);
+	SystemBundleInfo &add(const StringName &p_system_name);
+
+private:
+	void reset();
 };
 
 typedef void (*func_notify_static_destructor)();
@@ -174,9 +166,8 @@ public:
 	template <class C>
 	static void register_component(StorageBase *(*create_storage)());
 
-	// TODO specify the storage here?
-	static uint32_t register_script_component(const StringName &p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type, Vector<StringName> p_spawners);
-	static uint32_t register_script_component_event(const StringName &p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type, Vector<StringName> p_spawners);
+	static uint32_t register_or_update_script_component(const StringName &p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type, Vector<StringName> p_spawners);
+	static uint32_t register_or_update_script_component_event(const StringName &p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type, Vector<StringName> p_spawners);
 
 	static uint32_t get_components_count();
 	static bool verify_component_id(uint32_t p_component_id);
@@ -188,6 +179,7 @@ public:
 	static const LocalVector<StringName> &get_registered_components();
 	static godex::component_id get_component_id(StringName p_component_name);
 	static StringName get_component_name(godex::component_id p_component_id);
+	static bool is_component_dynamic(godex::component_id p_component_id);
 	static bool is_component_events(godex::component_id p_component_id);
 	static bool is_component_sharable(godex::component_id p_component_id);
 	static bool storage_notify_release_write(godex::component_id p_component_id);
@@ -226,6 +218,7 @@ public:
 	static SystemBundleInfo &register_system_bundle(const StringName &p_name);
 
 	static godex::system_bundle_id get_system_bundle_id(const StringName &p_name);
+	static SystemBundleInfo &get_system_bundle(godex::system_bundle_id p_id);
 
 	// ~~ Systems ~~
 	static SystemInfo &register_system(func_get_system_exe_info p_func_get_exe_info, StringName p_name);

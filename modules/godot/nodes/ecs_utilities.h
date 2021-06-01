@@ -12,11 +12,6 @@ namespace godex {
 class DynamicSystemInfo;
 }
 
-struct ScriptSystemExecutionInfo {
-	Phase execution_phase = PHASE_PROCESS;
-	LocalVector<Dependency> dependencies;
-};
-
 class System : public Resource {
 	GDCLASS(System, Resource)
 
@@ -27,7 +22,7 @@ class System : public Resource {
 	String script_path;
 	godex::DynamicSystemInfo *info = nullptr;
 	godex::system_id id = UINT32_MAX;
-	ScriptSystemExecutionInfo *execution_info = nullptr;
+	SystmeDescriptor *system_descriptor = nullptr;
 	bool prepare_in_progress = false;
 
 	static void _bind_methods();
@@ -65,7 +60,7 @@ public:
 	/// Prepare this System to be executed.
 	void prepare(godex::DynamicSystemInfo *p_info, godex::system_id p_id);
 	/// Fetches the execution data.
-	void fetch_execution_data(ScriptSystemExecutionInfo *r_info);
+	void __fetch_descriptor(SystmeDescriptor *r_descriptor);
 
 	static String validate_script(Ref<Script> p_script);
 };
@@ -77,19 +72,17 @@ class SystemBundle : public Resource {
 
 	bool verified = false;
 	String script_path;
-	String *description = nullptr;
-	LocalVector<StringName> *systems = nullptr;
-	LocalVector<Dependency> *dependencies = nullptr;
+	StringName name;
 
 	static void _bind_methods();
-	void __fetch_systems(String *r_desc, LocalVector<StringName> *r_systems, LocalVector<Dependency> *r_dependencies);
+	void __prepare(const StringName &p_name);
 	const String &get_script_path() const;
 
 public:
-	void add(const StringName &p_system_name);
+	void add(uint32_t p_system_id);
 	void with_description(const String &p_desc);
-	void before(const StringName &p_dependency);
-	void after(const StringName &p_dependency);
+	void before(uint32_t p_system_id);
+	void after(uint32_t p_system_id);
 
 	static String validate_script(Ref<Script> p_script);
 };

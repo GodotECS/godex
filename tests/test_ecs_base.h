@@ -23,7 +23,7 @@ TEST_CASE("[Modules][ECS] Test ECS dynamic component.") {
 	LocalVector<ScriptProperty> props;
 	props.push_back({ PropertyInfo(Variant::INT, "variable_1"), 2 });
 
-	const uint32_t test_dyn_component_id = ECS::register_script_component(
+	const uint32_t test_dyn_component_id = ECS::register_or_update_script_component(
 			"TestDynamicBaseComponent1.gd",
 			props,
 			StorageType::DENSE_VECTOR,
@@ -35,18 +35,22 @@ TEST_CASE("[Modules][ECS] Test ECS dynamic component.") {
 	CHECK(ECS::get_component_property_default(test_dyn_component_id, "variable_1") == Variant(2));
 }
 
-TEST_CASE("[Modules][ECS] Test ECS dynamic component double registration.") {
+TEST_CASE("[Modules][ECS] Test ECS dynamic component update.") {
 	LocalVector<ScriptProperty> props;
-	props.push_back({ PropertyInfo(Variant::INT, "variable_1"), 2 });
+	props.push_back({ PropertyInfo(Variant::INT, "updated_variable_1"), 2 });
 
-	const uint32_t second_test_dyn_component_id = ECS::register_script_component(
+	const godex::component_id prev_id = ECS::get_component_id("TestDynamicBaseComponent1.gd");
+
+	const uint32_t second_test_dyn_component_id = ECS::register_or_update_script_component(
 			"TestDynamicBaseComponent1.gd",
 			props,
 			StorageType::DENSE_VECTOR,
 			Vector<StringName>());
 
 	// Make sure this component was not created since it already exists.
-	CHECK(second_test_dyn_component_id == UINT32_MAX);
+	CHECK(second_test_dyn_component_id == prev_id);
+	CHECK(ECS::get_component_property_default(second_test_dyn_component_id, "variable_1") == Variant()); // This variable doesn't exeist anymore.
+	CHECK(ECS::get_component_property_default(second_test_dyn_component_id, "updated_variable_1") == Variant(2));
 }
 
 TEST_CASE("[Modules][ECS] Test ECS dynamic component with wrong default type.") {
@@ -54,7 +58,7 @@ TEST_CASE("[Modules][ECS] Test ECS dynamic component with wrong default type.") 
 	props.push_back({ PropertyInfo(Variant::INT, "variable_1"), false });
 
 	print_line("Test ECS dynamic component with wrong default type, the followint error is legit:");
-	const uint32_t test_dyn_component_id = ECS::register_script_component(
+	const uint32_t test_dyn_component_id = ECS::register_or_update_script_component(
 			"TestDynamicBaseComponent2.gd",
 			props,
 			StorageType::DENSE_VECTOR,

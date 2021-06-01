@@ -46,7 +46,5 @@ bool build_and_register_ecs_script(const StringName &p_script_name, const String
 	err = compiler.compile(&parser, script.ptr(), false);
 	ERR_FAIL_COND_V(err != OK, false);
 
-	ScriptEcs::get_singleton()->__reload_script(script, "res://test/justs/a/test/path/" + p_script_name, p_script_name);
-
-	return true;
+	return ScriptEcs::get_singleton()->__reload_script(script, "res://test/justs/a/test/path/" + p_script_name, p_script_name);
 }

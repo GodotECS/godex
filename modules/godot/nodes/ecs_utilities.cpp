@@ -48,25 +48,25 @@ System::~System() {
 }
 
 void System::execute_in_phase(Phase p_phase) {
-	if (execution_info != nullptr) {
-		execution_info->execution_phase = p_phase;
+	if (system_descriptor != nullptr) {
+		system_descriptor->phase = p_phase;
 	}
 }
 
 void System::execute_after(const StringName &p_system_name) {
-	if (execution_info != nullptr) {
-		execution_info->dependencies.push_back({ false, p_system_name });
+	if (system_descriptor != nullptr) {
+		system_descriptor->dependencies.push_back({ false, p_system_name });
 	}
 }
 
 void System::execute_before(const StringName &p_system_name) {
-	if (execution_info != nullptr) {
-		execution_info->dependencies.push_back({ true, p_system_name });
+	if (system_descriptor != nullptr) {
+		system_descriptor->dependencies.push_back({ true, p_system_name });
 	}
 }
 
 void System::set_space(Space p_space) {
-	if (execution_info != nullptr) {
+	if (system_descriptor != nullptr) {
 		// Nothing to do.
 		return;
 	}
@@ -75,16 +75,16 @@ void System::set_space(Space p_space) {
 }
 
 void System::with_databag(uint32_t p_databag_id, Mutability p_mutability) {
-	if (execution_info != nullptr) {
-		// Nothing to do.
-		return;
+	if (system_descriptor != nullptr) {
+		//system_descriptor->;
+	} else {
+		ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
+		info->with_databag(p_databag_id, p_mutability == MUTABLE);
 	}
-	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
-	info->with_databag(p_databag_id, p_mutability == MUTABLE);
 }
 
 void System::with_storage(uint32_t p_component_id) {
-	if (execution_info != nullptr) {
+	if (system_descriptor != nullptr) {
 		// Nothing to do.
 		return;
 	}
@@ -93,7 +93,7 @@ void System::with_storage(uint32_t p_component_id) {
 }
 
 void System::with_component(uint32_t p_component_id, Mutability p_mutability) {
-	if (execution_info != nullptr) {
+	if (system_descriptor != nullptr) {
 		// Nothing to do.
 		return;
 	}
@@ -102,7 +102,7 @@ void System::with_component(uint32_t p_component_id, Mutability p_mutability) {
 }
 
 void System::maybe_component(uint32_t p_component_id, Mutability p_mutability) {
-	if (execution_info != nullptr) {
+	if (system_descriptor != nullptr) {
 		// Nothing to do.
 		return;
 	}
@@ -111,7 +111,7 @@ void System::maybe_component(uint32_t p_component_id, Mutability p_mutability) {
 }
 
 void System::changed_component(uint32_t p_component_id, Mutability p_mutability) {
-	if (execution_info != nullptr) {
+	if (system_descriptor != nullptr) {
 		// Nothing to do.
 		return;
 	}
@@ -120,7 +120,7 @@ void System::changed_component(uint32_t p_component_id, Mutability p_mutability)
 }
 
 void System::not_component(uint32_t p_component_id) {
-	if (execution_info != nullptr) {
+	if (system_descriptor != nullptr) {
 		// Nothing to do.
 		return;
 	}
@@ -159,16 +159,17 @@ void System::prepare(godex::DynamicSystemInfo *p_info, godex::system_id p_id) {
 	info->build();
 }
 
-void System::fetch_execution_data(ScriptSystemExecutionInfo *r_info) {
+void System::__fetch_descriptor(SystmeDescriptor *r_descriptor) {
 	ERR_FAIL_COND_MSG(get_script_instance() == nullptr, "[FATAL] This is not supposed to happen.");
 
-	execution_info = r_info;
+	system_descriptor = r_descriptor;
 
 	Callable::CallError err;
 	get_script_instance()->call("_prepare", nullptr, 0, err);
 
-	execution_info = nullptr;
+	system_descriptor = nullptr;
 }
+
 String System::validate_script(Ref<Script> p_script) {
 	if (p_script.is_null()) {
 		return TTR("Script is null.");
@@ -210,52 +211,55 @@ String System::validate_script(Ref<Script> p_script) {
 }
 
 void SystemBundle::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("add", "system_name"), &SystemBundle::add);
+	ClassDB::bind_method(D_METHOD("add", "system_id"), &SystemBundle::add);
 	ClassDB::bind_method(D_METHOD("with_description", "desc"), &SystemBundle::with_description);
-	ClassDB::bind_method(D_METHOD("before", "dependency"), &SystemBundle::before);
-	ClassDB::bind_method(D_METHOD("after", "dependency"), &SystemBundle::after);
+	ClassDB::bind_method(D_METHOD("before", "system_id"), &SystemBundle::before);
+	ClassDB::bind_method(D_METHOD("after", "system_id"), &SystemBundle::after);
+
+	ClassDB::add_virtual_method(get_class_static(), MethodInfo("_prepare"));
 }
 
-void SystemBundle::__fetch_systems(String *r_desc, LocalVector<StringName> *r_systems, LocalVector<Dependency> *r_dependencies) {
+void SystemBundle::__prepare(const StringName &p_name) {
 	ERR_FAIL_COND_MSG(get_script_instance() == nullptr, "[FATAL] This is not supposed to happen.");
-	CRASH_COND_MSG(r_desc == nullptr, "r_desc is a requited variable.");
-	CRASH_COND_MSG(r_systems == nullptr, "r_system is a requited variable.");
-	CRASH_COND_MSG(r_dependencies == nullptr, "r_dependencies is a requited variable.");
 
-	description = r_desc;
-	systems = r_systems;
-	dependencies = r_dependencies;
+	name = p_name;
+	// Register the system bundle.
+	ECS::register_system_bundle(name);
 
 	Callable::CallError err;
 	get_script_instance()->call("_prepare", nullptr, 0, err);
 
-	description = nullptr;
-	systems = nullptr;
-	dependencies = nullptr;
+	name = StringName();
 }
 
 const String &SystemBundle::get_script_path() const {
 	return script_path;
 }
 
-void SystemBundle::add(const StringName &p_system_name) {
-	ERR_FAIL_COND_MSG(description == nullptr, "Never call `_prepare` directly. Use `__fetch_systems` instead.");
-	systems->push_back(p_system_name);
+void SystemBundle::add(uint32_t p_system_id) {
+	ERR_FAIL_COND_MSG(name == StringName(), "Never call `_prepare` directly. Use `__fetch_descriptor` instead.");
+	const StringName system_name = ECS::get_system_name(p_system_id);
+	ERR_FAIL_COND_MSG(system_name == StringName(), "The system id `" + itos(p_system_id) + "` is not associated with any system.");
+	ECS::get_system_bundle(ECS::get_system_bundle_id(name)).add(system_name);
 }
 
 void SystemBundle::with_description(const String &p_desc) {
-	ERR_FAIL_COND_MSG(description == nullptr, "Never call `_prepare` directly. Use `__fetch_systems` instead.");
-	*description = p_desc;
+	ERR_FAIL_COND_MSG(name == StringName(), "Never call `_prepare` directly. Use `__fetch_descriptor` instead.");
+	ECS::get_system_bundle(ECS::get_system_bundle_id(name)).set_description(p_desc);
 }
 
-void SystemBundle::before(const StringName &p_dependency) {
-	ERR_FAIL_COND_MSG(description == nullptr, "Never call `_prepare` directly. Use `__fetch_systems` instead.");
-	dependencies->push_back({ true, p_dependency });
+void SystemBundle::before(uint32_t p_system_id) {
+	ERR_FAIL_COND_MSG(name == StringName(), "Never call `_prepare` directly. Use `__fetch_descriptor` instead.");
+	const StringName system_name = ECS::get_system_name(p_system_id);
+	ERR_FAIL_COND_MSG(system_name == StringName(), "The system id `" + itos(p_system_id) + "` is not associated with any system.");
+	ECS::get_system_bundle(ECS::get_system_bundle_id(name)).before(system_name);
 }
 
-void SystemBundle::after(const StringName &p_dependency) {
-	ERR_FAIL_COND_MSG(description == nullptr, "Never call `_prepare` directly. Use `__fetch_systems` instead.");
-	dependencies->push_back({ false, p_dependency });
+void SystemBundle::after(uint32_t p_system_id) {
+	ERR_FAIL_COND_MSG(name == StringName(), "Never call `_prepare` directly. Use `__fetch_descriptor` instead.");
+	const StringName system_name = ECS::get_system_name(p_system_id);
+	ERR_FAIL_COND_MSG(system_name == StringName(), "The system id `" + itos(p_system_id) + "` is not associated with any system.");
+	ECS::get_system_bundle(ECS::get_system_bundle_id(name)).after(system_name);
 }
 
 String SystemBundle::validate_script(Ref<Script> p_script) {
@@ -470,7 +474,10 @@ bool ScriptComponentDepot::_getv(const StringName &p_name, Variant &r_ret) const
 	const Variant *v = data.getptr(p_name);
 	if (v == nullptr) {
 		// Take the default.
-		return ScriptEcs::get_singleton()->component_get_property_default_value(component_name, p_name, r_ret);
+		const godex::component_id id = ECS::get_component_id(component_name);
+		ERR_FAIL_COND_V_MSG(id == godex::COMPONENT_NONE, false, "[FATAL] The component `" + component_name + "` doesn't exist. This is not supposed to happen.");
+		r_ret = ECS::get_component_property_default(id, p_name);
+		return true;
 	} else {
 		r_ret = v->duplicate(true);
 		return true;
@@ -483,7 +490,7 @@ Dictionary ScriptComponentDepot::get_properties_data() const {
 
 void SharedComponentDepot::init(const StringName &p_name) {
 	ERR_FAIL_COND_MSG(component_name != StringName(), "The component is already initialized.");
-	ERR_FAIL_COND_MSG(ScriptEcs::get_singleton()->component_is_shared(p_name) == false, "Thid component " + p_name + " is not a shared component.");
+	ERR_FAIL_COND_MSG(ECS::is_component_sharable(ECS::get_component_id(p_name)) == false, "Thid component " + p_name + " is not a shared component.");
 	component_name = p_name;
 }
 
@@ -526,7 +533,10 @@ bool SharedComponentDepot::_getv(const StringName &p_name, Variant &r_ret) const
 		r_ret = data->get(p_name, &success);
 		if (success == false) {
 			// Take the default
-			return ScriptEcs::get_singleton()->component_get_property_default_value(component_name, p_name, r_ret);
+			const godex::component_id id = ECS::get_component_id(p_name);
+			ERR_FAIL_COND_V(id == godex::COMPONENT_NONE, false);
+			r_ret = ECS::get_component_property_default(id, p_name);
+			return true;
 		} else {
 			return true;
 		}

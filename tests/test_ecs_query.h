@@ -1387,7 +1387,7 @@ TEST_CASE("[Modules][ECS] Test dynamic query with dynamic storages.") {
 	props.push_back({ PropertyInfo(Variant::BOOL, "variable_2"), false });
 	props.push_back({ PropertyInfo(Variant::VECTOR3, "variable_3"), Vector3() });
 
-	const uint32_t test_dyn_component_id = ECS::register_script_component(
+	const uint32_t test_dyn_component_id = ECS::register_or_update_script_component(
 			"TestDynamicQueryComponent1.gd",
 			props,
 			StorageType::DENSE_VECTOR,
