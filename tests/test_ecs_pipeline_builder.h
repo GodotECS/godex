@@ -14,23 +14,27 @@
 // The idea to verify that the pipeline is correctly constructed we need to
 // verify the following:
 // 1. The Systems with implicit dependencies are correctly taken into account.
-// 		- The Systems implicit priority is used in this case, where the
-//		  priority is given by the registration order.
-// 		- The Systems implicit dependency, where two system fetch the same
-//		  Compoenents and DataBags mutable, are resolved.
-// 		- The systems that fetch the sane Components and DataBag immutable
-//		  can run in parallel.
+//      - The Systems implicit priority is used in this case, where the
+//        priority is given by the registration order.
+//      - The Systems implicit dependency, where two system fetch the same
+//        Compoenents and DataBags mutable, are resolved.
+//      - The systems that fetch the sane Components and DataBag immutable
+//        can run in parallel.
 // 2. The Systems with explicit dependencies are correctly taken into account.
-// 		- The Systems explicit priority, build with (`after` and `before`) is
-//		  correctly resolved.
+//      - The Systems explicit priority, build with (`after` and `before`) is
+//        correctly resolved.
 // 3. The Systems phase is correctly used.
 // 4. The SystemBundles are correctly expanded.
 // 5. The SystemBundles explicit dependencies are take into account.
 // 6. The Query filer `Not` can be used to specialize the fetched component
-//	  so two systems that fetch the same component mutable may run in parallel
-//	  thanks to the specialization given by `Not`.
+//    so two systems that fetch the same component mutable may run in parallel
+//    thanks to the specialization given by `Not`.
 // 7. All the above must be valid for C++ and Scripted systems.
-// TODO 8. Test advice mechanism
+// 8. Include sub pipeline composition
+// 9. Make sure that the systems that fetch World, SceneTreeDatabag are always
+//     are always executed in single thread.
+// 10. Detect when an event isn't catched by any system, tell how to fix it.
+// TODO 11. Test advice mechanism
 
 struct PbComponentA {
 	COMPONENT(PbComponentA, DenseVectorStorage)

@@ -94,6 +94,7 @@ public:
 
 class SystemBundleInfo {
 	friend class ECS;
+	friend class PipelineBuilder;
 
 	String description;
 	LocalVector<StringName> systems;
@@ -264,6 +265,8 @@ public:
 	static void get_system_exe_info(godex::system_id p_id, SystemExeInfo &r_info);
 	static StringName get_system_name(godex::system_id p_id);
 	static String get_system_desc(godex::system_id p_id);
+	static Phase get_system_phase(godex::system_id p_id);
+	static const LocalVector<Dependency> &get_system_dependencies(godex::system_id p_id);
 
 	static void set_dynamic_system_target(godex::system_id p_id, ScriptInstance *p_target);
 	static godex::DynamicSystemInfo *get_dynamic_system_info(godex::system_id p_id);

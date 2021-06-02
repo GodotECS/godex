@@ -439,6 +439,17 @@ String ECS::get_system_desc(godex::system_id p_id) {
 	return systems_info[p_id].description;
 }
 
+Phase ECS::get_system_phase(godex::system_id p_id) {
+	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, PHASE_PROCESS, "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
+	return systems_info[p_id].phase;
+}
+
+const LocalVector<Dependency> &ECS::get_system_dependencies(godex::system_id p_id) {
+	static const LocalVector<Dependency> dep;
+	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, dep, "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
+	return systems_info[p_id].dependencies;
+}
+
 void ECS::set_dynamic_system_target(godex::system_id p_id, ScriptInstance *p_target) {
 	ERR_FAIL_COND_MSG(verify_system_id(p_id) == false, "This system " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
 	ERR_FAIL_COND_MSG(systems_info[p_id].dynamic_system_id == UINT32_MAX, "The system " + itos(p_id) + " is not a dynamic system.");
