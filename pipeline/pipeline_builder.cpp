@@ -16,7 +16,7 @@ void PipelineBuilder::build_graph(
 	r_graph->systems.resize(ECS::get_systems_count());
 
 	fetch_bundle_info(p_system_bundles, r_graph);
-	for (uint32_t i = 0; i < p_systems.size(); i += 1) {
+	for (int i = 0; i < p_systems.size(); i += 1) {
 		fetch_system_info(p_systems[i], StringName(), -1, LocalVector<Dependency>(), r_graph);
 	}
 
@@ -114,5 +114,40 @@ void PipelineBuilder::system_sorting(ExecutionGraph *r_graph) {
 		}
 
 		r_graph->systems[i].self_list_element = r_graph->sorted_systems.push_back(r_graph->systems.ptr() + i);
+	}
+
+	struct SortByPriority {
+		bool operator()(ExecutionGraph::SystemNode *const &p_a, ExecutionGraph::SystemNode *const &p_b) const {
+			if (p_a->execute_after.find(p_b) != -1) {
+				// p_a has an explicit dependency and must be executed after.
+				return false;
+			}
+
+			if (p_a->phase > p_b->phase) {
+				// The phase is not sorted.
+				return false;
+			} else if (p_a->phase < p_b->phase) {
+				// The phase is different but sorted.
+				return true;
+			}
+
+			// The phase is the same, let's sort per explicit priority, if the
+			// bundle is the same.
+			if (
+					p_a->bundle_name != StringName() &&
+					p_a->bundle_name == p_b->bundle_name &&
+					(p_a->explicit_priority != -1 || p_b->explicit_priority != -1)) {
+				return p_a->explicit_priority < p_b->explicit_priority;
+			}
+
+			// They are of two different bundles, let's sort by implicit priority.
+			return p_a->id < p_b->id;
+		}
+	};
+
+	r_graph->sorted_systems.sort_custom<SortByPriority>();
+
+	for (auto a = r_graph->sorted_systems.front(); a; a = a->next()) {
+		print_line(ECS::get_system_name(a->get()->id));
 	}
 }

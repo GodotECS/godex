@@ -119,6 +119,7 @@ class ECS : public Object {
 	GDCLASS(ECS, Object)
 
 	friend class Main;
+	friend class godex::DynamicSystemInfo;
 
 public:
 	enum {
@@ -258,6 +259,10 @@ public:
 	static godex::system_id get_system_id(const StringName &p_name);
 	static uint32_t get_systems_count();
 
+private:
+	static SystemInfo &get_system_info(godex::system_id p_id);
+
+public:
 	/// Returns the function that can be used to obtain the `SystemExeInfo`.
 	static func_get_system_exe_info get_func_system_exe_info(godex::system_id p_id);
 

@@ -384,6 +384,8 @@ SystemInfo &ECS::register_dynamic_system(StringName p_name) {
 			godex::DynamicSystemInfo *si = godex::get_dynamic_system_info(systems_info[id].dynamic_system_id);
 			si->reset();
 			si->set_system_id(id);
+			systems_info[id].phase = PHASE_PROCESS;
+			systems_info[id].dependencies.reset();
 			return systems_info[id];
 		}
 	}
@@ -416,6 +418,12 @@ godex::system_id ECS::get_system_id(const StringName &p_name) {
 
 uint32_t ECS::get_systems_count() {
 	return systems.size();
+}
+
+SystemInfo &ECS::get_system_info(godex::system_id p_id) {
+	static SystemInfo info;
+	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, info, "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
+	return systems_info[p_id];
 }
 
 func_get_system_exe_info ECS::get_func_system_exe_info(godex::system_id p_id) {

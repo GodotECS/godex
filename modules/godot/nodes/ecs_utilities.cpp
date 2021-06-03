@@ -55,14 +55,14 @@ void System::execute_in_phase(Phase p_phase) {
 void System::execute_after(uint32_t p_system) {
 	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
 	const StringName name = ECS::get_system_name(p_system);
-	ERR_FAIL_COND(name != StringName());
+	ERR_FAIL_COND(name == StringName());
 	info->execute_after(name);
 }
 
 void System::execute_before(uint32_t p_system) {
 	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
 	const StringName name = ECS::get_system_name(p_system);
-	ERR_FAIL_COND(name != StringName());
+	ERR_FAIL_COND(name == StringName());
 	info->execute_before(name);
 }
 

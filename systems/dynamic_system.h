@@ -44,9 +44,6 @@ class DynamicSystemInfo {
 
 	uint32_t system_id = UINT32_MAX;
 
-	Phase phase = PHASE_PROCESS;
-	LocalVector<Dependency> dependencies;
-
 	/// Map used to map the list of Databags to the script.
 	LocalVector<uint32_t> databag_element_map;
 	LocalVector<uint32_t> storage_element_map;

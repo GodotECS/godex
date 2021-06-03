@@ -67,7 +67,43 @@ namespace godex_tests {
 TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit dependencies and implicit order.") {
 	initialize_script_ecs();
 
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	execute_in_phase(ECS.PHASE_POST_PROCESS)\n";
+		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "	with_databag(ECS.PbDatabagA, IMMUTABLE)\n";
+		code += "\n";
+		code += "func _for_each(a, b, c):\n";
+		code += "	pass\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("test_A_system_8.gd", code));
+	}
+
 	ECS::register_system(test_A_system_1, "test_A_system_1");
+
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	execute_in_phase(ECS.PHASE_CONFIG)\n";
+		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "	with_databag(ECS.PbDatabagA, IMMUTABLE)\n";
+		code += "\n";
+		code += "func _for_each(a, b, c):\n";
+		code += "	pass\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("test_A_system_0.gd", code));
+	}
 
 	{
 		// Create the script.
@@ -122,6 +158,42 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		CHECK(build_and_register_ecs_script("test_A_system_6.gd", code));
 	}
 
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	execute_in_phase(ECS.PHASE_CONFIG)\n";
+		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "	with_databag(ECS.PbDatabagA, IMMUTABLE)\n";
+		code += "\n";
+		code += "func _for_each(a, b, c):\n";
+		code += "	pass\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("test_A_system_7.gd", code));
+	}
+
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	execute_before(ECS.test_A_system_1)\n";
+		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "	with_databag(ECS.PbDatabagA, IMMUTABLE)\n";
+		code += "\n";
+		code += "func _for_each(a, b, c):\n";
+		code += "	pass\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("test_A_system_9.gd", code));
+	}
+
 	flush_ecs_script_preparation();
 
 	Pipeline pipeline;
@@ -130,20 +202,32 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 
 	Vector<StringName> systems;
 	// Insert the systems with random order.
+	systems.push_back(StringName("test_A_system_8.gd"));
 	systems.push_back(StringName("test_A_system_6.gd"));
 	systems.push_back(StringName("test_A_system_5"));
 	systems.push_back(StringName("test_A_system_4.gd"));
 	systems.push_back(StringName("test_A_system_3"));
+	systems.push_back(StringName("test_A_system_0.gd"));
 	systems.push_back(StringName("test_A_system_2.gd"));
 	systems.push_back(StringName("test_A_system_1"));
+	systems.push_back(StringName("test_A_system_7.gd"));
+	systems.push_back(StringName("test_A_system_9.gd"));
 
 	PipelineBuilder::build_pipeline(system_bundles, systems, &pipeline);
 
-	// Verify the test_A_system_1 is the first one being executed,
+	// Verify the test_A_system_7.gd and test_A_system_0.gd are the first executed,
+	// and executed in parallel.
+	// TODO
+
+	// Verify the test_A_system_9.gd is executed before test_A_system_1 and in
+	// parallel with test_A_system7.gd and test_A_system_0.gd
+	// TODO
+
+	// Verify the test_A_system_1 is the following one being executed,
 	// has its implicit registration order imply.
 	// TODO
 
-	// Verify the test_A_system_2.gd is the second one being executed,
+	// Verify the test_A_system_2.gd is the third one being executed,
 	// has its implicit registration order imply, and not in parallel with
 	// test_A_system_1.
 	// TODO
@@ -154,6 +238,9 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 
 	// Verify the test_A_system_5 and test_A_system_6.gd run in parallel,
 	// but after test_A_system_3 and test_A_system_4.gd.
+	// TODO
+
+	// Verify the test_A_system_8 run the last one.
 	// TODO
 
 	finalize_script_ecs();
