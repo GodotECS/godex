@@ -3,6 +3,7 @@
 
 #include "../../../ecs.h"
 #include "../../../pipeline/pipeline.h"
+#include "../../../pipeline/pipeline_builder.h"
 #include "../../../world/world.h"
 #include "../components/transform_component.h"
 #include "../databags/input_databag.h"
@@ -109,30 +110,7 @@ Pipeline *PipelineECS::get_pipeline(WorldECS *p_associated_world) {
 	// Build the pipeline.
 
 	pipeline = memnew(Pipeline);
-
-	for (int i = 0; i < systems_name.size(); i += 1) {
-		const StringName system_name = systems_name[i];
-		const godex::system_id id = ECS::get_system_id(system_name);
-
-		ERR_CONTINUE_MSG(ECS::verify_system_id(id) == false, "[FATAL][FATAL][FATAL][PIPELINE-FATAL] The system " + system_name + " was not found.");
-
-		if (ECS::is_temporary_system(id)) {
-			pipeline->add_registered_temporary_system(id);
-		} else {
-			if (ECS::is_system_dispatcher(id)) {
-				// Special treatment for systems dispatchers: Init before set.
-
-				const StringName pipeline_name = p_associated_world->get_system_dispatchers_pipeline(system_name);
-				Ref<PipelineECS> sub_pipeline = p_associated_world->find_pipeline(pipeline_name);
-				ERR_CONTINUE_MSG(sub_pipeline.is_null(), "The pipeline " + pipeline_name + " is not found. It's needed to set it as sub pipeline for the system: " + system_name);
-				ECS::set_system_pipeline(id, sub_pipeline->get_pipeline(p_associated_world));
-			}
-
-			pipeline->add_registered_system(id);
-		}
-	}
-
-	pipeline->build();
+	PipelineBuilder::build_pipeline(systems_bundle, systems_name, pipeline);
 
 	return pipeline;
 }

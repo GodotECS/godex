@@ -352,6 +352,11 @@ godex::system_bundle_id ECS::get_system_bundle_id(const StringName &p_name) {
 	return index >= 0 ? godex::system_bundle_id(index) : godex::SYSTEM_BUNDLE_NONE;
 }
 
+StringName ECS::get_system_bundle_name(godex::system_bundle_id p_id) {
+	CRASH_COND_MSG(system_bundles.size() <= p_id, "The sysetm bundle " + itos(p_id) + " doesn't exists.");
+	return system_bundles[p_id];
+}
+
 SystemBundleInfo &ECS::get_system_bundle(godex::system_bundle_id p_id) {
 	CRASH_COND_MSG(system_bundles.size() <= p_id, "The sysetm bundle " + itos(p_id) + " doesn't exists.");
 	return system_bundles_info[p_id];
@@ -516,7 +521,7 @@ func_get_system_exe_info ECS::get_func_system_exe_info(godex::system_id p_id) {
 void ECS::get_system_exe_info(godex::system_id p_id, SystemExeInfo &r_info) {
 	ERR_FAIL_COND_MSG(verify_system_id(p_id) == false, "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
 	ERR_FAIL_COND_MSG(systems_info[p_id].exec_info == nullptr, "The System " + systems[p_id] + " is not a standard `System`.");
-	return systems_info[p_id].exec_info(r_info);
+	systems_info[p_id].exec_info(r_info);
 }
 
 StringName ECS::get_system_name(godex::system_id p_id) {

@@ -233,6 +233,7 @@ public:
 	static SystemBundleInfo &register_system_bundle(const StringName &p_name);
 
 	static godex::system_bundle_id get_system_bundle_id(const StringName &p_name);
+	static StringName get_system_bundle_name(godex::system_bundle_id p_id);
 	static SystemBundleInfo &get_system_bundle(godex::system_bundle_id p_id);
 
 	// ~~ Systems ~~

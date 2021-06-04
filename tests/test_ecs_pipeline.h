@@ -5,6 +5,7 @@
 
 #include "../ecs.h"
 #include "../modules/godot/components/transform_component.h"
+#include "../pipeline/pipeline_builder.h"
 #include "../pipeline/pipeline.h"
 #include "../storage/dense_vector_storage.h"
 #include "../systems/dynamic_system.h"
@@ -54,17 +55,15 @@ TEST_CASE("[Modules][ECS] Test pipeline build.") {
 	ECS::register_databag<PipelineTestDatabag2>();
 	ECS::register_component<PipelineTestComponent1>();
 
+	PipelineBuilder pipeline_builder;
+	pipeline_builder.add_system(system_id);
+
 	Pipeline pipeline;
 
 	// Make sure the pipeline is not yet ready.
 	CHECK(pipeline.is_ready() == false);
 
-	pipeline.add_registered_system(system_id);
-
-	// Make sure the pipeline is not yet ready.
-	CHECK(pipeline.is_ready() == false);
-
-	pipeline.build();
+	pipeline_builder.build(pipeline);
 
 	// Make sure the pipeline is now ready.
 	CHECK(pipeline.is_ready());
@@ -82,24 +81,25 @@ TEST_CASE("[Modules][ECS] Test pipeline get_systems_dependencies") {
 	godex::system_id system_with_immutable_component_system_id = ECS::register_system(system_with_immutable_component, "system_with_immutable_component").get_id();
 	godex::system_id system_with_storage_system_id = ECS::register_system(system_with_storage, "system_with_storage").get_id();
 
-	Pipeline pipeline;
+	PipelineBuilder pipeline_builder;
 
 	// Add system with MUTABLE `PipelineTestDatabag1` databag.
-	pipeline.add_registered_system(system_with_databag_system_id);
+	pipeline_builder.add_system(system_with_databag_system_id);
 
 	// Add system with IMMUTABLE `PipelineTestDatabag2` databag.
-	pipeline.add_registered_system(system_with_immutable_databag_system_id);
+	pipeline_builder.add_system(system_with_immutable_databag_system_id);
 
 	// Add system with MUTABLE `PipelineTestComponent1` component.
-	pipeline.add_registered_system(system_with_component_system_id);
+	pipeline_builder.add_system(system_with_component_system_id);
 
 	// Add system with MUTABLE `TransformComponent` component.
-	pipeline.add_registered_system(system_with_immutable_component_system_id);
+	pipeline_builder.add_system(system_with_immutable_component_system_id);
 
 	// Add system with a storage.
-	pipeline.add_registered_system(system_with_storage_system_id);
+	pipeline_builder.add_system(system_with_storage_system_id);
 
-	pipeline.build();
+	Pipeline pipeline;
+	pipeline_builder.build(pipeline);
 
 	SystemExeInfo info;
 	pipeline.get_systems_dependencies(info);
@@ -130,34 +130,40 @@ TEST_CASE("[Modules][ECS] Test pipeline get_systems_dependencies from a dispatch
 															  .set_description("Unit tests system.")
 															  .get_id();
 
-	Pipeline pipeline;
 	Pipeline sub_pipeline;
 	{
+		PipelineBuilder sub_pipeline_builder;
+
 		// Add system with MUTABLE `PipelineTestDatabag1` databag.
-		sub_pipeline.add_registered_system(system_with_databag_system_id);
+		sub_pipeline_builder.add_system(system_with_databag_system_id);
 
 		// Add system with IMMUTABLE `PipelineTestDatabag2` databag.
-		sub_pipeline.add_registered_system(system_with_immutable_databag_system_id);
+		sub_pipeline_builder.add_system(system_with_immutable_databag_system_id);
 
 		// Add system with MUTABLE `PipelineTestComponent1` component.
-		sub_pipeline.add_registered_system(system_with_component_system_id);
+		sub_pipeline_builder.add_system(system_with_component_system_id);
 
 		// Add system with MUTABLE `TransformComponent` component.
-		sub_pipeline.add_registered_system(system_with_immutable_component_system_id);
+		sub_pipeline_builder.add_system(system_with_immutable_component_system_id);
 
 		// Add system with a storage.
-		sub_pipeline.add_registered_system(system_with_storage_system_id);
+		sub_pipeline_builder.add_system(system_with_storage_system_id);
 
-		sub_pipeline.build();
+		sub_pipeline_builder.build(sub_pipeline);
 
+		// Build the system that dispatches the sub pipeline.
 		godex::DynamicSystemInfo *info = ECS::get_dynamic_system_info(sub_dispatcher_system_id);
 		info->set_target(sub_dispatcher_system_test);
 		info->set_pipeline(&sub_pipeline);
 		info->build();
 	}
 
-	pipeline.add_registered_system(sub_dispatcher_system_id);
-	pipeline.build();
+	PipelineBuilder pipeline_builder;
+
+	pipeline_builder.add_system(sub_dispatcher_system_id);
+
+	Pipeline pipeline;
+	pipeline_builder.build(pipeline);
 
 	SystemExeInfo info;
 	pipeline.get_systems_dependencies(info);

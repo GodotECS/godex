@@ -8,6 +8,7 @@
 #include "../modules/godot/components/transform_component.h"
 #include "../modules/godot/nodes/script_ecs.h"
 #include "../pipeline/pipeline.h"
+#include "../pipeline/pipeline_builder.h"
 #include "../spawners/spawner.h"
 #include "../storage/dense_vector_storage.h"
 #include "test_utilities.h"
@@ -130,9 +131,11 @@ TEST_CASE("[Modules][ECS] Test spawner Script registration.") {
 	// Try to use the spawner now.
 	World world;
 
+	PipelineBuilder pipeline_builder;
+	pipeline_builder.add_system(system_id);
+
 	Pipeline pipeline;
-	pipeline.add_registered_system(system_id);
-	pipeline.build();
+	pipeline_builder.build(pipeline);
 	pipeline.prepare(&world);
 
 	// Dispatch 1 time the pipeline.

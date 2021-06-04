@@ -43,6 +43,9 @@ private:
 	/// List of used systems sorted by implicit and explicit priority.
 	List<SystemNode *> sorted_systems;
 
+	/// List of initial temporary systems.
+	List<SystemNode *> temporary_systems;
+
 	/// List of stages. The order is important.
 	List<StageNode> stages;
 
@@ -60,6 +63,17 @@ public:
 };
 
 class PipelineBuilder {
+	Vector<StringName> system_bundles;
+	Vector<StringName> systems;
+
+public:
+	PipelineBuilder();
+	void add_system_bundle(godex::system_bundle_id p_id);
+	void add_system_bundle(const StringName &p_bundle_name);
+	void add_system(godex::system_id p_id);
+	void add_system(const StringName &p_name);
+	void build(Pipeline &r_pipeline);
+
 public:
 	/// This method is used to build the pipeline `ExecutionGraph`.
 	/// The `ExecutionGraph` is useful to visualize the pipeline composition.
