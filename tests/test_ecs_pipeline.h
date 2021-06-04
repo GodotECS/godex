@@ -49,6 +49,7 @@ void sub_dispatcher_system_test(World *p_world, Pipeline *p_pipeline) {
 }
 
 TEST_CASE("[Modules][ECS] Test pipeline build.") {
+	godex::system_id system_id = ECS::register_system(system_with_databag, "system_with_databag").get_id();
 	ECS::register_databag<PipelineTestDatabag1>();
 	ECS::register_databag<PipelineTestDatabag2>();
 	ECS::register_component<PipelineTestComponent1>();
@@ -58,7 +59,7 @@ TEST_CASE("[Modules][ECS] Test pipeline build.") {
 	// Make sure the pipeline is not yet ready.
 	CHECK(pipeline.is_ready() == false);
 
-	pipeline.add_system(system_with_databag);
+	pipeline.add_registered_system(system_id);
 
 	// Make sure the pipeline is not yet ready.
 	CHECK(pipeline.is_ready() == false);
@@ -75,22 +76,28 @@ TEST_CASE("[Modules][ECS] Test pipeline build.") {
 }
 
 TEST_CASE("[Modules][ECS] Test pipeline get_systems_dependencies") {
+	godex::system_id system_with_databag_system_id = ECS::get_system_id("system_with_databag"); // This sytem is already registered.
+	godex::system_id system_with_immutable_databag_system_id = ECS::register_system(system_with_immutable_databag, "system_with_immutable_databag").get_id();
+	godex::system_id system_with_component_system_id = ECS::register_system(system_with_component, "system_with_component").get_id();
+	godex::system_id system_with_immutable_component_system_id = ECS::register_system(system_with_immutable_component, "system_with_immutable_component").get_id();
+	godex::system_id system_with_storage_system_id = ECS::register_system(system_with_storage, "system_with_storage").get_id();
+
 	Pipeline pipeline;
 
 	// Add system with MUTABLE `PipelineTestDatabag1` databag.
-	pipeline.add_system(system_with_databag);
+	pipeline.add_registered_system(system_with_databag_system_id);
 
 	// Add system with IMMUTABLE `PipelineTestDatabag2` databag.
-	pipeline.add_system(system_with_immutable_databag);
+	pipeline.add_registered_system(system_with_immutable_databag_system_id);
 
 	// Add system with MUTABLE `PipelineTestComponent1` component.
-	pipeline.add_system(system_with_component);
+	pipeline.add_registered_system(system_with_component_system_id);
 
 	// Add system with MUTABLE `TransformComponent` component.
-	pipeline.add_system(system_with_immutable_component);
+	pipeline.add_registered_system(system_with_immutable_component_system_id);
 
 	// Add system with a storage.
-	pipeline.add_system(system_with_storage);
+	pipeline.add_registered_system(system_with_storage_system_id);
 
 	pipeline.build();
 
@@ -114,6 +121,11 @@ TEST_CASE("[Modules][ECS] Test pipeline get_systems_dependencies") {
 }
 
 TEST_CASE("[Modules][ECS] Test pipeline get_systems_dependencies from a dispatcher.") {
+	godex::system_id system_with_databag_system_id = ECS::get_system_id("system_with_databag"); // This sytem is already registered.
+	const godex::system_id system_with_immutable_databag_system_id = ECS::get_system_id("system_with_immutable_databag");
+	const godex::system_id system_with_component_system_id = ECS::get_system_id("system_with_component");
+	const godex::system_id system_with_immutable_component_system_id = ECS::get_system_id("system_with_immutable_component");
+	const godex::system_id system_with_storage_system_id = ECS::get_system_id("system_with_storage");
 	const godex::system_id sub_dispatcher_system_id = ECS::register_dynamic_system("SubDispatcherSystemTest")
 															  .set_description("Unit tests system.")
 															  .get_id();
@@ -122,19 +134,19 @@ TEST_CASE("[Modules][ECS] Test pipeline get_systems_dependencies from a dispatch
 	Pipeline sub_pipeline;
 	{
 		// Add system with MUTABLE `PipelineTestDatabag1` databag.
-		sub_pipeline.add_system(system_with_databag);
+		sub_pipeline.add_registered_system(system_with_databag_system_id);
 
 		// Add system with IMMUTABLE `PipelineTestDatabag2` databag.
-		sub_pipeline.add_system(system_with_immutable_databag);
+		sub_pipeline.add_registered_system(system_with_immutable_databag_system_id);
 
 		// Add system with MUTABLE `PipelineTestComponent1` component.
-		sub_pipeline.add_system(system_with_component);
+		sub_pipeline.add_registered_system(system_with_component_system_id);
 
 		// Add system with MUTABLE `TransformComponent` component.
-		sub_pipeline.add_system(system_with_immutable_component);
+		sub_pipeline.add_registered_system(system_with_immutable_component_system_id);
 
 		// Add system with a storage.
-		sub_pipeline.add_system(system_with_storage);
+		sub_pipeline.add_registered_system(system_with_storage_system_id);
 
 		sub_pipeline.build();
 

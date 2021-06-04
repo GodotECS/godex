@@ -125,11 +125,13 @@ TEST_CASE("[Modules][ECS] Test spawner Script registration.") {
 		CHECK(info.mutable_components_storage.has(ECS::get_component_id(component->get_name())));
 	}
 
+	const godex::system_id system_id = ECS::register_system(test_spawner_system, "test_spawner_system").get_id();
+
 	// Try to use the spawner now.
 	World world;
 
 	Pipeline pipeline;
-	pipeline.add_system(test_spawner_system);
+	pipeline.add_registered_system(system_id);
 	pipeline.build();
 	pipeline.prepare(&world);
 

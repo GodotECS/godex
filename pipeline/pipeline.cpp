@@ -26,9 +26,6 @@ void Pipeline::add_registered_temporary_system(godex::system_id p_id) {
 	add_temporary_system(ECS::get_func_temporary_system_exe(p_id));
 }
 
-// Unset the macro defined into the `pipeline.h` so to properly point the method
-// definition.
-#undef add_system
 uint32_t Pipeline::add_system(func_get_system_exe_info p_func_get_exe_info) {
 #ifdef DEBUG_ENABLED
 	// This is automated by the `add_system` macro or by
@@ -73,7 +70,7 @@ void Pipeline::build() {
 #endif
 
 		systems_exe.resize(systems_exe.size() + 1);
-		ExecutionData &ed = systems_exe[systems_exe.size() - 1];
+		ExecutionSystemData &ed = systems_exe[systems_exe.size() - 1];
 
 		ed.exe = info.system_func;
 
@@ -215,7 +212,7 @@ void Pipeline::dispatch(World *p_world) {
 
 	// Dispatch the `System`s.
 	for (uint32_t i = 0; i < systems_exe.size(); i += 1) {
-		const ExecutionData &ed = systems_exe[i];
+		const ExecutionSystemData &ed = systems_exe[i];
 		ed.exe(p_world);
 
 		// Notify the `System` released the storage.

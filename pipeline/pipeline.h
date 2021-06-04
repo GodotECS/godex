@@ -6,10 +6,15 @@
 
 class World;
 
-struct ExecutionData {
+struct ExecutionSystemData {
 	func_system_execute exe;
 	/// Storages that want to be notified at the end of the `System` execution.
 	LocalVector<godex::component_id> notify_list_release_write;
+};
+
+struct ExecutionStageData {
+	/// These systems can run in parallel.
+	LocalVector<ExecutionSystemData> systems;
 };
 
 class Pipeline {
@@ -19,7 +24,7 @@ class Pipeline {
 
 	/// Execution information.
 	LocalVector<func_get_system_exe_info> systems_info;
-	LocalVector<ExecutionData> systems_exe;
+	LocalVector<ExecutionSystemData> systems_exe;
 
 	/// List of systems that executes a sub pipeline.
 	LocalVector<uint32_t> system_dispatchers;
@@ -78,17 +83,4 @@ public:
 #define add_temporary_system(func)                                       \
 	add_temporary_system([](World *p_world) -> bool {                    \
 		return SystemBuilder::temporary_system_exec_func(p_world, func); \
-	})
-
-// This macro save the user the need to pass a `SystemExeInfo`, indeed it wraps
-// the passed function with a labda function that creates a `SystemExeInfo`.
-// By defining the same name of the method, the IDE autocomplete shows the method
-// name `add_system`, properly + it's impossible use the function directly
-// by mistake.
-#define add_system(func)                                            \
-	add_system([](SystemExeInfo &r_info) {                          \
-		SystemBuilder::get_system_info_from_function(r_info, func); \
-		r_info.system_func = [](World *p_world) {                   \
-			SystemBuilder::system_exec_func(p_world, func);         \
-		};                                                          \
 	})

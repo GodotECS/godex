@@ -133,6 +133,7 @@ void test_remove_entity_system(WorldCommands *p_command, Query<EntityID, const T
 
 TEST_CASE("[Modules][ECS] Test system and query") {
 	ECS::register_component<TagTestComponent>();
+	godex::system_id system_id = ECS::register_system(test_system_tag, "test_system_tag").get_id();
 
 	World world;
 
@@ -151,7 +152,7 @@ TEST_CASE("[Modules][ECS] Test system and query") {
 								.with(TagTestComponent());
 
 	Pipeline pipeline;
-	pipeline.add_system(test_system_tag);
+	pipeline.add_registered_system(system_id);
 	pipeline.build();
 	pipeline.prepare(&world);
 
@@ -325,10 +326,11 @@ void test_make_entity_1_root(Storage<Child> *p_hierarchy) {
 
 TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 	ECS::register_databag<TestSystemSubPipeDatabag>();
+	godex::system_id system_id = ECS::register_system(test_system_transform_add_x, "test_system_transform_add_x").get_id();
 
 	// ~~ Sub pipeline ~~
 	Pipeline sub_pipeline;
-	sub_pipeline.add_system(test_system_transform_add_x);
+	sub_pipeline.add_registered_system(system_id);
 	sub_pipeline.build();
 
 	const uint32_t sub_pipeline_system_id = ECS::register_dynamic_system("TestSubPipelineExecute").get_id();
@@ -389,13 +391,15 @@ TEST_CASE("[Modules][ECS] Test system and databag") {
 
 	// Test with databag
 	{
+		godex::system_id system_id = ECS::register_system(test_system_with_databag, "test_system_with_databag").get_id();
+
 		// Confirm the databag is initialized.
 		CHECK(world.get_databag<TestSystem1Databag>()->a == 10);
 
 		// Create the pipeline.
 		Pipeline pipeline;
 		// Add the system to the pipeline.
-		pipeline.add_system(test_system_with_databag);
+		pipeline.add_registered_system(system_id);
 		pipeline.build();
 		pipeline.prepare(&world);
 
@@ -409,6 +413,7 @@ TEST_CASE("[Modules][ECS] Test system and databag") {
 
 	// Test without databag
 	{
+		godex::system_id system_id = ECS::register_system(test_system_check_databag, "test_system_check_databag").get_id();
 		world.remove_databag<TestSystem1Databag>();
 
 		// Confirm the databag doesn't exists.
@@ -416,7 +421,7 @@ TEST_CASE("[Modules][ECS] Test system and databag") {
 
 		// Create the pipeline.
 		Pipeline pipeline;
-		pipeline.add_system(test_system_check_databag);
+		pipeline.add_registered_system(system_id);
 		pipeline.build();
 
 		// This make sure to create the `Databag`
@@ -480,6 +485,8 @@ TEST_CASE("[Modules][ECS] Test system databag fetch with dynamic query.") {
 }
 
 TEST_CASE("[Modules][ECS] Test event mechanism.") {
+	godex::system_id generate_event_system_id = ECS::register_system(test_system_generate_events, "test_system_generate_events").get_id();
+	godex::system_id check_event_system_id = ECS::register_system(test_system_check_events, "test_system_check_events").get_id();
 	ECS::register_component<Event1Component>();
 
 	World world;
@@ -490,8 +497,8 @@ TEST_CASE("[Modules][ECS] Test event mechanism.") {
 
 	// Dispatch the pipeline.
 	Pipeline pipeline;
-	pipeline.add_system(test_system_generate_events);
-	pipeline.add_system(test_system_check_events);
+	pipeline.add_registered_system(generate_event_system_id);
+	pipeline.add_registered_system(check_event_system_id);
 	pipeline.build();
 	pipeline.prepare(&world);
 
@@ -510,13 +517,16 @@ TEST_CASE("[Modules][ECS] Test event mechanism.") {
 }
 
 TEST_CASE("[Modules][ECS] Test create and remove Entity from Systems.") {
+	godex::system_id add_entity_system_id = ECS::register_system(test_add_entity_system, "test_add_entity_system").get_id();
+	godex::system_id remove_entity_system_id = ECS::register_system(test_remove_entity_system, "test_remove_entity_system").get_id();
+
 	World world;
 
 	// Create the pipeline.
 	Pipeline pipeline;
 	// Add the system to the pipeline.
-	pipeline.add_system(test_add_entity_system);
-	pipeline.add_system(test_remove_entity_system);
+	pipeline.add_registered_system(add_entity_system_id);
+	pipeline.add_registered_system(remove_entity_system_id);
 	pipeline.build();
 	pipeline.prepare(&world);
 
@@ -569,9 +579,11 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 
 	// Try move `Entity_0` using `LOCAL`.
 	{
+		godex::system_id system_id = ECS::register_system(test_move_root, "test_move_root").get_id();
+
 		// Create the pipeline.
 		Pipeline pipeline;
-		pipeline.add_system(test_move_root);
+		pipeline.add_registered_system(system_id);
 		pipeline.build();
 		pipeline.prepare(&world);
 
@@ -604,9 +616,11 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 
 	// Now move `Entity_1` but using `GLOBAL`.
 	{
+		godex::system_id system_id = ECS::register_system(test_move_1_global, "test_move_1_global").get_id();
+
 		// Create the pipeline.
 		Pipeline pipeline;
-		pipeline.add_system(test_move_1_global);
+		pipeline.add_registered_system(system_id);
 		pipeline.build();
 		pipeline.prepare(&world);
 
@@ -656,9 +670,11 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 
 	// Now change hierarchy
 	{
+		godex::system_id system_id = ECS::register_system(test_make_entity_1_root, "test_make_entity_1_root").get_id();
+
 		// Create the pipeline.
 		Pipeline pipeline;
-		pipeline.add_system(test_make_entity_1_root);
+		pipeline.add_registered_system(system_id);
 		pipeline.build();
 		pipeline.prepare(&world);
 
@@ -701,9 +717,11 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 
 	// Try move `Entity_0` using `LOCAL`, and make sure now one else move.
 	{
+		godex::system_id system_id = ECS::get_system_id("test_move_root"); // System already registered.
+
 		// Create the pipeline.
 		Pipeline pipeline;
-		pipeline.add_system(test_move_root);
+		pipeline.add_registered_system(system_id);
 		pipeline.build();
 		pipeline.prepare(&world);
 
@@ -965,6 +983,7 @@ void test_changed(Query<Changed<const TransformComponent>, ChangeTracer> &p_quer
 namespace godex_tests_system {
 TEST_CASE("[Modules][ECS] Test system changed query filter.") {
 	ECS::register_component<ChangeTracer>();
+	godex::system_id system_id = ECS::register_system(test_changed, "test_changed").get_id();
 
 	World world;
 
@@ -984,7 +1003,7 @@ TEST_CASE("[Modules][ECS] Test system changed query filter.") {
 								.with(TransformComponent());
 
 	Pipeline pipeline;
-	pipeline.add_system(test_changed);
+	pipeline.add_registered_system(system_id);
 	pipeline.build();
 	pipeline.prepare(&world);
 
