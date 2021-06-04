@@ -255,8 +255,6 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		CHECK(build_and_register_ecs_script("test_A_system_13.gd", code));
 	}
 
-
-
 	flush_ecs_script_preparation();
 
 	Pipeline pipeline;
