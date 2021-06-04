@@ -81,6 +81,26 @@ void ExecutionGraph::print_stages() const {
 	print_line("");
 }
 
+const LocalVector<ExecutionGraph::SystemNode> &ExecutionGraph::get_systems() const {
+	return systems;
+}
+
+const List<ExecutionGraph::SystemNode *> &ExecutionGraph::get_sorted_systems() const {
+	return sorted_systems;
+}
+
+const List<ExecutionGraph::SystemNode *> &ExecutionGraph::get_temporary_systems() const {
+	return temporary_systems;
+}
+
+const List<ExecutionGraph::StageNode> &ExecutionGraph::get_stages() const {
+	return stages;
+}
+
+real_t ExecutionGraph::get_best_stage_size() const {
+	return best_stage_size;
+}
+
 PipelineBuilder::PipelineBuilder() {
 }
 
@@ -269,7 +289,11 @@ void PipelineBuilder::fetch_system_info(
 		ExecutionGraph *r_graph) {
 	godex::system_id id = ECS::get_system_id(p_system);
 	ERR_FAIL_COND_MSG(id == godex::SYSTEM_NONE, "The system " + p_system + " doesn't exists.");
-	ERR_FAIL_COND_MSG(r_graph->systems[id].is_used == true, "The system " + p_system + " is being used twice. Skip it.");
+	ERR_FAIL_COND_MSG(r_graph->systems[id].is_used, "The system " + p_system + " is being used twice. Skip it.");
+
+	SystemExeInfo system_info;
+	ECS::get_system_exe_info(id, system_info);
+	ERR_FAIL_COND_MSG(system_info.valid == false, "The system " + p_system + " is invalid.");
 
 	r_graph->systems[id].is_used = true;
 	r_graph->systems[id].id = id;

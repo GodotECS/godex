@@ -60,6 +60,12 @@ private:
 public:
 	void print_sorted_systems() const;
 	void print_stages() const;
+
+	const LocalVector<SystemNode> &get_systems() const;
+	const List<SystemNode *> &get_sorted_systems() const;
+	const List<SystemNode *> &get_temporary_systems() const;
+	const List<StageNode> &get_stages() const;
+	real_t get_best_stage_size() const;
 };
 
 class PipelineBuilder {

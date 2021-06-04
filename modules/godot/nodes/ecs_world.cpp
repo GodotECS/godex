@@ -102,13 +102,30 @@ Pipeline *PipelineECS::get_pipeline(WorldECS *p_associated_world) {
 
 	// TODO change this to `create_pipeline`? Because in this way, this pipeline
 	// can't be assigned to two different world, and this is a feature to support.
+	// The reason why this should be changed is because in this way each pipeline
+	// can be disaptched safely regardless the other.
+	// Perhaps add a function to clone the pipeline instead to rebuild it?
 
 	if (pipeline) {
 		return pipeline;
 	}
 
-	// Build the pipeline.
+	// Initialize any eventually used sub pipeline.
+	{
+		// The PipelineDispatchers are never contained inside bundles.
+		const StringName *systems_name_ptr = systems_name.ptr();
+		for (int i = 0; i < systems_name.size(); i += 1) {
+			const godex::system_id id = ECS::get_system_id(systems_name_ptr[i]);
+			if (ECS::is_system_dispatcher(id)) {
+				const StringName pipeline_name = p_associated_world->get_system_dispatchers_pipeline(systems_name_ptr[i]);
+				Ref<PipelineECS> sub_pipeline = p_associated_world->find_pipeline(pipeline_name);
+				ERR_CONTINUE_MSG(sub_pipeline.is_null(), "The pipeline " + pipeline_name + " is not found. It's needed to set it as sub pipeline for the system: " + systems_name_ptr[i]);
+				ECS::set_system_pipeline(id, sub_pipeline->get_pipeline(p_associated_world));
+			}
+		}
+	}
 
+	// Build the pipeline.
 	pipeline = memnew(Pipeline);
 	PipelineBuilder::build_pipeline(systems_bundle, systems_name, pipeline);
 

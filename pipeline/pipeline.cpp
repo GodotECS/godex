@@ -31,7 +31,6 @@ bool Pipeline::is_ready() const {
 }
 
 void Pipeline::get_systems_dependencies(SystemExeInfo &p_info) const {
-	// TODO temporary systems?
 	for (uint32_t stage_i = 0; stage_i < exec_stages.size(); stage_i += 1) {
 		for (uint32_t i = 0; i < exec_stages[stage_i].systems.size(); i += 1) {
 			ECS::get_system_exe_info(exec_stages[stage_i].systems[i].id, p_info);
