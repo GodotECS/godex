@@ -3,6 +3,7 @@
 
 #include "components/dynamic_component.h"
 #include "core/object/message_queue.h"
+#include "modules/godot/databags/scene_tree_databag.h"
 #include "modules/godot/nodes/ecs_world.h"
 #include "pipeline/pipeline.h"
 #include "scene/main/scene_tree.h"
@@ -418,6 +419,87 @@ godex::system_id ECS::get_system_id(const StringName &p_name) {
 
 uint32_t ECS::get_systems_count() {
 	return systems.size();
+}
+
+bool has_single_thread_only_databags(const SystemExeInfo &p_info) {
+	return p_info.immutable_databags.has(World::get_databag_id()) ||
+		   p_info.mutable_databags.has(World::get_databag_id()) ||
+		   p_info.immutable_databags.has(SceneTreeDatabag::get_databag_id()) ||
+		   p_info.mutable_databags.has(SceneTreeDatabag::get_databag_id());
+}
+
+/// Returns true if these two `Set`s have at least 1 ID in common.
+bool collides(const Set<uint32_t> &p_set_1, const Set<uint32_t> &p_set_2) {
+	for (Set<uint32_t>::Element *e = p_set_1.front(); e; e = e->next()) {
+		if (p_set_2.has(e->get())) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool ECS::can_systems_run_in_parallel(godex::system_id p_system_a, godex::system_id p_system_b) {
+	ERR_FAIL_COND_V_MSG(verify_system_id(p_system_a) == false, false, "The SystemID: " + itos(p_system_a) + " doesn't exists. Are you passing a System ID?");
+	ERR_FAIL_COND_V_MSG(verify_system_id(p_system_b) == false, false, "The SystemID: " + itos(p_system_b) + " doesn't exists. Are you passing a System ID?");
+
+	SystemExeInfo info_a;
+	SystemExeInfo info_b;
+
+	get_system_exe_info(p_system_a, info_a);
+	get_system_exe_info(p_system_b, info_b);
+
+	// Verify if one of those has a special component or databag that must always
+	// run in single thread even when taken immutable.
+	if (has_single_thread_only_databags(info_a)) {
+		return false;
+	}
+	if (has_single_thread_only_databags(info_b)) {
+		return false;
+	}
+
+	// Check the remaining databags.
+	if (collides(info_a.immutable_databags, info_b.mutable_databags)) {
+		// System A is reading a databag mutating in System B.
+		return false;
+	}
+	if (collides(info_a.mutable_databags, info_b.mutable_databags)) {
+		// System A is mutating a databag mutating in System B.
+		return false;
+	}
+	if (collides(info_b.immutable_databags, info_a.mutable_databags)) {
+		// System B is reading a databag mutating in System A.
+		return false;
+	}
+
+	// Check the component Storages.
+	if (collides(info_a.immutable_components, info_b.mutable_components)) {
+		// System A is reading a component storage mutating in System B.
+		return false;
+	}
+	if (collides(info_a.immutable_components, info_b.mutable_components_storage)) {
+		// System A is reading a component storage mutating in System B.
+		return false;
+	}
+	if (collides(info_a.mutable_components, info_b.mutable_components)) {
+		// System A is mutating a component storage mutating in System B.
+		return false;
+	}
+	if (collides(info_a.mutable_components, info_b.mutable_components_storage)) {
+		// System A is mutating a component storage mutating in System B.
+		return false;
+	}
+	if (collides(info_b.immutable_components, info_a.mutable_components)) {
+		// System B is reading a component storage mutating in System A.
+		return false;
+	}
+	if (collides(info_b.immutable_components, info_a.mutable_components_storage)) {
+		// System B is reading a component storage mutating in System A.
+		return false;
+	}
+
+	// TODO Check NOT filter specialization.
+
+	return true;
 }
 
 SystemInfo &ECS::get_system_info(godex::system_id p_id) {

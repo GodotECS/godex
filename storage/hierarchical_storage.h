@@ -16,6 +16,10 @@ public:
 	virtual void flush_hierarchy_changes() = 0;
 };
 
+/// The Hierarchy storage holds the structure between Entities.
+/// It's possible to fetch this in a system that run in multiple threads because
+/// the flush happens inside `on_system_release` at the end of the stage:
+/// that happens in single thread and now one is using it in any way.
 class Hierarchy : public Storage<Child> {
 	DenseVector<Child> storage;
 	EntityList hierarchy_changed;

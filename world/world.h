@@ -78,8 +78,17 @@ public:
 	void destroy_deferred(EntityID p_entity);
 };
 
-// IMPORTANT, when multithreading is implemented, all the `System`s asking for
-// the world must run in single thread.
+/// The World is a special `Databag` because it's used to store all the ECS storages.
+/// To access these storages you can just use a `Query`.
+///
+/// Since this `Databag` give access to all the storages, when it's fetched from
+/// a `System` the pipeline will always run this `System` in single thread, even
+/// if taken immutable.
+/// Use a `Query<>` or a `Storage<>` or a `Spawner<>`  to access a specific,
+/// storage and allow Godex to multithread your system:
+/// - Query wiki: https://github.com/GodotECS/godex/wiki/Query
+/// - Storage wiki: TODO add wiki page, some examples here: https://github.com/GodotECS/godex/blob/main/tests/test_ecs_system.h#L89 use control find: `Storage<`.
+/// - Spawner wiki: https://github.com/GodotECS/godex/wiki/Spawner
 class World : public godex::Databag {
 	DATABAG(World)
 

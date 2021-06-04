@@ -34,7 +34,7 @@
 // 9. Make sure that the systems that fetch World, SceneTreeDatabag are always
 //     are always executed in single thread.
 // 10. Detect when an event isn't catched by any system, tell how to fix it.
-// TODO 11. Test advice mechanism
+// 11. Test the World and SceneTreeDatabag systems are always run in single thread.
 
 struct PbComponentA {
 	COMPONENT(PbComponentA, DenseVectorStorage)
@@ -194,6 +194,69 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		CHECK(build_and_register_ecs_script("test_A_system_9.gd", code));
 	}
 
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "\n";
+		code += "func _for_each(a, b):\n";
+		code += "	pass\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("test_A_system_10.gd", code));
+	}
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "\n";
+		code += "func _for_each(a, b):\n";
+		code += "	pass\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("test_A_system_11.gd", code));
+	}
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "\n";
+		code += "func _for_each(a, b):\n";
+		code += "	pass\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("test_A_system_12.gd", code));
+	}
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "\n";
+		code += "func _for_each(a, b):\n";
+		code += "	pass\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("test_A_system_13.gd", code));
+	}
+
+
+
 	flush_ecs_script_preparation();
 
 	Pipeline pipeline;
@@ -202,6 +265,10 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 
 	Vector<StringName> systems;
 	// Insert the systems with random order.
+	systems.push_back(StringName("test_A_system_13.gd"));
+	systems.push_back(StringName("test_A_system_12.gd"));
+	systems.push_back(StringName("test_A_system_11.gd"));
+	systems.push_back(StringName("test_A_system_10.gd"));
 	systems.push_back(StringName("test_A_system_8.gd"));
 	systems.push_back(StringName("test_A_system_6.gd"));
 	systems.push_back(StringName("test_A_system_5"));

@@ -258,6 +258,7 @@ public:
 	/// Returns the system id or UINT32_MAX if not found.
 	static godex::system_id get_system_id(const StringName &p_name);
 	static uint32_t get_systems_count();
+	static bool can_systems_run_in_parallel(godex::system_id p_system_a, godex::system_id p_system_b);
 
 private:
 	static SystemInfo &get_system_info(godex::system_id p_id);

@@ -21,22 +21,42 @@ public:
 		StringName bundle_name;
 
 		// The list of dependencies.
-		// This has more importance than the explicit priority.
-		LocalVector<SystemNode *> execute_after;
+		LocalVector<const SystemNode *> execute_after;
 
 		// List element pointer used to access fast.
 		List<SystemNode *>::Element *self_list_element = nullptr;
+
+		// Used by the optimizer to know the visited Nodes.
+		bool optimized = false;
 	};
 
 	struct StageNode {
 		LocalVector<SystemNode *> systems;
+
+		bool is_compatible(const SystemNode *p_system) const;
 	};
 
 private:
 	/// List of all the application systems.
 	LocalVector<SystemNode> systems;
+
 	/// List of used systems sorted by implicit and explicit priority.
 	List<SystemNode *> sorted_systems;
+
+	/// List of stages. The order is important.
+	List<StageNode> stages;
+
+	// Used by the optimization phase to enstablish if move or not a System to a
+	// new stage.
+	real_t best_stage_size = 0;
+
+private:
+	void prepare_for_optimization();
+	real_t compute_effort(uint32_t p_system_count);
+
+public:
+	void print_sorted_systems() const;
+	void print_stages() const;
 };
 
 class PipelineBuilder {
@@ -79,4 +99,7 @@ private:
 			ExecutionGraph *r_graph);
 
 	static void system_sorting(ExecutionGraph *r_graph);
+	static bool has_cyclick_dependencies(const ExecutionGraph *r_graph);
+	static void build_stages(ExecutionGraph *r_graph);
+	static void optimize_stages(ExecutionGraph *r_graph);
 };
