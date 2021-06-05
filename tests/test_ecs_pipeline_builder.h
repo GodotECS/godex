@@ -31,7 +31,7 @@
 //    thanks to the specialization given by `Not`.
 // 7. All the above must be valid for C++ and Scripted systems.
 // 8. Make sure that the systems that fetch World, SceneTreeDatabag are always
-//     are always executed in single thread.
+//    executed in single thread.
 // 9. Detect when an event isn't catched by any system, tell how to fix it.
 // 10. Detect cyclic dependencies.
 
@@ -585,8 +585,8 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder bundles.") {
 void test_C_system_1(Query<const PbComponentA> &p_query) {}
 void test_C_system_2(Query<const PbComponentA> &p_query) {}
 void test_C_system_3(Query<const PbComponentA> &p_query) {}
-void test_C_system_4(const World *) {}
-void test_C_system_5(const SceneTreeDatabag *) {}
+void test_C_system_4(const World *p_w) {}
+void test_C_system_5(const SceneTreeDatabag *p_sd) {}
 void test_C_system_6(Query<const PbComponentA> &p_query) {}
 void test_C_system_7(Query<const PbComponentA> &p_query) {}
 
