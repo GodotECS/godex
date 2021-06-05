@@ -94,6 +94,7 @@ public:
 
 class SystemBundleInfo {
 	friend class ECS;
+	friend class PipelineBuilder;
 
 	String description;
 	LocalVector<StringName> systems;
@@ -118,6 +119,7 @@ class ECS : public Object {
 	GDCLASS(ECS, Object)
 
 	friend class Main;
+	friend class godex::DynamicSystemInfo;
 
 public:
 	enum {
@@ -231,6 +233,7 @@ public:
 	static SystemBundleInfo &register_system_bundle(const StringName &p_name);
 
 	static godex::system_bundle_id get_system_bundle_id(const StringName &p_name);
+	static StringName get_system_bundle_name(godex::system_bundle_id p_id);
 	static SystemBundleInfo &get_system_bundle(godex::system_bundle_id p_id);
 
 	// ~~ Systems ~~
@@ -256,7 +259,12 @@ public:
 	/// Returns the system id or UINT32_MAX if not found.
 	static godex::system_id get_system_id(const StringName &p_name);
 	static uint32_t get_systems_count();
+	static bool can_systems_run_in_parallel(godex::system_id p_system_a, godex::system_id p_system_b);
 
+private:
+	static SystemInfo &get_system_info(godex::system_id p_id);
+
+public:
 	/// Returns the function that can be used to obtain the `SystemExeInfo`.
 	static func_get_system_exe_info get_func_system_exe_info(godex::system_id p_id);
 
@@ -264,6 +272,8 @@ public:
 	static void get_system_exe_info(godex::system_id p_id, SystemExeInfo &r_info);
 	static StringName get_system_name(godex::system_id p_id);
 	static String get_system_desc(godex::system_id p_id);
+	static Phase get_system_phase(godex::system_id p_id);
+	static const LocalVector<Dependency> &get_system_dependencies(godex::system_id p_id);
 
 	static void set_dynamic_system_target(godex::system_id p_id, ScriptInstance *p_target);
 	static godex::DynamicSystemInfo *get_dynamic_system_info(godex::system_id p_id);

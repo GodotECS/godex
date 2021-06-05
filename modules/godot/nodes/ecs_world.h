@@ -19,7 +19,7 @@ class PipelineECS : public Resource {
 	StringName pipeline_name;
 
 	Vector<StringName> systems_name;
-	// TODO add the physics stage
+	Vector<StringName> systems_bundle;
 
 	// This is just a cache value so to avoid rebuild the pipeline each time
 	// it's activated.

@@ -5,6 +5,7 @@
 
 #include "../ecs.h"
 #include "../pipeline/pipeline.h"
+#include "../pipeline/pipeline_builder.h"
 #include "../world/world.h"
 
 struct ExecutionCounter : public godex::Databag {
@@ -23,14 +24,18 @@ bool temporary_system_1_test(ExecutionCounter *p_counter) {
 }
 
 TEST_CASE("[Modules][ECS] Test temporary system.") {
+	ECS::register_temporary_system(temporary_system_1_test, "temporary_system_1_test");
+
 	ECS::register_databag<ExecutionCounter>();
 
 	World world;
 	world.create_databag<ExecutionCounter>();
 
+	PipelineBuilder pipeline_builder;
+	pipeline_builder.add_system("temporary_system_1_test");
+
 	Pipeline pipeline;
-	pipeline.add_temporary_system(temporary_system_1_test);
-	pipeline.build();
+	pipeline_builder.build(pipeline);
 	pipeline.prepare(&world);
 
 	for (uint32_t i = 0; i < 10; i += 1) {
@@ -48,9 +53,11 @@ TEST_CASE("[Modules][ECS] Test registered temporary system.") {
 	World world;
 	world.create_databag<ExecutionCounter>();
 
+	PipelineBuilder pipeline_builder;
+	pipeline_builder.add_system("TemporarySystemTest");
+
 	Pipeline pipeline;
-	pipeline.add_registered_temporary_system(ECS::get_system_id("TemporarySystemTest"));
-	pipeline.build();
+	pipeline_builder.build(pipeline);
 	pipeline.prepare(&world);
 
 	for (uint32_t i = 0; i < 10; i += 1) {
@@ -96,14 +103,20 @@ bool temporary_system_4_test(ExecutionCounter *p_counter) {
 }
 
 TEST_CASE("[Modules][ECS] Test temporary system order on removal.") {
+	ECS::register_temporary_system(temporary_system_2_test, "temporary_system_2_test");
+	ECS::register_temporary_system(temporary_system_3_test, "temporary_system_3_test");
+	ECS::register_temporary_system(temporary_system_4_test, "temporary_system_4_test");
+
 	World world;
 	world.create_databag<ExecutionCounter>();
 
+	PipelineBuilder pipeline_builder;
+	pipeline_builder.add_system("temporary_system_2_test");
+	pipeline_builder.add_system("temporary_system_3_test");
+	pipeline_builder.add_system("temporary_system_4_test");
+
 	Pipeline pipeline;
-	pipeline.add_temporary_system(temporary_system_2_test);
-	pipeline.add_temporary_system(temporary_system_3_test);
-	pipeline.add_temporary_system(temporary_system_4_test);
-	pipeline.build();
+	pipeline_builder.build(pipeline);
 	pipeline.prepare(&world);
 
 	for (uint32_t i = 0; i < 10; i += 1) {

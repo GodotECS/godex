@@ -3,6 +3,7 @@
 
 #include "components/dynamic_component.h"
 #include "core/object/message_queue.h"
+#include "modules/godot/databags/scene_tree_databag.h"
 #include "modules/godot/nodes/ecs_world.h"
 #include "pipeline/pipeline.h"
 #include "scene/main/scene_tree.h"
@@ -351,6 +352,11 @@ godex::system_bundle_id ECS::get_system_bundle_id(const StringName &p_name) {
 	return index >= 0 ? godex::system_bundle_id(index) : godex::SYSTEM_BUNDLE_NONE;
 }
 
+StringName ECS::get_system_bundle_name(godex::system_bundle_id p_id) {
+	CRASH_COND_MSG(system_bundles.size() <= p_id, "The sysetm bundle " + itos(p_id) + " doesn't exists.");
+	return system_bundles[p_id];
+}
+
 SystemBundleInfo &ECS::get_system_bundle(godex::system_bundle_id p_id) {
 	CRASH_COND_MSG(system_bundles.size() <= p_id, "The sysetm bundle " + itos(p_id) + " doesn't exists.");
 	return system_bundles_info[p_id];
@@ -384,6 +390,8 @@ SystemInfo &ECS::register_dynamic_system(StringName p_name) {
 			godex::DynamicSystemInfo *si = godex::get_dynamic_system_info(systems_info[id].dynamic_system_id);
 			si->reset();
 			si->set_system_id(id);
+			systems_info[id].phase = PHASE_PROCESS;
+			systems_info[id].dependencies.reset();
 			return systems_info[id];
 		}
 	}
@@ -418,6 +426,93 @@ uint32_t ECS::get_systems_count() {
 	return systems.size();
 }
 
+bool has_single_thread_only_databags(const SystemExeInfo &p_info) {
+	return p_info.immutable_databags.has(World::get_databag_id()) ||
+		   p_info.mutable_databags.has(World::get_databag_id()) ||
+		   p_info.immutable_databags.has(SceneTreeDatabag::get_databag_id()) ||
+		   p_info.mutable_databags.has(SceneTreeDatabag::get_databag_id());
+}
+
+/// Returns true if these two `Set`s have at least 1 ID in common.
+bool collides(const Set<uint32_t> &p_set_1, const Set<uint32_t> &p_set_2) {
+	for (Set<uint32_t>::Element *e = p_set_1.front(); e; e = e->next()) {
+		if (p_set_2.has(e->get())) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool ECS::can_systems_run_in_parallel(godex::system_id p_system_a, godex::system_id p_system_b) {
+	ERR_FAIL_COND_V_MSG(verify_system_id(p_system_a) == false, false, "The SystemID: " + itos(p_system_a) + " doesn't exists. Are you passing a System ID?");
+	ERR_FAIL_COND_V_MSG(verify_system_id(p_system_b) == false, false, "The SystemID: " + itos(p_system_b) + " doesn't exists. Are you passing a System ID?");
+
+	SystemExeInfo info_a;
+	SystemExeInfo info_b;
+
+	get_system_exe_info(p_system_a, info_a);
+	get_system_exe_info(p_system_b, info_b);
+
+	// Verify if one of those has a special component or databag that must always
+	// run in single thread even when taken immutable.
+	if (has_single_thread_only_databags(info_a)) {
+		return false;
+	}
+	if (has_single_thread_only_databags(info_b)) {
+		return false;
+	}
+
+	// Check the remaining databags.
+	if (collides(info_a.immutable_databags, info_b.mutable_databags)) {
+		// System A is reading a databag mutating in System B.
+		return false;
+	}
+	if (collides(info_a.mutable_databags, info_b.mutable_databags)) {
+		// System A is mutating a databag mutating in System B.
+		return false;
+	}
+	if (collides(info_b.immutable_databags, info_a.mutable_databags)) {
+		// System B is reading a databag mutating in System A.
+		return false;
+	}
+
+	// Check the component Storages.
+	if (collides(info_a.immutable_components, info_b.mutable_components)) {
+		// System A is reading a component storage mutating in System B.
+		return false;
+	}
+	if (collides(info_a.immutable_components, info_b.mutable_components_storage)) {
+		// System A is reading a component storage mutating in System B.
+		return false;
+	}
+	if (collides(info_a.mutable_components, info_b.mutable_components)) {
+		// System A is mutating a component storage mutating in System B.
+		return false;
+	}
+	if (collides(info_a.mutable_components, info_b.mutable_components_storage)) {
+		// System A is mutating a component storage mutating in System B.
+		return false;
+	}
+	if (collides(info_b.immutable_components, info_a.mutable_components)) {
+		// System B is reading a component storage mutating in System A.
+		return false;
+	}
+	if (collides(info_b.immutable_components, info_a.mutable_components_storage)) {
+		// System B is reading a component storage mutating in System A.
+		return false;
+	}
+
+	// TODO Check NOT filter specialization.
+
+	return true;
+}
+
+SystemInfo &ECS::get_system_info(godex::system_id p_id) {
+	static SystemInfo info;
+	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, info, "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
+	return systems_info[p_id];
+}
+
 func_get_system_exe_info ECS::get_func_system_exe_info(godex::system_id p_id) {
 	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, nullptr, "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
 	return systems_info[p_id].exec_info;
@@ -426,7 +521,7 @@ func_get_system_exe_info ECS::get_func_system_exe_info(godex::system_id p_id) {
 void ECS::get_system_exe_info(godex::system_id p_id, SystemExeInfo &r_info) {
 	ERR_FAIL_COND_MSG(verify_system_id(p_id) == false, "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
 	ERR_FAIL_COND_MSG(systems_info[p_id].exec_info == nullptr, "The System " + systems[p_id] + " is not a standard `System`.");
-	return systems_info[p_id].exec_info(r_info);
+	systems_info[p_id].exec_info(r_info);
 }
 
 StringName ECS::get_system_name(godex::system_id p_id) {
@@ -437,6 +532,17 @@ StringName ECS::get_system_name(godex::system_id p_id) {
 String ECS::get_system_desc(godex::system_id p_id) {
 	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, String(), "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
 	return systems_info[p_id].description;
+}
+
+Phase ECS::get_system_phase(godex::system_id p_id) {
+	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, PHASE_PROCESS, "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
+	return systems_info[p_id].phase;
+}
+
+const LocalVector<Dependency> &ECS::get_system_dependencies(godex::system_id p_id) {
+	static const LocalVector<Dependency> dep;
+	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, dep, "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
+	return systems_info[p_id].dependencies;
 }
 
 void ECS::set_dynamic_system_target(godex::system_id p_id, ScriptInstance *p_target) {

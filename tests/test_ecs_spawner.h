@@ -8,6 +8,7 @@
 #include "../modules/godot/components/transform_component.h"
 #include "../modules/godot/nodes/script_ecs.h"
 #include "../pipeline/pipeline.h"
+#include "../pipeline/pipeline_builder.h"
 #include "../spawners/spawner.h"
 #include "../storage/dense_vector_storage.h"
 #include "test_utilities.h"
@@ -125,12 +126,16 @@ TEST_CASE("[Modules][ECS] Test spawner Script registration.") {
 		CHECK(info.mutable_components_storage.has(ECS::get_component_id(component->get_name())));
 	}
 
+	const godex::system_id system_id = ECS::register_system(test_spawner_system, "test_spawner_system").get_id();
+
 	// Try to use the spawner now.
 	World world;
 
+	PipelineBuilder pipeline_builder;
+	pipeline_builder.add_system(system_id);
+
 	Pipeline pipeline;
-	pipeline.add_system(test_spawner_system);
-	pipeline.build();
+	pipeline_builder.build(pipeline);
 	pipeline.prepare(&world);
 
 	// Dispatch 1 time the pipeline.

@@ -75,6 +75,12 @@ public:
 		return { 0, nullptr };
 	}
 
+	/// This function is called by the pipeline only at the end of the stage.
+	/// It's always called in single thread and the Storage is not used by anyone.
+	/// During this stage is also possible to safely operate on other Storages.
+	///
+	/// This function is called only if the function `notify_release_write`
+	/// returns `true`.
 	virtual void on_system_release() {}
 
 public:
