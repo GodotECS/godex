@@ -175,8 +175,8 @@ String System::validate_script(Ref<Script> p_script) {
 void SystemBundle::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("add", "system_id"), &SystemBundle::add);
 	ClassDB::bind_method(D_METHOD("with_description", "desc"), &SystemBundle::with_description);
-	ClassDB::bind_method(D_METHOD("before", "system_id"), &SystemBundle::before);
-	ClassDB::bind_method(D_METHOD("after", "system_id"), &SystemBundle::after);
+	ClassDB::bind_method(D_METHOD("execute_before", "system_id"), &SystemBundle::execute_before);
+	ClassDB::bind_method(D_METHOD("execute_after", "system_id"), &SystemBundle::execute_after);
 
 	ClassDB::add_virtual_method(get_class_static(), MethodInfo("_prepare"));
 }
@@ -208,14 +208,14 @@ void SystemBundle::with_description(const String &p_desc) {
 	ECS::get_system_bundle(ECS::get_system_bundle_id(name)).set_description(p_desc);
 }
 
-void SystemBundle::before(uint32_t p_system_id) {
+void SystemBundle::execute_before(uint32_t p_system_id) {
 	ERR_FAIL_COND_MSG(name == StringName(), "Never call `_prepare` directly. Use `__fetch_descriptor` instead.");
 	const StringName system_name = ECS::get_system_name(p_system_id);
 	ERR_FAIL_COND_MSG(system_name == StringName(), "The system id `" + itos(p_system_id) + "` is not associated with any system.");
 	ECS::get_system_bundle(ECS::get_system_bundle_id(name)).before(system_name);
 }
 
-void SystemBundle::after(uint32_t p_system_id) {
+void SystemBundle::execute_after(uint32_t p_system_id) {
 	ERR_FAIL_COND_MSG(name == StringName(), "Never call `_prepare` directly. Use `__fetch_descriptor` instead.");
 	const StringName system_name = ECS::get_system_name(p_system_id);
 	ERR_FAIL_COND_MSG(system_name == StringName(), "The system id `" + itos(p_system_id) + "` is not associated with any system.");

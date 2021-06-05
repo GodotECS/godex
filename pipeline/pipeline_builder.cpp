@@ -67,8 +67,9 @@ void ExecutionGraph::print_sorted_systems() const {
 void ExecutionGraph::print_stages() const {
 	print_line("Execution Graph, stages:");
 	print_line("|");
-	for (const List<StageNode>::Element *a = stages.front(); a; a = a->next()) {
-		String msg = "|- [";
+	uint32_t index = 0;
+	for (const List<StageNode>::Element *a = stages.front(); a; a = a->next(), index += 1) {
+		String msg = "|- #" + itos(index).lpad(2, "0") + " [";
 		for (uint32_t i = 0; i < a->get().systems.size(); i += 1) {
 			if (i != 0) {
 				msg += ", ";
@@ -79,6 +80,18 @@ void ExecutionGraph::print_stages() const {
 		print_line(msg);
 	}
 	print_line("");
+}
+
+bool ExecutionGraph::is_valid() const {
+	return valid;
+}
+
+const String &ExecutionGraph::get_error_msg() const {
+	return error_msg;
+}
+
+const Vector<String> &ExecutionGraph::get_warnings() const {
+	return warnings;
 }
 
 const LocalVector<ExecutionGraph::SystemNode> &ExecutionGraph::get_systems() const {
@@ -127,9 +140,13 @@ void PipelineBuilder::build(Pipeline &r_pipeline) {
 void PipelineBuilder::build_graph(
 		const Vector<StringName> &p_system_bundles,
 		const Vector<StringName> &p_systems,
-		ExecutionGraph *r_graph) {
+		ExecutionGraph *r_graph,
+		bool p_skip_warnings) {
 	CRASH_COND_MSG(r_graph == nullptr, "The pipeline pointer must be valid.");
 
+	r_graph->valid = false;
+	r_graph->error_msg = "";
+	r_graph->warnings.clear();
 	r_graph->systems.clear();
 	r_graph->sorted_systems.clear();
 	r_graph->stages.clear();
@@ -142,19 +159,28 @@ void PipelineBuilder::build_graph(
 		fetch_system_info(p_systems[i], StringName(), -1, LocalVector<Dependency>(), r_graph);
 	}
 
-	system_sorting(r_graph);
+	sort_systems(r_graph);
 
 	// Check if we have a cynclic dependency.
 	if (has_cyclick_dependencies(r_graph)) {
 		r_graph->sorted_systems.clear();
 		r_graph->systems.clear();
+		r_graph->valid = false;
+		r_graph->error_msg = "This graph has a cyclick dependency and the pipeline building was discarded.";
 		ERR_FAIL_MSG("[FATAL] This graph has a cyclick dependency and the pipeline building was discarded.");
 		return;
 	}
 
-	// TODO remove this?
+	// The validation phase
+	if (!p_skip_warnings) {
+		detect_warnings_lost_events(r_graph);
+	}
+
+	// Everything is fine, build the graph and optimize it.
 	build_stages(r_graph);
 	optimize_stages(r_graph);
+
+	r_graph->valid = true;
 
 	// Done :)
 }
@@ -165,8 +191,10 @@ void PipelineBuilder::build_pipeline(
 		Pipeline *r_pipeline) {
 	CRASH_COND_MSG(r_pipeline == nullptr, "The pipeline pointer must be valid.");
 	ExecutionGraph graph;
-	build_graph(p_system_bundles, p_systems, &graph);
-	build_pipeline(graph, r_pipeline);
+	build_graph(p_system_bundles, p_systems, &graph, true);
+	if (graph.is_valid()) {
+		build_pipeline(graph, r_pipeline);
+	}
 }
 
 void PipelineBuilder::build_pipeline(
@@ -191,7 +219,6 @@ void PipelineBuilder::build_pipeline(
 	{
 		r_pipeline->exec_stages.resize(p_graph.stages.size());
 
-		SystemExeInfo system_info;
 		uint32_t stage_index = 0;
 
 		for (const List<ExecutionGraph::StageNode>::Element *stage = p_graph.stages.front();
@@ -200,26 +227,22 @@ void PipelineBuilder::build_pipeline(
 			r_pipeline->exec_stages[stage_index].systems.resize(stage->get().systems.size());
 
 			for (uint32_t i = 0; i < stage->get().systems.size(); i += 1) {
-				// Extracts the system info.
-				system_info.clear();
-				ECS::get_system_exe_info(stage->get().systems[i]->id, system_info);
-
 #ifdef DEBUG_ENABLED
-				CRASH_COND_MSG(system_info.valid == false, "At this point the system is valid because when it's invalid it's discarded by the previous steps. If this is triggered, make sure to build the pipeline using the proper methods.");
+				CRASH_COND_MSG(stage->get().systems[i]->info.valid == false, "At this point the system is valid because when it's invalid it's discarded by the previous steps. If this is triggered, make sure to build the pipeline using the proper methods.");
 				// This is automated by the `add_system` macro or by
 				// `ECS::register_system` macro, so is never supposed to happen.
-				CRASH_COND_MSG(system_info.system_func == nullptr, "At this point `system_info.system_func` is supposed to be not null. To add a system use the following syntax: `add_system(function_name);` or use the `ECS` class to get the `SystemExeInfo` if it's a registered system.");
+				CRASH_COND_MSG(stage->get().systems[i]->info.system_func == nullptr, "At this point `system_info.system_func` is supposed to be not null. To add a system use the following syntax: `add_system(function_name);` or use the `ECS` class to get the `SystemExeInfo` if it's a registered system.");
 #endif
 
 				// Add the exec function to the stage.
 				r_pipeline->exec_stages[stage_index].systems[i].id = stage->get().systems[i]->id;
-				r_pipeline->exec_stages[stage_index].systems[i].exe = system_info.system_func;
+				r_pipeline->exec_stages[stage_index].systems[i].exe = stage->get().systems[i]->info.system_func;
 
 				// Setup the phase.
 				if (ECS::is_system_dispatcher(stage->get().systems[i]->id) == false) {
 					// Take the events that are generated by this pipeline
 					// (no sub pipelines).
-					for (const Set<uint32_t>::Element *e = system_info.mutable_components_storage.front(); e; e = e->next()) {
+					for (const Set<uint32_t>::Element *e = stage->get().systems[i]->info.mutable_components_storage.front(); e; e = e->next()) {
 						if (ECS::is_component_events(e->get())) {
 							// Make sure it's unique
 							if (r_pipeline->event_generator.find(e->get()) == -1) {
@@ -230,12 +253,12 @@ void PipelineBuilder::build_pipeline(
 
 					// Mark as flush, the storages that need to be flushed at the
 					// end of the `System`.
-					for (const Set<uint32_t>::Element *e = system_info.mutable_components.front(); e; e = e->next()) {
+					for (const Set<uint32_t>::Element *e = stage->get().systems[i]->info.mutable_components.front(); e; e = e->next()) {
 						if (ECS::storage_notify_release_write(e->get())) {
 							r_pipeline->exec_stages[stage_index].notify_list_release_write.push_back(e->get());
 						}
 					}
-					for (const Set<uint32_t>::Element *e = system_info.mutable_components_storage.front(); e; e = e->next()) {
+					for (const Set<uint32_t>::Element *e = stage->get().systems[i]->info.mutable_components_storage.front(); e; e = e->next()) {
 						if (ECS::storage_notify_release_write(e->get())) {
 							if (r_pipeline->exec_stages[stage_index].notify_list_release_write.find(e->get()) == -1) {
 								r_pipeline->exec_stages[stage_index].notify_list_release_write.push_back(e->get());
@@ -278,7 +301,6 @@ void PipelineBuilder::fetch_bundle_info(
 					r_graph);
 		}
 	}
-	//ScriptEcs::get_singleton()->get_script_system_bundle();
 }
 
 void PipelineBuilder::fetch_system_info(
@@ -300,6 +322,7 @@ void PipelineBuilder::fetch_system_info(
 	r_graph->systems[id].phase = ECS::get_system_phase(id);
 	r_graph->systems[id].explicit_priority = p_explicit_priority;
 	r_graph->systems[id].bundle_name = p_bundle_name;
+	r_graph->systems[id].info = system_info;
 
 	resolve_dependencies(id, p_extra_dependencies, r_graph);
 	resolve_dependencies(id, ECS::get_system_dependencies(id), r_graph);
@@ -322,7 +345,7 @@ void PipelineBuilder::resolve_dependencies(
 	}
 }
 
-void PipelineBuilder::system_sorting(ExecutionGraph *r_graph) {
+void PipelineBuilder::sort_systems(ExecutionGraph *r_graph) {
 	// Initialize the sorted list.
 	for (uint32_t i = 0; i < r_graph->systems.size(); i += 1) {
 		ExecutionGraph::SystemNode *node = r_graph->systems.ptr() + i;
@@ -391,6 +414,92 @@ bool PipelineBuilder::has_cyclick_dependencies(const ExecutionGraph *r_graph) {
 		}
 	}
 	return false;
+}
+
+void PipelineBuilder::detect_warnings_lost_events(ExecutionGraph *r_graph) {
+	// Detects if this pipeline is generating events that will not catched by
+	// anything.
+	struct GeneratedEventInfo {
+		godex::component_id component_id;
+		godex::system_id generated_by;
+		bool operator<(const GeneratedEventInfo &p_other) const {
+			return component_id < p_other.component_id;
+		}
+	};
+
+	// This Set is used to detect if the generated events are leaked.
+	// It fetches all the sorted systems, and inserts the component ID when a
+	// generator is found.
+	// When a system reads the event (mutably / immutably) the the ID is removed
+	// from this `Set`.
+	// At the end, any component inside the list is a leaked event, since not system
+	// read it.
+	Set<GeneratedEventInfo> generated_events;
+
+	// This list is used to detect if the changed event are leaked.
+	// It iterates all the sorted systems, and insert the component ID when the
+	// system fetches the changed event.
+	// Afterwords, when a system modify it we mark it as `generated_by`:
+	// if this event is not marked read again, it reaches the end with the
+	// `generated_by` set, so we detected the leak.
+	Set<GeneratedEventInfo> changed_events;
+
+	for (const List<ExecutionGraph::SystemNode *>::Element *e = r_graph->sorted_systems.front(); e; e = e->next()) {
+		// Detect if this system is generating an event.
+		for (Set<godex::component_id>::Element *generated_component = e->get()->info.mutable_components_storage.front(); generated_component; generated_component = generated_component->next()) {
+			if (ECS::is_component_events(generated_component->get())) {
+				// This system is generating an event.
+				generated_events.insert({ generated_component->get(), e->get()->id });
+			}
+
+			if (changed_events.has({ generated_component->get(), godex::SYSTEM_NONE })) {
+				// A system prior to this one is fetching the changes of this
+				// component. Notify it.
+				changed_events.erase({ generated_component->get(), godex::SYSTEM_NONE }); // TODO No way to update the existing one instead??
+				changed_events.insert({ generated_component->get(), e->get()->id });
+			}
+		}
+
+		// Detect if this system is fetching the event.
+		for (Set<godex::component_id>::Element *fetch_component = e->get()->info.mutable_components.front(); fetch_component; fetch_component = fetch_component->next()) {
+			if (ECS::is_component_events(fetch_component->get())) {
+				// This system is fetching the event.
+				generated_events.erase({ fetch_component->get(), godex::SYSTEM_NONE });
+			}
+
+			if (changed_events.has({ fetch_component->get(), godex::SYSTEM_NONE })) {
+				// A system prior to this one is fetching the changes of this
+				// component. Notify it.
+				changed_events.erase({ fetch_component->get(), godex::SYSTEM_NONE }); // TODO No way to update the existing one instead??
+				changed_events.insert({ fetch_component->get(), e->get()->id });
+			}
+		}
+
+		for (Set<godex::component_id>::Element *fetch_component = e->get()->info.immutable_components.front(); fetch_component; fetch_component = fetch_component->next()) {
+			if (ECS::is_component_events(fetch_component->get())) {
+				// This system is fetching the event.
+				generated_events.erase({ fetch_component->get(), godex::SYSTEM_NONE });
+			}
+		}
+
+		for (Set<godex::component_id>::Element *changed = e->get()->info.need_changed.front(); changed; changed = changed->next()) {
+			// Notify each changed component this system is reading.
+			changed_events.erase({ changed->get(), godex::SYSTEM_NONE }); // TODO No way to update the existing one instead??
+			changed_events.insert({ changed->get(), godex::SYSTEM_NONE });
+		}
+	}
+
+	for (Set<GeneratedEventInfo>::Element *unfetched_event = generated_events.front(); unfetched_event; unfetched_event = unfetched_event->next()) {
+		r_graph->warnings.push_back("The event `" + ECS::get_component_name(unfetched_event->get().component_id) + "` is generated by `" + ECS::get_system_name(unfetched_event->get().generated_by) + "`, but afterward no systems is fetching it before the end of the pipeline, where it's destroyed forever. To fix the problem, and avoid loase events, you should add a system to fetch the event that runs after the system `" + ECS::get_system_name(unfetched_event->get().generated_by) + "`. Or open a bug report.");
+	}
+
+	for (Set<GeneratedEventInfo>::Element *changed = changed_events.front(); changed; changed = changed->next()) {
+		if (changed->get().generated_by != godex::SYSTEM_NONE) {
+			// The last time this component was fetched, it was done to write it.
+			// In other words we are losing this changed event.
+			r_graph->warnings.push_back("The CHANGED event for the component `" + ECS::get_component_name(changed->get().component_id) + "` is generated by the system `" + ECS::get_system_name(changed->get().generated_by) + "`, but afterward no systems is fetching it (using the changed filter) before the end of the pipeline, where it's destroyed forever. To fix the problem, and avoid loase events, you should add a system to fetch the event that runs after the system `" + ECS::get_system_name(changed->get().generated_by) + "`. Or open a bug report.");
+		}
+	}
 }
 
 void PipelineBuilder::build_stages(ExecutionGraph *r_graph) {

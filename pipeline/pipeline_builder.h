@@ -19,6 +19,7 @@ public:
 		// Has more importance than the implicit priority.
 		int explicit_priority = -1;
 		StringName bundle_name;
+		SystemExeInfo info;
 
 		// The list of dependencies.
 		LocalVector<const SystemNode *> execute_after;
@@ -37,6 +38,10 @@ public:
 	};
 
 private:
+	bool valid = false;
+	String error_msg;
+	Vector<String> warnings;
+
 	/// List of all the application systems.
 	LocalVector<SystemNode> systems;
 
@@ -61,6 +66,9 @@ public:
 	void print_sorted_systems() const;
 	void print_stages() const;
 
+	bool is_valid() const;
+	const String &get_error_msg() const;
+	const Vector<String> &get_warnings() const;
 	const LocalVector<SystemNode> &get_systems() const;
 	const List<SystemNode *> &get_sorted_systems() const;
 	const List<SystemNode *> &get_temporary_systems() const;
@@ -87,7 +95,8 @@ public:
 	static void build_graph(
 			const Vector<StringName> &p_system_bundles,
 			const Vector<StringName> &p_systems,
-			ExecutionGraph *r_graph);
+			ExecutionGraph *r_graph,
+			bool p_skip_warnings = false);
 
 	/// This method is used to build the `Pipeline`. This method constructs the
 	/// `ExecutionGraph` then it cooks it and builds the `Pipeline` from it.
@@ -118,8 +127,9 @@ private:
 			const LocalVector<Dependency> &p_dependencies,
 			ExecutionGraph *r_graph);
 
-	static void system_sorting(ExecutionGraph *r_graph);
+	static void sort_systems(ExecutionGraph *r_graph);
 	static bool has_cyclick_dependencies(const ExecutionGraph *r_graph);
+	static void detect_warnings_lost_events(ExecutionGraph *r_graph);
 	static void build_stages(ExecutionGraph *r_graph);
 	static void optimize_stages(ExecutionGraph *r_graph);
 };

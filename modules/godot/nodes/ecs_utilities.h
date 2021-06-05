@@ -78,8 +78,8 @@ class SystemBundle : public Resource {
 public:
 	void add(uint32_t p_system_id);
 	void with_description(const String &p_desc);
-	void before(uint32_t p_system_id);
-	void after(uint32_t p_system_id);
+	void execute_before(uint32_t p_system_id);
+	void execute_after(uint32_t p_system_id);
 
 	static String validate_script(Ref<Script> p_script);
 };
