@@ -61,11 +61,16 @@ TEST_CASE("[Modules][ECS] Initialize PipelineBuilder tests.") {
 void test_A_system_1(Query<PbComponentA, const PbComponentB> &p_query) {}
 void test_A_system_3(Query<const PbComponentA, const PbComponentB> &p_query, PbDatabagA *p_db_a) {}
 void test_A_system_5(Query<const PbComponentA, const PbComponentB> &p_query, const PbDatabagA *p_db_a) {}
+void test_A_system_14(Query<const PbComponentA, const PbComponentB> &p_query) {}
+void test_A_system_15(Query<PbComponentA, PbComponentB> &p_query) {}
 
 namespace godex_tests {
 
-TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit dependencies and implicit order.") {
+TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit and explicit dependencies.") {
 	initialize_script_ecs();
+
+	ECS::register_system(test_A_system_15, "test_A_system_15")
+			.set_phase(PHASE_CONFIG);
 
 	{
 		// Create the script.
@@ -200,6 +205,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
+		code += "	execute_after(ECS.test_A_system_13_gd)\n";
 		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
 		code += "	with_component(ECS.PbComponentB, IMMUTABLE)\n";
 		code += "\n";
@@ -215,6 +221,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
+		code += "	execute_after(ECS.test_A_system_12_gd)\n";
 		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
 		code += "	with_component(ECS.PbComponentB, IMMUTABLE)\n";
 		code += "\n";
@@ -245,6 +252,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
+		code += "	execute_before(ECS.test_A_system_12_gd)\n";
 		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
 		code += "	with_component(ECS.PbComponentB, IMMUTABLE)\n";
 		code += "\n";
@@ -255,14 +263,16 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		CHECK(build_and_register_ecs_script("test_A_system_13.gd", code));
 	}
 
-	flush_ecs_script_preparation();
+	ECS::register_system(test_A_system_14, "test_A_system_14")
+			.before("test_A_system_9.gd");
 
-	Pipeline pipeline;
+	flush_ecs_script_preparation();
 
 	Vector<StringName> system_bundles;
 
 	Vector<StringName> systems;
 	// Insert the systems with random order.
+	systems.push_back(StringName("test_A_system_14"));
 	systems.push_back(StringName("test_A_system_13.gd"));
 	systems.push_back(StringName("test_A_system_12.gd"));
 	systems.push_back(StringName("test_A_system_11.gd"));
@@ -277,36 +287,78 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 	systems.push_back(StringName("test_A_system_1"));
 	systems.push_back(StringName("test_A_system_7.gd"));
 	systems.push_back(StringName("test_A_system_9.gd"));
+	systems.push_back(StringName("test_A_system_15"));
 
+	Pipeline pipeline;
 	PipelineBuilder::build_pipeline(system_bundles, systems, &pipeline);
 
-	// Verify the test_A_system_7.gd and test_A_system_0.gd are the first executed,
-	// and executed in parallel.
-	// TODO
+	const int stage_test_A_system_14 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_A_system_14")));
+	const int stage_test_A_system_13 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_A_system_13.gd")));
+	const int stage_test_A_system_12 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_A_system_12.gd")));
+	const int stage_test_A_system_11 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_A_system_11.gd")));
+	const int stage_test_A_system_10 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_A_system_10.gd")));
+	const int stage_test_A_system_8 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_A_system_8.gd")));
+	const int stage_test_A_system_6 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_A_system_6.gd")));
+	const int stage_test_A_system_5 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_A_system_5")));
+	const int stage_test_A_system_4 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_A_system_4.gd")));
+	const int stage_test_A_system_3 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_A_system_3")));
+	const int stage_test_A_system_0 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_A_system_0.gd")));
+	const int stage_test_A_system_2 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_A_system_2.gd")));
+	const int stage_test_A_system_1 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_A_system_1")));
+	const int stage_test_A_system_7 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_A_system_7.gd")));
+	const int stage_test_A_system_9 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_A_system_9.gd")));
+	const int stage_test_A_system_15 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_A_system_15")));
+
+	// Verify the test_A_system_15 is the first one being executed, and it's not
+	// executed in parallel with any other system.
+	// It's executed first because it run in the config phase and also thanks to
+	// its implicit priority, and implicit dependency given by the mutable Query.
+	CHECK(stage_test_A_system_15 < stage_test_A_system_7);
+
+	// The phase config merges with the process phase:
+
+	// test_A_system_14 has an explicit dependency with test_A_system_9, it runs
+	// before. However, the test_A_system_7.gd and test_A_system_0.gd is compatible
+	// to run with with both in parallel. The optimization algorithm will decide
+	// where to put this sysetm.
+	CHECK((stage_test_A_system_7 == stage_test_A_system_14 || stage_test_A_system_7 == stage_test_A_system_9));
+	CHECK((stage_test_A_system_0 == stage_test_A_system_14 || stage_test_A_system_0 == stage_test_A_system_9));
 
 	// Verify the test_A_system_9.gd is executed before test_A_system_1 and in
-	// parallel with test_A_system7.gd and test_A_system_0.gd
-	// TODO
+	// parallel with test_A_system_0.gd
+	CHECK(stage_test_A_system_9 < stage_test_A_system_1);
 
-	// Verify the test_A_system_1 is the following one being executed,
-	// has its implicit registration order imply.
-	// TODO
-
-	// Verify the test_A_system_2.gd is the third one being executed,
-	// has its implicit registration order imply, and not in parallel with
-	// test_A_system_1.
-	// TODO
+	// Verify the test_A_system_2.gd runs after test_A_system_1 because they have
+	// an implicit dependency and test_A_system_1 is registered before.
+	CHECK(stage_test_A_system_1 < stage_test_A_system_2);
 
 	// Verify the test_A_system_3 and test_A_system_4.gd run in parallel
 	// and after test_A_system_2.gd
-	// TODO
+	CHECK(stage_test_A_system_3 == stage_test_A_system_4);
+	CHECK(stage_test_A_system_3 > stage_test_A_system_2);
 
 	// Verify the test_A_system_5 and test_A_system_6.gd run in parallel,
 	// but after test_A_system_3 and test_A_system_4.gd.
-	// TODO
+	CHECK(stage_test_A_system_5 == stage_test_A_system_6);
+	CHECK(stage_test_A_system_5 > stage_test_A_system_3);
 
-	// Verify the test_A_system_8 run the last one.
-	// TODO
+	// Verify the test_A_system_8 run the last one, since it's marked as post
+	// process.
+	CHECK(stage_test_A_system_8 >= stage_test_A_system_5);
+
+	// Verify explicit dependencies:
+
+	// Verify the test_A_system_13 is executed before test_A_system_12.
+	CHECK(stage_test_A_system_13 < stage_test_A_system_12);
+
+	// Verify the test_A_system_11 is executed after test_A_system_12.
+	CHECK(stage_test_A_system_11 > stage_test_A_system_12);
+
+	// Verify the test_A_system_10 is executed after test_A_system_13.
+	CHECK(stage_test_A_system_10 > stage_test_A_system_13);
+
+	// Verify the test_A_system_14 is executed before test_A_system_9.
+	CHECK(stage_test_A_system_14 < stage_test_A_system_9);
 
 	finalize_script_ecs();
 }

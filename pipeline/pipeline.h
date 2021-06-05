@@ -59,6 +59,9 @@ public:
 
 	/// Dispatch the pipeline on the following world.
 	void dispatch(World *p_world);
+
+	/// Returns the stage index, or -1 if the system is not in pipeline.
+	int get_system_stage(godex::system_id p_system) const;
 };
 
 // This macro save the user the need to pass a `SystemExeInfo`, indeed it wraps

@@ -67,8 +67,9 @@ void ExecutionGraph::print_sorted_systems() const {
 void ExecutionGraph::print_stages() const {
 	print_line("Execution Graph, stages:");
 	print_line("|");
-	for (const List<StageNode>::Element *a = stages.front(); a; a = a->next()) {
-		String msg = "|- [";
+	uint32_t index = 0;
+	for (const List<StageNode>::Element *a = stages.front(); a; a = a->next(), index += 1) {
+		String msg = "|- #" + itos(index).lpad(2, "0") + " [";
 		for (uint32_t i = 0; i < a->get().systems.size(); i += 1) {
 			if (i != 0) {
 				msg += ", ";
@@ -156,6 +157,7 @@ void PipelineBuilder::build_graph(
 	build_stages(r_graph);
 	optimize_stages(r_graph);
 
+	r_graph->print_stages();
 	// Done :)
 }
 
@@ -278,7 +280,6 @@ void PipelineBuilder::fetch_bundle_info(
 					r_graph);
 		}
 	}
-	//ScriptEcs::get_singleton()->get_script_system_bundle();
 }
 
 void PipelineBuilder::fetch_system_info(

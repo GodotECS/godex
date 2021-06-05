@@ -156,3 +156,14 @@ void Pipeline::dispatch(World *p_world) {
 
 	p_world->is_dispatching_in_progress = false;
 }
+
+int Pipeline::get_system_stage(godex::system_id p_system) const {
+	for (uint32_t stage_i = 0; stage_i < exec_stages.size(); stage_i += 1) {
+		for (uint32_t i = 0; i < exec_stages[stage_i].systems.size(); i += 1) {
+			if (exec_stages[stage_i].systems[i].id == p_system) {
+				return stage_i;
+			}
+		}
+	}
+	return -1;
+}
