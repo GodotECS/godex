@@ -30,10 +30,10 @@
 //    so two systems that fetch the same component mutable may run in parallel
 //    thanks to the specialization given by `Not`.
 // 7. All the above must be valid for C++ and Scripted systems.
-// 9. Make sure that the systems that fetch World, SceneTreeDatabag are always
+// 8. Make sure that the systems that fetch World, SceneTreeDatabag are always
 //     are always executed in single thread.
-// 10. Detect when an event isn't catched by any system, tell how to fix it.
-// 11. Test the World and SceneTreeDatabag systems are always run in single thread.
+// 9. Detect when an event isn't catched by any system, tell how to fix it.
+// 10. Detect cyclic dependencies.
 
 struct PbComponentA {
 	COMPONENT(PbComponentA, DenseVectorStorage)
@@ -591,7 +591,7 @@ void test_C_system_6(Query<const PbComponentA> &p_query) {}
 void test_C_system_7(Query<const PbComponentA> &p_query) {}
 
 namespace godex_tests {
-TEST_CASE("[Modules][ECS] Verify the PipelineBuilder bundles.") {
+TEST_CASE("[Modules][ECS] Verify the PipelineBuilder put the systems that fetch World and SceneTreeDatabag in single thread.") {
 	initialize_script_ecs();
 
 	ECS::register_system_bundle("TestC_CppBundle")
@@ -744,6 +744,83 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder bundles.") {
 	CHECK(stage_test_C_system_9 != stage_test_C_system_8);
 	CHECK(stage_test_C_system_9 != stage_test_C_system_10);
 	CHECK(stage_test_C_system_9 != stage_test_C_system_11);
+
+	finalize_script_ecs();
+}
+} // namespace godex_tests
+
+void test_D_system_1(Query<PbComponentA> &p_query) {}
+void test_D_system_2(Query<PbComponentA> &p_query) {}
+void test_D_system_3(Query<PbComponentA> &p_query) {}
+
+namespace godex_tests {
+TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to detect cyclic dependencies.") {
+	initialize_script_ecs();
+
+	ECS::register_system_bundle("TestD_CppBundle")
+			.add(ECS::register_system(test_D_system_1, "test_D_system_1")
+							.after("test_D_system_5.gd"))
+			.add(ECS::register_system(test_D_system_2, "test_D_system_2"))
+			.add(ECS::register_system(test_D_system_3, "test_D_system_3"));
+
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	with_component(ECS.PbComponentA, MUTABLE)\n";
+		code += "\n";
+		code += "func _for_each(a):\n";
+		code += "	pass\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("test_D_system_4.gd", code));
+	}
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	execute_after(ECS.test_D_system_3)\n";
+		code += "	with_component(ECS.PbComponentA, MUTABLE)\n";
+		code += "\n";
+		code += "func _for_each(a):\n";
+		code += "	pass\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("test_D_system_5.gd", code));
+	}
+	{
+		// Create the script.
+		String code;
+		code += "extends SystemBundle\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	add(ECS.test_D_system_4_gd)\n";
+		code += "	add(ECS.test_D_system_5_gd)\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("TestD_GDSBundle.gd", code));
+	}
+
+	flush_ecs_script_preparation();
+
+	Vector<StringName> system_bundles;
+	system_bundles.push_back("TestD_CppBundle");
+	system_bundles.push_back("TestD_GDSBundle.gd");
+
+	Vector<StringName> systems;
+
+	ExecutionGraph graph;
+	PipelineBuilder::build_graph(system_bundles, systems, &graph);
+
+	// Make sure the graph wasn't created.
+	CHECK(graph.is_valid() == false);
+	CHECK(!graph.get_error_msg().is_empty());
+	CHECK(graph.get_sorted_systems().size() == 0);
+	CHECK(graph.get_stages().size() == 0);
 
 	finalize_script_ecs();
 }

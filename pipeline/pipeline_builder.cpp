@@ -82,6 +82,14 @@ void ExecutionGraph::print_stages() const {
 	print_line("");
 }
 
+bool ExecutionGraph::is_valid() const {
+	return valid;
+}
+
+const String &ExecutionGraph::get_error_msg() const {
+	return error_msg;
+}
+
 const LocalVector<ExecutionGraph::SystemNode> &ExecutionGraph::get_systems() const {
 	return systems;
 }
@@ -131,6 +139,8 @@ void PipelineBuilder::build_graph(
 		ExecutionGraph *r_graph) {
 	CRASH_COND_MSG(r_graph == nullptr, "The pipeline pointer must be valid.");
 
+	r_graph->valid = false;
+	r_graph->error_msg = "";
 	r_graph->systems.clear();
 	r_graph->sorted_systems.clear();
 	r_graph->stages.clear();
@@ -149,6 +159,8 @@ void PipelineBuilder::build_graph(
 	if (has_cyclick_dependencies(r_graph)) {
 		r_graph->sorted_systems.clear();
 		r_graph->systems.clear();
+		r_graph->valid = false;
+		r_graph->error_msg = "This graph has a cyclick dependency and the pipeline building was discarded.";
 		ERR_FAIL_MSG("[FATAL] This graph has a cyclick dependency and the pipeline building was discarded.");
 		return;
 	}
@@ -157,7 +169,8 @@ void PipelineBuilder::build_graph(
 	build_stages(r_graph);
 	optimize_stages(r_graph);
 
-	r_graph->print_stages();
+	r_graph->valid = true;
+
 	// Done :)
 }
 
@@ -168,7 +181,9 @@ void PipelineBuilder::build_pipeline(
 	CRASH_COND_MSG(r_pipeline == nullptr, "The pipeline pointer must be valid.");
 	ExecutionGraph graph;
 	build_graph(p_system_bundles, p_systems, &graph);
-	build_pipeline(graph, r_pipeline);
+	if (graph.is_valid()) {
+		build_pipeline(graph, r_pipeline);
+	}
 }
 
 void PipelineBuilder::build_pipeline(
