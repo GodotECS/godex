@@ -819,8 +819,127 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to detect cyclic de
 	// Make sure the graph wasn't created.
 	CHECK(graph.is_valid() == false);
 	CHECK(!graph.get_error_msg().is_empty());
+	CHECK(graph.get_warnings().size() == 0);
 	CHECK(graph.get_sorted_systems().size() == 0);
 	CHECK(graph.get_stages().size() == 0);
+
+	finalize_script_ecs();
+}
+} // namespace godex_tests
+
+void test_E_system_1(Query<PbComponentA> &p_query) {}
+void test_E_system_2(Query<PbComponentA> &p_query) {}
+void test_E_system_3(Query<PbComponentA> &p_query) {}
+
+namespace godex_tests {
+TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to detect cyclic dependencies.") {
+	initialize_script_ecs();
+
+	ECS::register_system_bundle("TestE_CppBundle")
+			.add(ECS::register_system(test_E_system_1, "test_E_system_1"))
+			.add(ECS::register_system(test_E_system_2, "test_E_system_2"))
+			.add(ECS::register_system(test_E_system_3, "test_E_system_3"));
+
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	with_component(ECS.PbComponentA, MUTABLE)\n";
+		code += "\n";
+		code += "func _for_each(a):\n";
+		code += "	pass\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("test_D_system_4.gd", code));
+	}
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	execute_after(ECS.test_D_system_3)\n";
+		code += "	with_component(ECS.PbComponentA, MUTABLE)\n";
+		code += "\n";
+		code += "func _for_each(a):\n";
+		code += "	pass\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("test_D_system_5.gd", code));
+	}
+	{
+		// Create the script.
+		String code;
+		code += "extends SystemBundle\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	add(ECS.test_D_system_4_gd)\n";
+		code += "	add(ECS.test_D_system_5_gd)\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("TestD_GDSBundle.gd", code));
+	}
+
+	flush_ecs_script_preparation();
+
+	Vector<StringName> system_bundles;
+	system_bundles.push_back("TestD_CppBundle");
+	system_bundles.push_back("TestD_GDSBundle.gd");
+
+	Vector<StringName> systems;
+
+	ExecutionGraph graph;
+	PipelineBuilder::build_graph(system_bundles, systems, &graph);
+
+	// Make sure the graph wasn't created.
+	CHECK(graph.is_valid() == false);
+	CHECK(!graph.get_error_msg().is_empty());
+	CHECK(graph.get_warnings().size() == 0);
+	CHECK(graph.get_sorted_systems().size() == 0);
+	CHECK(graph.get_stages().size() == 0);
+
+	finalize_script_ecs();
+}
+} // namespace godex_tests
+
+struct PbEventA {
+	COMPONENT_BATCH(PbEventA, DenseVector, 2)
+	EVENT()
+};
+
+void test_F_system_1(Query<const PbEventA> &p_query) {}
+void test_F_system_2(Storage<PbEventA> *p_storage) {}
+void test_F_system_3(Query<Changed<PbComponentA>> &p_query) {}
+void test_F_system_4(Query<PbComponentA> &p_query) {}
+
+namespace godex_tests {
+TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to detect lost events.") {
+	ECS::register_component<PbEventA>();
+
+	initialize_script_ecs();
+
+	ECS::register_system_bundle("TestF_CppBundle")
+			.add(ECS::register_system(test_F_system_1, "test_F_system_1"))
+			.add(ECS::register_system(test_F_system_2, "test_F_system_2"))
+			.add(ECS::register_system(test_F_system_3, "test_F_system_3"))
+			.add(ECS::register_system(test_F_system_4, "test_F_system_4"));
+
+	flush_ecs_script_preparation();
+
+	Vector<StringName> system_bundles;
+	system_bundles.push_back("TestF_CppBundle");
+
+	Vector<StringName> systems;
+
+	ExecutionGraph graph;
+	PipelineBuilder::build_graph(system_bundles, systems, &graph);
+
+	// Make sure the graph wasn't created.
+	CHECK(graph.is_valid());
+	CHECK(graph.get_error_msg().is_empty());
+	CHECK(graph.get_warnings().size() == 2);
 
 	finalize_script_ecs();
 }
