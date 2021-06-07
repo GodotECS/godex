@@ -19,7 +19,7 @@ class PipelineECS : public Resource {
 	StringName pipeline_name;
 
 	Vector<StringName> systems_name;
-	Vector<StringName> systems_bundle;
+	Vector<StringName> system_bundles;
 
 	// This is just a cache value so to avoid rebuild the pipeline each time
 	// it's activated.
@@ -38,21 +38,17 @@ public:
 	void set_systems_name(Vector<StringName> p_system_names);
 	Vector<StringName> get_systems_name() const;
 
-	/// Insert a new system into the world. This `System` is not immediately
-	/// added to the world. This function is mainly used by the editor to
-	/// compose the world.
-	///
-	/// @param `p_system_name` Can be a native system name (`TransformSystem`)
-	///                        or a script system (`ScriptedSystem.gd`)
-	/// @param `p_pos` Sets the system at the given position, pushing the others.
-	///                Passing `UINT32_MAX`, allow to push back the system.
-	///
-	/// If the `p_system_name` is already defined it's position is updated.
-	///
-	/// Note: Add and Remove a `system` will cause world rebuild, which
-	/// should be avoided by using more worlds and activating them when
-	/// needed.
-	void insert_system(const StringName &p_system_name, uint32_t p_pos = UINT32_MAX);
+	void set_system_bundles(Vector<StringName> p_system_bundles);
+	Vector<StringName> get_system_bundles();
+
+	/// Insert a new system bundle into the world.
+	void add_system_bundle(const StringName &p_bundle_name);
+
+	/// Remove the system bundle from the world.
+	void remove_system_bundle(const StringName &p_bundle_name);
+
+	/// Insert a new system into the world.
+	void insert_system(const StringName &p_system_name);
 
 	void remove_system(const StringName &p_system_name);
 

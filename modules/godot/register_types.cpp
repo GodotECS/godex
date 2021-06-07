@@ -94,18 +94,18 @@ void register_godot_types() {
 	// Engine
 
 	// Rendering
-	ECS::register_system_bundle("Rendering3D")
+	ECS::register_system_bundle("Rendering 3D")
 			.set_description("3D Rendering mechanism.")
 			.add(ECS::register_system(scenario_manager_system, "ScenarioManagerSystem")
 							.set_phase(PHASE_CONFIG)
 							.set_description("Compatibility layer that allow to read the main window scenario and put in the ECS lifecycle; so that `MeshComponent` can properly show the mesh."))
 
 			.add(ECS::register_system(mesh_updater_system, "MeshUpdaterSystem")
-							.set_phase(PHASE_POST_PROCESS)
+							.set_phase(PHASE_PRE_RENDER)
 							.set_description("Updates the VisualServer with mesh component data"))
 
 			.add(ECS::register_system(mesh_transform_updater_system, "MeshTransformUpdaterSystem")
-							.set_phase(PHASE_POST_PROCESS)
+							.set_phase(PHASE_PRE_RENDER)
 							.set_description("Updates the VisualServer mesh transforms."));
 
 	// Physics 3D
@@ -116,7 +116,7 @@ void register_godot_types() {
 		create_physics_system_dispatcher(ECS::get_dynamic_system_info(system_info.get_id()));
 	}
 
-	ECS::register_system_bundle("NodeSystemPhysics")
+	ECS::register_system_bundle("Godot Physics")
 			.set_description("Handles the godot PhysicsServer stepping. You need to add this SystemBundle if you want to use the Godot Physics Server.")
 			.add(ECS::register_system(call_physics_process, "CallPhysicsProcess")
 							.set_phase(PHASE_PROCESS)

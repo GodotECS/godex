@@ -23,6 +23,7 @@ enum Phase : int {
 	PHASE_PRE_PROCESS,
 	PHASE_PROCESS,
 	PHASE_POST_PROCESS,
+	PHASE_PRE_RENDER,
 	PHASE_MAX,
 };
 
@@ -232,8 +233,11 @@ public:
 	// ~~ SystemBundle ~~
 	static SystemBundleInfo &register_system_bundle(const StringName &p_name);
 
+	static uint32_t get_system_bundle_count();
 	static godex::system_bundle_id get_system_bundle_id(const StringName &p_name);
 	static StringName get_system_bundle_name(godex::system_bundle_id p_id);
+	static const String &get_system_bundle_desc(godex::system_bundle_id p_id);
+	static uint32_t get_system_bundle_systems_count(godex::system_bundle_id p_id);
 	static SystemBundleInfo &get_system_bundle(godex::system_bundle_id p_id);
 
 	// ~~ Systems ~~
@@ -298,6 +302,7 @@ public:
 
 	/// Returns `true` when the system is a temporary `System`.
 	static bool is_temporary_system(godex::system_id p_id);
+	static bool is_dynamic_system(godex::system_id p_id);
 
 	static func_temporary_system_execute get_func_temporary_system_exe(godex::system_id p_id);
 

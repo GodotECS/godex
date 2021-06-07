@@ -46,7 +46,7 @@ void register_bullet_physics_types() {
 	ECS::register_component<TorqueImpulse>();
 
 	// Register Base `System`s
-	ECS::register_system_bundle("BulletPhysics")
+	ECS::register_system_bundle("Bullet Physics Base Only")
 			.set_description("System that allow to use the Bullet physics components.")
 			.add(ECS::register_system(bt_body_config, "BtBodyConfig")
 							.set_phase(PHASE_CONFIG)
@@ -80,6 +80,15 @@ void register_bullet_physics_types() {
 			.set_description("Bullet Physics - Make the Rigidbody in kinematic mode walk according to Pawn settings.")
 			.after("BtApplyForces")
 			.before("BtSpacesStep");
+
+	ECS::register_system_bundle("Bullet Physics All Features")
+			.add("BtBodyConfig")
+			.add("BtAreaConfig")
+			.add("BtApplyForces")
+			.add("BtPawnWalk")
+			.add("BtSpacesStep")
+			.add("BtOverlapCheck")
+			.add("BtBodySync");
 
 	// Register gizmos
 	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtBoxGizmo));

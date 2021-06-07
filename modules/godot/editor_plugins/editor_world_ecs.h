@@ -10,11 +10,12 @@ class EditorWorldECS;
 class SpinBox;
 class Tree;
 
-class SystemInfoBox : public MarginContainer {
-	GDCLASS(SystemInfoBox, MarginContainer);
+class PipelineElementInfoBox : public MarginContainer {
+	GDCLASS(PipelineElementInfoBox, MarginContainer);
 
 public:
 	enum SystemMode {
+		SYSTEM_BUNDLE,
 		SYSTEM_NATIVE,
 		SYSTEM_DISPATCHER,
 		SYSTEM_SCRIPT,
@@ -25,35 +26,30 @@ public:
 private:
 	EditorNode *editor = nullptr;
 	EditorWorldECS *editor_world_ecs = nullptr;
-	Button *position_btn = nullptr;
-	SpinBox *position_input = nullptr;
+
 	Button *remove_btn = nullptr;
 	Label *system_name_lbl = nullptr;
-	ItemList *system_data_list = nullptr;
+	Label *extra_info_lbl = nullptr;
+	Button *icon_btn = nullptr;
 	LineEdit *dispatcher_pipeline_name = nullptr;
-	Button *toggle_system_data_btn = nullptr;
 
-	StringName system_name;
+	StringName name;
 	SystemMode mode = SYSTEM_INVALID;
+	bool is_bundle = false;
 
 public:
-	SystemInfoBox(EditorNode *p_editor, EditorWorldECS *editor_world_ecs);
-	~SystemInfoBox();
+	PipelineElementInfoBox(EditorNode *p_editor, EditorWorldECS *editor_world_ecs);
+	~PipelineElementInfoBox();
 
-	void set_position(uint32_t p_position);
 	void setup_system(const StringName &p_name, SystemMode p_mode);
 	void set_pipeline_dispatcher(const StringName &p_current_pipeline_name);
-	void add_system_element(const String &p_name, bool is_write);
+	void set_extra_info(const String &p_desc);
+	void set_is_bundle(bool p_bundle);
 
 	Point2 name_global_transform() const;
 
-	void position_btn_pressed();
-	void system_position_changed(double p_value);
-
 	void system_remove();
 	void dispatcher_pipeline_change(const String &p_value);
-
-	void system_toggle_data();
 };
 
 class ComponentElement : public HBoxContainer {
@@ -115,7 +111,7 @@ class EditorWorldECS : public PanelContainer {
 	Tree *components_tree = nullptr;
 	LineEdit *component_name_le = nullptr;
 
-	LocalVector<SystemInfoBox *> pipeline_systems;
+	LocalVector<PipelineElementInfoBox *> pipeline_systems;
 
 	bool is_pipeline_panel_dirty = false;
 
@@ -142,7 +138,7 @@ public:
 	void pipeline_remove();
 	void pipeline_panel_update();
 
-	void pipeline_item_position_change(const StringName &p_name, uint32_t p_new_position);
+	void pipeline_system_bundle_remove(const StringName &p_name);
 	void pipeline_system_remove(const StringName &p_name);
 	void pipeline_system_dispatcher_set_pipeline(const StringName &p_system_name, const StringName &p_pipeline_name);
 
@@ -159,7 +155,7 @@ protected:
 	void _changed_world_callback();
 	void _changed_pipeline_callback();
 
-	SystemInfoBox *pipeline_panel_add_system();
+	PipelineElementInfoBox *pipeline_panel_add_entry();
 	void pipeline_panel_clear();
 	void pipeline_panel_draw_batch(uint32_t p_start_system, uint32_t p_end_system);
 };
@@ -167,7 +163,7 @@ protected:
 class WorldECSEditorPlugin : public EditorPlugin {
 	GDCLASS(WorldECSEditorPlugin, EditorPlugin);
 
-	friend class SystemInfoBox;
+	friend class PipelineElementInfoBox;
 	friend class DrawLayer;
 	friend class EditorWorldECS;
 
