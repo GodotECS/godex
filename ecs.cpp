@@ -108,6 +108,7 @@ void ECS::_bind_methods() {
 	BIND_ENUM_CONSTANT(PHASE_PRE_PROCESS);
 	BIND_ENUM_CONSTANT(PHASE_PROCESS);
 	BIND_ENUM_CONSTANT(PHASE_POST_PROCESS);
+	BIND_ENUM_CONSTANT(PHASE_PRE_RENDER);
 }
 
 void ECS::__static_destructor() {
@@ -346,15 +347,29 @@ SystemBundleInfo &ECS::register_system_bundle(const StringName &p_name) {
 	return system_bundles_info[id];
 }
 
+uint32_t ECS::get_system_bundle_count() {
+	return system_bundles.size();
+}
+
 godex::system_bundle_id ECS::get_system_bundle_id(const StringName &p_name) {
-	system_bundles.find(p_name);
 	const int64_t index = system_bundles.find(p_name);
 	return index >= 0 ? godex::system_bundle_id(index) : godex::SYSTEM_BUNDLE_NONE;
 }
 
 StringName ECS::get_system_bundle_name(godex::system_bundle_id p_id) {
-	CRASH_COND_MSG(system_bundles.size() <= p_id, "The sysetm bundle " + itos(p_id) + " doesn't exists.");
+	ERR_FAIL_COND_V_MSG(system_bundles.size() <= p_id, StringName(), "The sysetm bundle " + itos(p_id) + " doesn't exists.");
 	return system_bundles[p_id];
+}
+
+const String &ECS::get_system_bundle_desc(godex::system_bundle_id p_id) {
+	static const String err_ret;
+	ERR_FAIL_COND_V_MSG(system_bundles.size() <= p_id, err_ret, "The sysetm bundle " + itos(p_id) + " doesn't exists.");
+	return system_bundles_info[p_id].description;
+}
+
+uint32_t ECS::get_system_bundle_systems_count(godex::system_bundle_id p_id) {
+	ERR_FAIL_COND_V_MSG(system_bundles.size() <= p_id, 0, "The sysetm bundle " + itos(p_id) + " doesn't exists.");
+	return system_bundles_info[p_id].systems.size();
 }
 
 SystemBundleInfo &ECS::get_system_bundle(godex::system_bundle_id p_id) {
@@ -598,6 +613,11 @@ SystemInfo &ECS::register_temporary_system(func_temporary_system_execute p_func_
 bool ECS::is_temporary_system(godex::system_id p_id) {
 	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, false, "The TemporarySystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
 	return systems_info[p_id].temporary_exec != nullptr;
+}
+
+bool ECS::is_dynamic_system(godex::system_id p_id) {
+	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, false, "The TemporarySystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
+	return systems_info[p_id].dynamic_system_id != UINT32_MAX;
 }
 
 func_temporary_system_execute ECS::get_func_temporary_system_exe(godex::system_id p_id) {

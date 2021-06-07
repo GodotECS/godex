@@ -20,11 +20,16 @@ void PipelineECS::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_pipeline_name"), &PipelineECS::get_pipeline_name);
 	ClassDB::bind_method(D_METHOD("set_systems_name", "systems_name"), &PipelineECS::set_systems_name);
 	ClassDB::bind_method(D_METHOD("get_systems_name"), &PipelineECS::get_systems_name);
+	ClassDB::bind_method(D_METHOD("set_system_bundles", "systems_name"), &PipelineECS::set_system_bundles);
+	ClassDB::bind_method(D_METHOD("get_system_bundles"), &PipelineECS::get_system_bundles);
 
-	ClassDB::bind_method(D_METHOD("insert_system", "system_name", "position"), &PipelineECS::insert_system, DEFVAL(-1));
+	ClassDB::bind_method(D_METHOD("add_system_bundle", "system_bundle"), &PipelineECS::add_system_bundle);
+	ClassDB::bind_method(D_METHOD("remove_system_bundle", "system_bundle"), &PipelineECS::remove_system_bundle);
+	ClassDB::bind_method(D_METHOD("insert_system", "system_name"), &PipelineECS::insert_system);
 	ClassDB::bind_method(D_METHOD("remove_system", "system_name"), &PipelineECS::remove_system);
 
 	ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "pipeline_name"), "set_pipeline_name", "get_pipeline_name");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "system_bundles"), "set_system_bundles", "get_system_bundles");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "systems_name"), "set_systems_name", "get_systems_name");
 }
 
@@ -59,19 +64,28 @@ Vector<StringName> PipelineECS::get_systems_name() const {
 	return systems_name;
 }
 
-void PipelineECS::insert_system(const StringName &p_system_name, uint32_t p_pos) {
-	// Make sure to remove any previously declared link.
-	systems_name.erase(p_system_name);
+void PipelineECS::set_system_bundles(Vector<StringName> p_system_bundles) {
+	system_bundles = p_system_bundles;
+}
 
-	if (p_pos >= uint32_t(systems_name.size())) {
-		// Just push back.
-		systems_name.push_back(p_system_name);
-	} else {
-		ERR_FAIL_INDEX_MSG(int(p_pos), systems_name.size() + 1, "The pipeline is not so big, this system: " + p_system_name + " can't be insert at this position: " + itos(p_pos));
-		// Insert the system at given position.
-		systems_name.insert(p_pos, p_system_name);
-	}
+Vector<StringName> PipelineECS::get_system_bundles() {
+	return system_bundles;
+}
 
+void PipelineECS::add_system_bundle(const StringName &p_bundle_name) {
+	ERR_FAIL_COND_MSG(system_bundles.find(p_bundle_name) != -1, "This bundle: " + p_bundle_name + " is already in the world.");
+	system_bundles.push_back(p_bundle_name);
+	notify_property_list_changed();
+}
+
+void PipelineECS::remove_system_bundle(const StringName &p_bundle_name) {
+	system_bundles.erase(p_bundle_name);
+	notify_property_list_changed();
+}
+
+void PipelineECS::insert_system(const StringName &p_system_name) {
+	ERR_FAIL_COND_MSG(systems_name.find(p_system_name) != -1, "This system: " + p_system_name + " is already in the world.");
+	systems_name.push_back(p_system_name);
 	notify_property_list_changed();
 }
 
@@ -127,7 +141,7 @@ Pipeline *PipelineECS::get_pipeline(WorldECS *p_associated_world) {
 
 	// Build the pipeline.
 	pipeline = memnew(Pipeline);
-	PipelineBuilder::build_pipeline(systems_bundle, systems_name, pipeline);
+	PipelineBuilder::build_pipeline(system_bundles, systems_name, pipeline);
 
 	return pipeline;
 }
