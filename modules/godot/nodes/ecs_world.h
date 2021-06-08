@@ -8,6 +8,7 @@ class Pipeline;
 class World;
 class WorldECS;
 class Entity3D;
+class ExecutionGraph;
 
 /// The `PipelineECS` is a resource that holds the `Pipeline` object, and the
 /// info to build it.
@@ -24,6 +25,11 @@ class PipelineECS : public Resource {
 	// This is just a cache value so to avoid rebuild the pipeline each time
 	// it's activated.
 	Pipeline *pipeline = nullptr;
+
+#ifdef TOOLS_ENABLED
+	/// This pointer is only available in editor.
+	ExecutionGraph *editor_execution_graph = nullptr;
+#endif
 
 protected:
 	static void _bind_methods();
@@ -57,6 +63,13 @@ public:
 	/// Builds the pipeline and returns it. The associated world is used to
 	/// fetch the pipeline in case a `SystemDispatcher` is used.
 	Pipeline *get_pipeline(WorldECS *p_associated_world);
+
+#ifdef TOOLS_ENABLED
+	/// This API works only in editor and returns the updated execution graph.
+	/// Never, store the returned pointer.
+	const ExecutionGraph *editor_get_execution_graph();
+	void editor_clear_execution_graph();
+#endif
 };
 
 /// The `WorldECS` class holds the `World` information that is where all the

@@ -1,6 +1,7 @@
 #include "editor_world_ecs.h"
 
 #include "../../../ecs.h"
+#include "../../../pipeline/pipeline_builder.h"
 #include "../nodes/ecs_world.h"
 #include "../nodes/script_ecs.h"
 #include "core/io/resource_loader.h"
@@ -51,15 +52,8 @@ PipelineElementInfoBox::PipelineElementInfoBox(EditorNode *p_editor, EditorWorld
 	extra_info_lbl->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 	extra_info_lbl->set_v_size_flags(SizeFlags::SIZE_EXPAND);
 	extra_info_lbl->set_align(Label::ALIGN_RIGHT);
-	Ref<Theme> theme = extra_info_lbl->get_theme();
-	if (theme.is_null()) {
-		theme.instance();
-	} else {
-		theme = theme->duplicate();
-	}
-	theme->set_color("font_color", "Label", Color(0.7, 0.7, 0.7, 1));
-	extra_info_lbl->set_theme(theme);
 	extra_info_lbl->set_visible(false);
+	extra_info_lbl->add_theme_color_override("font_color", Color(0.7, 0.7, 0.7));
 	box->add_child(extra_info_lbl);
 
 	dispatcher_pipeline_name = memnew(LineEdit);
@@ -150,6 +144,74 @@ void PipelineElementInfoBox::dispatcher_pipeline_change(const String &p_value) {
 	editor_world_ecs->pipeline_system_dispatcher_set_pipeline(name, p_value);
 }
 
+StageElementInfoBox::StageElementInfoBox(
+		EditorNode *p_editor,
+		EditorWorldECS *p_editor_world_ecs) :
+		editor(p_editor),
+		editor_world_ecs(p_editor_world_ecs) {
+	add_theme_constant_override("margin_right", 2);
+	add_theme_constant_override("margin_top", 2);
+	add_theme_constant_override("margin_left", 2);
+	add_theme_constant_override("margin_bottom", 2);
+
+	ColorRect *bg = memnew(ColorRect);
+	bg->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+	bg->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+	bg->set_color(Color(0.0, 0.0, 0.0, 0.5));
+	add_child(bg);
+
+	MarginContainer *inner_container = memnew(MarginContainer);
+	inner_container->add_theme_constant_override("margin_right", 2);
+	inner_container->add_theme_constant_override("margin_top", 2);
+	inner_container->add_theme_constant_override("margin_left", 2);
+	inner_container->add_theme_constant_override("margin_bottom", 2);
+	add_child(inner_container);
+
+	VBoxContainer *box = memnew(VBoxContainer);
+	box->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+	box->set_v_size_flags(0);
+	inner_container->add_child(box);
+
+	HBoxContainer *box_titles = memnew(HBoxContainer);
+	box_titles->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+	box_titles->set_v_size_flags(0);
+	box->add_child(box_titles);
+
+	{
+		Label *systems_lbl = memnew(Label);
+		systems_lbl->set_text(TTR("Systems:"));
+		box_titles->add_child(systems_lbl);
+
+		name_lbl = memnew(Label);
+		name_lbl->add_theme_color_override("font_color", Color(0.7, 0.7, 0.7));
+		name_lbl->set_align(Label::ALIGN_RIGHT);
+		name_lbl->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		box_titles->add_child(name_lbl);
+	}
+
+	systems_list = memnew(ItemList);
+	systems_list->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+	systems_list->set_v_size_flags(SizeFlags::SIZE_EXPAND);
+	systems_list->set_auto_height(true);
+	systems_list->set_max_columns(0);
+	systems_list->set_fixed_icon_size(Size2(13.0, 13.0));
+	systems_list->add_theme_constant_override("hseparation", 7.0);
+	box->add_child(systems_list);
+}
+
+StageElementInfoBox::~StageElementInfoBox() {
+}
+
+void StageElementInfoBox::setup_system_bundle(uint32_t p_stage_id) {
+	name_lbl->set_text("#" + itos(p_stage_id));
+}
+
+void StageElementInfoBox::add_system(const StringName &p_system_name) {
+	Ref<Texture2D> icon;
+	//icon = editor->get_theme_base()->get_theme_icon("Edit", "EditorIcons");
+	systems_list->add_item(p_system_name, icon, false);
+}
+
 ComponentElement::ComponentElement(EditorNode *p_editor, const String &p_name, Variant p_default) :
 		editor(p_editor) {
 	set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
@@ -215,28 +277,6 @@ void ComponentElement::init_variable(const String &p_name, Variant p_default) {
 	val->set_text(p_default);
 }
 
-DrawLayer::DrawLayer() {
-	// This is just a draw layer, we don't need input.
-	set_mouse_filter(MOUSE_FILTER_IGNORE);
-}
-
-void DrawLayer::_notification(int p_what) {
-	switch (p_what) {
-		case NOTIFICATION_INTERNAL_PROCESS: {
-			if (editor->is_pipeline_panel_dirty) {
-				editor->is_pipeline_panel_dirty = false;
-				update();
-			}
-		} break;
-		case NOTIFICATION_DRAW: {
-			editor->draw(this);
-		} break;
-		case NOTIFICATION_READY: {
-			set_process_internal(true);
-		} break;
-	}
-}
-
 EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		editor(p_editor) {
 	set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
@@ -258,20 +298,6 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 	main_vb->set_anchor(SIDE_RIGHT, 1.0);
 	main_vb->set_anchor(SIDE_BOTTOM, 1.0);
 	add_child(main_vb);
-
-	DrawLayer *draw_layer = memnew(DrawLayer);
-	draw_layer->editor = this;
-	draw_layer->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-	draw_layer->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-	draw_layer->set_anchor(SIDE_LEFT, 0.0);
-	draw_layer->set_anchor(SIDE_TOP, 0.0);
-	draw_layer->set_anchor(SIDE_RIGHT, 1.0);
-	draw_layer->set_anchor(SIDE_BOTTOM, 1.0);
-	draw_layer->set_offset(SIDE_LEFT, 0.0);
-	draw_layer->set_offset(SIDE_TOP, 0.0);
-	draw_layer->set_offset(SIDE_RIGHT, 0.0);
-	draw_layer->set_offset(SIDE_BOTTOM, 0.0);
-	add_child(draw_layer);
 
 	// ~~ Main menu ~~
 	{
@@ -320,7 +346,6 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 			rename_pipeline_btn->connect("pressed", callable_mp(this, &EditorWorldECS::pipeline_rename_show_window));
 			world_ecs_sub_menu_wrap->add_child(rename_pipeline_btn);
 
-			pipeline_window_confirm_remove = memnew(ConfirmationDialog);
 			Button *remove_pipeline_btn = memnew(Button);
 			remove_pipeline_btn->set_h_size_flags(0);
 			remove_pipeline_btn->set_icon(editor->get_theme_base()->get_theme_icon("Remove", "EditorIcons"));
@@ -336,6 +361,16 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 			pipeline_window_confirm_remove->connect("confirmed", callable_mp(this, &EditorWorldECS::pipeline_remove));
 			add_child(pipeline_window_confirm_remove);
 		}
+
+		menu_wrapper->add_child(memnew(VSeparator));
+
+		Button *show_pipeline_btn = memnew(Button);
+		show_pipeline_btn->set_h_size_flags(0);
+		show_pipeline_btn->set_text(TTR("Pipeline view"));
+		show_pipeline_btn->set_icon(editor->get_theme_base()->get_theme_icon("PackedDataContainer", "EditorIcons"));
+		show_pipeline_btn->set_flat(true);
+		show_pipeline_btn->connect("pressed", callable_mp(this, &EditorWorldECS::pipeline_toggle_pipeline_view));
+		menu_wrapper->add_child(show_pipeline_btn);
 	}
 
 	// ~~ Workspace ~~
@@ -345,56 +380,106 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		workspace_container_hb->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 		main_vb->add_child(workspace_container_hb);
 
-		VBoxContainer *main_container = memnew(VBoxContainer);
-		main_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		main_container->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		workspace_container_hb->add_child(main_container);
+		// ~~ Features panel ~~
+		{
+			VBoxContainer *main_container = memnew(VBoxContainer);
+			main_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			main_container->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			workspace_container_hb->add_child(main_container);
 
-		Panel *panel_w = memnew(Panel);
-		panel_w->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		panel_w->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		panel_w->set_anchor(SIDE_LEFT, 0.0);
-		panel_w->set_anchor(SIDE_TOP, 0.0);
-		panel_w->set_anchor(SIDE_RIGHT, 1.0);
-		panel_w->set_anchor(SIDE_BOTTOM, 1.0);
-		main_container->add_child(panel_w);
+			Panel *panel_w = memnew(Panel);
+			panel_w->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			panel_w->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			panel_w->set_anchor(SIDE_LEFT, 0.0);
+			panel_w->set_anchor(SIDE_TOP, 0.0);
+			panel_w->set_anchor(SIDE_RIGHT, 1.0);
+			panel_w->set_anchor(SIDE_BOTTOM, 1.0);
+			main_container->add_child(panel_w);
 
-		ScrollContainer *wrapper = memnew(ScrollContainer);
-		wrapper->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		wrapper->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		wrapper->set_anchor(SIDE_LEFT, 0.0);
-		wrapper->set_anchor(SIDE_TOP, 0.0);
-		wrapper->set_anchor(SIDE_RIGHT, 1.0);
-		wrapper->set_anchor(SIDE_BOTTOM, 1.0);
-		wrapper->set_enable_h_scroll(true);
-		wrapper->set_enable_v_scroll(false);
-		panel_w->add_child(wrapper);
+			ScrollContainer *wrapper = memnew(ScrollContainer);
+			wrapper->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			wrapper->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			wrapper->set_anchor(SIDE_LEFT, 0.0);
+			wrapper->set_anchor(SIDE_TOP, 0.0);
+			wrapper->set_anchor(SIDE_RIGHT, 1.0);
+			wrapper->set_anchor(SIDE_BOTTOM, 1.0);
+			wrapper->set_enable_h_scroll(false);
+			wrapper->set_enable_v_scroll(true);
+			panel_w->add_child(wrapper);
 
-		PanelContainer *panel = memnew(PanelContainer);
-		panel->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		panel->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		panel->set_anchor(SIDE_LEFT, 0.0);
-		panel->set_anchor(SIDE_TOP, 0.0);
-		panel->set_anchor(SIDE_RIGHT, 1.0);
-		panel->set_anchor(SIDE_BOTTOM, 1.0);
-		wrapper->add_child(panel);
+			PanelContainer *panel = memnew(PanelContainer);
+			panel->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			panel->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			panel->set_anchor(SIDE_LEFT, 0.0);
+			panel->set_anchor(SIDE_TOP, 0.0);
+			panel->set_anchor(SIDE_RIGHT, 1.0);
+			panel->set_anchor(SIDE_BOTTOM, 1.0);
+			wrapper->add_child(panel);
 
-		pipeline_panel = memnew(VBoxContainer);
-		pipeline_panel->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		pipeline_panel->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		panel->add_child(pipeline_panel);
+			pipeline_panel = memnew(VBoxContainer);
+			pipeline_panel->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			pipeline_panel->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			panel->add_child(pipeline_panel);
 
-		HBoxContainer *button_container = memnew(HBoxContainer);
-		button_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		button_container->set_v_size_flags(0);
-		main_container->add_child(button_container);
+			HBoxContainer *button_container = memnew(HBoxContainer);
+			button_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			button_container->set_v_size_flags(0);
+			main_container->add_child(button_container);
 
-		Button *show_btn_add_sys = memnew(Button);
-		show_btn_add_sys->set_text(TTR("Use feature"));
-		show_btn_add_sys->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		show_btn_add_sys->set_v_size_flags(0);
-		show_btn_add_sys->connect("pressed", callable_mp(this, &EditorWorldECS::add_sys_show));
-		button_container->add_child(show_btn_add_sys);
+			Button *show_btn_add_sys = memnew(Button);
+			show_btn_add_sys->set_text(TTR("Use feature"));
+			show_btn_add_sys->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			show_btn_add_sys->set_v_size_flags(0);
+			show_btn_add_sys->connect("pressed", callable_mp(this, &EditorWorldECS::add_sys_show));
+			button_container->add_child(show_btn_add_sys);
+		}
+
+		// ~~ Pipeline view ~~
+		{
+			main_container_pipeline_view = memnew(VBoxContainer);
+			main_container_pipeline_view->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			main_container_pipeline_view->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			main_container_pipeline_view->set_visible(false);
+			workspace_container_hb->add_child(main_container_pipeline_view);
+
+			Panel *panel_w = memnew(Panel);
+			panel_w->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			panel_w->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			panel_w->set_anchor(SIDE_LEFT, 0.0);
+			panel_w->set_anchor(SIDE_TOP, 0.0);
+			panel_w->set_anchor(SIDE_RIGHT, 1.0);
+			panel_w->set_anchor(SIDE_BOTTOM, 1.0);
+			Ref<StyleBoxFlat> style;
+			style.instance();
+			style->set_bg_color(Color(0.12, 0.13, 0.18));
+			panel_w->add_theme_style_override("panel", style);
+			main_container_pipeline_view->add_child(panel_w);
+
+			ScrollContainer *wrapper = memnew(ScrollContainer);
+			wrapper->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			wrapper->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			wrapper->set_anchor(SIDE_LEFT, 0.0);
+			wrapper->set_anchor(SIDE_TOP, 0.0);
+			wrapper->set_anchor(SIDE_RIGHT, 1.0);
+			wrapper->set_anchor(SIDE_BOTTOM, 1.0);
+			wrapper->set_enable_h_scroll(false);
+			wrapper->set_enable_v_scroll(true);
+			panel_w->add_child(wrapper);
+
+			PanelContainer *panel = memnew(PanelContainer);
+			panel->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			panel->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			panel->set_anchor(SIDE_LEFT, 0.0);
+			panel->set_anchor(SIDE_TOP, 0.0);
+			panel->set_anchor(SIDE_RIGHT, 1.0);
+			panel->set_anchor(SIDE_BOTTOM, 1.0);
+			wrapper->add_child(panel);
+
+			pipeline_view_panel = memnew(VBoxContainer);
+			pipeline_view_panel->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			pipeline_view_panel->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			panel->add_child(pipeline_view_panel);
+		}
 	}
 
 	// ~~ Rename pipeline window ~~
@@ -656,22 +741,7 @@ void EditorWorldECS::set_pipeline(Ref<PipelineECS> p_pipeline) {
 		pipeline->connect("property_list_changed", callable_mp(this, &EditorWorldECS::_changed_pipeline_callback));
 	}
 
-	pipeline_panel_update();
-}
-
-void EditorWorldECS::draw(DrawLayer *p_draw_layer) {
-	if (pipeline_systems.size() <= 0) {
-		return;
-	}
-
-	// Setting this value here, so I can avoid to pass this pointer to each func.
-	draw_layer = p_draw_layer;
-
-	// TODO now draw the batches using `pipeline_panel_draw_batch();`
-	//pipeline_panel_draw_batch(0, 1);
-	//pipeline_panel_draw_batch(2, 3);
-
-	draw_layer = nullptr;
+	pipeline_features_update();
 }
 
 void EditorWorldECS::pipeline_change_name(const String &p_name) {
@@ -724,7 +794,7 @@ void EditorWorldECS::pipeline_on_menu_select(int p_index) {
 	}
 	// Always position the cursor at the end.
 	pipeline_name_ledit->set_caret_column(INT32_MAX);
-	pipeline_panel_update();
+	pipeline_features_update();
 }
 
 void EditorWorldECS::pipeline_add() {
@@ -781,8 +851,14 @@ void EditorWorldECS::pipeline_remove() {
 	editor->get_undo_redo()->commit_action();
 }
 
-void EditorWorldECS::pipeline_panel_update() {
-	is_pipeline_panel_dirty = true;
+void EditorWorldECS::pipeline_toggle_pipeline_view() {
+	main_container_pipeline_view->set_visible(!main_container_pipeline_view->is_visible());
+	pipeline_view_update();
+}
+
+void EditorWorldECS::pipeline_features_update() {
+	pipeline_view_update();
+
 	pipeline_panel_clear();
 
 	if (pipeline.is_null()) {
@@ -839,6 +915,30 @@ void EditorWorldECS::pipeline_panel_update() {
 		} else {
 			info_box->setup_system(bundle_name, PipelineElementInfoBox::SYSTEM_BUNDLE);
 			info_box->set_extra_info(TTR("Contains ") + itos(ECS::get_system_bundle_systems_count(id)) + TTR(" systems."));
+		}
+	}
+}
+
+void EditorWorldECS::pipeline_view_update() {
+	if (!main_container_pipeline_view->is_visible()) {
+		// It's not visible, nothing to do.
+		return;
+	}
+
+	pipeline_view_clear();
+	if (pipeline.is_null()) {
+		// Nothing more to do.
+		return;
+	}
+
+	uint32_t stage_id = 0;
+	const ExecutionGraph *graph = pipeline->editor_get_execution_graph();
+	const List<ExecutionGraph::StageNode> &stages = graph->get_stages();
+	for (const List<ExecutionGraph::StageNode>::Element *e = stages.front(); e; e = e->next(), stage_id += 1) {
+		StageElementInfoBox *info = pipeline_view_add_stage();
+		info->setup_system_bundle(stage_id);
+		for (uint32_t i = 0; i < e->get().systems.size(); i += 1) {
+			info->add_system(ECS::get_system_name(e->get().systems[i]->id));
 		}
 	}
 }
@@ -1034,13 +1134,12 @@ void EditorWorldECS::_changed_world_callback() {
 
 void EditorWorldECS::_changed_pipeline_callback() {
 	pipeline_list_update();
-	pipeline_panel_update();
+	pipeline_features_update();
 }
 
 PipelineElementInfoBox *EditorWorldECS::pipeline_panel_add_entry() {
 	PipelineElementInfoBox *info_box = memnew(PipelineElementInfoBox(editor, this));
 
-	pipeline_systems.push_back(info_box);
 	pipeline_panel->add_child(info_box);
 
 	return info_box;
@@ -1052,33 +1151,19 @@ void EditorWorldECS::pipeline_panel_clear() {
 		pipeline_panel->get_child(i)->remove_and_skip();
 		memdelete(n);
 	}
-	pipeline_systems.clear();
 }
 
-void EditorWorldECS::pipeline_panel_draw_batch(uint32_t p_start_system, uint32_t p_end_system) {
-	ERR_FAIL_COND(p_start_system > p_end_system);
-	ERR_FAIL_COND(p_end_system >= pipeline_systems.size());
+StageElementInfoBox *EditorWorldECS::pipeline_view_add_stage() {
+	StageElementInfoBox *info_box = memnew(StageElementInfoBox(editor, this));
+	pipeline_view_panel->add_child(info_box);
+	return info_box;
+}
 
-	const Point2 this_pos = draw_layer->get_global_position();
-	const Point2 point_offset(-15.0, 0.0);
-	const Point2 circle_offset(5.0, 0.0);
-
-	Point2 prev;
-
-	// Draw the points
-	for (uint32_t i = p_start_system; i <= p_end_system; i += 1) {
-		const Point2 current_point = (pipeline_systems[i]->name_global_transform() - this_pos) + point_offset;
-
-		if (i != p_start_system) {
-			draw_layer->draw_line(prev, current_point, Color(1.0, 1.0, 1.0, 0.4), 2.0);
-		}
-
-		draw_layer->draw_circle(
-				current_point + circle_offset,
-				4.0,
-				Color(1.0, 1.0, 1.0, 0.4));
-
-		prev = current_point;
+void EditorWorldECS::pipeline_view_clear() {
+	for (int i = pipeline_view_panel->get_child_count() - 1; i >= 0; i -= 1) {
+		Node *n = pipeline_view_panel->get_child(i);
+		pipeline_view_panel->get_child(i)->remove_and_skip();
+		memdelete(n);
 	}
 }
 

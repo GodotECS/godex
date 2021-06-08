@@ -44,6 +44,10 @@ PipelineECS::~PipelineECS() {
 		memdelete(pipeline);
 		pipeline = nullptr;
 	}
+
+#ifdef TOOLS_ENABLED
+	editor_clear_execution_graph();
+#endif
 }
 
 void PipelineECS::set_pipeline_name(StringName p_name) {
@@ -57,6 +61,9 @@ StringName PipelineECS::get_pipeline_name() const {
 
 void PipelineECS::set_systems_name(Vector<StringName> p_system_names) {
 	systems_name = p_system_names;
+#ifdef TOOLS_ENABLED
+	editor_clear_execution_graph();
+#endif
 	notify_property_list_changed();
 }
 
@@ -66,6 +73,10 @@ Vector<StringName> PipelineECS::get_systems_name() const {
 
 void PipelineECS::set_system_bundles(Vector<StringName> p_system_bundles) {
 	system_bundles = p_system_bundles;
+#ifdef TOOLS_ENABLED
+	editor_clear_execution_graph();
+#endif
+	notify_property_list_changed();
 }
 
 Vector<StringName> PipelineECS::get_system_bundles() {
@@ -75,22 +86,34 @@ Vector<StringName> PipelineECS::get_system_bundles() {
 void PipelineECS::add_system_bundle(const StringName &p_bundle_name) {
 	ERR_FAIL_COND_MSG(system_bundles.find(p_bundle_name) != -1, "This bundle: " + p_bundle_name + " is already in the world.");
 	system_bundles.push_back(p_bundle_name);
+#ifdef TOOLS_ENABLED
+	editor_clear_execution_graph();
+#endif
 	notify_property_list_changed();
 }
 
 void PipelineECS::remove_system_bundle(const StringName &p_bundle_name) {
 	system_bundles.erase(p_bundle_name);
+#ifdef TOOLS_ENABLED
+	editor_clear_execution_graph();
+#endif
 	notify_property_list_changed();
 }
 
 void PipelineECS::insert_system(const StringName &p_system_name) {
 	ERR_FAIL_COND_MSG(systems_name.find(p_system_name) != -1, "This system: " + p_system_name + " is already in the world.");
 	systems_name.push_back(p_system_name);
+#ifdef TOOLS_ENABLED
+	editor_clear_execution_graph();
+#endif
 	notify_property_list_changed();
 }
 
 void PipelineECS::remove_system(const StringName &p_system_name) {
 	systems_name.erase(p_system_name);
+#ifdef TOOLS_ENABLED
+	editor_clear_execution_graph();
+#endif
 	notify_property_list_changed();
 }
 
@@ -145,6 +168,25 @@ Pipeline *PipelineECS::get_pipeline(WorldECS *p_associated_world) {
 
 	return pipeline;
 }
+
+#ifdef TOOLS_ENABLED
+const ExecutionGraph *PipelineECS::editor_get_execution_graph() {
+	if (editor_execution_graph != nullptr) {
+		return editor_execution_graph;
+	}
+
+	editor_execution_graph = memnew(ExecutionGraph);
+	PipelineBuilder::build_graph(system_bundles, systems_name, editor_execution_graph);
+	return editor_execution_graph;
+}
+
+void PipelineECS::editor_clear_execution_graph() {
+	if (editor_execution_graph) {
+		memdelete(editor_execution_graph);
+		editor_execution_graph = nullptr;
+	}
+}
+#endif
 
 void WorldECS::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("add_pipeline", "pipeline"), &WorldECS::add_pipeline);
