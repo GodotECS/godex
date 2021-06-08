@@ -38,7 +38,7 @@ private:
 	bool is_bundle = false;
 
 public:
-	PipelineElementInfoBox(EditorNode *p_editor, EditorWorldECS *editor_world_ecs);
+	PipelineElementInfoBox(EditorNode *p_editor, EditorWorldECS *p_editor_world_ecs);
 	~PipelineElementInfoBox();
 
 	void setup_system(const StringName &p_name, SystemMode p_mode);
@@ -50,6 +50,23 @@ public:
 
 	void system_remove();
 	void dispatcher_pipeline_change(const String &p_value);
+};
+
+class StageElementInfoBox : public MarginContainer {
+	GDCLASS(StageElementInfoBox, MarginContainer);
+
+	EditorNode *editor = nullptr;
+	EditorWorldECS *editor_world_ecs = nullptr;
+
+	Label *name_lbl = nullptr;
+	ItemList *systems_list = nullptr;
+
+public:
+	StageElementInfoBox(EditorNode *p_editor, EditorWorldECS *p_editor_world_ecs);
+	~StageElementInfoBox();
+
+	void setup_system_bundle(uint32_t p_stage_id);
+	void add_system(const StringName &p_system_name);
 };
 
 class ComponentElement : public HBoxContainer {
@@ -66,22 +83,9 @@ public:
 	void init_variable(const String &p_name, Variant p_default);
 };
 
-class DrawLayer : public Control {
-	GDCLASS(DrawLayer, Control);
-
-public:
-	EditorWorldECS *editor = nullptr;
-
-public:
-	DrawLayer();
-
-	void _notification(int p_what);
-};
-
 class EditorWorldECS : public PanelContainer {
 	GDCLASS(EditorWorldECS, PanelContainer);
 
-	friend class DrawLayer;
 	friend class WorldECSEditorPlugin;
 
 	EditorNode *editor = nullptr;
@@ -91,11 +95,13 @@ class EditorWorldECS : public PanelContainer {
 	HBoxContainer *world_ecs_sub_menu_wrap = nullptr;
 	HBoxContainer *workspace_container_hb = nullptr;
 
-	DrawLayer *draw_layer = nullptr;
 	Label *node_name_lbl = nullptr;
 	VBoxContainer *pipeline_panel = nullptr;
 	OptionButton *pipeline_menu = nullptr;
 	ConfirmationDialog *pipeline_window_confirm_remove = nullptr;
+
+	VBoxContainer *main_container_pipeline_view = nullptr;
+	VBoxContainer *pipeline_view_panel = nullptr;
 
 	// Rename pipeline
 	AcceptDialog *pipeline_window_rename = nullptr;
@@ -111,10 +117,6 @@ class EditorWorldECS : public PanelContainer {
 	Tree *components_tree = nullptr;
 	LineEdit *component_name_le = nullptr;
 
-	LocalVector<PipelineElementInfoBox *> pipeline_systems;
-
-	bool is_pipeline_panel_dirty = false;
-
 public:
 	EditorWorldECS(EditorNode *p_editor);
 
@@ -127,8 +129,6 @@ public:
 	void set_world_ecs(WorldECS *p_world);
 	void set_pipeline(Ref<PipelineECS> p_pipeline);
 
-	void draw(DrawLayer *p_draw_layer);
-
 	void pipeline_change_name(const String &p_name);
 	void pipeline_list_update();
 	void pipeline_on_menu_select(int p_index);
@@ -136,7 +136,10 @@ public:
 	void pipeline_rename_show_window();
 	void pipeline_remove_show_confirmation();
 	void pipeline_remove();
-	void pipeline_panel_update();
+	void pipeline_toggle_pipeline_view();
+
+	void pipeline_features_update();
+	void pipeline_view_update();
 
 	void pipeline_system_bundle_remove(const StringName &p_name);
 	void pipeline_system_remove(const StringName &p_name);
@@ -157,14 +160,15 @@ protected:
 
 	PipelineElementInfoBox *pipeline_panel_add_entry();
 	void pipeline_panel_clear();
-	void pipeline_panel_draw_batch(uint32_t p_start_system, uint32_t p_end_system);
+
+	StageElementInfoBox *pipeline_view_add_stage();
+	void pipeline_view_clear();
 };
 
 class WorldECSEditorPlugin : public EditorPlugin {
 	GDCLASS(WorldECSEditorPlugin, EditorPlugin);
 
 	friend class PipelineElementInfoBox;
-	friend class DrawLayer;
 	friend class EditorWorldECS;
 
 	EditorNode *editor = nullptr;
