@@ -956,29 +956,124 @@ uint32_t test_G_system_dispatcher_2(PbDatabagA *p_databag) {
 void test_G_system_1(Query<const PbComponentA> &p_query) {}
 void test_G_sub1_system_2(Query<const PbComponentA> &p_query) {}
 void test_G_sub2_system_3(Query<const PbComponentA> &p_query) {}
-void test_G_system_4(Query<const PbComponentA> &p_query) {}
+void test_G_system_4(Query<const PbComponentB> &p_query) {}
+void test_G_system_7(PbDatabagA *databag) {}
 
 namespace godex_tests {
 TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to compose sub pipelines.") {
 	initialize_script_ecs();
 
+	// Expected order:
+	// # test_G_system_dispatcher_1 ====== test_G_system_4
+	//    - test_G_sub1_system_2
+	//    # test_G_system_dispatcher_2
+	//       - test_G_sub2_system_3
+	//       - test_G_sub2_system_6.gd
+	//    - test_G_sub1_system_5.gd
+	// - test_G_system_7                         <-- Makesure this doesn't run in parallel with test_G_system_dispatcher_1 because of PbDatabagA implicit dependency
+	// - test_G_system_1                         <-- Makesure this doesn't run in parallel with test_G_system_dispatcher_1 because od the explicit dependency
+
 	ECS::register_system_dispatcher(test_G_system_dispatcher_1, "test_G_system_dispatcher_1")
 			.before("test_G_system_1");
+
 	ECS::register_system_dispatcher(test_G_system_dispatcher_2, "test_G_system_dispatcher_2")
 			.set_phase(PHASE_PROCESS, "test_G_system_dispatcher_1");
-	ECS::register_system(test_G_system_1, "test_G_system_1");
-	ECS::register_system(test_G_system_4, "test_G_system_4")
-			.after("test_G_system_dispatcher_1");
+
+	ECS::register_system_bundle("test_G_system_bundle_cpp")
+
+			.add(ECS::register_system(test_G_system_1, "test_G_system_1"))
+
+			.add(ECS::register_system(test_G_system_7, "test_G_system_7"))
+
+			.add(ECS::register_system(test_G_sub1_system_2, "test_G_sub1_system_2")
+							.set_phase(PHASE_PROCESS, "test_G_system_dispatcher_1")
+							.before("test_G_system_dispatcher_2"))
+
+			.add(ECS::register_system(test_G_sub2_system_3, "test_G_sub2_system_3")
+							.set_phase(PHASE_PROCESS, "test_G_system_dispatcher_2"))
+
+			.add(ECS::register_system(test_G_system_4, "test_G_system_4")
+							.before("test_G_system_1"));
+
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	execute_in_phase(ECS.PHASE_PROCESS, ECS.test_G_system_dispatcher_1)\n";
+		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "\n";
+		code += "func _for_each(a):\n";
+		code += "	pass\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("test_G_sub1_system_5.gd", code));
+	}
+
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	execute_in_phase(ECS.PHASE_PROCESS, ECS.test_G_system_dispatcher_2)\n";
+		code += "	with_component(ECS.PbDatabagA, MUTABLE)\n";
+		code += "\n";
+		code += "func _for_each(a):\n";
+		code += "	pass\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("test_G_sub2_system_6.gd", code));
+	}
+
+	{
+		// Create the script.
+		String code;
+		code += "extends SystemBundle\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	add(ECS.test_G_system_dispatcher_2)\n";
+		code += "	add(ECS.test_G_sub1_system_5_gd)\n";
+		code += "	add(ECS.test_G_sub2_system_6_gd)\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("TestG_GDSBundle.gd", code));
+	}
 
 	flush_ecs_script_preparation();
 
 	Vector<StringName> system_bundles;
+	system_bundles.push_back("TestG_GDSBundle.gd");
+	system_bundles.push_back("test_G_system_bundle_cpp");
 
 	Vector<StringName> systems;
 	systems.push_back("test_G_system_dispatcher_1");
 
 	Pipeline pipeline;
 	PipelineBuilder::build_pipeline(system_bundles, systems, &pipeline);
+
+	// Make sure test_G_system_dispatcher_1 and test_G_system_4 run in parallel
+	// since no explicit or implici dependencies.
+	// TODO
+
+	// Make sure test_G_system_dispatcher_1 and test_G_system_7 don't run in
+	// parallel, since the system:
+	// test_G_system_dispatcher_1 > test_G_system_dispatcher_2 > test_G_sub2_system_6.gd
+	// is fetching PbDatabagA mutable like test_G_system_7 is doing.
+	// TODO
+
+	// Make sure test_G_system_dispatcher_1 runs before test_G_system_1
+	// as its explicit dependency suggests.
+	// TODO
+
+	// Make sure test_G_sub1_system_2 runs inside test_G_system_dispatcher_1
+	// and before test_G_system_dispatcher_2 but after test_G_sub1_system_5.gd
+	// TODO
+
+	// Make sure test_G_sub1_system_2 executes the followint systems:
+	// test_G_sub2_system_3 and test_G_sub2_system_6.gd
+	// TODO
 
 	finalize_script_ecs();
 }

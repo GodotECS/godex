@@ -85,7 +85,7 @@ class SystemInfo {
 
 	godex::system_id id = godex::SYSTEM_NONE;
 	Phase phase = PHASE_PROCESS;
-	StringName dispatcher = "main";
+	StringName dispatcher;
 	LocalVector<Dependency> dependencies;
 	String description;
 	Type type = TYPE_NORMAL;
@@ -97,7 +97,7 @@ class SystemInfo {
 
 public:
 	godex::system_id get_id() const;
-	SystemInfo &set_phase(Phase p_phase, const StringName &p_dispatcher_name = "main");
+	SystemInfo &set_phase(Phase p_phase, const StringName &p_dispatcher_name = StringName());
 	SystemInfo &set_description(const String &p_description);
 	SystemInfo &after(const StringName &p_system_name);
 	SystemInfo &before(const StringName &p_system_name);

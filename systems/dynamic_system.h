@@ -70,7 +70,7 @@ public:
 	void set_system_id(uint32_t p_id);
 	void set_target(ScriptInstance *p_target);
 
-	void execute_in_phase(Phase p_phase);
+	void execute_in_phase(Phase p_phase, const StringName &p_dispatcher_name = StringName());
 	void execute_after(const StringName &p_system_name);
 	void execute_before(const StringName &p_system_name);
 

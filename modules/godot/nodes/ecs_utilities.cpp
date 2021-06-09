@@ -11,7 +11,7 @@
 #include "shared_component_resource.h"
 
 void System::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("execute_in_phase", "phase"), &System::execute_in_phase);
+	ClassDB::bind_method(D_METHOD("execute_in_phase", "phase", "dispatcher"), &System::execute_in_phase, DEFVAL(godex::SYSTEM_NONE));
 	ClassDB::bind_method(D_METHOD("execute_after", "system_name"), &System::execute_after);
 	ClassDB::bind_method(D_METHOD("execute_before", "system_name"), &System::execute_before);
 
@@ -47,9 +47,15 @@ System::~System() {
 	}
 }
 
-void System::execute_in_phase(Phase p_phase) {
+void System::execute_in_phase(Phase p_phase, uint32_t p_dispatcher_id) {
 	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
-	info->execute_in_phase(p_phase);
+	if (p_dispatcher_id != godex::SYSTEM_NONE) {
+		const StringName name = ECS::get_system_name(p_dispatcher_id);
+		ERR_FAIL_COND(name == StringName());
+		info->execute_in_phase(p_phase, name);
+	} else {
+		info->execute_in_phase(p_phase);
+	}
 }
 
 void System::execute_after(uint32_t p_system) {
