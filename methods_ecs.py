@@ -1,4 +1,11 @@
 import os
+from enum import Enum
+
+
+class SystemType(Enum):
+    NORMAL = 1
+    DISPATCHER = 2
+    TEMPORARY = 3
 
 
 def generate_dynamic_system_funcs():
@@ -83,7 +90,7 @@ def generate_dynamic_system_funcs():
     f.close()
 
 
-def internal_generate_system_exe_funcs(is_temporary, max_parameters, path):
+def internal_generate_system_exe_funcs(system_type, max_parameters, path):
     """Generates the functions needed to process the `System`s."""
 
     if os.path.exists(path):
@@ -105,9 +112,11 @@ def internal_generate_system_exe_funcs(is_temporary, max_parameters, path):
                 f.write(", ")
         f.write(">\n")
 
-        if is_temporary:
+        if system_type == SystemType.TEMPORARY:
             f.write("bool temporary_system_exec_func(World *p_world, bool (*p_system)(")
-        else:
+        elif system_type == SystemType.DISPATCHER:
+            f.write("uint32_t system_dispatcher_exec_func(World *p_world, uint32_t (*p_system)(")
+        elif system_type == SystemType.NORMAL:
             f.write("void system_exec_func(World *p_world, void (*p_system)(")
 
         for p in range(i):
@@ -119,10 +128,10 @@ def internal_generate_system_exe_funcs(is_temporary, max_parameters, path):
         for p in range(i):
             f.write("	OBTAIN(p" + str(p) + ", P" + str(p) + ", p_world);\n")
 
-        if is_temporary:
-            f.write("	return p_system(\n")
-        else:
+        if system_type == SystemType.NORMAL:
             f.write("	p_system(\n")
+        else:
+            f.write("	return p_system(\n")
         for p in range(i):
             f.write("		p" + str(p) + ".inner")
             if p < (i - 1):
@@ -139,11 +148,18 @@ def generate_system_exe_funcs():
     max_parameters = 30
     path = "./systems/system_exe_funcs.gen.h"
 
-    internal_generate_system_exe_funcs(False, max_parameters, path)
+    internal_generate_system_exe_funcs(SystemType.NORMAL, max_parameters, path)
+
+
+def generate_system_dispatcher_exe_funcs():
+    max_parameters = 2
+    path = "./systems/system_dispatcher_exe_funcs.gen.h"
+
+    internal_generate_system_exe_funcs(SystemType.DISPATCHER, max_parameters, path)
 
 
 def generate_temporary_system_exe_funcs():
     max_parameters = 30
     path = "./systems/temporary_system_exe_funcs.gen.h"
 
-    internal_generate_system_exe_funcs(True, max_parameters, path)
+    internal_generate_system_exe_funcs(SystemType.TEMPORARY, max_parameters, path)

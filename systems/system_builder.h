@@ -74,6 +74,12 @@ void get_system_info_from_function(SystemExeInfo &r_info, void (*system_func)(RC
 	InfoConstructor<RCs...> a(r_info);
 }
 
+/// Creates a SystemExeInfo, extracting the information from a system dispatcher function.
+template <class... RCs>
+void get_system_info_from_function(SystemExeInfo &r_info, uint32_t (*system_func)(RCs...)) {
+	InfoConstructor<RCs...> a(r_info);
+}
+
 /// `DataFetcher` is used to fetch the data from the world and provide it to the
 /// `System`.
 template <class C>
@@ -120,6 +126,9 @@ struct DataFetcher<D *> {
 
 // ~~~~ system_exec_func definition ~~~~ //
 #include "system_exe_funcs.gen.h"
+
+// ~~~~ temporary_system_exec_func definition ~~~~ //
+#include "system_dispatcher_exe_funcs.gen.h"
 
 // ~~~~ temporary_system_exec_func definition ~~~~ //
 #include "temporary_system_exe_funcs.gen.h"

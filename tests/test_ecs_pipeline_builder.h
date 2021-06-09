@@ -33,8 +33,9 @@
 // 7. All the above must be valid for C++ and Scripted systems.
 // 8. Make sure that the systems that fetch World, SceneTreeDatabag are always
 //    executed in single thread.
-// 9. Detect when an event isn't catched by any system, tell how to fix it.
-// 10. Detect cyclic dependencies.
+// 9. Test the pipeline dispatcher.
+// 10. Detect when an event isn't catched by any system, tell how to fix it.
+// 11. Detect cyclic dependencies.
 
 struct PbComponentA {
 	COMPONENT(PbComponentA, DenseVectorStorage)
@@ -946,4 +947,40 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to detect lost even
 }
 } // namespace godex_tests
 
+uint32_t test_G_system_dispatcher_1(PbDatabagA *p_databag) {
+	return 0;
+}
+uint32_t test_G_system_dispatcher_2(PbDatabagA *p_databag) {
+	return 0;
+}
+void test_G_system_1(Query<const PbComponentA> &p_query) {}
+void test_G_sub1_system_2(Query<const PbComponentA> &p_query) {}
+void test_G_sub2_system_3(Query<const PbComponentA> &p_query) {}
+void test_G_system_4(Query<const PbComponentA> &p_query) {}
+
+namespace godex_tests {
+TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to compose sub pipelines.") {
+	initialize_script_ecs();
+
+	ECS::register_system_dispatcher(test_G_system_dispatcher_1, "test_G_system_dispatcher_1")
+			.before("test_G_system_1");
+	ECS::register_system_dispatcher(test_G_system_dispatcher_2, "test_G_system_dispatcher_2")
+			.set_phase(PHASE_PROCESS, "test_G_system_dispatcher_1");
+	ECS::register_system(test_G_system_1, "test_G_system_1");
+	ECS::register_system(test_G_system_4, "test_G_system_4")
+			.after("test_G_system_dispatcher_1");
+
+	flush_ecs_script_preparation();
+
+	Vector<StringName> system_bundles;
+
+	Vector<StringName> systems;
+	systems.push_back("test_G_system_dispatcher_1");
+
+	Pipeline pipeline;
+	PipelineBuilder::build_pipeline(system_bundles, systems, &pipeline);
+
+	finalize_script_ecs();
+}
+} // namespace godex_tests
 #endif // TEST_ECS_PIPELINE_BUILDER_H

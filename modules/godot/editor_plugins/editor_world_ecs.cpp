@@ -932,7 +932,7 @@ void EditorWorldECS::pipeline_view_update() {
 	}
 
 	uint32_t stage_id = 0;
-	const ExecutionGraph *graph = pipeline->editor_get_execution_graph();
+	const ExecutionGraph *graph = pipeline->editor_get_execution_graph(world_ecs);
 	const List<ExecutionGraph::StageNode> &stages = graph->get_stages();
 	for (const List<ExecutionGraph::StageNode>::Element *e = stages.front(); e; e = e->next(), stage_id += 1) {
 		StageElementInfoBox *info = pipeline_view_add_stage();

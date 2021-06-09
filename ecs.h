@@ -23,6 +23,7 @@ enum Phase : int {
 	PHASE_PRE_PROCESS,
 	PHASE_PROCESS,
 	PHASE_POST_PROCESS,
+	PHASE_FINALIZE_PROCESS,
 	PHASE_PRE_RENDER,
 	PHASE_MAX,
 };
@@ -75,10 +76,19 @@ class SystemInfo {
 	friend class ECS;
 	friend class SystemBundleInfo;
 
+	enum Type {
+		TYPE_NORMAL,
+		TYPE_DISPATCHER,
+		TYPE_TEMPORARY,
+		TYPE_DYNAMIC
+	};
+
 	godex::system_id id = godex::SYSTEM_NONE;
 	Phase phase = PHASE_PROCESS;
+	StringName dispatcher = "main";
 	LocalVector<Dependency> dependencies;
 	String description;
+	Type type = TYPE_NORMAL;
 
 	// Only one of those is assigned (depending on the system type).
 	uint32_t dynamic_system_id = UINT32_MAX;
@@ -87,7 +97,7 @@ class SystemInfo {
 
 public:
 	godex::system_id get_id() const;
-	SystemInfo &set_phase(Phase p_phase);
+	SystemInfo &set_phase(Phase p_phase, const StringName &p_dispatcher_name = "main");
 	SystemInfo &set_description(const String &p_description);
 	SystemInfo &after(const StringName &p_system_name);
 	SystemInfo &before(const StringName &p_system_name);
@@ -255,6 +265,33 @@ public:
 	},                                                              \
 			name)
 
+	static SystemInfo &register_system_dispatcher(func_get_system_exe_info p_func_get_exe_info, StringName p_name);
+
+// By defining the same name of the method, the IDE autocomplete shows the
+// method name `register_system_dispatcher`, properly + it's impossible use the
+// function directly by mistake.
+#define register_system_dispatcher(func, name)                                \
+	register_system_dispatcher([](SystemExeInfo &r_info) {                    \
+		SystemBuilder::get_system_info_from_function(r_info, func);           \
+		r_info.system_dispatcher_func = [](World *p_world) -> uint32_t {      \
+			return SystemBuilder::system_dispatcher_exec_func(p_world, func); \
+		};                                                                    \
+	},                                                                        \
+			name)
+
+	/// Register the temporary system and returns the ID.
+	static SystemInfo &register_temporary_system(func_temporary_system_execute p_func_temporary_systems_exe, StringName p_name);
+
+// By defining the same name of the method, the IDE autocomplete shows the
+// method name `register_temporary_system`, properly + it's impossible use the function
+// directly by mistake.
+// TODO use the same technique used for the system_dispatcher and normal system so we can retrieve the fetched data?
+#define register_temporary_system(func, name)                            \
+	register_temporary_system([](World *p_world) -> bool {               \
+		return SystemBuilder::temporary_system_exec_func(p_world, func); \
+	},                                                                   \
+			name)
+
 	// Register the system and returns the ID.
 	static SystemInfo &register_dynamic_system(StringName p_name);
 
@@ -284,21 +321,6 @@ public:
 
 	/// Returns `true` when the system dispatches a pipeline when executed.
 	static bool is_system_dispatcher(godex::system_id p_id);
-	/// Set the `SystemDispatcher` pipeline, does nothing if this system is not
-	/// a `SystemDispatcher`.
-	static void set_system_pipeline(godex::system_id p_id, Pipeline *p_pipeline);
-
-	/// Register the temporary system and returns the ID.
-	static SystemInfo &register_temporary_system(func_temporary_system_execute p_func_temporary_systems_exe, StringName p_name);
-
-// By defining the same name of the method, the IDE autocomplete shows the
-// method name `register_temporary_system`, properly + it's impossible use the function
-// directly by mistake.
-#define register_temporary_system(func, name)                            \
-	register_temporary_system([](World *p_world) -> bool {               \
-		return SystemBuilder::temporary_system_exec_func(p_world, func); \
-	},                                                                   \
-			name)
 
 	/// Returns `true` when the system is a temporary `System`.
 	static bool is_temporary_system(godex::system_id p_id);

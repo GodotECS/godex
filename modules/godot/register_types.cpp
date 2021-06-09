@@ -109,21 +109,24 @@ void register_godot_types() {
 							.set_description("Updates the VisualServer mesh transforms."));
 
 	// Physics 3D
-	{
-		const SystemInfo &system_info = ECS::register_dynamic_system("PhysicsSystemDispatcher")
-												.set_phase(PHASE_PROCESS)
-												.set_description("System that dispatches the specified pipeline at fixed rate. The rate is defined by `Physics Hz` in the project settings.");
-		create_physics_system_dispatcher(ECS::get_dynamic_system_info(system_info.get_id()));
-	}
-
-	ECS::register_system_bundle("Godot Physics")
+	ECS::register_system_bundle("Physics mechanism")
 			.set_description("Handles the godot PhysicsServer stepping. You need to add this SystemBundle if you want to use the Godot Physics Server.")
-			.add(ECS::register_system(call_physics_process, "CallPhysicsProcess")
+			.add(ECS::register_system_dispatcher(physics_pipeline_dispatcher, "Physics")
 							.set_phase(PHASE_PROCESS)
+							.set_description("Physics dispatcher"))
+
+			.add(ECS::register_system(physics_init_frame, "physics_init_frame")
+							.set_phase(PHASE_CONFIG, "Physics"))
+
+			.add(ECS::register_system(physics_init_frame, "physics_finalize_frame")
+							.set_phase(PHASE_FINALIZE_PROCESS, "Physics"))
+
+			.add(ECS::register_system(call_physics_process, "CallPhysicsProcess")
+							.set_phase(PHASE_PROCESS, "Physics")
 							.set_description("Updates the Godot Nodes (2D/3D) transform and fetches the events from the physics engine."))
 
 			.add(ECS::register_system(step_physics_server_3d, "StepPhysicsServer3D")
-							.set_phase(PHASE_PROCESS)
+							.set_phase(PHASE_PROCESS, "Physics")
 							.set_description("Steps the PhysicsServer3D.")
 							.after("CallPhysicsProcess"));
 

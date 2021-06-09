@@ -329,6 +329,8 @@ void test_make_entity_1_root(Storage<Child> *p_hierarchy) {
 }
 
 TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
+	CRASH_NOW(); // TODO activate?
+	/*
 	ECS::register_databag<TestSystemSubPipeDatabag>();
 	godex::system_id system_id = ECS::register_system(test_system_transform_add_x, "test_system_transform_add_x").get_id();
 
@@ -386,6 +388,7 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 		const TransformComponent *comp = world.get_storage<TransformComponent>()->get(entity_1);
 		CHECK(ABS(comp->origin.x - 1000.0) <= CMP_EPSILON);
 	}
+	*/
 }
 
 TEST_CASE("[Modules][ECS] Test system and databag") {

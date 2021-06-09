@@ -134,6 +134,23 @@ void PipelineECS::fetch_used_databags(Set<godex::component_id> &r_databags) cons
 	}
 }
 
+void PipelineECS::init_sub_pipelines(WorldECS *p_associated_world) {
+	CRASH_NOW(); // TODO ?
+	/*
+	// The PipelineDispatchers are never contained inside bundles.
+	const StringName *systems_name_ptr = systems_name.ptr();
+	for (int i = 0; i < systems_name.size(); i += 1) {
+		const godex::system_id id = ECS::get_system_id(systems_name_ptr[i]);
+		if (ECS::is_system_dispatcher(id)) {
+			const StringName pipeline_name = p_associated_world->get_system_dispatchers_pipeline(systems_name_ptr[i]);
+			Ref<PipelineECS> sub_pipeline = p_associated_world->find_pipeline(pipeline_name);
+			ERR_CONTINUE_MSG(sub_pipeline.is_null(), "The pipeline " + pipeline_name + " is not found. It's needed to set it as sub pipeline for the system: " + systems_name_ptr[i]);
+			ECS::set_system_pipeline(id, sub_pipeline->get_pipeline(p_associated_world));
+		}
+	}
+	*/
+}
+
 Pipeline *PipelineECS::get_pipeline(WorldECS *p_associated_world) {
 	// Build the pipeline.
 
@@ -147,20 +164,7 @@ Pipeline *PipelineECS::get_pipeline(WorldECS *p_associated_world) {
 		return pipeline;
 	}
 
-	// Initialize any eventually used sub pipeline.
-	{
-		// The PipelineDispatchers are never contained inside bundles.
-		const StringName *systems_name_ptr = systems_name.ptr();
-		for (int i = 0; i < systems_name.size(); i += 1) {
-			const godex::system_id id = ECS::get_system_id(systems_name_ptr[i]);
-			if (ECS::is_system_dispatcher(id)) {
-				const StringName pipeline_name = p_associated_world->get_system_dispatchers_pipeline(systems_name_ptr[i]);
-				Ref<PipelineECS> sub_pipeline = p_associated_world->find_pipeline(pipeline_name);
-				ERR_CONTINUE_MSG(sub_pipeline.is_null(), "The pipeline " + pipeline_name + " is not found. It's needed to set it as sub pipeline for the system: " + systems_name_ptr[i]);
-				ECS::set_system_pipeline(id, sub_pipeline->get_pipeline(p_associated_world));
-			}
-		}
-	}
+	init_sub_pipelines(p_associated_world);
 
 	// Build the pipeline.
 	pipeline = memnew(Pipeline);
@@ -170,10 +174,12 @@ Pipeline *PipelineECS::get_pipeline(WorldECS *p_associated_world) {
 }
 
 #ifdef TOOLS_ENABLED
-const ExecutionGraph *PipelineECS::editor_get_execution_graph() {
+const ExecutionGraph *PipelineECS::editor_get_execution_graph(WorldECS *p_associated_world) {
 	if (editor_execution_graph != nullptr) {
 		return editor_execution_graph;
 	}
+
+	init_sub_pipelines(p_associated_world);
 
 	editor_execution_graph = memnew(ExecutionGraph);
 	PipelineBuilder::build_graph(system_bundles, systems_name, editor_execution_graph);
