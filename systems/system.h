@@ -7,7 +7,7 @@ class World;
 class Pipeline;
 
 typedef bool (*func_temporary_system_execute)(World *p_world);
-typedef void (*func_system_execute)(World *p_world);
+typedef void (*func_system_execute)(World *p_world, Pipeline *p_pipeline, uint32_t p_system_id);
 typedef uint32_t (*func_system_dispatcher_execute)(World *p_world);
 
 struct SystemExeInfo {
@@ -20,12 +20,6 @@ struct SystemExeInfo {
 	Set<uint32_t> need_changed;
 	// Used if the system is a normal system.
 	func_system_execute system_func = nullptr;
-	// Used if the system is a system dispatcher.
-	func_system_dispatcher_execute system_dispatcher_func = nullptr;
-
-	bool is_dispatcher() const {
-		return system_dispatcher_func != nullptr;
-	}
 
 	void clear() {
 		valid = true;
@@ -36,7 +30,6 @@ struct SystemExeInfo {
 		immutable_databags.clear();
 		need_changed.clear();
 		system_func = nullptr;
-		system_dispatcher_func = nullptr;
 	}
 };
 

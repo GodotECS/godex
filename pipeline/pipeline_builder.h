@@ -11,6 +11,27 @@ class ExecutionGraph {
 	friend class PipelineBuilder;
 
 public:
+	struct SystemNode;
+
+	struct StageNode {
+		LocalVector<SystemNode *> systems;
+
+		bool is_compatible(const SystemNode *p_system) const;
+	};
+
+	struct Dispatcher : public Reference {
+		SystemNode *dispatched_by = nullptr;
+
+		/// List of the dispatcher systems
+		LocalVector<SystemNode *> systems;
+
+		/// List of used systems sorted by implicit and explicit priority.
+		List<SystemNode *> sorted_systems;
+
+		/// List of stages. The order is important.
+		List<StageNode> stages;
+	};
+
 	struct SystemNode {
 		bool is_used = false;
 		godex::system_id id = godex::SYSTEM_NONE;
@@ -29,12 +50,13 @@ public:
 
 		// Used by the optimizer to know the visited Nodes.
 		bool optimized = false;
-	};
 
-	struct StageNode {
-		LocalVector<SystemNode *> systems;
+		// If this is a dispatcher, here we will have the sub dispatcher.
+		Ref<Dispatcher> sub_dispatcher;
 
-		bool is_compatible(const SystemNode *p_system) const;
+		bool is_dispatcher() const {
+			return sub_dispatcher.is_valid();
+		}
 	};
 
 private:
@@ -45,14 +67,11 @@ private:
 	/// List of all the application systems.
 	LocalVector<SystemNode> systems;
 
-	/// List of used systems sorted by implicit and explicit priority.
-	List<SystemNode *> sorted_systems;
-
 	/// List of initial temporary systems.
 	List<SystemNode *> temporary_systems;
 
-	/// List of stages. The order is important.
-	List<StageNode> stages;
+	OAHashMap<StringName, Ref<Dispatcher>> dispatchers;
+	List<SystemNode *> systems_dispatcher;
 
 	// Used by the optimization phase to enstablish if move or not a System to a
 	// new stage.
@@ -65,14 +84,14 @@ private:
 public:
 	void print_sorted_systems() const;
 	void print_stages() const;
+	void print_stages(StringName p_dispatcher_name, const Ref<Dispatcher> p_dispatcher, uint32_t level, uint32_t &index) const;
 
 	bool is_valid() const;
 	const String &get_error_msg() const;
 	const Vector<String> &get_warnings() const;
 	const LocalVector<SystemNode> &get_systems() const;
-	const List<SystemNode *> &get_sorted_systems() const;
+	const Ref<Dispatcher> get_main_dispatcher() const;
 	const List<SystemNode *> &get_temporary_systems() const;
-	const List<StageNode> &get_stages() const;
 	real_t get_best_stage_size() const;
 };
 
@@ -129,6 +148,7 @@ private:
 
 	static void sort_systems(ExecutionGraph *r_graph);
 	static bool has_cyclick_dependencies(const ExecutionGraph *r_graph);
+	static void detect_warnings_sub_dispatchers_missing(ExecutionGraph *r_graph);
 	static void detect_warnings_lost_events(ExecutionGraph *r_graph);
 	static void build_stages(ExecutionGraph *r_graph);
 	static void optimize_stages(ExecutionGraph *r_graph);

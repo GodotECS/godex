@@ -23,6 +23,24 @@ bool ExecutionGraph::StageNode::is_compatible(const SystemNode *p_system) const 
 			// dependency and `p_system` is not compatible with this stage.
 			return false;
 		}
+		if (staged_system->is_dispatcher()) {
+			// The staged system is a dispatcher, check each sub stages.
+			for (const List<StageNode>::Element *disp_stage = staged_system->sub_dispatcher->stages.front(); disp_stage; disp_stage = disp_stage->next()) {
+				if (!disp_stage->get().is_compatible(p_system)) {
+					// The subdispatcher has a system that is not compatible.
+					return false;
+				}
+			}
+		}
+		if (p_system->is_dispatcher()) {
+			// p_system is a dispatcher check again each sub system.
+			for (const List<StageNode>::Element *disp_stage = p_system->sub_dispatcher->stages.front(); disp_stage; disp_stage = disp_stage->next()) {
+				if (!disp_stage->get().is_compatible(staged_system)) {
+					// The subdispatcher has a system that is not compatible.
+					return false;
+				}
+			}
+		}
 	}
 	return true;
 }
@@ -30,13 +48,17 @@ bool ExecutionGraph::StageNode::is_compatible(const SystemNode *p_system) const 
 void ExecutionGraph::prepare_for_optimization() {
 	real_t average_systems_per_stage = 0;
 	real_t considered_stages = 0;
-	for (List<ExecutionGraph::StageNode>::Element *e = stages.front(); e; e = e->next()) {
-		if (e->get().systems.size() <= 1) {
-			// Do not consider too little stages.
-			continue;
+	for (OAHashMap<StringName, Ref<ExecutionGraph::Dispatcher>>::Iterator d = dispatchers.iter();
+			d.valid;
+			d = dispatchers.next_iter(d)) {
+		for (List<ExecutionGraph::StageNode>::Element *e = (*d.value)->stages.front(); e; e = e->next()) {
+			if (e->get().systems.size() <= 1) {
+				// Do not consider too little stages.
+				continue;
+			}
+			average_systems_per_stage += e->get().systems.size();
+			considered_stages += 1;
 		}
-		average_systems_per_stage += e->get().systems.size();
-		considered_stages += 1;
 	}
 	average_systems_per_stage /= considered_stages;
 
@@ -44,7 +66,10 @@ void ExecutionGraph::prepare_for_optimization() {
 	// pipeline, but never excedes the amount of processors this machine has.
 	// Note, the stage can still have more systems than the optimal size, if there
 	// is no way to balance it.
-	best_stage_size = MIN(average_systems_per_stage, real_t(OS::get_singleton()->get_processor_count()));
+	best_stage_size = CLAMP(
+			average_systems_per_stage,
+			real_t(OS::get_singleton()->get_processor_count() / 4.0),
+			real_t(OS::get_singleton()->get_processor_count()));
 }
 
 real_t ExecutionGraph::compute_effort(uint32_t p_system_count) {
@@ -57,29 +82,50 @@ real_t ExecutionGraph::compute_effort(uint32_t p_system_count) {
 
 void ExecutionGraph::print_sorted_systems() const {
 	print_line("Execution Graph, sorted nodes:");
-	print_line("|");
-	for (const List<SystemNode *>::Element *a = sorted_systems.front(); a; a = a->next()) {
-		print_line("|- " + ECS::get_system_name(a->get()->id));
+	for (OAHashMap<StringName, Ref<ExecutionGraph::Dispatcher>>::Iterator e = dispatchers.iter();
+			e.valid;
+			e = dispatchers.next_iter(e)) {
+		print_line("# Dispatcher: " + (*e.key));
+		for (const List<SystemNode *>::Element *a = (*e.value)->sorted_systems.front(); a; a = a->next()) {
+			print_line("|- " + ECS::get_system_name(a->get()->id));
+		}
 	}
 	print_line("");
 }
 
 void ExecutionGraph::print_stages() const {
+	ERR_FAIL_COND(dispatchers.has("main") == false);
+	Ref<Dispatcher> main_dispatcher = *dispatchers.lookup_ptr("main");
+
 	print_line("Execution Graph, stages:");
 	print_line("|");
 	uint32_t index = 0;
-	for (const List<StageNode>::Element *a = stages.front(); a; a = a->next(), index += 1) {
-		String msg = "|- #" + itos(index).lpad(2, "0") + " [";
-		for (uint32_t i = 0; i < a->get().systems.size(); i += 1) {
-			if (i != 0) {
-				msg += ", ";
-			}
-			msg += ECS::get_system_name(a->get().systems[i]->id);
-		}
-		msg += "]";
-		print_line(msg);
-	}
+	print_stages("main", main_dispatcher, 0, index);
 	print_line("");
+}
+
+void ExecutionGraph::print_stages(StringName p_dispatcher_name, const Ref<Dispatcher> p_dispatcher, uint32_t level, uint32_t &index) const {
+	String padding;
+
+	for (uint32_t i = 0; i < level; i += 1) {
+		padding += " ";
+	}
+	print_line(padding + p_dispatcher_name);
+
+	for (const List<StageNode>::Element *a = p_dispatcher->stages.front(); a; a = a->next(), index += 1) {
+		print_line(padding + "|- #" + itos(index).lpad(2, "0"));
+		for (uint32_t i = 0; i < a->get().systems.size(); i += 1) {
+			if (a->get().systems[i]->is_dispatcher()) {
+				print_stages(
+						ECS::get_system_name(a->get().systems[i]->id),
+						a->get().systems[i]->sub_dispatcher,
+						level + 1,
+						index);
+			} else {
+				print_line(padding + "  |- " + ECS::get_system_name(a->get().systems[i]->id));
+			}
+		}
+	}
 }
 
 bool ExecutionGraph::is_valid() const {
@@ -98,16 +144,13 @@ const LocalVector<ExecutionGraph::SystemNode> &ExecutionGraph::get_systems() con
 	return systems;
 }
 
-const List<ExecutionGraph::SystemNode *> &ExecutionGraph::get_sorted_systems() const {
-	return sorted_systems;
+const Ref<ExecutionGraph::Dispatcher> ExecutionGraph::get_main_dispatcher() const {
+	const Ref<Dispatcher> *main = dispatchers.lookup_ptr("main");
+	return main == nullptr ? Ref<Dispatcher>() : (*main);
 }
 
 const List<ExecutionGraph::SystemNode *> &ExecutionGraph::get_temporary_systems() const {
 	return temporary_systems;
-}
-
-const List<ExecutionGraph::StageNode> &ExecutionGraph::get_stages() const {
-	return stages;
 }
 
 real_t ExecutionGraph::get_best_stage_size() const {
@@ -148,8 +191,13 @@ void PipelineBuilder::build_graph(
 	r_graph->error_msg = "";
 	r_graph->warnings.clear();
 	r_graph->systems.clear();
-	r_graph->sorted_systems.clear();
-	r_graph->stages.clear();
+	r_graph->dispatchers.clear();
+	r_graph->systems_dispatcher.clear();
+
+	// Crate the main dispatcher.
+	Ref<ExecutionGraph::Dispatcher> main;
+	main.instance();
+	r_graph->dispatchers.insert("main", main);
 
 	// Initialize the system, by fetching the various dependencies.
 	r_graph->systems.resize(ECS::get_systems_count());
@@ -163,7 +211,11 @@ void PipelineBuilder::build_graph(
 
 	// Check if we have a cynclic dependency.
 	if (has_cyclick_dependencies(r_graph)) {
-		r_graph->sorted_systems.clear();
+		r_graph->print_sorted_systems();
+		r_graph->print_stages();
+
+		r_graph->systems_dispatcher.clear();
+		r_graph->dispatchers.clear();
 		r_graph->systems.clear();
 		r_graph->valid = false;
 		r_graph->error_msg = "This graph has a cyclick dependency and the pipeline building was discarded.";
@@ -173,6 +225,7 @@ void PipelineBuilder::build_graph(
 
 	// The validation phase
 	if (!p_skip_warnings) {
+		detect_warnings_sub_dispatchers_missing(r_graph);
 		detect_warnings_lost_events(r_graph);
 	}
 
@@ -215,16 +268,31 @@ void PipelineBuilder::build_pipeline(
 		}
 	}
 
-	// Add the stages and relative systems, and setup the system.
-	{
-		r_pipeline->exec_stages.resize(p_graph.stages.size());
+	// Initialize the dispatchers.
+	r_pipeline->dispatchers.resize(ECS::get_dispatchers_count());
+
+	// Add the stages and relative systems; then setup the system.
+	for (OAHashMap<StringName, Ref<ExecutionGraph::Dispatcher>>::Iterator d = p_graph.dispatchers.iter();
+			d.valid;
+			d = p_graph.dispatchers.next_iter(d)) {
+		const Ref<ExecutionGraph::Dispatcher> dispatcher = (*d.value);
+		int dispatcher_index = 0;
+		if ((*d.key) != StringName("main")) {
+			if (dispatcher->dispatched_by == nullptr) {
+				return;
+			} else {
+				dispatcher_index = ECS::get_dispatcher_index(dispatcher->dispatched_by->id);
+			}
+		}
+
+		r_pipeline->dispatchers[dispatcher_index].exec_stages.resize(dispatcher->stages.size());
 
 		uint32_t stage_index = 0;
 
-		for (const List<ExecutionGraph::StageNode>::Element *stage = p_graph.stages.front();
+		for (const List<ExecutionGraph::StageNode>::Element *stage = dispatcher->stages.front();
 				stage;
 				stage = stage->next(), stage_index += 1) {
-			r_pipeline->exec_stages[stage_index].systems.resize(stage->get().systems.size());
+			r_pipeline->dispatchers[dispatcher_index].exec_stages[stage_index].systems.resize(stage->get().systems.size());
 
 			for (uint32_t i = 0; i < stage->get().systems.size(); i += 1) {
 #ifdef DEBUG_ENABLED
@@ -235,8 +303,8 @@ void PipelineBuilder::build_pipeline(
 #endif
 
 				// Add the exec function to the stage.
-				r_pipeline->exec_stages[stage_index].systems[i].id = stage->get().systems[i]->id;
-				r_pipeline->exec_stages[stage_index].systems[i].exe = stage->get().systems[i]->info.system_func;
+				r_pipeline->dispatchers[dispatcher_index].exec_stages[stage_index].systems[i].id = stage->get().systems[i]->id;
+				r_pipeline->dispatchers[dispatcher_index].exec_stages[stage_index].systems[i].exe = stage->get().systems[i]->info.system_func;
 
 				// Setup the phase.
 				if (ECS::is_system_dispatcher(stage->get().systems[i]->id) == false) {
@@ -245,8 +313,8 @@ void PipelineBuilder::build_pipeline(
 					for (const Set<uint32_t>::Element *e = stage->get().systems[i]->info.mutable_components_storage.front(); e; e = e->next()) {
 						if (ECS::is_component_events(e->get())) {
 							// Make sure it's unique
-							if (r_pipeline->event_generator.find(e->get()) == -1) {
-								r_pipeline->event_generator.push_back(e->get());
+							if (r_pipeline->dispatchers[dispatcher_index].event_generator.find(e->get()) == -1) {
+								r_pipeline->dispatchers[dispatcher_index].event_generator.push_back(e->get());
 							}
 						}
 					}
@@ -255,13 +323,13 @@ void PipelineBuilder::build_pipeline(
 					// end of the `System`.
 					for (const Set<uint32_t>::Element *e = stage->get().systems[i]->info.mutable_components.front(); e; e = e->next()) {
 						if (ECS::storage_notify_release_write(e->get())) {
-							r_pipeline->exec_stages[stage_index].notify_list_release_write.push_back(e->get());
+							r_pipeline->dispatchers[dispatcher_index].exec_stages[stage_index].notify_list_release_write.push_back(e->get());
 						}
 					}
 					for (const Set<uint32_t>::Element *e = stage->get().systems[i]->info.mutable_components_storage.front(); e; e = e->next()) {
 						if (ECS::storage_notify_release_write(e->get())) {
-							if (r_pipeline->exec_stages[stage_index].notify_list_release_write.find(e->get()) == -1) {
-								r_pipeline->exec_stages[stage_index].notify_list_release_write.push_back(e->get());
+							if (r_pipeline->dispatchers[dispatcher_index].exec_stages[stage_index].notify_list_release_write.find(e->get()) == -1) {
+								r_pipeline->dispatchers[dispatcher_index].exec_stages[stage_index].notify_list_release_write.push_back(e->get());
 							}
 						}
 					}
@@ -270,17 +338,19 @@ void PipelineBuilder::build_pipeline(
 
 			// If set: make sure that the `Child` storage (which is the Hierachy)
 			// is flushed for first.
-			const int64_t child_index = r_pipeline->exec_stages[stage_index].notify_list_release_write.find(Child::get_component_id());
+			const int64_t child_index = r_pipeline->dispatchers[dispatcher_index].exec_stages[stage_index].notify_list_release_write.find(Child::get_component_id());
 			if (child_index != -1) {
-				SWAP(r_pipeline->exec_stages[stage_index].notify_list_release_write[child_index], r_pipeline->exec_stages[stage_index].notify_list_release_write[0]);
-				CRASH_COND(r_pipeline->exec_stages[stage_index].notify_list_release_write[0] != Child::get_component_id());
+				SWAP(
+						r_pipeline->dispatchers[dispatcher_index].exec_stages[stage_index].notify_list_release_write[child_index],
+						r_pipeline->dispatchers[dispatcher_index].exec_stages[stage_index].notify_list_release_write[0]);
+				CRASH_COND(r_pipeline->dispatchers[dispatcher_index].exec_stages[stage_index].notify_list_release_write[0] != Child::get_component_id());
 			}
 		}
 	}
 
 	r_pipeline->ready = true;
 
-	// Build
+	// Build done
 }
 
 void PipelineBuilder::fetch_bundle_info(
@@ -324,6 +394,51 @@ void PipelineBuilder::fetch_system_info(
 	r_graph->systems[id].bundle_name = p_bundle_name;
 	r_graph->systems[id].info = system_info;
 
+	if (ECS::is_temporary_system(id)) {
+		r_graph->temporary_systems.push_back(r_graph->systems.ptr() + id);
+	}
+
+	// Put this system inside the dispatcher that has to dispatch it.
+	{
+		// Put this system inside the proper dispatcher.
+		Ref<ExecutionGraph::Dispatcher> dispatcher;
+
+		const StringName dispatcher_name = ECS::get_system_dispatcher(id);
+		if (dispatcher_name == StringName()) {
+			// This system goes inside the main dispatcher.
+			dispatcher = *r_graph->dispatchers.lookup_ptr("main");
+		} else {
+			Ref<ExecutionGraph::Dispatcher> *lookup_dispatcher = r_graph->dispatchers.lookup_ptr(p_system);
+			if (lookup_dispatcher != nullptr) {
+				dispatcher = *lookup_dispatcher;
+			}
+			if (dispatcher.is_null()) {
+				dispatcher.instance();
+				r_graph->dispatchers.insert(dispatcher_name, dispatcher);
+			}
+		}
+
+		dispatcher->systems.push_back(r_graph->systems.ptr() + id);
+	}
+
+	// Lookup the owning dispatcher.
+	if (ECS::is_system_dispatcher(id)) {
+		// This system is a dispatcher, lookup it by system name.
+		Ref<ExecutionGraph::Dispatcher> *dispatcher = r_graph->dispatchers.lookup_ptr(p_system);
+
+		if (dispatcher == nullptr) {
+			// The dispatcher doesn't exists yet, create it.
+			r_graph->systems[id].sub_dispatcher.instance();
+			r_graph->dispatchers.insert(p_system, r_graph->systems[id].sub_dispatcher);
+		} else {
+			r_graph->systems[id].sub_dispatcher = *dispatcher;
+		}
+
+		r_graph->systems[id].sub_dispatcher->dispatched_by = r_graph->systems.ptr() + id;
+		r_graph->systems_dispatcher.push_back(r_graph->systems.ptr() + id);
+	}
+
+	// Fetches the system dependencies id.
 	resolve_dependencies(id, p_extra_dependencies, r_graph);
 	resolve_dependencies(id, ECS::get_system_dependencies(id), r_graph);
 }
@@ -346,21 +461,6 @@ void PipelineBuilder::resolve_dependencies(
 }
 
 void PipelineBuilder::sort_systems(ExecutionGraph *r_graph) {
-	// Initialize the sorted list.
-	for (uint32_t i = 0; i < r_graph->systems.size(); i += 1) {
-		ExecutionGraph::SystemNode *node = r_graph->systems.ptr() + i;
-		if (node->is_used == false) {
-			// This system is not included.
-			continue;
-		}
-
-		if (ECS::is_temporary_system(node->id)) {
-			r_graph->temporary_systems.push_back(node);
-		} else {
-			r_graph->systems[i].self_list_element = r_graph->sorted_systems.push_back(node);
-		}
-	}
-
 	struct SortByPriority {
 		bool operator()(ExecutionGraph::SystemNode *const &p_a, ExecutionGraph::SystemNode *const &p_b) const {
 			// Is `p_a` the smallest?
@@ -395,20 +495,46 @@ void PipelineBuilder::sort_systems(ExecutionGraph *r_graph) {
 		}
 	};
 
-	// Use inplace, otherwise the sort by dependency fails, since not all element
-	// are tested.
-	r_graph->sorted_systems.sort_custom_inplace<SortByPriority>();
+	for (OAHashMap<StringName, Ref<ExecutionGraph::Dispatcher>>::Iterator d = r_graph->dispatchers.iter();
+			d.valid;
+			d = r_graph->dispatchers.next_iter(d)) {
+		Ref<ExecutionGraph::Dispatcher> dispatcher = (*d.value);
+
+		// Initialize the sorted list.
+		for (uint32_t i = 0; i < dispatcher->systems.size(); i += 1) {
+			ExecutionGraph::SystemNode *node = dispatcher->systems[i];
+			if (node->is_used == false || ECS::is_temporary_system(node->id)) {
+				// This system is not included.
+				continue;
+			}
+
+			node->self_list_element = dispatcher->sorted_systems.push_back(node);
+		}
+
+		// Use inplace, otherwise the sort by dependency fails, since not all element
+		// are tested.
+		r_graph->print_sorted_systems();
+		dispatcher->sorted_systems.sort_custom_inplace<SortByPriority>();
+		r_graph->print_sorted_systems();
+	}
 }
 
 bool PipelineBuilder::has_cyclick_dependencies(const ExecutionGraph *r_graph) {
 	// We can detect cyclic dependencies just by verifiying that the sorted list
 	// has all the nodes dependencies correctly resolved. If one node is not
 	// correctly resolved, it's a cyclic dependency.
-	for (const List<ExecutionGraph::SystemNode *>::Element *e = r_graph->sorted_systems.front(); e; e = e->next()) {
-		for (uint32_t i = 0; i < e->get()->execute_after.size(); i += 1) {
-			for (const List<ExecutionGraph::SystemNode *>::Element *sub = e->next(); sub; sub = sub->next()) {
-				if (e->get()->execute_after[i] == sub->get()) {
-					return true;
+	for (OAHashMap<StringName, Ref<ExecutionGraph::Dispatcher>>::Iterator d = r_graph->dispatchers.iter();
+			d.valid;
+			d = r_graph->dispatchers.next_iter(d)) {
+		Ref<ExecutionGraph::Dispatcher> dispatcher = (*d.value);
+
+		for (const List<ExecutionGraph::SystemNode *>::Element *e = dispatcher->sorted_systems.front(); e; e = e->next()) {
+			for (uint32_t i = 0; i < e->get()->execute_after.size(); i += 1) {
+				for (const List<ExecutionGraph::SystemNode *>::Element *sub = e->next(); sub; sub = sub->next()) {
+					if (e->get()->execute_after[i] == sub->get()) {
+						ERR_PRINT("Detected cylic dependency between: " + ECS::get_system_name(e->get()->id) + " and: " + ECS::get_system_name(sub->get()->id));
+						return true;
+					}
 				}
 			}
 		}
@@ -416,35 +542,35 @@ bool PipelineBuilder::has_cyclick_dependencies(const ExecutionGraph *r_graph) {
 	return false;
 }
 
-void PipelineBuilder::detect_warnings_lost_events(ExecutionGraph *r_graph) {
-	// Detects if this pipeline is generating events that will not catched by
-	// anything.
-	struct GeneratedEventInfo {
-		godex::component_id component_id;
-		godex::system_id generated_by;
-		bool operator<(const GeneratedEventInfo &p_other) const {
-			return component_id < p_other.component_id;
+void PipelineBuilder::detect_warnings_sub_dispatchers_missing(ExecutionGraph *r_graph) {
+	for (OAHashMap<StringName, Ref<ExecutionGraph::Dispatcher>>::Iterator e = r_graph->dispatchers.iter();
+			e.valid;
+			e = r_graph->dispatchers.next_iter(e)) {
+		if (e.value->is_valid()) {
+			if ((*e.value)->dispatched_by == nullptr) {
+				String system_names = "";
+				for (uint32_t i = 0; i < (*e.value)->systems.size(); i += 1) {
+					system_names += String(ECS::get_system_name((*e.value)->systems[i]->id)) + ", ";
+				}
+				r_graph->warnings.push_back(TTR("The sub dispatcher `") + (*e.key) + TTR("` is not dispatcher by any systems in this pipeline so the following systems are not being executed: ") + "[" + system_names + "]");
+			}
 		}
-	};
+	}
+}
 
-	// This Set is used to detect if the generated events are leaked.
-	// It fetches all the sorted systems, and inserts the component ID when a
-	// generator is found.
-	// When a system reads the event (mutably / immutably) the the ID is removed
-	// from this `Set`.
-	// At the end, any component inside the list is a leaked event, since not system
-	// read it.
-	Set<GeneratedEventInfo> generated_events;
+struct GeneratedEventInfo {
+	godex::component_id component_id;
+	godex::system_id generated_by;
+	bool operator<(const GeneratedEventInfo &p_other) const {
+		return component_id < p_other.component_id;
+	}
+};
 
-	// This list is used to detect if the changed event are leaked.
-	// It iterates all the sorted systems, and insert the component ID when the
-	// system fetches the changed event.
-	// Afterwords, when a system modify it we mark it as `generated_by`:
-	// if this event is not marked read again, it reaches the end with the
-	// `generated_by` set, so we detected the leak.
-	Set<GeneratedEventInfo> changed_events;
-
-	for (const List<ExecutionGraph::SystemNode *>::Element *e = r_graph->sorted_systems.front(); e; e = e->next()) {
+void internal_detect_warnings_lost_events(
+		Ref<ExecutionGraph::Dispatcher> dispatcher,
+		Set<GeneratedEventInfo> &generated_events,
+		Set<GeneratedEventInfo> &changed_events) {
+	for (const List<ExecutionGraph::SystemNode *>::Element *e = dispatcher->sorted_systems.front(); e; e = e->next()) {
 		// Detect if this system is generating an event.
 		for (Set<godex::component_id>::Element *generated_component = e->get()->info.mutable_components_storage.front(); generated_component; generated_component = generated_component->next()) {
 			if (ECS::is_component_events(generated_component->get())) {
@@ -487,7 +613,43 @@ void PipelineBuilder::detect_warnings_lost_events(ExecutionGraph *r_graph) {
 			changed_events.erase({ changed->get(), godex::SYSTEM_NONE }); // TODO No way to update the existing one instead??
 			changed_events.insert({ changed->get(), godex::SYSTEM_NONE });
 		}
+
+		// This is a dispatcher, check this before continue.
+		if (e->get()->is_dispatcher()) {
+			internal_detect_warnings_lost_events(
+					e->get()->sub_dispatcher,
+					generated_events,
+					changed_events);
+		}
 	}
+}
+
+void PipelineBuilder::detect_warnings_lost_events(ExecutionGraph *r_graph) {
+	// Detects if this pipeline is generating events that will not catched by
+	// anything.
+
+	// This Set is used to detect if the generated events are leaked.
+	// It fetches all the sorted systems, and inserts the component ID when a
+	// generator is found.
+	// When a system reads the event (mutably / immutably) the the ID is removed
+	// from this `Set`.
+	// At the end, any component inside the list is a leaked event, since not system
+	// read it.
+	Set<GeneratedEventInfo> generated_events;
+
+	// This list is used to detect if the changed event are leaked.
+	// It iterates all the sorted systems, and insert the component ID when the
+	// system fetches the changed event.
+	// Afterwords, when a system modify it we mark it as `generated_by`:
+	// if this event is not marked read again, it reaches the end with the
+	// `generated_by` set, so we detected the leak.
+	Set<GeneratedEventInfo> changed_events;
+
+	Ref<ExecutionGraph::Dispatcher> dispatcher = *r_graph->dispatchers.lookup_ptr("main");
+	internal_detect_warnings_lost_events(
+			dispatcher,
+			generated_events,
+			changed_events);
 
 	for (Set<GeneratedEventInfo>::Element *unfetched_event = generated_events.front(); unfetched_event; unfetched_event = unfetched_event->next()) {
 		r_graph->warnings.push_back("The event `" + ECS::get_component_name(unfetched_event->get().component_id) + "` is generated by `" + ECS::get_system_name(unfetched_event->get().generated_by) + "`, but afterward no systems is fetching it before the end of the pipeline, where it's destroyed forever. To fix the problem, and avoid loase events, you should add a system to fetch the event that runs after the system `" + ECS::get_system_name(unfetched_event->get().generated_by) + "`. Or open a bug report.");
@@ -502,18 +664,28 @@ void PipelineBuilder::detect_warnings_lost_events(ExecutionGraph *r_graph) {
 	}
 }
 
-void PipelineBuilder::build_stages(ExecutionGraph *r_graph) {
-	r_graph->stages.push_back(ExecutionGraph::StageNode());
-	for (const List<ExecutionGraph::SystemNode *>::Element *e = r_graph->sorted_systems.front(); e; e = e->next()) {
-		ExecutionGraph::StageNode &stage = r_graph->stages.back()->get();
+void internal_build_stages(Ref<ExecutionGraph::Dispatcher> dispatcher) {
+	dispatcher->stages.push_back(ExecutionGraph::StageNode());
+	for (const List<ExecutionGraph::SystemNode *>::Element *e = dispatcher->sorted_systems.front(); e; e = e->next()) {
+		if (e->get()->is_dispatcher()) {
+			// This is a dispatcher, so build the stages first.
+			internal_build_stages(e->get()->sub_dispatcher);
+		}
+
+		ExecutionGraph::StageNode &stage = dispatcher->stages.back()->get();
 		if (stage.is_compatible(e->get())) {
 			stage.systems.push_back(e->get());
 		} else {
 			// Incompatible, create a new stage.
-			r_graph->stages.push_back(ExecutionGraph::StageNode());
-			r_graph->stages.back()->get().systems.push_back(e->get());
+			dispatcher->stages.push_back(ExecutionGraph::StageNode());
+			dispatcher->stages.back()->get().systems.push_back(e->get());
 		}
 	}
+}
+
+void PipelineBuilder::build_stages(ExecutionGraph *r_graph) {
+	Ref<ExecutionGraph::Dispatcher> dispatcher = *r_graph->dispatchers.lookup_ptr("main");
+	internal_build_stages(dispatcher);
 }
 
 void PipelineBuilder::optimize_stages(ExecutionGraph *r_graph) {
@@ -529,76 +701,82 @@ void PipelineBuilder::optimize_stages(ExecutionGraph *r_graph) {
 
 	r_graph->prepare_for_optimization();
 
-	// For each system of each stage:
-	for (List<ExecutionGraph::StageNode>::Element *e = r_graph->stages.front(); e; e = e->next()) {
-		for (int i = 0; i < int(e->get().systems.size()); i += 1) {
-			ExecutionGraph::SystemNode *system = e->get().systems[i];
+	for (OAHashMap<StringName, Ref<ExecutionGraph::Dispatcher>>::Iterator d = r_graph->dispatchers.iter();
+			d.valid;
+			d = r_graph->dispatchers.next_iter(d)) {
+		Ref<ExecutionGraph::Dispatcher> dispatcher = (*d.value);
 
-			if (system->optimized) {
-				// This system was already optimized, nothing more to do here.
-				continue;
-			}
+		// For each system of each stage:
+		for (List<ExecutionGraph::StageNode>::Element *e = dispatcher->stages.front(); e; e = e->next()) {
+			for (int i = 0; i < int(e->get().systems.size()); i += 1) {
+				ExecutionGraph::SystemNode *system = e->get().systems[i];
 
-			// Phase 1. score the current stage.
-			real_t lowest_effort = r_graph->compute_effort(e->get().systems.size());
-			ExecutionGraph::StageNode *best_stage = &e->get();
-
-			// Phase 2. Try to find a better stage on the previous Stages:
-			for (List<ExecutionGraph::StageNode>::Element *prev = e->prev(); prev; prev = prev->prev()) {
-				if (prev->get().is_compatible(system)) {
-					const real_t eventual_effort = r_graph->compute_effort(prev->get().systems.size() + 1);
-					if (eventual_effort < lowest_effort) {
-						// If we move the System here we get a more optimized
-						// pipeline.
-						lowest_effort = eventual_effort;
-						best_stage = &prev->get();
-					} else {
-						// The current stage has an high score, keep searching.
-					}
-				} else {
-					// The System is incompatible with this Stage, so we can't
-					// move toward this direcction anymore, otherwise the
-					// dependencies would be violated.
-					break;
+				if (system->optimized) {
+					// This system was already optimized, nothing more to do here.
+					continue;
 				}
-			}
 
-			// Phase 3. Try to find a better stage on the next Stages:
-			for (List<ExecutionGraph::StageNode>::Element *next = e->next(); next; next = next->next()) {
-				if (next->get().is_compatible(system)) {
-					const real_t eventual_effort = r_graph->compute_effort(next->get().systems.size() + 1);
-					if (eventual_effort < lowest_effort) {
-						// If we move the System here we get a more optimized
-						// pipeline.
-						lowest_effort = eventual_effort;
-						best_stage = &next->get();
+				// Phase 1. score the current stage.
+				real_t lowest_effort = r_graph->compute_effort(e->get().systems.size());
+				ExecutionGraph::StageNode *best_stage = &e->get();
+
+				// Phase 2. Try to find a better stage on the previous Stages:
+				for (List<ExecutionGraph::StageNode>::Element *prev = e->prev(); prev; prev = prev->prev()) {
+					if (prev->get().is_compatible(system)) {
+						const real_t eventual_effort = r_graph->compute_effort(prev->get().systems.size() + 1);
+						if (eventual_effort < lowest_effort) {
+							// If we move the System here we get a more optimized
+							// pipeline.
+							lowest_effort = eventual_effort;
+							best_stage = &prev->get();
+						} else {
+							// The current stage has an high score, keep searching.
+						}
 					} else {
-						// The current stage has an high score, keep searching.
+						// The System is incompatible with this Stage, so we can't
+						// move toward this direcction anymore, otherwise the
+						// dependencies would be violated.
+						break;
 					}
-				} else {
-					// The System is incompatible with this Stage, so we can't
-					// move toward this direcction anymore, otherwise the
-					// dependencies would be violated.
-					break;
 				}
-			}
 
-			if ((&e->get()) != best_stage) {
-				// We found a better Stage, let's move the System there.
-				e->get().systems.erase(system);
-				best_stage->systems.push_back(system);
-				// Decrease `i` since we removed the system from the stage.
-				i -= 1;
-			}
+				// Phase 3. Try to find a better stage on the next Stages:
+				for (List<ExecutionGraph::StageNode>::Element *next = e->next(); next; next = next->next()) {
+					if (next->get().is_compatible(system)) {
+						const real_t eventual_effort = r_graph->compute_effort(next->get().systems.size() + 1);
+						if (eventual_effort < lowest_effort) {
+							// If we move the System here we get a more optimized
+							// pipeline.
+							lowest_effort = eventual_effort;
+							best_stage = &next->get();
+						} else {
+							// The current stage has an high score, keep searching.
+						}
+					} else {
+						// The System is incompatible with this Stage, so we can't
+						// move toward this direcction anymore, otherwise the
+						// dependencies would be violated.
+						break;
+					}
+				}
 
-			system->optimized = true;
+				if ((&e->get()) != best_stage) {
+					// We found a better Stage, let's move the System there.
+					e->get().systems.erase(system);
+					best_stage->systems.push_back(system);
+					// Decrease `i` since we removed the system from the stage.
+					i -= 1;
+				}
+
+				system->optimized = true;
+			}
 		}
-	}
 
-	// Remove the void stages.
-	for (List<ExecutionGraph::StageNode>::Element *e = r_graph->stages.front(); e; e = e->next()) {
-		if (e->get().systems.size() == 0) {
-			e->erase();
+		// Remove the void stages.
+		for (List<ExecutionGraph::StageNode>::Element *e = dispatcher->stages.front(); e; e = e->next()) {
+			if (e->get().systems.size() == 0) {
+				e->erase();
+			}
 		}
 	}
 }

@@ -12,6 +12,7 @@
 #include "world/world.h"
 
 ECS *ECS::singleton = nullptr;
+int ECS::dispatcher_count = 1; // Starts from 1 to reserve 0 to the main dispatcher.
 LocalVector<func_notify_static_destructor> ECS::notify_static_destructor;
 LocalVector<StringName> ECS::spawners;
 LocalVector<SpawnerInfo> ECS::spawners_info;
@@ -414,10 +415,27 @@ SystemInfo &ECS::register_system_dispatcher(func_get_system_exe_info p_func_get_
 	systems_info[id].id = id;
 	systems_info[id].exec_info = p_func_get_exe_info;
 	systems_info[id].type = SystemInfo::TYPE_DISPATCHER;
+	systems_info[id].dispatcher_index = dispatcher_count;
+
+	dispatcher_count += 1;
 
 	ClassDB::bind_integer_constant(get_class_static(), StringName(), p_name, id);
 	print_line("System Dispatcher: " + p_name + " registered with ID: " + itos(id));
 	return systems_info[id];
+}
+
+// This function is used by the dispatcher systems, to process specific pipeline
+// dispatchers.
+void ECS::__process_pipeline_dispatcher(
+		uint32_t p_count,
+		World *p_world,
+		Pipeline *p_pipeline,
+		godex::system_id p_system_id) {
+	for (uint32_t i = 0; i < p_count; i += 1) {
+		p_pipeline->dispatch_sub_dispatcher(
+				p_world,
+				systems_info[p_system_id].dispatcher_index);
+	}
 }
 
 // Undefine the macro defined into `ecs.h` so we can define the method properly.
@@ -599,6 +617,17 @@ Phase ECS::get_system_phase(godex::system_id p_id) {
 	return systems_info[p_id].phase;
 }
 
+StringName ECS::get_system_dispatcher(godex::system_id p_id) {
+	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, StringName(), "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
+	return systems_info[p_id].dispatcher;
+}
+
+int ECS::get_dispatcher_index(godex::system_id p_id) {
+	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, -1, "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
+	ERR_FAIL_COND_V_MSG(systems_info[p_id].type != SystemInfo::TYPE_DISPATCHER, -1, "The system " + systems[p_id] + " is not a dispatcher.");
+	return systems_info[p_id].dispatcher_index;
+}
+
 const LocalVector<Dependency> &ECS::get_system_dependencies(godex::system_id p_id) {
 	static const LocalVector<Dependency> dep;
 	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, dep, "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
@@ -641,6 +670,10 @@ func_temporary_system_execute ECS::get_func_temporary_system_exe(godex::system_i
 
 bool ECS::verify_system_id(godex::system_id p_id) {
 	return systems.size() > p_id;
+}
+
+int ECS::get_dispatchers_count() {
+	return dispatcher_count;
 }
 
 ECS *ECS::get_singleton() {

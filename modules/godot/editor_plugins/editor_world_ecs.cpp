@@ -931,6 +931,8 @@ void EditorWorldECS::pipeline_view_update() {
 		return;
 	}
 
+	CRASH_NOW_MSG("TODO");
+	/*
 	uint32_t stage_id = 0;
 	const ExecutionGraph *graph = pipeline->editor_get_execution_graph(world_ecs);
 	const List<ExecutionGraph::StageNode> &stages = graph->get_stages();
@@ -941,6 +943,7 @@ void EditorWorldECS::pipeline_view_update() {
 			info->add_system(ECS::get_system_name(e->get().systems[i]->id));
 		}
 	}
+	*/
 }
 
 void EditorWorldECS::pipeline_system_bundle_remove(const StringName &p_name) {

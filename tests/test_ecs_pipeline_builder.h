@@ -59,6 +59,57 @@ TEST_CASE("[Modules][ECS] Initialize PipelineBuilder tests.") {
 }
 } // namespace godex_tests
 
+void test_Z_system_1(Query<const PbComponentB> &p_query) {}
+void test_Z_system_2(Query<const PbComponentA> &p_query) {}
+
+namespace godex_tests {
+TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit and explicit dependencies.") {
+	initialize_script_ecs();
+
+	ECS::register_system(test_Z_system_1, "test_Z_system_1")
+			.after("test_Z_system_2");
+	ECS::register_system(test_Z_system_2, "test_Z_system_2");
+
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	execute_after(ECS.test_Z_system_1)\n";
+		code += "	with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "\n";
+		code += "func _for_each(a):\n";
+		code += "	pass\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("test_Z_system_3.gd", code));
+	}
+
+	flush_ecs_script_preparation();
+
+	Vector<StringName> system_bundles;
+
+	Vector<StringName> systems;
+	systems.push_back(StringName("test_Z_system_3.gd"));
+	systems.push_back(StringName("test_Z_system_1"));
+	systems.push_back(StringName("test_Z_system_2"));
+
+	Pipeline pipeline;
+	PipelineBuilder::build_pipeline(system_bundles, systems, &pipeline);
+
+	const int stage_test_Z_system_1 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_Z_system_1")));
+	const int stage_test_Z_system_2 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_Z_system_2")));
+	const int stage_test_Z_system_3 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_Z_system_3.gd")));
+
+	// This must run after because of explicit dependency.
+	CHECK(stage_test_Z_system_3 > stage_test_Z_system_1);
+	CHECK(stage_test_Z_system_1 > stage_test_Z_system_2);
+
+	finalize_script_ecs();
+}
+}; // namespace godex_tests
+
 void test_A_system_1(Query<PbComponentA, const PbComponentB> &p_query) {}
 void test_A_system_3(Query<const PbComponentA, const PbComponentB> &p_query, PbDatabagA *p_db_a) {}
 void test_A_system_5(Query<const PbComponentA, const PbComponentB> &p_query, const PbDatabagA *p_db_a) {}
@@ -822,8 +873,6 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to detect cyclic de
 	CHECK(graph.is_valid() == false);
 	CHECK(!graph.get_error_msg().is_empty());
 	CHECK(graph.get_warnings().size() == 0);
-	CHECK(graph.get_sorted_systems().size() == 0);
-	CHECK(graph.get_stages().size() == 0);
 
 	finalize_script_ecs();
 }
@@ -899,8 +948,6 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to detect cyclic de
 	CHECK(graph.is_valid() == false);
 	CHECK(!graph.get_error_msg().is_empty());
 	CHECK(graph.get_warnings().size() == 0);
-	CHECK(graph.get_sorted_systems().size() == 0);
-	CHECK(graph.get_stages().size() == 0);
 
 	finalize_script_ecs();
 }
@@ -946,6 +993,8 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to detect lost even
 	finalize_script_ecs();
 }
 } // namespace godex_tests
+
+// TODO Make sure the pipeline builder is able to detect the not included system dispatchers
 
 uint32_t test_G_system_dispatcher_1(PbDatabagA *p_databag) {
 	return 0;
