@@ -87,7 +87,7 @@ void ExecutionGraph::print_sorted_systems() const {
 			e = dispatchers.next_iter(e)) {
 		print_line("# Dispatcher: " + (*e.key));
 		for (const List<SystemNode *>::Element *a = (*e.value)->sorted_systems.front(); a; a = a->next()) {
-			print_line("|- " + ECS::get_system_name(a->get()->id));
+			print_line("|- " + ECS::get_system_name(a->get()->id) + " SystemID: " + itos(a->get()->id));
 		}
 	}
 	print_line("");
@@ -464,34 +464,28 @@ void PipelineBuilder::sort_systems(ExecutionGraph *r_graph) {
 	struct SortByPriority {
 		bool operator()(ExecutionGraph::SystemNode *const &p_a, ExecutionGraph::SystemNode *const &p_b) const {
 			// Is `p_a` the smallest?
-
-			// First verify the phase.
-			if (p_a->phase > p_b->phase) {
-				return false;
-			}
-
-			if (p_a->execute_after.find(p_b) != -1) {
-				// `p_a` depends on `p_b` so it's not smallest.
-				return false;
-			}
-
 			if (
 					p_a->bundle_name != StringName() &&
 					p_a->bundle_name == p_b->bundle_name &&
 					(p_a->explicit_priority != -1 || p_b->explicit_priority != -1)) {
-				if (p_a->explicit_priority > p_b->explicit_priority) {
-					// `p_a` was explicitely prioritized to run after `p_b`.
-					return false;
-				}
+				return p_a->explicit_priority < p_b->explicit_priority;
+			} else {
+				return p_a->id < p_b->id;
 			}
+		}
+	};
 
-			if (p_a->id > p_b->id) {
-				// `p_a` is implicitely prioritized to run after `p_b`.
+	struct SortByStage {
+		bool operator()(ExecutionGraph::SystemNode *const &p_a, ExecutionGraph::SystemNode *const &p_b) const {
+			// Is `p_a` the smallest?
+
+			// First verify the phase.
+			if (p_a->phase > p_b->phase) {
 				return false;
+			} else {
+				// `p_a` is the smallest.
+				return true;
 			}
-
-			// `p_a` is the smallest.
-			return true;
 		}
 	};
 
@@ -508,13 +502,35 @@ void PipelineBuilder::sort_systems(ExecutionGraph *r_graph) {
 				continue;
 			}
 
-			node->self_list_element = dispatcher->sorted_systems.push_back(node);
+			dispatcher->sorted_systems.push_back(node);
 		}
 
 		// Use inplace, otherwise the sort by dependency fails, since not all element
 		// are tested.
-		r_graph->print_sorted_systems();
+		r_graph->print_sorted_systems(); // TODO remove
+
 		dispatcher->sorted_systems.sort_custom_inplace<SortByPriority>();
+		dispatcher->sorted_systems.sort_custom_inplace<SortByStage>();
+
+		r_graph->print_sorted_systems();
+
+		// Now adjust the systems according to the explicit dependencies.
+		for (List<ExecutionGraph::SystemNode *>::Element *e = dispatcher->sorted_systems.front(); e; e = e->next()) {
+			for (int i = 0; i < int(e->get()->execute_after.size()); i += 1) {
+				for (List<ExecutionGraph::SystemNode *>::Element *sub = e->next(); sub; sub = sub->next()) {
+					if (e->get()->execute_after[i] == sub->get()) {
+						// Dependency found, let's move sub, before.
+						dispatcher->sorted_systems.move_before(sub, e);
+						// Restart the check from sub to make sure we check all.
+						e = sub;
+						// -1 so we start the `execute_after` for loop for sub.
+						i = -1;
+						break;
+					}
+				}
+			}
+		}
+
 		r_graph->print_sorted_systems();
 	}
 }

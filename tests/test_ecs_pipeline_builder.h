@@ -186,7 +186,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "\n";
 		code += "func _prepare():\n";
 		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
-		code += "	with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "	with_component(ECS.PbComponentB, MUTABLE)\n";
 		code += "\n";
 		code += "func _for_each(a, b):\n";
 		code += "	pass\n";
@@ -372,7 +372,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 	// before.
 	CHECK(stage_test_A_system_14 < stage_test_A_system_9);
 
-	// However, the test_A_system_7.gd and test_A_system_0.gd is compatible
+	// However, the test_A_system_7.gd and test_A_system_0.gd are compatible
 	// to run with with both in parallel. The optimization algorithm will decide
 	// where to put this sysetm.
 	CHECK(stage_test_A_system_7 < stage_test_A_system_1);
@@ -618,9 +618,12 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder bundles.") {
 	CHECK(stage_test_B_system_9 < stage_test_B_system_3);
 	CHECK(stage_test_B_system_10 < stage_test_B_system_3);
 
+	// Make sure the phase has more priority over the Bundle explicit priority.
+	// even if stage_test_B_system_9 is registered before stage_test_B_system_7
+	// in the bundle, stage_test_B_system_7 runs inside the CONFIG_PHASE while.
+	// stage_test_B_system_9 runs in process.
+	CHECK(stage_test_B_system_9 > stage_test_B_system_7);
 	// Make sure the explicit priority set by the bundle is respected.
-	CHECK(stage_test_B_system_9 < stage_test_B_system_7);
-	CHECK(stage_test_B_system_7 < stage_test_B_system_8);
 	CHECK(stage_test_B_system_8 < stage_test_B_system_10);
 
 	// Verify spare systems order.

@@ -45,9 +45,6 @@ public:
 		// The list of dependencies.
 		LocalVector<const SystemNode *> execute_after;
 
-		// List element pointer used to access fast.
-		List<SystemNode *>::Element *self_list_element = nullptr;
-
 		// Used by the optimizer to know the visited Nodes.
 		bool optimized = false;
 
