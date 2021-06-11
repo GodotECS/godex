@@ -51,6 +51,9 @@ public:
 		// If this is a dispatcher, here we will have the sub dispatcher.
 		Ref<Dispatcher> sub_dispatcher;
 
+		List<ExecutionGraph::SystemNode *>::Element *self_sorted_list = nullptr;
+
+		bool is_compatible(const SystemNode *p_system, bool p_skip_explicit_dependency = false) const;
 		bool is_dispatcher() const {
 			return sub_dispatcher.is_valid();
 		}
@@ -143,8 +146,8 @@ private:
 			const LocalVector<Dependency> &p_dependencies,
 			ExecutionGraph *r_graph);
 
-	static void sort_systems(ExecutionGraph *r_graph);
-	static bool has_cyclick_dependencies(const ExecutionGraph *r_graph);
+	static bool sort_systems(ExecutionGraph *r_graph);
+	static bool has_cyclick_dependencies(const ExecutionGraph *r_graph, String &r_error);
 	static void detect_warnings_sub_dispatchers_missing(ExecutionGraph *r_graph);
 	static void detect_warnings_lost_events(ExecutionGraph *r_graph);
 	static void build_stages(ExecutionGraph *r_graph);

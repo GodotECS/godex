@@ -32,7 +32,7 @@
 //    thanks to the specialization given by `Not`.
 // 7. All the above must be valid for C++ and Scripted systems.
 // 8. Make sure that the systems that fetch World, SceneTreeDatabag are always
-//    executed in single thread.
+//    executed in single thread even in a sub dispatcher.
 // 9. Test the pipeline dispatcher.
 // 10. Detect when an event isn't catched by any system, tell how to fix it.
 // 11. Detect cyclic dependencies.
@@ -120,9 +120,6 @@ namespace godex_tests {
 TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit and explicit dependencies.") {
 	initialize_script_ecs();
 
-	ECS::register_system(test_A_system_15, "test_A_system_15")
-			.set_phase(PHASE_CONFIG);
-
 	{
 		// Create the script.
 		String code;
@@ -130,9 +127,9 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "\n";
 		code += "func _prepare():\n";
 		code += "	execute_in_phase(ECS.PHASE_POST_PROCESS)\n";
-		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
-		code += "	with_component(ECS.PbComponentB, IMMUTABLE)\n";
-		code += "	with_databag(ECS.PbDatabagA, IMMUTABLE)\n";
+		code += "	with_component(ECS.PbComponentA, MUTABLE)\n";
+		code += "	with_component(ECS.PbComponentB, MUTABLE)\n";
+		code += "	with_databag(ECS.PbDatabagA, MUTABLE)\n";
 		code += "\n";
 		code += "func _for_each(a, b, c):\n";
 		code += "	pass\n";
@@ -317,6 +314,9 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 	ECS::register_system(test_A_system_14, "test_A_system_14")
 			.before("test_A_system_9.gd");
 
+	ECS::register_system(test_A_system_15, "test_A_system_15")
+			.set_phase(PHASE_CONFIG);
+
 	flush_ecs_script_preparation();
 
 	Vector<StringName> system_bundles;
@@ -360,36 +360,38 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 	const int stage_test_A_system_9 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_A_system_9.gd")));
 	const int stage_test_A_system_15 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_A_system_15")));
 
-	// Verify the test_A_system_15 is the first one being executed, and it's not
-	// executed in parallel with any other system.
-	// It's executed first because it run in the config phase and also thanks to
-	// its implicit priority, and implicit dependency given by the mutable Query.
-	CHECK(stage_test_A_system_15 < stage_test_A_system_7);
-
-	// The phase config merges with the process phase:
+	// Verify that the systems runs before because them run on the config phase.
+	const int config_phase_max = MAX(stage_test_A_system_15, MAX(stage_test_A_system_7, stage_test_A_system_0));
+	CHECK(config_phase_max <= stage_test_A_system_1);
+	CHECK(config_phase_max <= stage_test_A_system_2);
+	CHECK(config_phase_max <= stage_test_A_system_3);
+	CHECK(config_phase_max <= stage_test_A_system_4);
+	CHECK(config_phase_max <= stage_test_A_system_5);
+	CHECK(config_phase_max <= stage_test_A_system_6);
+	CHECK(config_phase_max <= stage_test_A_system_8);
+	CHECK(config_phase_max <= stage_test_A_system_9);
+	CHECK(config_phase_max <= stage_test_A_system_10);
+	CHECK(config_phase_max <= stage_test_A_system_11);
+	CHECK(config_phase_max <= stage_test_A_system_12);
+	CHECK(config_phase_max <= stage_test_A_system_13);
+	CHECK(config_phase_max <= stage_test_A_system_14);
 
 	// test_A_system_14 has an explicit dependency with test_A_system_9, it runs
 	// before.
 	CHECK(stage_test_A_system_14 < stage_test_A_system_9);
 
-	// However, the test_A_system_7.gd and test_A_system_0.gd are compatible
-	// to run with with both in parallel. The optimization algorithm will decide
-	// where to put this sysetm.
-	CHECK(stage_test_A_system_7 < stage_test_A_system_1);
-	CHECK(stage_test_A_system_0 < stage_test_A_system_1);
-
-	// Verify the test_A_system_9.gd is executed before test_A_system_1 and in
-	// parallel with test_A_system_0.gd
+	// Verify the test_A_system_9.gd is executed before test_A_system_1: explicit
+	// dependency.
 	CHECK(stage_test_A_system_9 < stage_test_A_system_1);
 
-	// Verify the test_A_system_2.gd runs after test_A_system_1 because they have
-	// an implicit dependency and test_A_system_1 is registered before.
-	CHECK(stage_test_A_system_1 < stage_test_A_system_2);
+	// Verify the test_A_system_2.gd doesn't run in the same stage test_A_system_1
+	// because they have an implicit dependency.
+	CHECK(stage_test_A_system_1 != stage_test_A_system_2);
 
-	// Verify the test_A_system_3 and test_A_system_4.gd may run in parallel
-	// but always after test_A_system_2.gd
-	CHECK(stage_test_A_system_4 > stage_test_A_system_2);
-	CHECK(stage_test_A_system_3 > stage_test_A_system_2);
+	// These systems have all implicit dependencies.
+	CHECK(stage_test_A_system_4 != stage_test_A_system_2);
+	CHECK(stage_test_A_system_4 != stage_test_A_system_3);
+	CHECK(stage_test_A_system_3 != stage_test_A_system_2);
 
 	// Verify the test_A_system_5 and test_A_system_6.gd may run in parallel,
 	// but always after test_A_system_3 and test_A_system_4.gd.
@@ -399,10 +401,22 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 	CHECK(stage_test_A_system_5 > stage_test_A_system_4);
 
 	// Verify the test_A_system_8 run the last one, since it's marked as post
-	// process.
+	// process and has implicit dependency of any kind.
+	CHECK(stage_test_A_system_8 >= stage_test_A_system_0);
+	CHECK(stage_test_A_system_8 >= stage_test_A_system_1);
+	CHECK(stage_test_A_system_8 >= stage_test_A_system_2);
+	CHECK(stage_test_A_system_8 >= stage_test_A_system_3);
+	CHECK(stage_test_A_system_8 >= stage_test_A_system_4);
 	CHECK(stage_test_A_system_8 >= stage_test_A_system_5);
-
-	// Verify explicit dependencies:
+	CHECK(stage_test_A_system_8 >= stage_test_A_system_6);
+	CHECK(stage_test_A_system_8 >= stage_test_A_system_7);
+	CHECK(stage_test_A_system_8 >= stage_test_A_system_9);
+	CHECK(stage_test_A_system_8 >= stage_test_A_system_10);
+	CHECK(stage_test_A_system_8 >= stage_test_A_system_11);
+	CHECK(stage_test_A_system_8 >= stage_test_A_system_12);
+	CHECK(stage_test_A_system_8 >= stage_test_A_system_13);
+	CHECK(stage_test_A_system_8 >= stage_test_A_system_14);
+	CHECK(stage_test_A_system_8 >= stage_test_A_system_15);
 
 	// Verify the test_A_system_13 is executed before test_A_system_12.
 	CHECK(stage_test_A_system_13 < stage_test_A_system_12);
@@ -610,6 +624,8 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder bundles.") {
 	const int stage_test_B_system_8 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_B_system_8.gd")));
 	const int stage_test_B_system_9 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_B_system_9")));
 	const int stage_test_B_system_10 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_B_system_10")));
+	const int stage_test_B_system_11 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_B_system_11.gd")));
+	const int stage_test_B_system_12 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_B_system_12")));
 
 	// This bundle has an explicit dependency with system 6, all systems must run
 	// before.
@@ -617,6 +633,12 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder bundles.") {
 	CHECK(stage_test_B_system_8 < stage_test_B_system_3);
 	CHECK(stage_test_B_system_9 < stage_test_B_system_3);
 	CHECK(stage_test_B_system_10 < stage_test_B_system_3);
+
+	// and test_B_system_11.gd
+	CHECK(stage_test_B_system_7 > stage_test_B_system_11);
+	CHECK(stage_test_B_system_8 > stage_test_B_system_11);
+	CHECK(stage_test_B_system_9 > stage_test_B_system_11);
+	CHECK(stage_test_B_system_10 > stage_test_B_system_11);
 
 	// Make sure the phase has more priority over the Bundle explicit priority.
 	// even if stage_test_B_system_9 is registered before stage_test_B_system_7
@@ -627,11 +649,6 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder bundles.") {
 	CHECK(stage_test_B_system_8 < stage_test_B_system_10);
 
 	// Verify spare systems order.
-
-	const int stage_test_B_system_11 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_B_system_11.gd")));
-	const int stage_test_B_system_12 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_B_system_12")));
-
-	CHECK(stage_test_B_system_11 < stage_test_B_system_9);
 	CHECK(stage_test_B_system_11 < stage_test_B_system_12);
 
 	finalize_script_ecs();
@@ -645,6 +662,11 @@ void test_C_system_4(const World *p_w) {}
 void test_C_system_5(const SceneTreeDatabag *p_sd) {}
 void test_C_system_6(Query<const PbComponentA> &p_query) {}
 void test_C_system_7(Query<const PbComponentA> &p_query) {}
+void test_C_system_12(Query<const PbComponentA> &p_query) {}
+uint32_t test_C_system_13_dispatcher(const PbDatabagA *) {
+	return 0;
+}
+void test_C_system_14(const SceneTreeDatabag *p_sd) {}
 
 namespace godex_tests {
 TEST_CASE("[Modules][ECS] Verify the PipelineBuilder put the systems that fetch World and SceneTreeDatabag in single thread.") {
@@ -657,7 +679,11 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder put the systems that fetch 
 			.add(ECS::register_system(test_C_system_4, "test_C_system_4"))
 			.add(ECS::register_system(test_C_system_5, "test_C_system_5"))
 			.add(ECS::register_system(test_C_system_6, "test_C_system_6"))
-			.add(ECS::register_system(test_C_system_7, "test_C_system_7"));
+			.add(ECS::register_system_dispatcher(test_C_system_13_dispatcher, "test_C_system_13_dispatcher"))
+			.add(ECS::register_system(test_C_system_7, "test_C_system_7"))
+			.add(ECS::register_system(test_C_system_12, "test_C_system_12"))
+			.add(ECS::register_system(test_C_system_14, "test_C_system_14")
+							.set_phase(PHASE_PROCESS, "test_C_system_13_dispatcher"));
 
 	{
 		// Create the script.
@@ -717,6 +743,23 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder put the systems that fetch 
 
 		CHECK(build_and_register_ecs_script("test_C_system_11.gd", code));
 	}
+
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	execute_in_phase(ECS.PHASE_PROCESS, ECS.test_C_system_13_dispatcher)\n";
+		code += "	with_databag(ECS.World, IMMUTABLE)\n";
+		code += "\n";
+		code += "func _for_each(a):\n";
+		code += "	pass\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("test_C_system_15.gd", code));
+	}
+
 	{
 		// Create the script.
 		String code;
@@ -727,6 +770,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder put the systems that fetch 
 		code += "	add(ECS.test_C_system_9_gd)\n";
 		code += "	add(ECS.test_C_system_10_gd)\n";
 		code += "	add(ECS.test_C_system_11_gd)\n";
+		code += "	add(ECS.test_C_system_15_gd)\n";
 		code += "\n";
 
 		CHECK(build_and_register_ecs_script("TestC_GDSBundle.gd", code));
@@ -754,6 +798,10 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder put the systems that fetch 
 	const int stage_test_C_system_9 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_C_system_9.gd")));
 	const int stage_test_C_system_10 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_C_system_10.gd")));
 	const int stage_test_C_system_11 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_C_system_11.gd")));
+	const int stage_test_C_system_12 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_C_system_12")));
+	const int stage_test_C_system_13 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_C_system_13")));
+	const int stage_test_C_system_14 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_C_system_14")));
+	const int stage_test_C_system_15 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_C_system_15.gd")));
 
 	// Make sure the systems that fetch World an SceneTreeDatabag runs always in
 	// single thread.
@@ -767,6 +815,10 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder put the systems that fetch 
 	CHECK(stage_test_C_system_4 != stage_test_C_system_9);
 	CHECK(stage_test_C_system_4 != stage_test_C_system_10);
 	CHECK(stage_test_C_system_4 != stage_test_C_system_11);
+	CHECK(stage_test_C_system_4 != stage_test_C_system_12);
+	CHECK(stage_test_C_system_4 != stage_test_C_system_13);
+	CHECK(stage_test_C_system_4 != stage_test_C_system_14);
+	CHECK(stage_test_C_system_4 != stage_test_C_system_15);
 
 	CHECK(stage_test_C_system_5 != stage_test_C_system_1);
 	CHECK(stage_test_C_system_5 != stage_test_C_system_2);
@@ -778,6 +830,10 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder put the systems that fetch 
 	CHECK(stage_test_C_system_5 != stage_test_C_system_9);
 	CHECK(stage_test_C_system_5 != stage_test_C_system_10);
 	CHECK(stage_test_C_system_5 != stage_test_C_system_11);
+	CHECK(stage_test_C_system_5 != stage_test_C_system_12);
+	CHECK(stage_test_C_system_5 != stage_test_C_system_13);
+	CHECK(stage_test_C_system_5 != stage_test_C_system_14);
+	CHECK(stage_test_C_system_5 != stage_test_C_system_15);
 
 	CHECK(stage_test_C_system_8 != stage_test_C_system_1);
 	CHECK(stage_test_C_system_8 != stage_test_C_system_2);
@@ -789,6 +845,10 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder put the systems that fetch 
 	CHECK(stage_test_C_system_8 != stage_test_C_system_9);
 	CHECK(stage_test_C_system_8 != stage_test_C_system_10);
 	CHECK(stage_test_C_system_8 != stage_test_C_system_11);
+	CHECK(stage_test_C_system_8 != stage_test_C_system_12);
+	CHECK(stage_test_C_system_8 != stage_test_C_system_13);
+	CHECK(stage_test_C_system_8 != stage_test_C_system_14);
+	CHECK(stage_test_C_system_8 != stage_test_C_system_15);
 
 	CHECK(stage_test_C_system_9 != stage_test_C_system_1);
 	CHECK(stage_test_C_system_9 != stage_test_C_system_2);
@@ -800,6 +860,58 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder put the systems that fetch 
 	CHECK(stage_test_C_system_9 != stage_test_C_system_8);
 	CHECK(stage_test_C_system_9 != stage_test_C_system_10);
 	CHECK(stage_test_C_system_9 != stage_test_C_system_11);
+	CHECK(stage_test_C_system_9 != stage_test_C_system_12);
+	CHECK(stage_test_C_system_9 != stage_test_C_system_13);
+	CHECK(stage_test_C_system_9 != stage_test_C_system_14);
+	CHECK(stage_test_C_system_9 != stage_test_C_system_15);
+
+	// Make sure the dispatcher is executed not in parallel.
+	CHECK(stage_test_C_system_13 != stage_test_C_system_1);
+	CHECK(stage_test_C_system_13 != stage_test_C_system_2);
+	CHECK(stage_test_C_system_13 != stage_test_C_system_3);
+	CHECK(stage_test_C_system_13 != stage_test_C_system_4);
+	CHECK(stage_test_C_system_13 != stage_test_C_system_5);
+	CHECK(stage_test_C_system_13 != stage_test_C_system_6);
+	CHECK(stage_test_C_system_13 != stage_test_C_system_7);
+	CHECK(stage_test_C_system_13 != stage_test_C_system_8);
+	CHECK(stage_test_C_system_13 != stage_test_C_system_9);
+	CHECK(stage_test_C_system_13 != stage_test_C_system_10);
+	CHECK(stage_test_C_system_13 != stage_test_C_system_11);
+	CHECK(stage_test_C_system_13 != stage_test_C_system_12);
+	CHECK(stage_test_C_system_13 != stage_test_C_system_14);
+	CHECK(stage_test_C_system_13 != stage_test_C_system_15);
+
+	// Within the dispatcher, check the stage is also different
+	CHECK(stage_test_C_system_14 != stage_test_C_system_1);
+	CHECK(stage_test_C_system_14 != stage_test_C_system_2);
+	CHECK(stage_test_C_system_14 != stage_test_C_system_3);
+	CHECK(stage_test_C_system_14 != stage_test_C_system_4);
+	CHECK(stage_test_C_system_14 != stage_test_C_system_5);
+	CHECK(stage_test_C_system_14 != stage_test_C_system_6);
+	CHECK(stage_test_C_system_14 != stage_test_C_system_7);
+	CHECK(stage_test_C_system_14 != stage_test_C_system_8);
+	CHECK(stage_test_C_system_14 != stage_test_C_system_9);
+	CHECK(stage_test_C_system_14 != stage_test_C_system_10);
+	CHECK(stage_test_C_system_14 != stage_test_C_system_11);
+	CHECK(stage_test_C_system_14 != stage_test_C_system_12);
+	CHECK(stage_test_C_system_14 != stage_test_C_system_13);
+	CHECK(stage_test_C_system_14 != stage_test_C_system_15);
+
+	// Within the dispatcher, check the stage is also different
+	CHECK(stage_test_C_system_15 != stage_test_C_system_1);
+	CHECK(stage_test_C_system_15 != stage_test_C_system_2);
+	CHECK(stage_test_C_system_15 != stage_test_C_system_3);
+	CHECK(stage_test_C_system_15 != stage_test_C_system_4);
+	CHECK(stage_test_C_system_15 != stage_test_C_system_5);
+	CHECK(stage_test_C_system_15 != stage_test_C_system_6);
+	CHECK(stage_test_C_system_15 != stage_test_C_system_7);
+	CHECK(stage_test_C_system_15 != stage_test_C_system_8);
+	CHECK(stage_test_C_system_15 != stage_test_C_system_9);
+	CHECK(stage_test_C_system_15 != stage_test_C_system_10);
+	CHECK(stage_test_C_system_15 != stage_test_C_system_11);
+	CHECK(stage_test_C_system_15 != stage_test_C_system_12);
+	CHECK(stage_test_C_system_15 != stage_test_C_system_13);
+	CHECK(stage_test_C_system_15 != stage_test_C_system_14);
 
 	finalize_script_ecs();
 }
@@ -992,6 +1104,8 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to detect lost even
 	CHECK(graph.is_valid());
 	CHECK(graph.get_error_msg().is_empty());
 	CHECK(graph.get_warnings().size() == 2);
+	ERR_PRINT(graph.get_warnings()[0]);
+	ERR_PRINT(graph.get_warnings()[1]);
 
 	finalize_script_ecs();
 }
@@ -1105,6 +1219,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to compose sub pipe
 	Pipeline pipeline;
 	PipelineBuilder::build_pipeline(system_bundles, systems, &pipeline);
 
+	CRASH_NOW_MSG("TODO");
 	// Make sure test_G_system_dispatcher_1 and test_G_system_4 run in parallel
 	// since no explicit or implici dependencies.
 	// TODO

@@ -8,40 +8,52 @@
 bool ExecutionGraph::StageNode::is_compatible(const SystemNode *p_system) const {
 	for (uint32_t i = 0; i < systems.size(); i += 1) {
 		const SystemNode *staged_system = systems[i];
-		if (p_system->execute_after.find(staged_system) != -1) {
+		if (!staged_system->is_compatible(p_system)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+bool ExecutionGraph::SystemNode::is_compatible(const SystemNode *p_system, bool p_skip_explicit_dependency) const {
+	if (!p_skip_explicit_dependency) {
+		if (p_system->execute_after.find(this) != -1) {
 			// The `p_system` must run after this `staged_system`, so we have a
 			// dependency and the stage is not compatible.
 			return false;
 		}
-		if (staged_system->execute_after.find(p_system) != -1) {
+		if (execute_after.find(p_system) != -1) {
 			// The `p_system` must run after this `staged_system`, so we have a
 			// dependency and the stage is not compatible.
 			return false;
 		}
-		if (!ECS::can_systems_run_in_parallel(p_system->id, staged_system->id)) {
-			// These two systems can't run in parallel. This is an implicit
-			// dependency and `p_system` is not compatible with this stage.
-			return false;
-		}
-		if (staged_system->is_dispatcher()) {
-			// The staged system is a dispatcher, check each sub stages.
-			for (const List<StageNode>::Element *disp_stage = staged_system->sub_dispatcher->stages.front(); disp_stage; disp_stage = disp_stage->next()) {
-				if (!disp_stage->get().is_compatible(p_system)) {
-					// The subdispatcher has a system that is not compatible.
-					return false;
-				}
-			}
-		}
-		if (p_system->is_dispatcher()) {
-			// p_system is a dispatcher check again each sub system.
-			for (const List<StageNode>::Element *disp_stage = p_system->sub_dispatcher->stages.front(); disp_stage; disp_stage = disp_stage->next()) {
-				if (!disp_stage->get().is_compatible(staged_system)) {
-					// The subdispatcher has a system that is not compatible.
-					return false;
-				}
+	}
+
+	if (!ECS::can_systems_run_in_parallel(p_system->id, id)) {
+		// These two systems can't run in parallel. This is an implicit
+		// dependency and `p_system` is not compatible with this stage.
+		return false;
+	}
+	if (is_dispatcher()) {
+		// The staged system is a dispatcher, check each sub stages.
+		for (uint32_t i = 0; i < sub_dispatcher->systems.size(); i += 1) {
+			if (!sub_dispatcher->systems[i]->is_compatible(p_system)) {
+				// The subdispatcher has a system that is not compatible.
+				return false;
 			}
 		}
 	}
+	if (p_system->is_dispatcher()) {
+		// p_system is a dispatcher check again each sub system.
+		for (uint32_t i = 0; i < p_system->sub_dispatcher->systems.size(); i += 1) {
+			if (!p_system->sub_dispatcher->systems[i]->is_compatible(this)) {
+				// The subdispatcher has a system that is not compatible.
+				return false;
+			}
+		}
+	}
+
+	// Compatible
 	return true;
 }
 
@@ -207,10 +219,11 @@ void PipelineBuilder::build_graph(
 		fetch_system_info(p_systems[i], StringName(), -1, LocalVector<Dependency>(), r_graph);
 	}
 
-	sort_systems(r_graph);
+	const bool sort_failed = !sort_systems(r_graph);
 
 	// Check if we have a cynclic dependency.
-	if (has_cyclick_dependencies(r_graph)) {
+	String error;
+	if (sort_failed || has_cyclick_dependencies(r_graph, error)) {
 		r_graph->print_sorted_systems();
 		r_graph->print_stages();
 
@@ -218,8 +231,13 @@ void PipelineBuilder::build_graph(
 		r_graph->dispatchers.clear();
 		r_graph->systems.clear();
 		r_graph->valid = false;
-		r_graph->error_msg = "This graph has a cyclick dependency and the pipeline building was discarded.";
-		ERR_FAIL_MSG("[FATAL] This graph has a cyclick dependency and the pipeline building was discarded.");
+		if (sort_failed) {
+			r_graph->error_msg = TTR("System sorting failed, possible cyclick dependency.");
+		} else {
+			r_graph->error_msg = error;
+		}
+		r_graph->error_msg += TTR(" Pipeline building is aborted.");
+		ERR_FAIL_MSG("[FATAL] " + r_graph->error_msg);
 		return;
 	}
 
@@ -408,7 +426,7 @@ void PipelineBuilder::fetch_system_info(
 			// This system goes inside the main dispatcher.
 			dispatcher = *r_graph->dispatchers.lookup_ptr("main");
 		} else {
-			Ref<ExecutionGraph::Dispatcher> *lookup_dispatcher = r_graph->dispatchers.lookup_ptr(p_system);
+			Ref<ExecutionGraph::Dispatcher> *lookup_dispatcher = r_graph->dispatchers.lookup_ptr(dispatcher_name);
 			if (lookup_dispatcher != nullptr) {
 				dispatcher = *lookup_dispatcher;
 			}
@@ -450,6 +468,7 @@ void PipelineBuilder::resolve_dependencies(
 	for (uint32_t i = 0; i < p_dependencies.size(); i += 1) {
 		const godex::system_id dep_system_id = ECS::get_system_id(p_dependencies[i].system_name);
 		ERR_CONTINUE_MSG(dep_system_id == godex::SYSTEM_NONE, "The system " + p_dependencies[i].system_name + " doesn't exists.");
+		ERR_CONTINUE_MSG(ECS::get_system_dispatcher(dep_system_id) != ECS::get_system_dispatcher(id), "The system " + p_dependencies[i].system_name + " and the system " + ECS::get_system_name(id) + " are dispatcher by two differnt dispatchers, respectively: " + ECS::get_system_dispatcher(dep_system_id) + ", " + ECS::get_system_dispatcher(id) + ". This dependency is ignored.");
 		if (p_dependencies[i].execute_before) {
 			// The current system must be executed before the dependency.
 			r_graph->systems[dep_system_id].execute_after.push_back(r_graph->systems.ptr() + id);
@@ -460,7 +479,118 @@ void PipelineBuilder::resolve_dependencies(
 	}
 }
 
-void PipelineBuilder::sort_systems(ExecutionGraph *r_graph) {
+/// Check the move_before_if_possible doc, below.
+bool move_after_if_possible(
+		List<ExecutionGraph::SystemNode *> &r_list,
+		List<ExecutionGraph::SystemNode *>::Element *p_val,
+		List<ExecutionGraph::SystemNode *>::Element *p_where,
+		bool r_recursive_move) {
+	if (p_val == p_where) {
+		return false;
+	}
+
+	// Can move before?
+	bool found = false;
+	for (List<ExecutionGraph::SystemNode *>::Element *next = p_val->next(); next; next = next->next()) {
+		// These two system must respect order only if on the same bundle.
+		const bool skip_implicit_dependency =
+				next->get()->bundle_name == StringName() ||
+				next->get()->bundle_name != p_val->get()->bundle_name;
+
+		if (!skip_implicit_dependency) {
+			if (!next->get()->is_compatible(p_val->get(), true)) {
+				// This system is incompatible no move.
+				if (r_recursive_move) {
+					// Try to move the system that is blocking first.
+					List<ExecutionGraph::SystemNode *>::Element *already_checked = next->prev();
+					if (move_after_if_possible(r_list, next, p_where, true)) {
+						if (next->prev() != already_checked) {
+							// next moved!
+							// The blocker was moved before where, now p_val should be able to move
+							// before p_where.
+							// Try again by setting prev to a value already checked so we can advace
+							next = already_checked;
+							continue;
+						}
+					}
+				}
+				return false;
+			}
+		}
+
+		if (p_where == next) {
+			found = true;
+			break;
+		}
+	}
+
+	if (found) {
+		r_list.move_before(p_val, p_where->next());
+	}
+	return true;
+}
+
+/// Moves the system in `p_val` before the system `p_where` only if possible.
+/// p_val is tested with each system before moving it, if a dependency is found
+/// with another system for the same bundle, this function tries to move the
+/// colliding system first, and then retries with p_val.
+///
+/// This recursion is a lot useful when a specific system of a particular bundle
+/// runs after/before the system of another bundle, in this case we can move
+/// all the needed bundle systems so the bundle order is kept. If the movement
+/// breaks the order within the bundle, this function fails and the movement is
+/// aborted. This happens in case of a cyclick dependency.
+bool move_before_if_possible(
+		List<ExecutionGraph::SystemNode *> &r_list,
+		List<ExecutionGraph::SystemNode *>::Element *p_val,
+		List<ExecutionGraph::SystemNode *>::Element *p_where,
+		bool r_recursive_move) {
+	if (p_val == p_where) {
+		return false;
+	}
+
+	// Can move before?
+	bool found = false;
+	for (List<ExecutionGraph::SystemNode *>::Element *prev = p_val->prev(); prev; prev = prev->prev()) {
+		// These two system must respect order only if on the same bundle.
+		const bool skip_implicit_dependency =
+				prev->get()->bundle_name == StringName() ||
+				prev->get()->bundle_name != p_val->get()->bundle_name;
+
+		if (!skip_implicit_dependency) {
+			if (!prev->get()->is_compatible(p_val->get(), true)) {
+				// This system is incompatible.
+				if (r_recursive_move) {
+					// Try to move the system that is blocking first.
+					List<ExecutionGraph::SystemNode *>::Element *already_checked = prev->next();
+					if (move_before_if_possible(r_list, prev, p_where, true)) {
+						if (prev->next() != already_checked) {
+							// prev moved!
+							// The blocker was moved before where, now p_val should be able to move
+							// before p_where.
+							// Try again by setting prev to a value already checked so we can advace
+							prev = already_checked;
+							continue;
+						}
+					}
+				}
+				return false;
+			}
+		}
+
+		if (p_where == prev) {
+			found = true;
+			break;
+		}
+	}
+
+	if (found) {
+		r_list.move_before(p_val, p_where);
+	}
+	return true;
+}
+
+bool PipelineBuilder::sort_systems(ExecutionGraph *r_graph) {
 	struct SortByPriority {
 		bool operator()(ExecutionGraph::SystemNode *const &p_a, ExecutionGraph::SystemNode *const &p_b) const {
 			// Is `p_a` the smallest?
@@ -502,7 +632,7 @@ void PipelineBuilder::sort_systems(ExecutionGraph *r_graph) {
 				continue;
 			}
 
-			dispatcher->sorted_systems.push_back(node);
+			node->self_sorted_list = dispatcher->sorted_systems.push_back(node);
 		}
 
 		// Use inplace, otherwise the sort by dependency fails, since not all element
@@ -515,17 +645,20 @@ void PipelineBuilder::sort_systems(ExecutionGraph *r_graph) {
 		r_graph->print_sorted_systems();
 
 		// Now adjust the systems according to the explicit dependencies.
-		for (List<ExecutionGraph::SystemNode *>::Element *e = dispatcher->sorted_systems.front(); e; e = e->next()) {
-			for (int i = 0; i < int(e->get()->execute_after.size()); i += 1) {
-				for (List<ExecutionGraph::SystemNode *>::Element *sub = e->next(); sub; sub = sub->next()) {
-					if (e->get()->execute_after[i] == sub->get()) {
-						// Dependency found, let's move sub, before.
-						dispatcher->sorted_systems.move_before(sub, e);
-						// Restart the check from sub to make sure we check all.
-						e = sub;
-						// -1 so we start the `execute_after` for loop for sub.
-						i = -1;
-						break;
+		for (uint32_t s = 0; s < dispatcher->systems.size(); s += 1) {
+			for (int i = 0; i < int(dispatcher->systems[s]->execute_after.size()); i += 1) {
+				if (!move_before_if_possible(
+							dispatcher->sorted_systems,
+							dispatcher->systems[s]->execute_after[i]->self_sorted_list,
+							dispatcher->systems[s]->self_sorted_list,
+							true)) {
+					if (!move_after_if_possible(
+								dispatcher->sorted_systems,
+								dispatcher->systems[s]->self_sorted_list,
+								dispatcher->systems[s]->execute_after[i]->self_sorted_list,
+								true)) {
+						// Possible cyclick dependency, however explicit dependency not respected.
+						return false;
 					}
 				}
 			}
@@ -533,9 +666,10 @@ void PipelineBuilder::sort_systems(ExecutionGraph *r_graph) {
 
 		r_graph->print_sorted_systems();
 	}
+	return true;
 }
 
-bool PipelineBuilder::has_cyclick_dependencies(const ExecutionGraph *r_graph) {
+bool PipelineBuilder::has_cyclick_dependencies(const ExecutionGraph *r_graph, String &r_error) {
 	// We can detect cyclic dependencies just by verifiying that the sorted list
 	// has all the nodes dependencies correctly resolved. If one node is not
 	// correctly resolved, it's a cyclic dependency.
@@ -548,7 +682,7 @@ bool PipelineBuilder::has_cyclick_dependencies(const ExecutionGraph *r_graph) {
 			for (uint32_t i = 0; i < e->get()->execute_after.size(); i += 1) {
 				for (const List<ExecutionGraph::SystemNode *>::Element *sub = e->next(); sub; sub = sub->next()) {
 					if (e->get()->execute_after[i] == sub->get()) {
-						ERR_PRINT("Detected cylic dependency between: " + ECS::get_system_name(e->get()->id) + " and: " + ECS::get_system_name(sub->get()->id));
+						r_error = TTR("Detected cylic dependency between: `") + ECS::get_system_name(e->get()->id) + TTR("` and: `") + ECS::get_system_name(sub->get()->id) + "`.";
 						return true;
 					}
 				}
@@ -563,7 +697,7 @@ void PipelineBuilder::detect_warnings_sub_dispatchers_missing(ExecutionGraph *r_
 			e.valid;
 			e = r_graph->dispatchers.next_iter(e)) {
 		if (e.value->is_valid()) {
-			if ((*e.value)->dispatched_by == nullptr) {
+			if ((*e.key) != StringName("main") && (*e.value)->dispatched_by == nullptr) {
 				String system_names = "";
 				for (uint32_t i = 0; i < (*e.value)->systems.size(); i += 1) {
 					system_names += String(ECS::get_system_name((*e.value)->systems[i]->id)) + ", ";
