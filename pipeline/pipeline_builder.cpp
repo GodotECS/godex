@@ -82,6 +82,11 @@ void ExecutionGraph::prepare_for_optimization() {
 			average_systems_per_stage,
 			real_t(OS::get_singleton()->get_processor_count() / 4.0),
 			real_t(OS::get_singleton()->get_processor_count()));
+
+	// Never less than 2.
+	best_stage_size = MAX(
+			average_systems_per_stage,
+			2);
 }
 
 real_t ExecutionGraph::compute_effort(uint32_t p_system_count) {
@@ -250,8 +255,6 @@ void PipelineBuilder::build_graph(
 	// Everything is fine, build the graph and optimize it.
 	build_stages(r_graph);
 	optimize_stages(r_graph);
-
-	r_graph->print_stages(); // TODO remove this
 
 	r_graph->valid = true;
 

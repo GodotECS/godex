@@ -33,7 +33,7 @@
 // 7. All the above must be valid for C++ and Scripted systems.
 // 8. Make sure that the systems that fetch World, SceneTreeDatabag are always
 //    executed in single thread even in a sub dispatcher.
-// 9. Test the pipeline dispatcher.
+// 9. Test the sub pipeline dispatcher.
 // 10. Detect when an event isn't catched by any system, tell how to fix it.
 // 11. Detect cyclic dependencies.
 
@@ -1219,28 +1219,53 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to compose sub pipe
 	Pipeline pipeline;
 	PipelineBuilder::build_pipeline(system_bundles, systems, &pipeline);
 
-	CRASH_NOW_MSG("TODO");
+	const int stage_test_G_system_dispatcher_1 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_G_system_dispatcher_1")));
+	const int stage_test_G_system_dispatcher_2 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_G_system_dispatcher_2")));
+
+	const int stage_test_G_system_1 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_G_system_1")));
+	const int stage_test_G_sub1_system_2 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_G_sub1_system_2")));
+	//const int stage_test_G_sub2_system_3 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_G_sub2_system_3")));
+	const int stage_test_G_system_4 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_G_system_4")));
+	//const int stage_test_G_sub1_system_5 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_G_sub1_system_5")));
+	//const int stage_test_G_sub2_system_6 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_G_sub2_system_6")));
+	const int stage_test_G_system_7 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_G_system_7")));
+
 	// Make sure test_G_system_dispatcher_1 and test_G_system_4 run in parallel
 	// since no explicit or implici dependencies.
-	// TODO
+	CHECK(stage_test_G_system_dispatcher_1 == stage_test_G_system_4);
 
 	// Make sure test_G_system_dispatcher_1 and test_G_system_7 don't run in
-	// parallel, since the system:
-	// test_G_system_dispatcher_1 > test_G_system_dispatcher_2 > test_G_sub2_system_6.gd
+	// parallel, since the system: `test_G_sub2_system_6.gd` in
+	//    test_G_system_dispatcher_1 > test_G_system_dispatcher_2 > test_G_sub2_system_6.gd
 	// is fetching PbDatabagA mutable like test_G_system_7 is doing.
-	// TODO
+	CHECK(stage_test_G_system_dispatcher_1 != stage_test_G_system_7);
 
 	// Make sure test_G_system_dispatcher_1 runs before test_G_system_1
 	// as its explicit dependency suggests.
-	// TODO
+	CHECK(stage_test_G_system_dispatcher_1 < stage_test_G_system_1);
 
 	// Make sure test_G_sub1_system_2 runs inside test_G_system_dispatcher_1
-	// and before test_G_system_dispatcher_2 but after test_G_sub1_system_5.gd
-	// TODO
+	const int dispatcher_test_G_sub1_system_2 = pipeline.get_system_dispatcher(ECS::get_system_id(StringName("test_G_sub1_system_2")));
+	const int dispatcher_1_index = ECS::get_dispatcher_index(ECS::get_system_id(StringName("test_G_system_dispatcher_1")));
+	CHECK(dispatcher_test_G_sub1_system_2 == dispatcher_1_index);
+	// and before test_G_system_dispatcher_2
+	CHECK(stage_test_G_sub1_system_2 < stage_test_G_system_dispatcher_2);
 
 	// Make sure test_G_sub1_system_2 executes the followint systems:
 	// test_G_sub2_system_3 and test_G_sub2_system_6.gd
-	// TODO
+	const int dispatcher_test_G_sub2_system_3 = pipeline.get_system_dispatcher(ECS::get_system_id(StringName("test_G_sub2_system_3")));
+	const int dispatcher_test_G_sub2_system_6 = pipeline.get_system_dispatcher(ECS::get_system_id(StringName("test_G_sub2_system_6.gd")));
+	const int dispatcher_2_index = ECS::get_dispatcher_index(ECS::get_system_id(StringName("test_G_system_dispatcher_2")));
+	CHECK(dispatcher_test_G_sub2_system_3 == dispatcher_2_index);
+	CHECK(dispatcher_test_G_sub2_system_6 == dispatcher_2_index);
+
+	// Make sure test_G_system_dispatcher_2 is dispatched by test_G_system_dispatcher_1
+	const int dispatcher_test_G_system_dispatcher_2 = pipeline.get_system_dispatcher(ECS::get_system_id(StringName("test_G_system_dispatcher_2")));
+	CHECK(dispatcher_test_G_system_dispatcher_2 == dispatcher_1_index);
+
+	// Make sure test_G_system_dispatcher_1 is dispatched by main
+	const int dispatcher_test_G_system_dispatcher_1 = pipeline.get_system_dispatcher(ECS::get_system_id(StringName("test_G_system_dispatcher_1")));
+	CHECK(dispatcher_test_G_system_dispatcher_1 == 0);
 
 	finalize_script_ecs();
 }
