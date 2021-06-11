@@ -49,34 +49,34 @@ void register_bullet_physics_types() {
 	ECS::register_system_bundle("Bullet Physics Base Only")
 			.set_description("System that allow to use the Bullet physics components.")
 			.add(ECS::register_system(bt_body_config, "BtBodyConfig")
-							.set_phase(PHASE_CONFIG)
+							.set_phase(PHASE_CONFIG, "Physics")
 							.set_description("Bullet Physics - Manage the lifetime of the Bodies."))
 
 			.add(ECS::register_system(bt_area_config, "BtAreaConfig")
-							.set_phase(PHASE_CONFIG)
+							.set_phase(PHASE_CONFIG, "Physics")
 							.set_description("Bullet Physics - Manage the lifetime of the Area."))
 
 			.add(ECS::register_system(bt_apply_forces, "BtApplyForces")
-							.set_phase(PHASE_PROCESS)
+							.set_phase(PHASE_PROCESS, "Physics")
 							.set_description("Bullet Physics - Apply `Forces` and `Impulses` to bodies.")
 							.after("CallPhysicsProcess"))
 
 			.add(ECS::register_system(bt_spaces_step, "BtSpacesStep")
-							.set_phase(PHASE_PROCESS)
+							.set_phase(PHASE_PROCESS, "Physics")
 							.set_description("Bullet Physics - Steps the physics spaces.")
 							.after("BtApplyForces"))
 
 			.add(ECS::register_system(bt_overlap_check, "BtOverlapCheck")
-							.set_phase(PHASE_POST_PROCESS)
+							.set_phase(PHASE_POST_PROCESS, "Physics")
 							.set_description("Bullet Physics - Allow the areas to detect ovelapped bodies."))
 
 			.add(ECS::register_system(bt_body_sync, "BtBodySync")
-							.set_phase(PHASE_POST_PROCESS)
+							.set_phase(PHASE_POST_PROCESS, "Physics")
 							.set_description("Bullet Physics - Read the Physics Engine and update the Bodies."));
 
 	// Register Walk `System`s
 	ECS::register_system(bt_pawn_walk, "BtPawnWalk")
-			.set_phase(PHASE_PROCESS)
+			.set_phase(PHASE_PROCESS, "Physics")
 			.set_description("Bullet Physics - Make the Rigidbody in kinematic mode walk according to Pawn settings.")
 			.after("BtApplyForces")
 			.before("BtSpacesStep");

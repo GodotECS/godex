@@ -134,37 +134,12 @@ void PipelineECS::fetch_used_databags(Set<godex::component_id> &r_databags) cons
 	}
 }
 
-void PipelineECS::init_sub_pipelines(WorldECS *p_associated_world) {
-	CRASH_NOW(); // TODO ?
-	/*
-	// The PipelineDispatchers are never contained inside bundles.
-	const StringName *systems_name_ptr = systems_name.ptr();
-	for (int i = 0; i < systems_name.size(); i += 1) {
-		const godex::system_id id = ECS::get_system_id(systems_name_ptr[i]);
-		if (ECS::is_system_dispatcher(id)) {
-			const StringName pipeline_name = p_associated_world->get_system_dispatchers_pipeline(systems_name_ptr[i]);
-			Ref<PipelineECS> sub_pipeline = p_associated_world->find_pipeline(pipeline_name);
-			ERR_CONTINUE_MSG(sub_pipeline.is_null(), "The pipeline " + pipeline_name + " is not found. It's needed to set it as sub pipeline for the system: " + systems_name_ptr[i]);
-			ECS::set_system_pipeline(id, sub_pipeline->get_pipeline(p_associated_world));
-		}
-	}
-	*/
-}
-
-Pipeline *PipelineECS::get_pipeline(WorldECS *p_associated_world) {
+Pipeline *PipelineECS::get_pipeline() {
 	// Build the pipeline.
-
-	// TODO change this to `create_pipeline`? Because in this way, this pipeline
-	// can't be assigned to two different world, and this is a feature to support.
-	// The reason why this should be changed is because in this way each pipeline
-	// can be disaptched safely regardless the other.
-	// Perhaps add a function to clone the pipeline instead to rebuild it?
 
 	if (pipeline) {
 		return pipeline;
 	}
-
-	init_sub_pipelines(p_associated_world);
 
 	// Build the pipeline.
 	pipeline = memnew(Pipeline);
@@ -174,12 +149,10 @@ Pipeline *PipelineECS::get_pipeline(WorldECS *p_associated_world) {
 }
 
 #ifdef TOOLS_ENABLED
-const ExecutionGraph *PipelineECS::editor_get_execution_graph(WorldECS *p_associated_world) {
+const ExecutionGraph *PipelineECS::editor_get_execution_graph() {
 	if (editor_execution_graph != nullptr) {
 		return editor_execution_graph;
 	}
-
-	init_sub_pipelines(p_associated_world);
 
 	editor_execution_graph = memnew(ExecutionGraph);
 	PipelineBuilder::build_graph(system_bundles, systems_name, editor_execution_graph);
@@ -472,7 +445,7 @@ void WorldECS::set_active_pipeline(StringName p_name) {
 	if (ECS::get_singleton()->get_active_world() == world) {
 		Ref<PipelineECS> pip = find_pipeline(p_name);
 		if (pip.is_valid()) {
-			ECS::get_singleton()->set_active_world_pipeline(pip->get_pipeline(this));
+			ECS::get_singleton()->set_active_world_pipeline(pip->get_pipeline());
 		} else {
 			ECS::get_singleton()->set_active_world_pipeline(nullptr);
 		}
@@ -515,7 +488,7 @@ void WorldECS::active_world() {
 		// Set the pipeline.
 		Ref<PipelineECS> pip = find_pipeline(active_pipeline);
 		if (pip.is_valid()) {
-			ECS::get_singleton()->set_active_world_pipeline(pip->get_pipeline(this));
+			ECS::get_singleton()->set_active_world_pipeline(pip->get_pipeline());
 		}
 
 		// Mark as active
