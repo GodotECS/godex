@@ -110,31 +110,31 @@ void ExecutionGraph::print_stages() const {
 	Ref<Dispatcher> main_dispatcher = *dispatchers.lookup_ptr("main");
 
 	print_line("Execution Graph, stages:");
-	print_line("|");
 	uint32_t index = 0;
-	print_stages("main", main_dispatcher, 0, index);
+	print_line("Main");
+	print_stages(main_dispatcher, 0, index);
 	print_line("");
 }
 
-void ExecutionGraph::print_stages(StringName p_dispatcher_name, const Ref<Dispatcher> p_dispatcher, uint32_t level, uint32_t &index) const {
+void ExecutionGraph::print_stages(const Ref<Dispatcher> p_dispatcher, uint32_t level, uint32_t &index) const {
 	String padding;
 
 	for (uint32_t i = 0; i < level; i += 1) {
-		padding += " ";
+		padding += "|   ";
 	}
-	print_line(padding + p_dispatcher_name);
 
-	for (const List<StageNode>::Element *a = p_dispatcher->stages.front(); a; a = a->next(), index += 1) {
-		print_line(padding + "|- #" + itos(index).lpad(2, "0"));
+	for (const List<StageNode>::Element *a = p_dispatcher->stages.front(); a; a = a->next()) {
+		print_line(padding + "|- stage@" + itos(index).lpad(2, "0"));
+		index += 1;
 		for (uint32_t i = 0; i < a->get().systems.size(); i += 1) {
 			if (a->get().systems[i]->is_dispatcher()) {
+				print_line(padding + "|   |- DISPATCHER#" + ECS::get_system_name(a->get().systems[i]->id));
 				print_stages(
-						ECS::get_system_name(a->get().systems[i]->id),
 						a->get().systems[i]->sub_dispatcher,
-						level + 1,
+						level + 2,
 						index);
 			} else {
-				print_line(padding + "  |- " + ECS::get_system_name(a->get().systems[i]->id));
+				print_line(padding + "|   |- " + ECS::get_system_name(a->get().systems[i]->id));
 			}
 		}
 	}
@@ -237,7 +237,7 @@ void PipelineBuilder::build_graph(
 			r_graph->error_msg = error;
 		}
 		r_graph->error_msg += TTR(" Pipeline building is aborted.");
-		ERR_FAIL_MSG("[FATAL] " + r_graph->error_msg);
+		ERR_FAIL_MSG("[FATAL] " + r_graph->error_msg + " Above the pipeline ---^");
 		return;
 	}
 
@@ -250,6 +250,8 @@ void PipelineBuilder::build_graph(
 	// Everything is fine, build the graph and optimize it.
 	build_stages(r_graph);
 	optimize_stages(r_graph);
+
+	r_graph->print_stages(); // TODO remove this
 
 	r_graph->valid = true;
 
@@ -637,12 +639,9 @@ bool PipelineBuilder::sort_systems(ExecutionGraph *r_graph) {
 
 		// Use inplace, otherwise the sort by dependency fails, since not all element
 		// are tested.
-		r_graph->print_sorted_systems(); // TODO remove
 
 		dispatcher->sorted_systems.sort_custom_inplace<SortByPriority>();
 		dispatcher->sorted_systems.sort_custom_inplace<SortByStage>();
-
-		r_graph->print_sorted_systems();
 
 		// Now adjust the systems according to the explicit dependencies.
 		for (uint32_t s = 0; s < dispatcher->systems.size(); s += 1) {
@@ -663,8 +662,6 @@ bool PipelineBuilder::sort_systems(ExecutionGraph *r_graph) {
 				}
 			}
 		}
-
-		r_graph->print_sorted_systems();
 	}
 	return true;
 }

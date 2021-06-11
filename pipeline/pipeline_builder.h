@@ -84,7 +84,7 @@ private:
 public:
 	void print_sorted_systems() const;
 	void print_stages() const;
-	void print_stages(StringName p_dispatcher_name, const Ref<Dispatcher> p_dispatcher, uint32_t level, uint32_t &index) const;
+	void print_stages(const Ref<Dispatcher> p_dispatcher, uint32_t level, uint32_t &index) const;
 
 	bool is_valid() const;
 	const String &get_error_msg() const;
