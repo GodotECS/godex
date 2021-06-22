@@ -31,7 +31,11 @@ def generate_dynamic_system_funcs():
 
     # Write functions.
     for i in range(max_dynamic_systems):
-        f.write("void dynamic_system_exec_internal_" + str(i) + "(World *p_world, Pipeline* p_pipeline, uint32_t p_system_id) {\n")
+        f.write(
+            "void dynamic_system_exec_internal_"
+            + str(i)
+            + "(World *p_world, Pipeline* p_pipeline, uint32_t p_system_id) {\n"
+        )
         f.write("	godex::DynamicSystemInfo::executor(p_world, dynamic_info[" + str(i) + "]);\n")
         f.write("}\n")
         f.write("\n")
