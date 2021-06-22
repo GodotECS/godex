@@ -12,6 +12,7 @@
 #include "world/world.h"
 
 ECS *ECS::singleton = nullptr;
+int ECS::dispatcher_count = 1; // Starts from 1 to reserve 0 to the main dispatcher.
 LocalVector<func_notify_static_destructor> ECS::notify_static_destructor;
 LocalVector<StringName> ECS::spawners;
 LocalVector<SpawnerInfo> ECS::spawners_info;
@@ -28,8 +29,9 @@ godex::system_id SystemInfo::get_id() const {
 	return id;
 }
 
-SystemInfo &SystemInfo::set_phase(Phase p_phase) {
+SystemInfo &SystemInfo::execute_in(Phase p_phase, const StringName &p_dispatcher_name) {
 	phase = p_phase;
+	dispatcher = p_dispatcher_name;
 	return *this;
 }
 
@@ -386,13 +388,73 @@ SystemInfo &ECS::register_system(func_get_system_exe_info p_func_get_exe_info, S
 	}
 
 	const godex::system_id id = systems.size();
+
 	systems.push_back(p_name);
 	systems_info.push_back(SystemInfo());
+
 	systems_info[id].id = id;
 	systems_info[id].exec_info = p_func_get_exe_info;
 
 	ClassDB::bind_integer_constant(get_class_static(), StringName(), p_name, id);
 	print_line("System: " + p_name + " registered with ID: " + itos(id));
+	return systems_info[id];
+}
+
+#undef register_system_dispatcher
+SystemInfo &ECS::register_system_dispatcher(func_get_system_exe_info p_func_get_exe_info, StringName p_name) {
+	{
+		const uint32_t id = get_system_id(p_name);
+		CRASH_COND_MSG(id != UINT32_MAX, "The system is already registered.");
+	}
+
+	const godex::system_id id = systems.size();
+
+	systems.push_back(p_name);
+	systems_info.push_back(SystemInfo());
+
+	systems_info[id].id = id;
+	systems_info[id].exec_info = p_func_get_exe_info;
+	systems_info[id].type = SystemInfo::TYPE_DISPATCHER;
+	systems_info[id].dispatcher_index = dispatcher_count;
+
+	dispatcher_count += 1;
+
+	ClassDB::bind_integer_constant(get_class_static(), StringName(), p_name, id);
+	print_line("System Dispatcher: " + p_name + " registered with ID: " + itos(id));
+	return systems_info[id];
+}
+
+// This function is used by the dispatcher systems, to process specific pipeline
+// dispatchers.
+void ECS::__process_pipeline_dispatcher(
+		uint32_t p_count,
+		World *p_world,
+		Pipeline *p_pipeline,
+		godex::system_id p_system_id) {
+	for (uint32_t i = 0; i < p_count; i += 1) {
+		p_pipeline->dispatch_sub_dispatcher(
+				p_world,
+				systems_info[p_system_id].dispatcher_index);
+	}
+}
+
+// Undefine the macro defined into `ecs.h` so we can define the method properly.
+#undef register_temporary_system
+SystemInfo &ECS::register_temporary_system(func_temporary_system_execute p_func_temporary_systems_exe, StringName p_name) {
+	{
+		const uint32_t id = get_system_id(p_name);
+		CRASH_COND_MSG(id != UINT32_MAX, "The system is already registered.");
+	}
+
+	const godex::system_id id = systems.size();
+	systems.push_back(p_name);
+	systems_info.push_back(SystemInfo());
+	systems_info[id].id = id;
+	systems_info[id].temporary_exec = p_func_temporary_systems_exe;
+	systems_info[id].type = SystemInfo::TYPE_TEMPORARY;
+
+	print_line("TemporarySystem: " + p_name + " registered with ID: " + itos(id));
+
 	return systems_info[id];
 }
 
@@ -407,6 +469,7 @@ SystemInfo &ECS::register_dynamic_system(StringName p_name) {
 			si->set_system_id(id);
 			systems_info[id].phase = PHASE_PROCESS;
 			systems_info[id].dependencies.reset();
+			systems_info[id].type = SystemInfo::TYPE_DYNAMIC;
 			return systems_info[id];
 		}
 	}
@@ -554,6 +617,17 @@ Phase ECS::get_system_phase(godex::system_id p_id) {
 	return systems_info[p_id].phase;
 }
 
+StringName ECS::get_system_dispatcher(godex::system_id p_id) {
+	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, StringName(), "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
+	return systems_info[p_id].dispatcher;
+}
+
+int ECS::get_dispatcher_index(godex::system_id p_id) {
+	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, -1, "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
+	ERR_FAIL_COND_V_MSG(systems_info[p_id].type != SystemInfo::TYPE_DISPATCHER, -1, "The system " + systems[p_id] + " is not a dispatcher.");
+	return systems_info[p_id].dispatcher_index;
+}
+
 const LocalVector<Dependency> &ECS::get_system_dependencies(godex::system_id p_id) {
 	static const LocalVector<Dependency> dep;
 	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, dep, "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
@@ -574,50 +648,18 @@ godex::DynamicSystemInfo *ECS::get_dynamic_system_info(godex::system_id p_id) {
 }
 
 bool ECS::is_system_dispatcher(godex::system_id p_id) {
-	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, false, "This system " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
-	if (systems_info[p_id].dynamic_system_id == UINT32_MAX) {
-		// Only dynamic systems are pipeline_dispatchers.
-		return false;
-	}
-	godex::DynamicSystemInfo *info = godex::get_dynamic_system_info(systems_info[p_id].dynamic_system_id);
-	return info->is_system_dispatcher();
-}
-
-void ECS::set_system_pipeline(godex::system_id p_id, Pipeline *p_pipeline) {
-	ERR_FAIL_COND_MSG(verify_system_id(p_id) == false, "This system " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
-	ERR_FAIL_COND_MSG(systems_info[p_id].dynamic_system_id == UINT32_MAX, "The system " + itos(p_id) + " is not a dynamic system.");
-	godex::DynamicSystemInfo *info = godex::get_dynamic_system_info(systems_info[p_id].dynamic_system_id);
-	ERR_FAIL_COND_MSG(info->is_system_dispatcher() == false, "The system " + itos(p_id) + " is not a sub pipeline dispatcher.");
-	info->set_pipeline(p_pipeline);
-}
-
-// Undefine the macro defined into `ecs.h` so we can define the method properly.
-#undef register_temporary_system
-SystemInfo &ECS::register_temporary_system(func_temporary_system_execute p_func_temporary_systems_exe, StringName p_name) {
-	{
-		const uint32_t id = get_system_id(p_name);
-		CRASH_COND_MSG(id != UINT32_MAX, "The system is already registered.");
-	}
-
-	const godex::system_id id = systems.size();
-	systems.push_back(p_name);
-	systems_info.push_back(SystemInfo());
-	systems_info[id].id = id;
-	systems_info[id].temporary_exec = p_func_temporary_systems_exe;
-
-	print_line("TemporarySystem: " + p_name + " registered with ID: " + itos(id));
-
-	return systems_info[id];
+	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, false, "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
+	return systems_info[p_id].type == SystemInfo::TYPE_DISPATCHER;
 }
 
 bool ECS::is_temporary_system(godex::system_id p_id) {
 	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, false, "The TemporarySystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
-	return systems_info[p_id].temporary_exec != nullptr;
+	return systems_info[p_id].type == SystemInfo::TYPE_TEMPORARY;
 }
 
 bool ECS::is_dynamic_system(godex::system_id p_id) {
 	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, false, "The TemporarySystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
-	return systems_info[p_id].dynamic_system_id != UINT32_MAX;
+	return systems_info[p_id].type == SystemInfo::TYPE_DYNAMIC;
 }
 
 func_temporary_system_execute ECS::get_func_temporary_system_exe(godex::system_id p_id) {
@@ -628,6 +670,10 @@ func_temporary_system_execute ECS::get_func_temporary_system_exe(godex::system_i
 
 bool ECS::verify_system_id(godex::system_id p_id) {
 	return systems.size() > p_id;
+}
+
+int ECS::get_dispatchers_count() {
+	return dispatcher_count;
 }
 
 ECS *ECS::get_singleton() {
@@ -707,7 +753,7 @@ void ECS::set_active_world_pipeline(Pipeline *p_pipeline) {
 #ifdef DEBUG_ENABLED
 	if (p_pipeline) {
 		// Using crash cond because the user doesn't never use this API directly.
-		CRASH_COND_MSG(p_pipeline->is_ready() == false, "The submitted pipeline is not fully build.");
+		CRASH_COND_MSG(p_pipeline->is_ready() == false, "The submitted pipeline is not fully build, you must submit a valid pipeline?.");
 	}
 #endif
 	active_world_pipeline = p_pipeline;

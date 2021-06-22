@@ -12,8 +12,6 @@ namespace godex {
 
 class DynamicSystemInfo;
 
-typedef void (*func_system_execute_pipeline)(World *p_world, Pipeline *p_pipeline);
-
 /// This function register the `DynamicSystemInfo` in a static array (generated
 /// at compile time) and returns a pointer to a function that is able to call
 /// `godex::DynamicSystemInfo::executor()` with the passed `DynamicSystemInfo`.
@@ -63,10 +61,6 @@ class DynamicSystemInfo {
 	// Accessors databag.
 	LocalVector<DataAccessor> storage_accessors;
 
-	// ~~ Sub pipeline system ~~
-	func_system_execute_pipeline sub_pipeline_execute = nullptr;
-	Pipeline *target_sub_pipeline = nullptr;
-
 public:
 	DynamicSystemInfo();
 	~DynamicSystemInfo();
@@ -76,7 +70,7 @@ public:
 	void set_system_id(uint32_t p_id);
 	void set_target(ScriptInstance *p_target);
 
-	void execute_in_phase(Phase p_phase);
+	void execute_in(Phase p_phase, const StringName &p_dispatcher_name = StringName());
 	void execute_after(const StringName &p_system_name);
 	void execute_before(const StringName &p_system_name);
 
@@ -88,12 +82,7 @@ public:
 	void not_component(uint32_t p_component_id);
 	void with_storage(godex::component_id p_component_id);
 
-	void set_target(func_system_execute_pipeline p_sub_pipeline_execite);
-	void set_pipeline(Pipeline *p_pipeline);
-
 	bool build();
-
-	bool is_system_dispatcher() const;
 
 	EntityID get_current_entity_id() const;
 

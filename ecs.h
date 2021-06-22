@@ -23,6 +23,7 @@ enum Phase : int {
 	PHASE_PRE_PROCESS,
 	PHASE_PROCESS,
 	PHASE_POST_PROCESS,
+	PHASE_FINALIZE_PROCESS,
 	PHASE_PRE_RENDER,
 	PHASE_MAX,
 };
@@ -75,10 +76,20 @@ class SystemInfo {
 	friend class ECS;
 	friend class SystemBundleInfo;
 
+	enum Type {
+		TYPE_NORMAL,
+		TYPE_DISPATCHER,
+		TYPE_TEMPORARY,
+		TYPE_DYNAMIC
+	};
+
 	godex::system_id id = godex::SYSTEM_NONE;
 	Phase phase = PHASE_PROCESS;
+	StringName dispatcher;
 	LocalVector<Dependency> dependencies;
 	String description;
+	Type type = TYPE_NORMAL;
+	int dispatcher_index = -1;
 
 	// Only one of those is assigned (depending on the system type).
 	uint32_t dynamic_system_id = UINT32_MAX;
@@ -87,7 +98,7 @@ class SystemInfo {
 
 public:
 	godex::system_id get_id() const;
-	SystemInfo &set_phase(Phase p_phase);
+	SystemInfo &execute_in(Phase p_phase, const StringName &p_dispatcher_name = StringName());
 	SystemInfo &set_description(const String &p_description);
 	SystemInfo &after(const StringName &p_system_name);
 	SystemInfo &before(const StringName &p_system_name);
@@ -133,6 +144,8 @@ public:
 
 private:
 	static ECS *singleton;
+
+	static int dispatcher_count;
 
 	static LocalVector<StringName> spawners;
 	static LocalVector<SpawnerInfo> spawners_info;
@@ -246,13 +259,43 @@ public:
 // By defining the same name of the method, the IDE autocomplete shows the
 // method name `register_system`, properly + it's impossible use the function
 // directly by mistake.
-#define register_system(func, name)                                 \
-	register_system([](SystemExeInfo &r_info) {                     \
-		SystemBuilder::get_system_info_from_function(r_info, func); \
-		r_info.system_func = [](World *p_world) {                   \
-			SystemBuilder::system_exec_func(p_world, func);         \
-		};                                                          \
-	},                                                              \
+#define register_system(func, name)                                             \
+	register_system([](SystemExeInfo &r_info) {                                 \
+		SystemBuilder::get_system_info_from_function(r_info, func);             \
+		r_info.system_func = [](World *p_world, Pipeline *, godex::system_id) { \
+			SystemBuilder::system_exec_func(p_world, func);                     \
+		};                                                                      \
+	},                                                                          \
+			name)
+
+	static SystemInfo &register_system_dispatcher(func_get_system_exe_info p_func_get_exe_info, StringName p_name);
+
+	static void __process_pipeline_dispatcher(uint32_t p_count, World *p_world, Pipeline *p_pipeline, godex::system_id p_system_id);
+
+// By defining the same name of the method, the IDE autocomplete shows the
+// method name `register_system_dispatcher`, properly + it's impossible use the
+// function directly by mistake.
+#define register_system_dispatcher(func, name)                                                        \
+	register_system_dispatcher([](SystemExeInfo &r_info) {                                            \
+		SystemBuilder::get_system_info_from_function(r_info, func);                                   \
+		r_info.system_func = [](World *p_world, Pipeline *p_pipeline, godex::system_id p_system_id) { \
+			const uint32_t count = SystemBuilder::system_dispatcher_exec_func(p_world, func);         \
+			ECS::__process_pipeline_dispatcher(count, p_world, p_pipeline, p_system_id);              \
+		};                                                                                            \
+	},                                                                                                \
+			name)
+
+	/// Register the temporary system and returns the ID.
+	static SystemInfo &register_temporary_system(func_temporary_system_execute p_func_temporary_systems_exe, StringName p_name);
+
+// By defining the same name of the method, the IDE autocomplete shows the
+// method name `register_temporary_system`, properly + it's impossible use the function
+// directly by mistake.
+// TODO use the same technique used for the system_dispatcher and normal system so we can retrieve the fetched data?
+#define register_temporary_system(func, name)                            \
+	register_temporary_system([](World *p_world) -> bool {               \
+		return SystemBuilder::temporary_system_exec_func(p_world, func); \
+	},                                                                   \
 			name)
 
 	// Register the system and returns the ID.
@@ -277,6 +320,8 @@ public:
 	static StringName get_system_name(godex::system_id p_id);
 	static String get_system_desc(godex::system_id p_id);
 	static Phase get_system_phase(godex::system_id p_id);
+	static StringName get_system_dispatcher(godex::system_id p_id);
+	static int get_dispatcher_index(godex::system_id p_id);
 	static const LocalVector<Dependency> &get_system_dependencies(godex::system_id p_id);
 
 	static void set_dynamic_system_target(godex::system_id p_id, ScriptInstance *p_target);
@@ -284,21 +329,6 @@ public:
 
 	/// Returns `true` when the system dispatches a pipeline when executed.
 	static bool is_system_dispatcher(godex::system_id p_id);
-	/// Set the `SystemDispatcher` pipeline, does nothing if this system is not
-	/// a `SystemDispatcher`.
-	static void set_system_pipeline(godex::system_id p_id, Pipeline *p_pipeline);
-
-	/// Register the temporary system and returns the ID.
-	static SystemInfo &register_temporary_system(func_temporary_system_execute p_func_temporary_systems_exe, StringName p_name);
-
-// By defining the same name of the method, the IDE autocomplete shows the
-// method name `register_temporary_system`, properly + it's impossible use the function
-// directly by mistake.
-#define register_temporary_system(func, name)                            \
-	register_temporary_system([](World *p_world) -> bool {               \
-		return SystemBuilder::temporary_system_exec_func(p_world, func); \
-	},                                                                   \
-			name)
 
 	/// Returns `true` when the system is a temporary `System`.
 	static bool is_temporary_system(godex::system_id p_id);
@@ -307,6 +337,8 @@ public:
 	static func_temporary_system_execute get_func_temporary_system_exe(godex::system_id p_id);
 
 	static bool verify_system_id(godex::system_id p_id);
+
+	static int get_dispatchers_count();
 
 protected:
 	static void _bind_methods();

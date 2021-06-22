@@ -57,10 +57,15 @@ class TestSystemSubPipeDatabag : public godex::Databag {
 
 	static void _bind_methods() {
 		ECS_BIND_PROPERTY(TestSystemSubPipeDatabag, PropertyInfo(Variant::INT, "exe_count"), exe_count);
+		ECS_BIND_PROPERTY(TestSystemSubPipeDatabag, PropertyInfo(Variant::INT, "iterations"), iterations);
+		ECS_BIND_PROPERTY(TestSystemSubPipeDatabag, PropertyInfo(Variant::INT, "sub_iterations"), sub_iterations);
 	}
 
 public:
 	int exe_count = 0;
+
+	int iterations = 0;
+	int sub_iterations = 0;
 
 	void set_exe_count(int p_i) {
 		exe_count = p_i;
@@ -282,22 +287,8 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 	finalize_script_ecs();
 }
 
-void test_sub_pipeline_execute(World *p_world, Pipeline *p_pipeline) {
-	CRASH_COND_MSG(p_world == nullptr, "The world is never nullptr in this test.");
-	CRASH_COND_MSG(p_pipeline == nullptr, "The pipeline is never nullptr in this test.");
-	CRASH_COND_MSG(p_pipeline->is_ready() == false, "The pipeline is not supposed to be not ready at this point.");
-
-	uint32_t exe_count = 0;
-	// Extract the info and forget about the databag, so the pipeline can
-	// access it safely.
-	{
-		const TestSystemSubPipeDatabag *bag = p_world->get_databag<TestSystemSubPipeDatabag>();
-		exe_count = bag->exe_count;
-	}
-
-	for (uint32_t i = 0; i < exe_count; i += 1) {
-		p_pipeline->dispatch(p_world);
-	}
+uint32_t test_sub_pipeline_execute(TestSystemSubPipeDatabag *bag) {
+	return bag->exe_count;
 }
 
 void test_system_transform_add_x(Query<TransformComponent> &p_query) {
@@ -306,53 +297,63 @@ void test_system_transform_add_x(Query<TransformComponent> &p_query) {
 	}
 }
 
-void test_move_root(Query<EntityID, TransformComponent> &p_query) {
-	for (auto [entity, transform] : p_query) {
-		if (entity == EntityID(0)) {
-			transform->origin.x += 1.0;
-			return;
-		}
-	}
-}
-
-void test_move_1_global(Query<EntityID, TransformComponent> &p_query) {
-	for (auto [entity, transform] : p_query.space(Space::GLOBAL)) {
-		if (entity == EntityID(1)) {
-			transform->origin.x = 6.0;
-			return;
-		}
-	}
-}
-
-void test_make_entity_1_root(Storage<Child> *p_hierarchy) {
-	p_hierarchy->insert(1, Child());
-}
-
 TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 	ECS::register_databag<TestSystemSubPipeDatabag>();
-	godex::system_id system_id = ECS::register_system(test_system_transform_add_x, "test_system_transform_add_x").get_id();
 
-	// ~~ Sub pipeline ~~
-	PipelineBuilder sub_pipeline_builder;
-	sub_pipeline_builder.add_system(system_id);
-	Pipeline sub_pipeline;
-	sub_pipeline_builder.build(sub_pipeline);
+	ECS::register_system_dispatcher(test_sub_pipeline_execute, "test_sub_pipeline_execute");
 
-	const uint32_t sub_pipeline_system_id = ECS::register_dynamic_system("TestSubPipelineExecute").get_id();
-	godex::DynamicSystemInfo *sub_pipeline_system = ECS::get_dynamic_system_info(sub_pipeline_system_id);
-	sub_pipeline_system->set_target(test_sub_pipeline_execute);
-	// Used internally by the `test_sub_pipeline_execute`.
-	sub_pipeline_system->with_databag(TestSystemSubPipeDatabag::get_databag_id(), false);
-	ECS::set_system_pipeline(sub_pipeline_system_id, &sub_pipeline);
-	sub_pipeline_system->build();
+	ECS::register_system(test_system_transform_add_x, "test_system_transform_add_x")
+			.execute_in(PHASE_PROCESS, "test_sub_pipeline_execute");
 
-	World world;
+	initialize_script_ecs();
+
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	with_databag(ECS.TestSystemSubPipeDatabag, MUTABLE)\n";
+		code += "	with_component(ECS.TransformComponent, IMMUTABLE)\n";
+		code += "\n";
+		code += "func _for_each(test_databag, a):\n";
+		code += "	test_databag.iterations += 1\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("TestSubPip_System.gd", code));
+	}
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	execute_in(ECS.PHASE_PROCESS, ECS.test_sub_pipeline_execute)\n";
+		code += "	with_databag(ECS.TestSystemSubPipeDatabag, MUTABLE)\n";
+		code += "	with_component(ECS.TransformComponent, IMMUTABLE)\n";
+		code += "\n";
+		code += "func _for_each(test_databag, a):\n";
+		code += "	test_databag.sub_iterations += 1\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("TestSubPip_SubSystem.gd", code));
+	}
+
+	flush_ecs_script_preparation();
 
 	// ~~ Main pipeline ~~
-	PipelineBuilder main_pipeline_builder;
-	main_pipeline_builder.add_system(sub_pipeline_system_id);
+	Vector<StringName> system_bundles;
+
+	Vector<StringName> systems;
+	systems.push_back(StringName("test_sub_pipeline_execute"));
+	systems.push_back(StringName("test_system_transform_add_x"));
+	systems.push_back(StringName("TestSubPip_System.gd"));
+	systems.push_back(StringName("TestSubPip_SubSystem.gd"));
+
 	Pipeline main_pipeline;
-	main_pipeline_builder.build(main_pipeline);
+	PipelineBuilder::build_pipeline(system_bundles, systems, &main_pipeline);
+
+	World world;
 	main_pipeline.prepare(&world);
 
 	// ~~ Create world ~~
@@ -373,6 +374,10 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 		// `test_system_transform_add_x` add 100, four times.
 		const TransformComponent *comp = world.get_storage<TransformComponent>()->get(entity_1);
 		CHECK(ABS(comp->origin.x - 400.0) <= CMP_EPSILON);
+
+		const TestSystemSubPipeDatabag *bag = world.get_databag<TestSystemSubPipeDatabag>();
+		CHECK(bag->iterations == 2);
+		CHECK(bag->sub_iterations == 4);
 	}
 
 	{
@@ -385,7 +390,13 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 		// Verify the execution is properly done by making sure the value is 1000.
 		const TransformComponent *comp = world.get_storage<TransformComponent>()->get(entity_1);
 		CHECK(ABS(comp->origin.x - 1000.0) <= CMP_EPSILON);
+
+		const TestSystemSubPipeDatabag *bag = world.get_databag<TestSystemSubPipeDatabag>();
+		CHECK(bag->iterations == 3);
+		CHECK(bag->sub_iterations == 10);
 	}
+
+	finalize_script_ecs();
 }
 
 TEST_CASE("[Modules][ECS] Test system and databag") {
@@ -494,6 +505,28 @@ TEST_CASE("[Modules][ECS] Test system databag fetch with dynamic query.") {
 	CHECK(world.get_databag<TestSystemSubPipeDatabag>()->exe_count == 10);
 
 	finalize_script_ecs();
+}
+
+void test_move_root(Query<EntityID, TransformComponent> &p_query) {
+	for (auto [entity, transform] : p_query) {
+		if (entity == EntityID(0)) {
+			transform->origin.x += 1.0;
+			return;
+		}
+	}
+}
+
+void test_move_1_global(Query<EntityID, TransformComponent> &p_query) {
+	for (auto [entity, transform] : p_query.space(Space::GLOBAL)) {
+		if (entity == EntityID(1)) {
+			transform->origin.x = 6.0;
+			return;
+		}
+	}
+}
+
+void test_make_entity_1_root(Storage<Child> *p_hierarchy) {
+	p_hierarchy->insert(1, Child());
 }
 
 TEST_CASE("[Modules][ECS] Test event mechanism.") {

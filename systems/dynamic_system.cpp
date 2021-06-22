@@ -36,11 +36,10 @@ void godex::DynamicSystemInfo::set_system_id(uint32_t p_id) {
 void godex::DynamicSystemInfo::set_target(ScriptInstance *p_target) {
 	target_script = p_target;
 	gdscript_function = nullptr;
-	target_sub_pipeline = nullptr;
 }
 
-void godex::DynamicSystemInfo::execute_in_phase(Phase p_phase) {
-	ECS::get_system_info(system_id).set_phase(p_phase);
+void godex::DynamicSystemInfo::execute_in(Phase p_phase, const StringName &p_dispatcher_name) {
+	ECS::get_system_info(system_id).execute_in(p_phase, p_dispatcher_name);
 }
 
 void godex::DynamicSystemInfo::execute_after(const StringName &p_system_name) {
@@ -110,30 +109,9 @@ void godex::DynamicSystemInfo::with_storage(godex::component_id p_component_id) 
 	storages.push_back(p_component_id);
 }
 
-void godex::DynamicSystemInfo::set_target(func_system_execute_pipeline p_system_exe) {
-	target_script = nullptr;
-	gdscript_function = nullptr;
-	sub_pipeline_execute = p_system_exe;
-}
-
-void godex::DynamicSystemInfo::set_pipeline(Pipeline *p_target) {
-	CRASH_COND_MSG(sub_pipeline_execute == nullptr, "The pipeline execute target can't be nullptr at this point. Call `set_target()` before this function.");
-	target_script = nullptr;
-	target_sub_pipeline = p_target;
-}
-
 bool godex::DynamicSystemInfo::build() {
 	CRASH_COND_MSG(compiled, "The query is not supposed to be compiled twice.");
 	compiled = true;
-
-	if (sub_pipeline_execute != nullptr) {
-		if (query) {
-			memdelete(query);
-			query = nullptr;
-		}
-		// This is a sub dispatcher, nothing more to do.
-		return true;
-	}
 
 	// ~~ If the script is a GDScript instance, take the function pointer. ~~
 	GDScriptInstance *gd_script_instance = dynamic_cast<GDScriptInstance *>(target_script);
@@ -199,10 +177,6 @@ bool godex::DynamicSystemInfo::build() {
 	return true;
 }
 
-bool godex::DynamicSystemInfo::is_system_dispatcher() const {
-	return sub_pipeline_execute != nullptr;
-}
-
 EntityID godex::DynamicSystemInfo::get_current_entity_id() const {
 	return query->get_current_entity_id();
 }
@@ -225,8 +199,6 @@ void godex::DynamicSystemInfo::reset() {
 	access_ptr.reset();
 	databag_accessors.reset();
 	storage_accessors.reset();
-	sub_pipeline_execute = nullptr;
-	target_sub_pipeline = nullptr;
 }
 
 StringName godex::DynamicSystemInfo::for_each_name;
@@ -236,21 +208,11 @@ void godex::DynamicSystemInfo::get_info(DynamicSystemInfo &p_info, func_system_e
 	r_out.valid = false;
 
 	// Validate.
-	if (p_info.sub_pipeline_execute) {
-		ERR_FAIL_COND_MSG(p_info.target_sub_pipeline == nullptr, "No sub pipeline set.");
+	// Script function.
+	ERR_FAIL_COND_MSG(p_info.target_script == nullptr, "[FATAL] This system doesn't have target assigned.");
 
-#ifdef DEBUG_ENABLED
-		// The pipeline must be fully build at this point
-		CRASH_COND_MSG(p_info.target_sub_pipeline->is_ready() == false, "The sub pipeline is not yet builded. Make sure to fully build it before using it as sub pipeline.");
-#endif
-
-	} else {
-		// Script function.
-		ERR_FAIL_COND_MSG(p_info.target_script == nullptr, "[FATAL] This system doesn't have target assigned.");
-
-		// Script execution.
-		ERR_FAIL_COND(p_info.query->is_valid() == false);
-	}
+	// Script execution.
+	ERR_FAIL_COND(p_info.query->is_valid() == false);
 
 	// Set the components dependencies.
 	if (p_info.query) {
@@ -271,11 +233,6 @@ void godex::DynamicSystemInfo::get_info(DynamicSystemInfo &p_info, func_system_e
 		}
 	}
 
-	if (p_info.sub_pipeline_execute) {
-		// Extract all the pipeline dependencies.
-		p_info.target_sub_pipeline->get_systems_dependencies(r_out);
-	}
-
 	r_out.system_func = p_exec;
 
 	// Arrived here, we can assume the system is valid.
@@ -285,55 +242,48 @@ void godex::DynamicSystemInfo::get_info(DynamicSystemInfo &p_info, func_system_e
 void godex::DynamicSystemInfo::executor(World *p_world, DynamicSystemInfo &p_info) {
 	CRASH_COND_MSG(p_info.compiled == false, "The query is not supposed to be executed without being compiled.");
 
-	if (p_info.sub_pipeline_execute) {
-		// Sub pipeline execution.
-		p_info.target_sub_pipeline->set_is_sub_dispatcher(true);
-		p_info.sub_pipeline_execute(p_world, p_info.target_sub_pipeline);
-		p_info.target_sub_pipeline->set_is_sub_dispatcher(false);
-	} else {
-		// Script function.
-		ERR_FAIL_COND_MSG(p_info.target_script == nullptr, "[FATAL] This system doesn't have target assigned.");
-		ERR_FAIL_COND_MSG(p_info.query->is_valid() == false, "[FATAL] Please check the system " + ECS::get_system_name(p_info.system_id) + " _prepare because the generated query is invalid.");
+	// Script function.
+	ERR_FAIL_COND_MSG(p_info.target_script == nullptr, "[FATAL] This system doesn't have target assigned.");
+	ERR_FAIL_COND_MSG(p_info.query->is_valid() == false, "[FATAL] Please check the system " + ECS::get_system_name(p_info.system_id) + " _prepare because the generated query is invalid.");
 
-		// First extract the databags.
-		for (uint32_t i = 0; i < p_info.databags.size(); i += 1) {
-			// Set the accessors pointers.
-			p_info.databag_accessors[i].set_target(p_world->get_databag(p_info.databags[i].databag_id));
-		}
-
-		// Then extract the storages.
-		for (uint32_t i = 0; i < p_info.storages.size(); i += 1) {
-			// Set the accessors pointers.
-			p_info.storage_accessors[i].set_target(p_world->get_storage(p_info.storages[i]));
-		}
-
-		// Execute the query
-
-		for (p_info.query->begin(p_world);
-				p_info.query->is_not_done();
-				p_info.query->next()) {
-			Callable::CallError err;
-			// Call the script function.
-			if (p_info.gdscript_function) {
-				// Accelerated GDScript function access.
-				p_info.gdscript_function->call(
-						static_cast<GDScriptInstance *>(p_info.target_script),
-						const_cast<const Variant **>(p_info.access_ptr.ptr()),
-						p_info.access_ptr.size(),
-						err);
-			} else {
-				// Other script execution.
-				p_info.target_script->call(
-						for_each_name,
-						const_cast<const Variant **>(p_info.access_ptr.ptr()),
-						p_info.access_ptr.size(),
-						err);
-			}
-			if (err.error != Callable::CallError::CALL_OK) {
-				p_info.query->end();
-				ERR_FAIL_COND_MSG(err.error != Callable::CallError::CALL_OK, "System function execution error: " + itos(err.error) + " System name: " + ECS::get_system_name(p_info.system_id) + ". Please check the parameters.");
-			}
-		}
-		p_info.query->end();
+	// First extract the databags.
+	for (uint32_t i = 0; i < p_info.databags.size(); i += 1) {
+		// Set the accessors pointers.
+		p_info.databag_accessors[i].set_target(p_world->get_databag(p_info.databags[i].databag_id));
 	}
+
+	// Then extract the storages.
+	for (uint32_t i = 0; i < p_info.storages.size(); i += 1) {
+		// Set the accessors pointers.
+		p_info.storage_accessors[i].set_target(p_world->get_storage(p_info.storages[i]));
+	}
+
+	// Execute the query
+
+	for (p_info.query->begin(p_world);
+			p_info.query->is_not_done();
+			p_info.query->next()) {
+		Callable::CallError err;
+		// Call the script function.
+		if (p_info.gdscript_function) {
+			// Accelerated GDScript function access.
+			p_info.gdscript_function->call(
+					static_cast<GDScriptInstance *>(p_info.target_script),
+					const_cast<const Variant **>(p_info.access_ptr.ptr()),
+					p_info.access_ptr.size(),
+					err);
+		} else {
+			// Other script execution.
+			p_info.target_script->call(
+					for_each_name,
+					const_cast<const Variant **>(p_info.access_ptr.ptr()),
+					p_info.access_ptr.size(),
+					err);
+		}
+		if (err.error != Callable::CallError::CALL_OK) {
+			p_info.query->end();
+			ERR_FAIL_COND_MSG(err.error != Callable::CallError::CALL_OK, "System function execution error: " + itos(err.error) + " System name: " + ECS::get_system_name(p_info.system_id) + ". Please check the parameters.");
+		}
+	}
+	p_info.query->end();
 }

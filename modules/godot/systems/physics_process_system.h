@@ -11,6 +11,10 @@ class EngineDatabag;
 class OsDatabag;
 class MessageQueueDatabag;
 
+uint32_t physics_pipeline_dispatcher(const FrameTime *p_frame_time);
+void physics_init_frame(EngineDatabag *p_engine);
+void physics_finalize_frame(EngineDatabag *p_engine);
+
 void call_physics_process(
 		// This is needed to force process this system in single thread so that
 		// `_physics_process()` can run safely.
@@ -20,9 +24,6 @@ void call_physics_process(
 		EngineDatabag *p_engine,
 		OsDatabag *p_os,
 		MessageQueueDatabag *p_message_queue);
-
-/// Creates a dynamic system where
-void create_physics_system_dispatcher(godex::DynamicSystemInfo *r_info);
 
 // ~~ 3D ~~
 void step_physics_server_3d(

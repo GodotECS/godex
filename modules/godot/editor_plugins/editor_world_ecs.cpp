@@ -931,8 +931,13 @@ void EditorWorldECS::pipeline_view_update() {
 		return;
 	}
 
-	uint32_t stage_id = 0;
+	StageElementInfoBox *info = pipeline_view_add_stage();
+	info->add_system("This is work in progress.");
+
+	// TODO finish this.
+	/*
 	const ExecutionGraph *graph = pipeline->editor_get_execution_graph();
+	uint32_t stage_id = 0;
 	const List<ExecutionGraph::StageNode> &stages = graph->get_stages();
 	for (const List<ExecutionGraph::StageNode>::Element *e = stages.front(); e; e = e->next(), stage_id += 1) {
 		StageElementInfoBox *info = pipeline_view_add_stage();
@@ -941,6 +946,7 @@ void EditorWorldECS::pipeline_view_update() {
 			info->add_system(ECS::get_system_name(e->get().systems[i]->id));
 		}
 	}
+	*/
 }
 
 void EditorWorldECS::pipeline_system_bundle_remove(const StringName &p_name) {

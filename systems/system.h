@@ -4,10 +4,11 @@
 #include "core/templates/local_vector.h"
 
 class World;
+class Pipeline;
 
 typedef bool (*func_temporary_system_execute)(World *p_world);
-
-typedef void (*func_system_execute)(World *p_world);
+typedef void (*func_system_execute)(World *p_world, Pipeline *p_pipeline, uint32_t p_system_id);
+typedef uint32_t (*func_system_dispatcher_execute)(World *p_world);
 
 struct SystemExeInfo {
 	bool valid = true;
@@ -17,6 +18,7 @@ struct SystemExeInfo {
 	Set<uint32_t> mutable_databags;
 	Set<uint32_t> immutable_databags;
 	Set<uint32_t> need_changed;
+	// Used if the system is a normal system.
 	func_system_execute system_func = nullptr;
 
 	void clear() {

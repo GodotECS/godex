@@ -60,9 +60,7 @@ public:
 
 	void fetch_used_databags(Set<godex::component_id> &r_databags) const;
 
-	/// Builds the pipeline and returns it. The associated world is used to
-	/// fetch the pipeline in case a `SystemDispatcher` is used.
-	Pipeline *get_pipeline(WorldECS *p_associated_world);
+	Pipeline *get_pipeline();
 
 #ifdef TOOLS_ENABLED
 	/// This API works only in editor and returns the updated execution graph.

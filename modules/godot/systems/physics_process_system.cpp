@@ -7,6 +7,18 @@
 #include "core/object/message_queue.h"
 #include "core/os/os.h"
 
+uint32_t physics_pipeline_dispatcher(const FrameTime *p_frame_time) {
+	return p_frame_time->get_main_frame_time().physics_steps;
+}
+
+void physics_init_frame(EngineDatabag *p_engine) {
+	p_engine->get_engine()->set_in_physics_frame(true);
+}
+
+void physics_finalize_frame(EngineDatabag *p_engine) {
+	p_engine->get_engine()->set_in_physics_frame(false);
+}
+
 void call_physics_process(
 		World *p_world,
 		FrameTime *p_iterator_info,
@@ -48,7 +60,11 @@ void call_physics_process(
 	}
 }
 
-void physics_pipeline_dispatcher(World *p_world, Pipeline *p_pipeline) {
+// TODO remove this!
+// TODO remove this!
+// TODO remove this!
+// TODO remove this!
+void physics_pipeline_dispatcher_old(World *p_world, Pipeline *p_pipeline) {
 	ERR_FAIL_COND_MSG(p_pipeline == nullptr, "The `PhysicsPipelineDispatcher` doesn't have a pipeline assigned, so it's doing nothing. Assign it please.");
 
 	const FrameTime *godot_iterator = p_world->get_databag<FrameTime>();
@@ -71,16 +87,6 @@ void physics_pipeline_dispatcher(World *p_world, Pipeline *p_pipeline) {
 	}
 
 	engine->get_engine()->set_in_physics_frame(false);
-}
-
-void create_physics_system_dispatcher(godex::DynamicSystemInfo *r_info) {
-	r_info->set_target(physics_pipeline_dispatcher);
-	r_info->with_databag(FrameTime::get_databag_id(), false);
-	r_info->with_databag(EngineDatabag::get_databag_id(), true);
-	// Don't define any pipeline yet.
-	r_info->set_pipeline(nullptr);
-	// Build.
-	r_info->build();
 }
 
 void step_physics_server_3d(
