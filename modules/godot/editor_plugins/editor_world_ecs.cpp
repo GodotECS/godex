@@ -931,7 +931,6 @@ void EditorWorldECS::pipeline_view_update() {
 		return;
 	}
 
-
 	StageElementInfoBox *info = pipeline_view_add_stage();
 	info->add_system("This is work in progress.");
 
