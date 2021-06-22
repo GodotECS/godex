@@ -753,7 +753,7 @@ void ECS::set_active_world_pipeline(Pipeline *p_pipeline) {
 #ifdef DEBUG_ENABLED
 	if (p_pipeline) {
 		// Using crash cond because the user doesn't never use this API directly.
-		CRASH_COND_MSG(p_pipeline->is_ready() == false, "The submitted pipeline is not fully build.");
+		CRASH_COND_MSG(p_pipeline->is_ready() == false, "The submitted pipeline is not fully build, you must submit a valid pipeline?.");
 	}
 #endif
 	active_world_pipeline = p_pipeline;

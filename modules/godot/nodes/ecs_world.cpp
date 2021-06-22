@@ -317,7 +317,7 @@ void WorldECS::_notification(int p_what) {
 		case NOTIFICATION_READY:
 			// Make sure to register all scripted components/databags/systems
 			// at this point.
-			ScriptEcs::get_singleton()->register_runtime_scripts();
+			ScriptEcs::get_singleton()->register_runtime_scripts(); // TODO do I need this?
 
 			add_to_group("_world_ecs");
 			if (Engine::get_singleton()->is_editor_hint() == false) {
@@ -487,13 +487,18 @@ void WorldECS::active_world() {
 
 		// Set the pipeline.
 		Ref<PipelineECS> pip = find_pipeline(active_pipeline);
-		if (pip.is_valid()) {
+		if (pip.is_valid() && (pip->get_pipeline() == nullptr || pip->get_pipeline()->is_ready())) {
 			ECS::get_singleton()->set_active_world_pipeline(pip->get_pipeline());
-		}
 
-		// Mark as active
-		is_active = true;
-		want_to_activate = false;
+			// Mark as active
+			is_active = true;
+			want_to_activate = false;
+		} else {
+			// Mark as not active since this pipeline seems not ready.
+			is_active = false;
+			want_to_activate = false;
+			ERR_FAIL_MSG("The pipeline `" + active_pipeline + "` is not valid, and can't be set as active pipeline.");
+		}
 
 	} else {
 		is_active = false;
