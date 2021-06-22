@@ -29,7 +29,7 @@ godex::system_id SystemInfo::get_id() const {
 	return id;
 }
 
-SystemInfo &SystemInfo::set_phase(Phase p_phase, const StringName &p_dispatcher_name) {
+SystemInfo &SystemInfo::execute_in(Phase p_phase, const StringName &p_dispatcher_name) {
 	phase = p_phase;
 	dispatcher = p_dispatcher_name;
 	return *this;

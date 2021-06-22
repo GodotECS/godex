@@ -38,8 +38,8 @@ void godex::DynamicSystemInfo::set_target(ScriptInstance *p_target) {
 	gdscript_function = nullptr;
 }
 
-void godex::DynamicSystemInfo::execute_in_phase(Phase p_phase, const StringName &p_dispatcher_name) {
-	ECS::get_system_info(system_id).set_phase(p_phase, p_dispatcher_name);
+void godex::DynamicSystemInfo::execute_in(Phase p_phase, const StringName &p_dispatcher_name) {
+	ECS::get_system_info(system_id).execute_in(p_phase, p_dispatcher_name);
 }
 
 void godex::DynamicSystemInfo::execute_after(const StringName &p_system_name) {

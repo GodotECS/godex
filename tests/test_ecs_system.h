@@ -303,7 +303,7 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 	ECS::register_system_dispatcher(test_sub_pipeline_execute, "test_sub_pipeline_execute");
 
 	ECS::register_system(test_system_transform_add_x, "test_system_transform_add_x")
-			.set_phase(PHASE_PROCESS, "test_sub_pipeline_execute");
+			.execute_in(PHASE_PROCESS, "test_sub_pipeline_execute");
 
 	initialize_script_ecs();
 
@@ -328,7 +328,7 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
-		code += "	execute_in_phase(ECS.PHASE_PROCESS, ECS.test_sub_pipeline_execute)\n";
+		code += "	execute_in(ECS.PHASE_PROCESS, ECS.test_sub_pipeline_execute)\n";
 		code += "	with_databag(ECS.TestSystemSubPipeDatabag, MUTABLE)\n";
 		code += "	with_component(ECS.TransformComponent, IMMUTABLE)\n";
 		code += "\n";

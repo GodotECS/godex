@@ -37,7 +37,7 @@ public:
 	System();
 	~System();
 
-	void execute_in_phase(Phase p_phase, uint32_t p_dispatcher_id = godex::SYSTEM_NONE);
+	void execute_in(Phase p_phase, uint32_t p_dispatcher_id = godex::SYSTEM_NONE);
 	void execute_after(uint32_t p_system);
 	void execute_before(uint32_t p_system);
 

@@ -126,7 +126,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
-		code += "	execute_in_phase(ECS.PHASE_POST_PROCESS)\n";
+		code += "	execute_in(ECS.PHASE_POST_PROCESS)\n";
 		code += "	with_component(ECS.PbComponentA, MUTABLE)\n";
 		code += "	with_component(ECS.PbComponentB, MUTABLE)\n";
 		code += "	with_databag(ECS.PbDatabagA, MUTABLE)\n";
@@ -146,7 +146,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
-		code += "	execute_in_phase(ECS.PHASE_CONFIG)\n";
+		code += "	execute_in(ECS.PHASE_CONFIG)\n";
 		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
 		code += "	with_component(ECS.PbComponentB, IMMUTABLE)\n";
 		code += "	with_databag(ECS.PbDatabagA, IMMUTABLE)\n";
@@ -217,7 +217,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
-		code += "	execute_in_phase(ECS.PHASE_CONFIG)\n";
+		code += "	execute_in(ECS.PHASE_CONFIG)\n";
 		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
 		code += "	with_component(ECS.PbComponentB, IMMUTABLE)\n";
 		code += "	with_databag(ECS.PbDatabagA, IMMUTABLE)\n";
@@ -315,7 +315,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 			.before("test_A_system_9.gd");
 
 	ECS::register_system(test_A_system_15, "test_A_system_15")
-			.set_phase(PHASE_CONFIG);
+			.execute_in(PHASE_CONFIG);
 
 	flush_ecs_script_preparation();
 
@@ -457,13 +457,13 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder bundles.") {
 
 	ECS::register_system_bundle("CppBundle")
 			.add(ECS::register_system(test_B_system_4, "test_B_system_4") // Registered as first on purpose, to test the phase
-							.set_phase(PHASE_POST_PROCESS))
+							.execute_in(PHASE_POST_PROCESS))
 			.add(ECS::register_system(test_B_system_2, "test_B_system_2")
-							.set_phase(PHASE_PROCESS))
+							.execute_in(PHASE_PROCESS))
 			.add(ECS::register_system(test_B_system_3, "test_B_system_3")
-							.set_phase(PHASE_PROCESS))
+							.execute_in(PHASE_PROCESS))
 			.add(ECS::register_system(test_B_system_1, "test_B_system_1") // Registered as last on purpose, to test the phase
-							.set_phase(PHASE_CONFIG));
+							.execute_in(PHASE_CONFIG));
 
 	{
 		// Create the script.
@@ -471,7 +471,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder bundles.") {
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
-		code += "	execute_in_phase(ECS.PHASE_CONFIG)\n";
+		code += "	execute_in(ECS.PHASE_CONFIG)\n";
 		code += "	with_component(ECS.PbComponentB, IMMUTABLE)\n";
 		code += "\n";
 		code += "func _for_each(a):\n";
@@ -515,7 +515,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder bundles.") {
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
-		code += "	execute_in_phase(ECS.PHASE_CONFIG)\n";
+		code += "	execute_in(ECS.PHASE_CONFIG)\n";
 		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
 		code += "\n";
 		code += "func _for_each(a, b):\n";
@@ -683,7 +683,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder put the systems that fetch 
 			.add(ECS::register_system(test_C_system_7, "test_C_system_7"))
 			.add(ECS::register_system(test_C_system_12, "test_C_system_12"))
 			.add(ECS::register_system(test_C_system_14, "test_C_system_14")
-							.set_phase(PHASE_PROCESS, "test_C_system_13_dispatcher"));
+							.execute_in(PHASE_PROCESS, "test_C_system_13_dispatcher"));
 
 	{
 		// Create the script.
@@ -750,7 +750,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder put the systems that fetch 
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
-		code += "	execute_in_phase(ECS.PHASE_PROCESS, ECS.test_C_system_13_dispatcher)\n";
+		code += "	execute_in(ECS.PHASE_PROCESS, ECS.test_C_system_13_dispatcher)\n";
 		code += "	with_databag(ECS.World, IMMUTABLE)\n";
 		code += "\n";
 		code += "func _for_each(a):\n";
@@ -1143,7 +1143,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to compose sub pipe
 			.before("test_G_system_1");
 
 	ECS::register_system_dispatcher(test_G_system_dispatcher_2, "test_G_system_dispatcher_2")
-			.set_phase(PHASE_PROCESS, "test_G_system_dispatcher_1");
+			.execute_in(PHASE_PROCESS, "test_G_system_dispatcher_1");
 
 	ECS::register_system_bundle("test_G_system_bundle_cpp")
 
@@ -1152,11 +1152,11 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to compose sub pipe
 			.add(ECS::register_system(test_G_system_7, "test_G_system_7"))
 
 			.add(ECS::register_system(test_G_sub1_system_2, "test_G_sub1_system_2")
-							.set_phase(PHASE_PROCESS, "test_G_system_dispatcher_1")
+							.execute_in(PHASE_PROCESS, "test_G_system_dispatcher_1")
 							.before("test_G_system_dispatcher_2"))
 
 			.add(ECS::register_system(test_G_sub2_system_3, "test_G_sub2_system_3")
-							.set_phase(PHASE_PROCESS, "test_G_system_dispatcher_2"))
+							.execute_in(PHASE_PROCESS, "test_G_system_dispatcher_2"))
 
 			.add(ECS::register_system(test_G_system_4, "test_G_system_4")
 							.before("test_G_system_1"));
@@ -1167,7 +1167,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to compose sub pipe
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
-		code += "	execute_in_phase(ECS.PHASE_PROCESS, ECS.test_G_system_dispatcher_1)\n";
+		code += "	execute_in(ECS.PHASE_PROCESS, ECS.test_G_system_dispatcher_1)\n";
 		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
 		code += "\n";
 		code += "func _for_each(a):\n";
@@ -1183,7 +1183,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to compose sub pipe
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
-		code += "	execute_in_phase(ECS.PHASE_PROCESS, ECS.test_G_system_dispatcher_2)\n";
+		code += "	execute_in(ECS.PHASE_PROCESS, ECS.test_G_system_dispatcher_2)\n";
 		code += "	with_component(ECS.PbDatabagA, MUTABLE)\n";
 		code += "\n";
 		code += "func _for_each(a):\n";

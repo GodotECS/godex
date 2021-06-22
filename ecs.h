@@ -98,7 +98,7 @@ class SystemInfo {
 
 public:
 	godex::system_id get_id() const;
-	SystemInfo &set_phase(Phase p_phase, const StringName &p_dispatcher_name = StringName());
+	SystemInfo &execute_in(Phase p_phase, const StringName &p_dispatcher_name = StringName());
 	SystemInfo &set_description(const String &p_description);
 	SystemInfo &after(const StringName &p_system_name);
 	SystemInfo &before(const StringName &p_system_name);
