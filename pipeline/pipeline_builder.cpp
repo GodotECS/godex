@@ -224,10 +224,10 @@ void PipelineBuilder::build_graph(
 		fetch_system_info(p_systems[i], StringName(), -1, LocalVector<Dependency>(), r_graph);
 	}
 
-	const bool sort_failed = !sort_systems(r_graph);
+	String error;
+	const bool sort_failed = !sort_systems(r_graph, error);
 
 	// Check if we have a cynclic dependency.
-	String error;
 	if (sort_failed || has_cyclick_dependencies(r_graph, error)) {
 		r_graph->print_sorted_systems();
 		r_graph->print_stages();
@@ -236,13 +236,10 @@ void PipelineBuilder::build_graph(
 		r_graph->dispatchers.clear();
 		r_graph->systems.clear();
 		r_graph->valid = false;
-		if (sort_failed) {
-			r_graph->error_msg = TTR("System sorting failed, possible cyclick dependency.");
-		} else {
-			r_graph->error_msg = error;
-		}
+		r_graph->error_msg = error;
 		r_graph->error_msg += TTR(" Pipeline building is aborted.");
-		ERR_FAIL_MSG("[FATAL] " + r_graph->error_msg + " Above the pipeline ---^");
+
+		ERR_FAIL_MSG("[FATAL] " + r_graph->error_msg + " Check the pipeline above ---^");
 		return;
 	}
 
@@ -494,8 +491,22 @@ bool move_after_if_possible(
 		return false;
 	}
 
+	// Check if the dependency is already resolved.
+	{
+		bool found = false;
+		for (List<ExecutionGraph::SystemNode *>::Element *next = p_val->next(); next; next = next->next()) {
+			if (p_where == next) {
+				found = true;
+				break;
+			}
+		}
+		if (found == false) {
+			// The dependency is already satisfied, nothing to do.
+			return true;
+		}
+	}
+
 	// Can move before?
-	bool found = false;
 	for (List<ExecutionGraph::SystemNode *>::Element *next = p_val->next(); next; next = next->next()) {
 		// These two system must respect order only if on the same bundle.
 		const bool skip_implicit_dependency =
@@ -519,19 +530,19 @@ bool move_after_if_possible(
 						}
 					}
 				}
+
+				// No way to move the system.
 				return false;
 			}
 		}
 
 		if (p_where == next) {
-			found = true;
+			// We can move it!
 			break;
 		}
 	}
 
-	if (found) {
-		r_list.move_before(p_val, p_where->next());
-	}
+	r_list.move_before(p_val, p_where->next());
 	return true;
 }
 
@@ -554,8 +565,22 @@ bool move_before_if_possible(
 		return false;
 	}
 
+	// Check if the dependency is already resolved.
+	{
+		bool found = false;
+		for (List<ExecutionGraph::SystemNode *>::Element *prev = p_val->prev(); prev; prev = prev->prev()) {
+			if (p_where == prev) {
+				found = true;
+				break;
+			}
+		}
+		if (found == false) {
+			// The dependency is already satisfied, nothing to do.
+			return true;
+		}
+	}
+
 	// Can move before?
-	bool found = false;
 	for (List<ExecutionGraph::SystemNode *>::Element *prev = p_val->prev(); prev; prev = prev->prev()) {
 		// These two system must respect order only if on the same bundle.
 		const bool skip_implicit_dependency =
@@ -579,23 +604,22 @@ bool move_before_if_possible(
 						}
 					}
 				}
+
+				// No way to move the system.
 				return false;
 			}
 		}
 
 		if (p_where == prev) {
-			found = true;
 			break;
 		}
 	}
 
-	if (found) {
-		r_list.move_before(p_val, p_where);
-	}
+	r_list.move_before(p_val, p_where);
 	return true;
 }
 
-bool PipelineBuilder::sort_systems(ExecutionGraph *r_graph) {
+bool PipelineBuilder::sort_systems(ExecutionGraph *r_graph, String &r_error_msg) {
 	struct SortByPriority {
 		bool operator()(ExecutionGraph::SystemNode *const &p_a, ExecutionGraph::SystemNode *const &p_b) const {
 			// Is `p_a` the smallest?
@@ -659,7 +683,18 @@ bool PipelineBuilder::sort_systems(ExecutionGraph *r_graph) {
 								dispatcher->systems[s]->self_sorted_list,
 								dispatcher->systems[s]->execute_after[i]->self_sorted_list,
 								true)) {
+						move_before_if_possible(
+								dispatcher->sorted_systems,
+								dispatcher->systems[s]->execute_after[i]->self_sorted_list,
+								dispatcher->systems[s]->self_sorted_list,
+								true);
+						move_after_if_possible(
+								dispatcher->sorted_systems,
+								dispatcher->systems[s]->self_sorted_list,
+								dispatcher->systems[s]->execute_after[i]->self_sorted_list,
+								true);
 						// Possible cyclick dependency, however explicit dependency not respected.
+						r_error_msg = TTR("System sorting failed, possible cyclick dependency because is impossible to resolve the following explicit dependency: The system ") + "`" + ECS::get_system_name(dispatcher->systems[s]->id) + TTR(" should be executed after: ") + "`" + ECS::get_system_name(dispatcher->systems[s]->execute_after[i]->id) + "` " + TTR("but for some reason is impossible to do so.");
 						return false;
 					}
 				}

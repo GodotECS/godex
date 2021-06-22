@@ -146,7 +146,7 @@ private:
 			const LocalVector<Dependency> &p_dependencies,
 			ExecutionGraph *r_graph);
 
-	static bool sort_systems(ExecutionGraph *r_graph);
+	static bool sort_systems(ExecutionGraph *r_graph, String &r_error_msg);
 	static bool has_cyclick_dependencies(const ExecutionGraph *r_graph, String &r_error);
 	static void detect_warnings_sub_dispatchers_missing(ExecutionGraph *r_graph);
 	static void detect_warnings_lost_events(ExecutionGraph *r_graph);
