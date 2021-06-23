@@ -619,7 +619,6 @@ bool EntityInternal<C>::set_component_value(const StringName &p_component_name, 
 		}
 
 		owner->update_gizmo();
-		print_line("Component " + p_component_name + " property " + p_property_name + " changed to " + p_value);
 
 		return success;
 	} else {
