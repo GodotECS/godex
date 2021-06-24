@@ -107,6 +107,10 @@ public:
 	WorldECS();
 	virtual ~WorldECS();
 
+#ifdef TOOLS_ENABLED
+	void init_default();
+#endif
+
 	void _notification(int p_what);
 
 	/// Returns the world only if this is not an active world.

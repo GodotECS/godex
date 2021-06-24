@@ -109,8 +109,8 @@ void register_godot_types() {
 							.set_description("Updates the VisualServer mesh transforms."));
 
 	// Physics 3D
-	ECS::register_system_bundle("Physics mechanism")
-			.set_description("Handles the godot PhysicsServer stepping. You need to add this SystemBundle if you want to use the Godot Physics Server.")
+	ECS::register_system_bundle("Physics")
+			.set_description(TTR("Physics mechanism."))
 			.add(ECS::register_system_dispatcher(physics_pipeline_dispatcher, "Physics")
 							.execute_in(PHASE_PROCESS)
 							.set_description("Physics dispatcher"))
@@ -118,17 +118,16 @@ void register_godot_types() {
 			.add(ECS::register_system(physics_init_frame, "physics_init_frame")
 							.execute_in(PHASE_CONFIG, "Physics"))
 
-			.add(ECS::register_system(physics_init_frame, "physics_finalize_frame")
-							.execute_in(PHASE_FINALIZE_PROCESS, "Physics"))
-
 			.add(ECS::register_system(call_physics_process, "CallPhysicsProcess")
 							.execute_in(PHASE_PROCESS, "Physics")
 							.set_description("Updates the Godot Nodes (2D/3D) transform and fetches the events from the physics engine."))
 
 			.add(ECS::register_system(step_physics_server_3d, "StepPhysicsServer3D")
-							.execute_in(PHASE_PROCESS, "Physics")
-							.set_description("Steps the PhysicsServer3D.")
-							.after("CallPhysicsProcess"));
+							.execute_in(PHASE_POST_PROCESS, "Physics")
+							.set_description("Steps the PhysicsServer3D."))
+
+			.add(ECS::register_system(physics_init_frame, "physics_finalize_frame")
+							.execute_in(PHASE_FINALIZE_PROCESS, "Physics"));
 
 	ClassDB::register_class<SharedComponentResource>();
 

@@ -34,7 +34,8 @@ void PipelineECS::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "systems_name"), "set_systems_name", "get_systems_name");
 }
 
-PipelineECS::PipelineECS() {}
+PipelineECS::PipelineECS() {
+}
 
 PipelineECS::~PipelineECS() {
 	if (ECS::get_singleton()->get_active_world_pipeline() == pipeline) {
@@ -320,6 +321,12 @@ void WorldECS::_get_property_list(List<PropertyInfo> *p_list) const {
 void WorldECS::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_READY:
+#ifdef TOOLS_ENABLED
+			if (Engine::get_singleton()->is_editor_hint()) {
+				init_default();
+			}
+#endif
+
 			// Make sure to register all scripted components/databags/systems
 			// at this point.
 			ScriptEcs::get_singleton()->register_runtime_scripts(); // TODO do I need this?
@@ -363,6 +370,27 @@ WorldECS::~WorldECS() {
 	memdelete(world);
 	world = nullptr;
 }
+
+#ifdef TOOLS_ENABLED
+void WorldECS::init_default() {
+	if (pipelines.size() > 0) {
+		// Nothing to do.
+		return;
+	}
+
+	Vector<StringName> bundles;
+	bundles.push_back(StringName("Rendering 3D"));
+	bundles.push_back(StringName("Physics"));
+
+	Ref<PipelineECS> pip;
+	pip.instance();
+	pip->set_system_bundles(bundles);
+	pip->set_pipeline_name("Main");
+
+	add_pipeline(pip);
+	set_active_pipeline("Main");
+}
+#endif
 
 World *WorldECS::get_world() const {
 	//ERR_FAIL_COND_V_MSG(is_active, nullptr, "This World is active, so you can manipulate the world through `ECS::get_singleton()->get_commands()`.");
