@@ -8,6 +8,7 @@
 #include "../components/transform_component.h"
 #include "../databags/input_databag.h"
 #include "../databags/scene_tree_databag.h"
+#include "core/core_string_names.h"
 #include "core/templates/list.h"
 #include "ecs_utilities.h"
 #include "entity.h"
@@ -33,7 +34,8 @@ void PipelineECS::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "systems_name"), "set_systems_name", "get_systems_name");
 }
 
-PipelineECS::PipelineECS() {}
+PipelineECS::PipelineECS() {
+}
 
 PipelineECS::~PipelineECS() {
 	if (ECS::get_singleton()->get_active_world_pipeline() == pipeline) {
@@ -156,6 +158,10 @@ const ExecutionGraph *PipelineECS::editor_get_execution_graph() {
 
 	editor_execution_graph = memnew(ExecutionGraph);
 	PipelineBuilder::build_graph(system_bundles, systems_name, editor_execution_graph);
+	return editor_execution_graph;
+}
+
+const ExecutionGraph *PipelineECS::editor_get_execution_graph_or_null() const {
 	return editor_execution_graph;
 }
 
@@ -315,6 +321,12 @@ void WorldECS::_get_property_list(List<PropertyInfo> *p_list) const {
 void WorldECS::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_READY:
+#ifdef TOOLS_ENABLED
+			if (Engine::get_singleton()->is_editor_hint()) {
+				init_default();
+			}
+#endif
+
 			// Make sure to register all scripted components/databags/systems
 			// at this point.
 			ScriptEcs::get_singleton()->register_runtime_scripts(); // TODO do I need this?
@@ -359,6 +371,27 @@ WorldECS::~WorldECS() {
 	world = nullptr;
 }
 
+#ifdef TOOLS_ENABLED
+void WorldECS::init_default() {
+	if (pipelines.size() > 0) {
+		// Nothing to do.
+		return;
+	}
+
+	Vector<StringName> bundles;
+	bundles.push_back(StringName("Rendering 3D"));
+	bundles.push_back(StringName("Physics"));
+
+	Ref<PipelineECS> pip;
+	pip.instance();
+	pip->set_system_bundles(bundles);
+	pip->set_pipeline_name("Main");
+
+	add_pipeline(pip);
+	set_active_pipeline("Main");
+}
+#endif
+
 World *WorldECS::get_world() const {
 	//ERR_FAIL_COND_V_MSG(is_active, nullptr, "This World is active, so you can manipulate the world through `ECS::get_singleton()->get_commands()`.");
 	return world;
@@ -376,6 +409,20 @@ TypedArray<String> WorldECS::get_configuration_warnings() const {
 
 	if (nodes.size() > 1) {
 		warnings.push_back(TTR("Only one WorldECS is allowed per scene (or set of instanced scenes)."));
+	}
+
+	if (!has_pipeline(active_pipeline)) {
+		warnings.push_back(TTR("The selected pipeline `") + active_pipeline + TTR("` doesn't exists in this WorldECS."));
+	}
+
+	for (int i = 0; i < pipelines.size(); i += 1) {
+		const ExecutionGraph *graph = pipelines[i]->editor_get_execution_graph_or_null();
+		if (graph) {
+			if (!graph->is_valid() || graph->get_warnings().size() > 0) {
+				warnings.push_back(TTR("One or more pipelines on this WorldECS are invalid, check the WorldECS editor to know more."));
+				break;
+			}
+		}
 	}
 
 	return warnings;
@@ -396,11 +443,24 @@ Vector<Ref<PipelineECS>> &WorldECS::get_pipelines() {
 void WorldECS::add_pipeline(Ref<PipelineECS> p_pipeline) {
 	pipelines.push_back(p_pipeline);
 	notify_property_list_changed();
+	update_configuration_warnings();
+
+	Vector<Variant> vars;
+	vars.push_back(p_pipeline);
+	p_pipeline->connect(
+			CoreStringNames::get_singleton()->property_list_changed,
+			callable_mp(this, &WorldECS::on_pipeline_changed),
+			vars);
 }
 
 void WorldECS::remove_pipeline(Ref<PipelineECS> p_pipeline) {
 	pipelines.erase(p_pipeline);
 	notify_property_list_changed();
+	update_configuration_warnings();
+
+	p_pipeline->disconnect(
+			CoreStringNames::get_singleton()->property_list_changed,
+			callable_mp(this, &WorldECS::on_pipeline_changed));
 }
 
 Ref<PipelineECS> WorldECS::find_pipeline(StringName p_name) {
@@ -410,6 +470,10 @@ Ref<PipelineECS> WorldECS::find_pipeline(StringName p_name) {
 	} else {
 		return pipelines[index];
 	}
+}
+
+bool WorldECS::has_pipeline(StringName p_name) const {
+	return find_pipeline_index(p_name) != -1;
 }
 
 int WorldECS::find_pipeline_index(StringName p_name) const {
@@ -440,14 +504,15 @@ StringName WorldECS::get_system_dispatchers_pipeline(const StringName &p_system_
 void WorldECS::set_active_pipeline(StringName p_name) {
 	active_pipeline = p_name;
 	if (Engine::get_singleton()->is_editor_hint()) {
-		return;
-	}
-	if (ECS::get_singleton()->get_active_world() == world) {
-		Ref<PipelineECS> pip = find_pipeline(p_name);
-		if (pip.is_valid()) {
-			ECS::get_singleton()->set_active_world_pipeline(pip->get_pipeline());
-		} else {
-			ECS::get_singleton()->set_active_world_pipeline(nullptr);
+		update_configuration_warnings();
+	} else {
+		if (ECS::get_singleton()->get_active_world() == world) {
+			Ref<PipelineECS> pip = find_pipeline(p_name);
+			if (pip.is_valid()) {
+				ECS::get_singleton()->set_active_world_pipeline(pip->get_pipeline());
+			} else {
+				ECS::get_singleton()->set_active_world_pipeline(nullptr);
+			}
 		}
 	}
 }
@@ -475,6 +540,10 @@ void WorldECS::post_process() {
 	// The inputs are generated at very beginning by the platform main,
 	// at this point we don't need the inputs so we can just clear the input here.
 	clear_inputs();
+}
+
+void WorldECS::on_pipeline_changed(Ref<PipelineECS> p_pipeline) {
+	update_configuration_warnings();
 }
 
 void WorldECS::active_world() {

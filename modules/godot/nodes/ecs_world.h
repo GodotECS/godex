@@ -66,6 +66,7 @@ public:
 	/// This API works only in editor and returns the updated execution graph.
 	/// Never, store the returned pointer.
 	const ExecutionGraph *editor_get_execution_graph();
+	const ExecutionGraph *editor_get_execution_graph_or_null() const;
 	void editor_clear_execution_graph();
 #endif
 };
@@ -106,6 +107,10 @@ public:
 	WorldECS();
 	virtual ~WorldECS();
 
+#ifdef TOOLS_ENABLED
+	void init_default();
+#endif
+
 	void _notification(int p_what);
 
 	/// Returns the world only if this is not an active world.
@@ -124,6 +129,7 @@ public:
 	void remove_pipeline(Ref<PipelineECS> p_pipeline);
 
 	Ref<PipelineECS> find_pipeline(StringName p_name);
+	bool has_pipeline(StringName p_name) const;
 	int find_pipeline_index(StringName p_name) const;
 
 	void set_system_dispatchers_map(Dictionary p_map);
@@ -171,6 +177,8 @@ public:
 
 	void pre_process();
 	void post_process();
+
+	void on_pipeline_changed(Ref<PipelineECS> p_pipeline);
 
 private:
 	void active_world();
