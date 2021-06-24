@@ -16,6 +16,8 @@ class ExecutionGraph;
 /// given `WorldECS`.
 class PipelineECS : public Resource {
 	GDCLASS(PipelineECS, Resource)
+	friend class WorldECS;
+
 	/// This name is used to reference this pipeline.
 	StringName pipeline_name;
 
@@ -67,6 +69,7 @@ public:
 	/// Never, store the returned pointer.
 	const ExecutionGraph *editor_get_execution_graph();
 	const ExecutionGraph *editor_get_execution_graph_or_null() const;
+	void editor_reload_execution_graph();
 	void editor_clear_execution_graph();
 #endif
 };
@@ -178,7 +181,10 @@ public:
 	void pre_process();
 	void post_process();
 
+#ifdef TOOLS_ENABLED
 	void on_pipeline_changed(Ref<PipelineECS> p_pipeline);
+	void on_ecs_script_reloaded(String p_path, StringName p_name);
+#endif
 
 private:
 	void active_world();
