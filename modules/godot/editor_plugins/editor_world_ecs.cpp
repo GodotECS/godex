@@ -482,6 +482,47 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		}
 	}
 
+	// ~~ Errors & Warnings ~~
+	{
+		errors_warnings_panel = memnew(Panel);
+		errors_warnings_panel->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		errors_warnings_panel->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		errors_warnings_panel->set_anchor(SIDE_LEFT, 0.0);
+		errors_warnings_panel->set_anchor(SIDE_TOP, 0.0);
+		errors_warnings_panel->set_anchor(SIDE_RIGHT, 1.0);
+		errors_warnings_panel->set_anchor(SIDE_BOTTOM, 1.0);
+		Ref<StyleBoxFlat> style;
+		style.instance();
+		style->set_bg_color(Color(0.01, 0.01, 0.01));
+		errors_warnings_panel->add_theme_style_override("panel", style);
+		main_vb->add_child(errors_warnings_panel);
+
+		ScrollContainer *wrapper = memnew(ScrollContainer);
+		wrapper->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		//wrapper->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		wrapper->set_anchor(SIDE_LEFT, 0.0);
+		wrapper->set_anchor(SIDE_TOP, 0.0);
+		wrapper->set_anchor(SIDE_RIGHT, 1.0);
+		wrapper->set_anchor(SIDE_BOTTOM, 1.0);
+		wrapper->set_enable_h_scroll(false);
+		wrapper->set_enable_v_scroll(true);
+		errors_warnings_panel->add_child(wrapper);
+
+		PanelContainer *panel = memnew(PanelContainer);
+		panel->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		//panel->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		panel->set_anchor(SIDE_LEFT, 0.0);
+		panel->set_anchor(SIDE_TOP, 0.0);
+		panel->set_anchor(SIDE_RIGHT, 1.0);
+		panel->set_anchor(SIDE_BOTTOM, 1.0);
+		wrapper->add_child(panel);
+
+		errors_warnings_container = memnew(HBoxContainer);
+		errors_warnings_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		//errors_warnings_container->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		panel->add_child(errors_warnings_container);
+	}
+
 	// ~~ Rename pipeline window ~~
 	{
 		pipeline_window_rename = memnew(AcceptDialog);
@@ -742,6 +783,7 @@ void EditorWorldECS::set_pipeline(Ref<PipelineECS> p_pipeline) {
 	}
 
 	pipeline_features_update();
+	pipeline_errors_warnings_update();
 }
 
 void EditorWorldECS::pipeline_change_name(const String &p_name) {
@@ -795,6 +837,7 @@ void EditorWorldECS::pipeline_on_menu_select(int p_index) {
 	// Always position the cursor at the end.
 	pipeline_name_ledit->set_caret_column(INT32_MAX);
 	pipeline_features_update();
+	pipeline_errors_warnings_update();
 }
 
 void EditorWorldECS::pipeline_add() {
@@ -854,6 +897,25 @@ void EditorWorldECS::pipeline_remove() {
 void EditorWorldECS::pipeline_toggle_pipeline_view() {
 	main_container_pipeline_view->set_visible(!main_container_pipeline_view->is_visible());
 	pipeline_view_update();
+}
+
+void EditorWorldECS::pipeline_errors_warnings_update() {
+	clear_errors_warnings();
+	bool show = false;
+
+	if (pipeline.is_valid()) {
+		if (!pipeline->editor_get_execution_graph()->is_valid()) {
+			add_error(pipeline->editor_get_execution_graph()->get_error_msg());
+			show = true;
+		}
+
+		for (int i = 0; i < pipeline->editor_get_execution_graph()->get_warnings().size(); i += 1) {
+			add_warning(pipeline->editor_get_execution_graph()->get_warnings()[i]);
+			show = true;
+		}
+	}
+
+	errors_warnings_panel->set_visible(show);
 }
 
 void EditorWorldECS::pipeline_features_update() {
@@ -1134,6 +1196,28 @@ void EditorWorldECS::components_manage_show() {
 void EditorWorldECS::components_manage_on_component_select() {
 }
 
+void EditorWorldECS::add_error(const String &p_msg) {
+	Label *lbl = memnew(Label);
+	lbl->set_text("- [Error] " + p_msg);
+	lbl->add_theme_color_override("font_color", Color(0.95, 0.05, 0));
+	errors_warnings_container->add_child(lbl);
+}
+
+void EditorWorldECS::add_warning(const String &p_msg) {
+	Label *lbl = memnew(Label);
+	lbl->set_text("- [Warning] " + p_msg);
+	lbl->add_theme_color_override("font_color", Color(0.96, 0.9, 0.45));
+	errors_warnings_container->add_child(lbl);
+}
+
+void EditorWorldECS::clear_errors_warnings() {
+	for (int i = errors_warnings_container->get_child_count() - 1; i >= 0; i -= 1) {
+		Node *n = errors_warnings_container->get_child(i);
+		errors_warnings_container->get_child(i)->remove_and_skip();
+		memdelete(n);
+	}
+}
+
 void EditorWorldECS::_changed_world_callback() {
 	pipeline_list_update();
 }
@@ -1141,6 +1225,7 @@ void EditorWorldECS::_changed_world_callback() {
 void EditorWorldECS::_changed_pipeline_callback() {
 	pipeline_list_update();
 	pipeline_features_update();
+	pipeline_errors_warnings_update();
 }
 
 PipelineElementInfoBox *EditorWorldECS::pipeline_panel_add_entry() {

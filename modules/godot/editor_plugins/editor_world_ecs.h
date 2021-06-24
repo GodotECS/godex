@@ -103,6 +103,9 @@ class EditorWorldECS : public PanelContainer {
 	VBoxContainer *main_container_pipeline_view = nullptr;
 	VBoxContainer *pipeline_view_panel = nullptr;
 
+	Panel *errors_warnings_panel = nullptr;
+	HBoxContainer *errors_warnings_container = nullptr;
+
 	// Rename pipeline
 	AcceptDialog *pipeline_window_rename = nullptr;
 	LineEdit *pipeline_name_ledit = nullptr;
@@ -139,6 +142,7 @@ public:
 	void pipeline_toggle_pipeline_view();
 
 	void pipeline_features_update();
+	void pipeline_errors_warnings_update();
 	void pipeline_view_update();
 
 	void pipeline_system_bundle_remove(const StringName &p_name);
@@ -153,6 +157,10 @@ public:
 
 	void components_manage_show();
 	void components_manage_on_component_select();
+
+	void add_error(const String &p_msg);
+	void add_warning(const String &p_msg);
+	void clear_errors_warnings();
 
 protected:
 	void _changed_world_callback();

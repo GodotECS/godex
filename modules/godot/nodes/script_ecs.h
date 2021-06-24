@@ -49,6 +49,8 @@ class ScriptEcs : public Object {
 
 	static ScriptEcs *singleton;
 
+	static void _bind_methods();
+
 public:
 	ScriptEcs();
 	~ScriptEcs();

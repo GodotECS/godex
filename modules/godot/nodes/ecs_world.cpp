@@ -64,7 +64,7 @@ StringName PipelineECS::get_pipeline_name() const {
 void PipelineECS::set_systems_name(Vector<StringName> p_system_names) {
 	systems_name = p_system_names;
 #ifdef TOOLS_ENABLED
-	editor_clear_execution_graph();
+	editor_reload_execution_graph();
 #endif
 	notify_property_list_changed();
 }
@@ -76,7 +76,7 @@ Vector<StringName> PipelineECS::get_systems_name() const {
 void PipelineECS::set_system_bundles(Vector<StringName> p_system_bundles) {
 	system_bundles = p_system_bundles;
 #ifdef TOOLS_ENABLED
-	editor_clear_execution_graph();
+	editor_reload_execution_graph();
 #endif
 	notify_property_list_changed();
 }
@@ -89,7 +89,7 @@ void PipelineECS::add_system_bundle(const StringName &p_bundle_name) {
 	ERR_FAIL_COND_MSG(system_bundles.find(p_bundle_name) != -1, "This bundle: " + p_bundle_name + " is already in the world.");
 	system_bundles.push_back(p_bundle_name);
 #ifdef TOOLS_ENABLED
-	editor_clear_execution_graph();
+	editor_reload_execution_graph();
 #endif
 	notify_property_list_changed();
 }
@@ -97,7 +97,7 @@ void PipelineECS::add_system_bundle(const StringName &p_bundle_name) {
 void PipelineECS::remove_system_bundle(const StringName &p_bundle_name) {
 	system_bundles.erase(p_bundle_name);
 #ifdef TOOLS_ENABLED
-	editor_clear_execution_graph();
+	editor_reload_execution_graph();
 #endif
 	notify_property_list_changed();
 }
@@ -106,7 +106,7 @@ void PipelineECS::insert_system(const StringName &p_system_name) {
 	ERR_FAIL_COND_MSG(systems_name.find(p_system_name) != -1, "This system: " + p_system_name + " is already in the world.");
 	systems_name.push_back(p_system_name);
 #ifdef TOOLS_ENABLED
-	editor_clear_execution_graph();
+	editor_reload_execution_graph();
 #endif
 	notify_property_list_changed();
 }
@@ -114,7 +114,7 @@ void PipelineECS::insert_system(const StringName &p_system_name) {
 void PipelineECS::remove_system(const StringName &p_system_name) {
 	systems_name.erase(p_system_name);
 #ifdef TOOLS_ENABLED
-	editor_clear_execution_graph();
+	editor_reload_execution_graph();
 #endif
 	notify_property_list_changed();
 }
@@ -163,6 +163,12 @@ const ExecutionGraph *PipelineECS::editor_get_execution_graph() {
 
 const ExecutionGraph *PipelineECS::editor_get_execution_graph_or_null() const {
 	return editor_execution_graph;
+}
+
+void PipelineECS::editor_reload_execution_graph() {
+	editor_clear_execution_graph();
+	// Re-build the execution graph.
+	editor_get_execution_graph();
 }
 
 void PipelineECS::editor_clear_execution_graph() {
@@ -324,6 +330,8 @@ void WorldECS::_notification(int p_what) {
 #ifdef TOOLS_ENABLED
 			if (Engine::get_singleton()->is_editor_hint()) {
 				init_default();
+
+				ScriptEcs::get_singleton()->connect("ecs_script_reloaded", callable_mp(this, &WorldECS::on_ecs_script_reloaded), Vector<Variant>(), CONNECT_DEFERRED);
 			}
 #endif
 
@@ -353,7 +361,14 @@ void WorldECS::_notification(int p_what) {
 			if (Engine::get_singleton()->is_editor_hint() == false) {
 				unactive_world();
 			}
+
 			remove_from_group("_world_ecs");
+
+#ifdef TOOLS_ENABLED
+			if (Engine::get_singleton()->is_editor_hint()) {
+				ScriptEcs::get_singleton()->disconnect("ecs_script_reloaded", callable_mp(this, &WorldECS::on_ecs_script_reloaded));
+			}
+#endif
 			break;
 	}
 }
@@ -418,9 +433,11 @@ TypedArray<String> WorldECS::get_configuration_warnings() const {
 	for (int i = 0; i < pipelines.size(); i += 1) {
 		const ExecutionGraph *graph = pipelines[i]->editor_get_execution_graph_or_null();
 		if (graph) {
-			if (!graph->is_valid() || graph->get_warnings().size() > 0) {
-				warnings.push_back(TTR("One or more pipelines on this WorldECS are invalid, check the WorldECS editor to know more."));
-				break;
+			if (!graph->is_valid()) {
+				warnings.push_back("[Pipeline: " + pipelines[i]->get_pipeline_name() + "][ERROR] " + graph->get_error_msg());
+			}
+			for (int w = 0; w < graph->get_warnings().size(); w += 1) {
+				warnings.push_back("[Pipeline: " + pipelines[i]->get_pipeline_name() + "] " + graph->get_warnings()[w]);
 			}
 		}
 	}
@@ -443,24 +460,34 @@ Vector<Ref<PipelineECS>> &WorldECS::get_pipelines() {
 void WorldECS::add_pipeline(Ref<PipelineECS> p_pipeline) {
 	pipelines.push_back(p_pipeline);
 	notify_property_list_changed();
-	update_configuration_warnings();
 
-	Vector<Variant> vars;
-	vars.push_back(p_pipeline);
-	p_pipeline->connect(
-			CoreStringNames::get_singleton()->property_list_changed,
-			callable_mp(this, &WorldECS::on_pipeline_changed),
-			vars);
+#ifdef TOOLS_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		update_configuration_warnings();
+
+		Vector<Variant> vars;
+		vars.push_back(p_pipeline);
+		p_pipeline->connect(
+				CoreStringNames::get_singleton()->property_list_changed,
+				callable_mp(this, &WorldECS::on_pipeline_changed),
+				vars);
+	}
+#endif
 }
 
 void WorldECS::remove_pipeline(Ref<PipelineECS> p_pipeline) {
 	pipelines.erase(p_pipeline);
 	notify_property_list_changed();
-	update_configuration_warnings();
 
-	p_pipeline->disconnect(
-			CoreStringNames::get_singleton()->property_list_changed,
-			callable_mp(this, &WorldECS::on_pipeline_changed));
+#ifdef TOOLS_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		update_configuration_warnings();
+
+		p_pipeline->disconnect(
+				CoreStringNames::get_singleton()->property_list_changed,
+				callable_mp(this, &WorldECS::on_pipeline_changed));
+	}
+#endif
 }
 
 Ref<PipelineECS> WorldECS::find_pipeline(StringName p_name) {
@@ -542,9 +569,19 @@ void WorldECS::post_process() {
 	clear_inputs();
 }
 
+#ifdef TOOLS_ENABLED
 void WorldECS::on_pipeline_changed(Ref<PipelineECS> p_pipeline) {
 	update_configuration_warnings();
 }
+
+void WorldECS::on_ecs_script_reloaded(String p_path, StringName p_name) {
+	Ref<PipelineECS> *pips = pipelines.ptrw();
+	for (int i = 0; i < pipelines.size(); i += 1) {
+		pips[i]->editor_reload_execution_graph();
+	}
+	update_configuration_warnings();
+}
+#endif
 
 void WorldECS::active_world() {
 	ERR_FAIL_COND_MSG(is_inside_tree() == false, "This WorldECS is not in tree, you can't activate it.");

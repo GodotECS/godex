@@ -104,7 +104,7 @@ void ExecutionGraph::print_sorted_systems() const {
 			e = dispatchers.next_iter(e)) {
 		print_line("# Dispatcher: " + (*e.key));
 		for (const List<SystemNode *>::Element *a = (*e.value)->sorted_systems.front(); a; a = a->next()) {
-			print_line("|- " + ECS::get_system_name(a->get()->id) + " SystemID: " + itos(a->get()->id));
+			print_line("|- " + ECS::get_system_name(a->get()->id) + " [#" + itos(a->get()->id) + "]");
 		}
 	}
 	print_line("");

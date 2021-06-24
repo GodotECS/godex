@@ -13,6 +13,10 @@
 
 ScriptEcs *ScriptEcs::singleton = nullptr;
 
+void ScriptEcs::_bind_methods() {
+	ADD_SIGNAL(MethodInfo("ecs_script_reloaded", PropertyInfo(Variant::STRING, "path"), PropertyInfo(Variant::STRING_NAME, "name")));
+}
+
 ScriptEcs::ScriptEcs() {
 	singleton = this;
 }
@@ -300,6 +304,9 @@ bool ScriptEcs::__reload_script(Ref<Script> script, const String &p_path, const 
 		// Make sure the path removed.
 		remove_script("ECS/Autoload/scripts", p_path);
 	}
+
+	emit_signal("ecs_script_reloaded", p_path, p_name);
+
 	return is_valid;
 }
 
