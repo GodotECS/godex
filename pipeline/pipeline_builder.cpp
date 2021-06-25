@@ -400,12 +400,22 @@ void PipelineBuilder::fetch_system_info(
 		const LocalVector<Dependency> &p_extra_dependencies,
 		ExecutionGraph *r_graph) {
 	godex::system_id id = ECS::get_system_id(p_system);
-	ERR_FAIL_COND_MSG(id == godex::SYSTEM_NONE, "The system " + p_system + " doesn't exists.");
-	ERR_FAIL_COND_MSG(r_graph->systems[id].is_used, "The system " + p_system + " is being used twice. Skip it.");
+	if (id == godex::SYSTEM_NONE) {
+		r_graph->warnings.push_back(TTR("The system ") + p_system + TTR(" is invalid and it's excluded from pipeline. Check the log to know how to fix the issue."));
+		ERR_FAIL_COND_MSG(id == godex::SYSTEM_NONE, "The system " + p_system + " doesn't exists.");
+	}
+	if (r_graph->systems[id].is_used) {
+		r_graph->warnings.push_back(TTR("The system ") + p_system + TTR(" is being used twice, this is not supposed to happen. The second usage is being dropped."));
+		ERR_FAIL_COND_MSG(r_graph->systems[id].is_used, "The system " + p_system + " is being used twice. Skip it.");
+	}
 
 	SystemExeInfo system_info;
 	ECS::get_system_exe_info(id, system_info);
-	ERR_FAIL_COND_MSG(system_info.valid == false, "The system " + p_system + " is invalid.");
+
+	if (!system_info.valid) {
+		r_graph->warnings.push_back(TTR("The system ") + p_system + TTR(" is invalid and it's excluded from pipeline. Check the log to know how to fix the issue."));
+		ERR_FAIL_COND_MSG(system_info.valid == false, "The system " + p_system + " is invalid.");
+	}
 
 	r_graph->systems[id].is_used = true;
 	r_graph->systems[id].id = id;
