@@ -9,6 +9,8 @@ class PipelineECS;
 class EditorWorldECS;
 class SpinBox;
 class Tree;
+class DispatcherPipelineView;
+class ColorRect;
 
 class PipelineElementInfoBox : public MarginContainer {
 	GDCLASS(PipelineElementInfoBox, MarginContainer);
@@ -52,21 +54,56 @@ public:
 	void dispatcher_pipeline_change(const String &p_value);
 };
 
-class StageElementInfoBox : public MarginContainer {
-	GDCLASS(StageElementInfoBox, MarginContainer);
+class SystemView : public MarginContainer {
+	GDCLASS(SystemView, MarginContainer);
+
+	Label *name_lbl = nullptr;
+	ColorRect *color_rect = nullptr;
+
+public:
+	SystemView();
+	~SystemView();
+
+	void set_name(const String &p_name);
+	void set_bg_color(const Color &p_color);
+};
+
+class StageView : public MarginContainer {
+	GDCLASS(StageView, MarginContainer);
 
 	EditorNode *editor = nullptr;
 	EditorWorldECS *editor_world_ecs = nullptr;
 
 	Label *name_lbl = nullptr;
-	ItemList *systems_list = nullptr;
+	VBoxContainer *box = nullptr;
 
 public:
-	StageElementInfoBox(EditorNode *p_editor, EditorWorldECS *p_editor_world_ecs);
-	~StageElementInfoBox();
+	StageView(EditorNode *p_editor, EditorWorldECS *p_editor_world_ecs);
+	~StageView();
 
-	void setup_system_bundle(uint32_t p_stage_id);
-	void add_system(const StringName &p_system_name);
+	void setup_stage(uint32_t p_stage_id);
+	SystemView *add_system();
+	DispatcherPipelineView *add_sub_dispatcher();
+};
+
+class DispatcherPipelineView : public MarginContainer {
+	GDCLASS(DispatcherPipelineView, MarginContainer);
+
+	EditorNode *editor = nullptr;
+	EditorWorldECS *editor_world_ecs = nullptr;
+
+	Ref<StyleBoxFlat> panel_style;
+	VBoxContainer *box = nullptr;
+	Label *dispatcher_lbl = nullptr;
+
+public:
+	DispatcherPipelineView(EditorNode *p_editor, EditorWorldECS *p_editor_world_ecs);
+	~DispatcherPipelineView();
+
+	void set_dispatcher_name(const String &p_name);
+	void set_bg_color(const Color &p_color);
+
+	StageView *add_stage();
 };
 
 class ComponentElement : public HBoxContainer {
@@ -169,7 +206,7 @@ protected:
 	PipelineElementInfoBox *pipeline_panel_add_entry();
 	void pipeline_panel_clear();
 
-	StageElementInfoBox *pipeline_view_add_stage();
+	DispatcherPipelineView *pipeline_view_add_dispatcher();
 	void pipeline_view_clear();
 };
 
