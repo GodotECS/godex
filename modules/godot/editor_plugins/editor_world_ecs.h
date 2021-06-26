@@ -9,6 +9,8 @@ class PipelineECS;
 class EditorWorldECS;
 class SpinBox;
 class Tree;
+class DispatcherPipelineView;
+class ColorRect;
 
 class PipelineElementInfoBox : public MarginContainer {
 	GDCLASS(PipelineElementInfoBox, MarginContainer);
@@ -31,7 +33,6 @@ private:
 	Label *system_name_lbl = nullptr;
 	Label *extra_info_lbl = nullptr;
 	Button *icon_btn = nullptr;
-	LineEdit *dispatcher_pipeline_name = nullptr;
 
 	StringName name;
 	SystemMode mode = SYSTEM_INVALID;
@@ -42,31 +43,64 @@ public:
 	~PipelineElementInfoBox();
 
 	void setup_system(const StringName &p_name, SystemMode p_mode);
-	void set_pipeline_dispatcher(const StringName &p_current_pipeline_name);
 	void set_extra_info(const String &p_desc);
 	void set_is_bundle(bool p_bundle);
 
 	Point2 name_global_transform() const;
 
 	void system_remove();
-	void dispatcher_pipeline_change(const String &p_value);
 };
 
-class StageElementInfoBox : public MarginContainer {
-	GDCLASS(StageElementInfoBox, MarginContainer);
+class SystemView : public MarginContainer {
+	GDCLASS(SystemView, MarginContainer);
+
+	Label *name_lbl = nullptr;
+	ColorRect *color_rect = nullptr;
+
+public:
+	SystemView();
+	~SystemView();
+
+	void set_name(const String &p_name);
+	void set_bg_color(const Color &p_color);
+};
+
+class StageView : public MarginContainer {
+	GDCLASS(StageView, MarginContainer);
 
 	EditorNode *editor = nullptr;
 	EditorWorldECS *editor_world_ecs = nullptr;
 
 	Label *name_lbl = nullptr;
-	ItemList *systems_list = nullptr;
+	VBoxContainer *box = nullptr;
 
 public:
-	StageElementInfoBox(EditorNode *p_editor, EditorWorldECS *p_editor_world_ecs);
-	~StageElementInfoBox();
+	StageView(EditorNode *p_editor, EditorWorldECS *p_editor_world_ecs);
+	~StageView();
 
-	void setup_system_bundle(uint32_t p_stage_id);
-	void add_system(const StringName &p_system_name);
+	void setup_stage(uint32_t p_stage_id);
+	SystemView *add_system();
+	DispatcherPipelineView *add_sub_dispatcher();
+};
+
+class DispatcherPipelineView : public MarginContainer {
+	GDCLASS(DispatcherPipelineView, MarginContainer);
+
+	EditorNode *editor = nullptr;
+	EditorWorldECS *editor_world_ecs = nullptr;
+
+	Ref<StyleBoxFlat> panel_style;
+	VBoxContainer *box = nullptr;
+	Label *dispatcher_lbl = nullptr;
+
+public:
+	DispatcherPipelineView(EditorNode *p_editor, EditorWorldECS *p_editor_world_ecs);
+	~DispatcherPipelineView();
+
+	void set_dispatcher_name(const String &p_name);
+	void set_bg_color(const Color &p_color);
+
+	StageView *add_stage();
 };
 
 class ComponentElement : public HBoxContainer {
@@ -104,7 +138,7 @@ class EditorWorldECS : public PanelContainer {
 	VBoxContainer *pipeline_view_panel = nullptr;
 
 	Panel *errors_warnings_panel = nullptr;
-	HBoxContainer *errors_warnings_container = nullptr;
+	VBoxContainer *errors_warnings_container = nullptr;
 
 	// Rename pipeline
 	AcceptDialog *pipeline_window_rename = nullptr;
@@ -147,7 +181,6 @@ public:
 
 	void pipeline_system_bundle_remove(const StringName &p_name);
 	void pipeline_system_remove(const StringName &p_name);
-	void pipeline_system_dispatcher_set_pipeline(const StringName &p_system_name, const StringName &p_pipeline_name);
 
 	void add_sys_show();
 	void add_sys_hide();
@@ -169,7 +202,7 @@ protected:
 	PipelineElementInfoBox *pipeline_panel_add_entry();
 	void pipeline_panel_clear();
 
-	StageElementInfoBox *pipeline_view_add_stage();
+	DispatcherPipelineView *pipeline_view_add_dispatcher();
 	void pipeline_view_clear();
 };
 

@@ -683,6 +683,10 @@ bool PipelineBuilder::sort_systems(ExecutionGraph *r_graph, String &r_error_msg)
 		// Now adjust the systems according to the explicit dependencies.
 		for (uint32_t s = 0; s < dispatcher->systems.size(); s += 1) {
 			for (int i = 0; i < int(dispatcher->systems[s]->execute_after.size()); i += 1) {
+				if (dispatcher->systems[s]->execute_after[i]->is_used == false) {
+					// System not used, nothing to do.
+					continue;
+				}
 				if (!move_before_if_possible(
 							dispatcher->sorted_systems,
 							dispatcher->systems[s]->execute_after[i]->self_sorted_list,

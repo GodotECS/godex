@@ -8,6 +8,7 @@
 #include "editor/editor_node.h"
 #include "editor/editor_scale.h"
 #include "scene/gui/color_rect.h"
+#include "scene/gui/reference_rect.h"
 
 PipelineElementInfoBox::PipelineElementInfoBox(EditorNode *p_editor, EditorWorldECS *p_editor_world_ecs) :
 		editor(p_editor),
@@ -56,15 +57,6 @@ PipelineElementInfoBox::PipelineElementInfoBox(EditorNode *p_editor, EditorWorld
 	extra_info_lbl->add_theme_color_override("font_color", Color(0.7, 0.7, 0.7));
 	box->add_child(extra_info_lbl);
 
-	dispatcher_pipeline_name = memnew(LineEdit);
-	dispatcher_pipeline_name->set_placeholder(TTR("Pipeline name."));
-	dispatcher_pipeline_name->set_right_icon(editor->get_theme_base()->get_theme_icon("Rename", "EditorIcons"));
-	dispatcher_pipeline_name->set_visible(false);
-	dispatcher_pipeline_name->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-	dispatcher_pipeline_name->set_v_size_flags(SizeFlags::SIZE_EXPAND);
-	dispatcher_pipeline_name->connect("text_changed", callable_mp(this, &PipelineElementInfoBox::dispatcher_pipeline_change));
-	box->add_child(dispatcher_pipeline_name);
-
 	icon_btn = memnew(Button);
 	icon_btn->set_flat(true);
 	icon_btn->set_disabled(true);
@@ -89,7 +81,6 @@ void PipelineElementInfoBox::setup_system(const StringName &p_name, SystemMode p
 			break;
 		case SYSTEM_DISPATCHER:
 			icon_name = "ShaderMaterial";
-			dispatcher_pipeline_name->set_visible(true);
 			break;
 		case SYSTEM_SCRIPT:
 			icon_name = "Script";
@@ -105,12 +96,6 @@ void PipelineElementInfoBox::setup_system(const StringName &p_name, SystemMode p
 	icon_btn->set_icon(editor->get_theme_base()->get_theme_icon(icon_name, "EditorIcons"));
 
 	mode = p_mode;
-}
-
-void PipelineElementInfoBox::set_pipeline_dispatcher(const StringName &p_current_pipeline_name) {
-	// Set the pipeline name before marking this system as dispatcher so
-	// we can avoid trigger the name change.
-	dispatcher_pipeline_name->set_text(p_current_pipeline_name);
 }
 
 void PipelineElementInfoBox::set_extra_info(const String &p_desc) {
@@ -135,81 +120,146 @@ void PipelineElementInfoBox::system_remove() {
 	}
 }
 
-void PipelineElementInfoBox::dispatcher_pipeline_change(const String &p_value) {
-	if (mode != SYSTEM_DISPATCHER) {
-		// Nothing to do.
-		return;
-	}
+SystemView::SystemView() {
+	add_theme_constant_override("margin_right", 0);
+	add_theme_constant_override("margin_top", 0);
+	add_theme_constant_override("margin_left", 0);
+	add_theme_constant_override("margin_bottom", 0);
 
-	editor_world_ecs->pipeline_system_dispatcher_set_pipeline(name, p_value);
+	color_rect = memnew(ColorRect);
+	color_rect->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+	color_rect->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+	add_child(color_rect);
+
+	MarginContainer *inner_margin = memnew(MarginContainer);
+	inner_margin->add_theme_constant_override("margin_right", 2);
+	inner_margin->add_theme_constant_override("margin_top", 2);
+	inner_margin->add_theme_constant_override("margin_left", 2);
+	inner_margin->add_theme_constant_override("margin_bottom", 2);
+	inner_margin->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+	inner_margin->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+	add_child(inner_margin);
+
+	name_lbl = memnew(Label);
+	name_lbl->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+	name_lbl->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+	inner_margin->add_child(name_lbl);
 }
 
-StageElementInfoBox::StageElementInfoBox(
+SystemView::~SystemView() {
+}
+
+void SystemView::set_name(const String &p_name) {
+	name_lbl->set_text(p_name);
+}
+
+void SystemView::set_bg_color(const Color &p_color) {
+	color_rect->set_color(p_color);
+}
+
+StageView::StageView(
 		EditorNode *p_editor,
 		EditorWorldECS *p_editor_world_ecs) :
 		editor(p_editor),
 		editor_world_ecs(p_editor_world_ecs) {
-	add_theme_constant_override("margin_right", 2);
-	add_theme_constant_override("margin_top", 2);
-	add_theme_constant_override("margin_left", 2);
-	add_theme_constant_override("margin_bottom", 2);
+	add_theme_constant_override("margin_right", 0);
+	add_theme_constant_override("margin_top", 0);
+	add_theme_constant_override("margin_left", 0);
+	add_theme_constant_override("margin_bottom", 0);
 
-	ColorRect *bg = memnew(ColorRect);
-	bg->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-	bg->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-	bg->set_color(Color(0.0, 0.0, 0.0, 0.5));
-	add_child(bg);
-
-	MarginContainer *inner_container = memnew(MarginContainer);
-	inner_container->add_theme_constant_override("margin_right", 2);
-	inner_container->add_theme_constant_override("margin_top", 2);
-	inner_container->add_theme_constant_override("margin_left", 2);
-	inner_container->add_theme_constant_override("margin_bottom", 2);
-	add_child(inner_container);
-
-	VBoxContainer *box = memnew(VBoxContainer);
-	box->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-	box->set_v_size_flags(0);
-	inner_container->add_child(box);
+	VBoxContainer *main_container = memnew(VBoxContainer);
+	main_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+	main_container->set_v_size_flags(0);
+	add_child(main_container);
 
 	HBoxContainer *box_titles = memnew(HBoxContainer);
 	box_titles->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 	box_titles->set_v_size_flags(0);
-	box->add_child(box_titles);
+	main_container->add_child(box_titles);
 
-	{
-		Label *systems_lbl = memnew(Label);
-		systems_lbl->set_text(TTR("Systems:"));
-		box_titles->add_child(systems_lbl);
+	name_lbl = memnew(Label);
+	name_lbl->add_theme_font_size_override("font_size", 18);
+	box_titles->add_child(name_lbl);
 
-		name_lbl = memnew(Label);
-		name_lbl->add_theme_color_override("font_color", Color(0.7, 0.7, 0.7));
-		name_lbl->set_align(Label::ALIGN_RIGHT);
-		name_lbl->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		box_titles->add_child(name_lbl);
-	}
+	main_container->add_child(memnew(HSeparator));
 
-	systems_list = memnew(ItemList);
-	systems_list->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-	systems_list->set_v_size_flags(SizeFlags::SIZE_EXPAND);
-	systems_list->set_auto_height(true);
-	systems_list->set_max_columns(0);
-	systems_list->set_fixed_icon_size(Size2(13.0, 13.0));
-	systems_list->add_theme_constant_override("hseparation", 7.0);
-	box->add_child(systems_list);
+	MarginContainer *margin = memnew(MarginContainer);
+	margin->add_theme_constant_override("margin_right", 10);
+	margin->add_theme_constant_override("margin_top", 10);
+	margin->add_theme_constant_override("margin_left", 10);
+	margin->add_theme_constant_override("margin_bottom", 10);
+	margin->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+	margin->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+	main_container->add_child(margin);
+
+	box = memnew(VBoxContainer);
+	box->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+	box->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+	margin->add_child(box);
 }
 
-StageElementInfoBox::~StageElementInfoBox() {
+StageView::~StageView() {
 }
 
-void StageElementInfoBox::setup_system_bundle(uint32_t p_stage_id) {
-	name_lbl->set_text("#" + itos(p_stage_id));
+void StageView::setup_stage(uint32_t p_stage_id) {
+	name_lbl->set_text(TTR("Stage") + ": " + itos(p_stage_id));
 }
 
-void StageElementInfoBox::add_system(const StringName &p_system_name) {
-	Ref<Texture2D> icon;
-	//icon = editor->get_theme_base()->get_theme_icon("Edit", "EditorIcons");
-	systems_list->add_item(p_system_name, icon, false);
+SystemView *StageView::add_system() {
+	SystemView *view = memnew(SystemView);
+	box->add_child(view);
+	return view;
+}
+
+DispatcherPipelineView *StageView::add_sub_dispatcher() {
+	DispatcherPipelineView *view = memnew(DispatcherPipelineView(editor, editor_world_ecs));
+	box->add_child(view);
+	return view;
+}
+
+DispatcherPipelineView::DispatcherPipelineView(EditorNode *p_editor, EditorWorldECS *p_editor_world_ecs) :
+		editor(p_editor),
+		editor_world_ecs(p_editor_world_ecs) {
+	add_theme_constant_override("margin_right", 0);
+	add_theme_constant_override("margin_top", 0);
+	add_theme_constant_override("margin_left", 0);
+	add_theme_constant_override("margin_bottom", 0);
+
+	PanelContainer *panel = memnew(PanelContainer);
+	panel->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+	panel->set_v_size_flags(SizeFlags::SIZE_EXPAND);
+	panel->set_anchor(SIDE_LEFT, 0.0);
+	panel->set_anchor(SIDE_TOP, 0.0);
+	panel->set_anchor(SIDE_RIGHT, 1.0);
+	panel->set_anchor(SIDE_BOTTOM, 1.0);
+	panel_style.instance();
+	panel->add_theme_style_override("panel", panel_style);
+	add_child(panel);
+
+	box = memnew(VBoxContainer);
+	box->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+	box->set_v_size_flags(SizeFlags::SIZE_EXPAND);
+	panel->add_child(box);
+
+	dispatcher_lbl = memnew(Label);
+	box->add_child(dispatcher_lbl);
+}
+
+DispatcherPipelineView::~DispatcherPipelineView() {
+}
+
+void DispatcherPipelineView::set_dispatcher_name(const String &p_name) {
+	dispatcher_lbl->set_text(p_name);
+}
+
+void DispatcherPipelineView::set_bg_color(const Color &p_color) {
+	panel_style->set_bg_color(p_color);
+}
+
+StageView *DispatcherPipelineView::add_stage() {
+	StageView *view = memnew(StageView(editor, editor_world_ecs));
+	box->add_child(view);
+	return view;
 }
 
 ComponentElement::ComponentElement(EditorNode *p_editor, const String &p_name, Variant p_default) :
@@ -451,7 +501,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 			panel_w->set_anchor(SIDE_BOTTOM, 1.0);
 			Ref<StyleBoxFlat> style;
 			style.instance();
-			style->set_bg_color(Color(0.12, 0.13, 0.18));
+			style->set_bg_color(Color(0.02, 0.04, 0.10));
 			panel_w->add_theme_style_override("panel", style);
 			main_container_pipeline_view->add_child(panel_w);
 
@@ -466,19 +516,19 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 			wrapper->set_enable_v_scroll(true);
 			panel_w->add_child(wrapper);
 
-			PanelContainer *panel = memnew(PanelContainer);
-			panel->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-			panel->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-			panel->set_anchor(SIDE_LEFT, 0.0);
-			panel->set_anchor(SIDE_TOP, 0.0);
-			panel->set_anchor(SIDE_RIGHT, 1.0);
-			panel->set_anchor(SIDE_BOTTOM, 1.0);
-			wrapper->add_child(panel);
+			MarginContainer *margin = memnew(MarginContainer);
+			margin->add_theme_constant_override("margin_right", 10);
+			margin->add_theme_constant_override("margin_top", 10);
+			margin->add_theme_constant_override("margin_left", 10);
+			margin->add_theme_constant_override("margin_bottom", 10);
+			margin->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			margin->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+			wrapper->add_child(margin);
 
 			pipeline_view_panel = memnew(VBoxContainer);
 			pipeline_view_panel->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 			pipeline_view_panel->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-			panel->add_child(pipeline_view_panel);
+			margin->add_child(pipeline_view_panel);
 		}
 	}
 
@@ -517,7 +567,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		panel->set_anchor(SIDE_BOTTOM, 1.0);
 		wrapper->add_child(panel);
 
-		errors_warnings_container = memnew(HBoxContainer);
+		errors_warnings_container = memnew(VBoxContainer);
 		errors_warnings_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 		//errors_warnings_container->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 		panel->add_child(errors_warnings_container);
@@ -948,7 +998,6 @@ void EditorWorldECS::pipeline_features_update() {
 
 			if (ECS::is_system_dispatcher(system_id)) {
 				// This is a dispatcher system, don't print the dependencies.
-				info_box->set_pipeline_dispatcher(world_ecs->get_system_dispatchers_pipeline(key_name));
 				info_box->setup_system(key_name, PipelineElementInfoBox::SYSTEM_DISPATCHER);
 			} else if (ECS::is_temporary_system(system_id)) {
 				// TemporarySystem
@@ -981,6 +1030,37 @@ void EditorWorldECS::pipeline_features_update() {
 	}
 }
 
+Color get_bg_color_by_deepness(int p_deep) {
+	p_deep += 1;
+	Color color(0.12, 0.145, 0.192);
+	color.set_v(CLAMP(color.get_v() + 0.1 * real_t(p_deep), 0.0, 1.0));
+	return color;
+}
+
+void pipeline_dispatcher_view_update(DispatcherPipelineView *p_view, Ref<ExecutionGraph::Dispatcher> p_dispatcher, int p_deepness) {
+	uint32_t stage_id = 0;
+	const List<ExecutionGraph::StageNode> &stages = p_dispatcher->stages;
+	for (const List<ExecutionGraph::StageNode>::Element *e = stages.front(); e; e = e->next(), stage_id += 1) {
+		StageView *stage_view = p_view->add_stage();
+		stage_view->setup_stage(stage_id);
+		for (uint32_t i = 0; i < e->get().systems.size(); i += 1) {
+			if (e->get().systems[i]->sub_dispatcher.is_valid()) {
+				// This system is a sub duspatcher.
+				DispatcherPipelineView *sub_view = stage_view->add_sub_dispatcher();
+				sub_view->set_dispatcher_name(ECS::get_system_name(e->get().systems[i]->id));
+				sub_view->set_bg_color(get_bg_color_by_deepness(p_deepness + 1));
+				pipeline_dispatcher_view_update(sub_view, e->get().systems[i]->sub_dispatcher, p_deepness + 1);
+
+			} else {
+				// This is a standard system
+				SystemView *system_view = stage_view->add_system();
+				system_view->set_name(ECS::get_system_name(e->get().systems[i]->id));
+				system_view->set_bg_color(get_bg_color_by_deepness(p_deepness + 1));
+			}
+		}
+	}
+}
+
 void EditorWorldECS::pipeline_view_update() {
 	if (!main_container_pipeline_view->is_visible()) {
 		// It's not visible, nothing to do.
@@ -993,22 +1073,19 @@ void EditorWorldECS::pipeline_view_update() {
 		return;
 	}
 
-	StageElementInfoBox *info = pipeline_view_add_stage();
-	info->add_system("This is work in progress.");
-
-	// TODO finish this.
-	/*
 	const ExecutionGraph *graph = pipeline->editor_get_execution_graph();
-	uint32_t stage_id = 0;
-	const List<ExecutionGraph::StageNode> &stages = graph->get_stages();
-	for (const List<ExecutionGraph::StageNode>::Element *e = stages.front(); e; e = e->next(), stage_id += 1) {
-		StageElementInfoBox *info = pipeline_view_add_stage();
-		info->setup_system_bundle(stage_id);
-		for (uint32_t i = 0; i < e->get().systems.size(); i += 1) {
-			info->add_system(ECS::get_system_name(e->get().systems[i]->id));
-		}
+	Ref<ExecutionGraph::Dispatcher> main_dispatcher = graph->get_main_dispatcher();
+	if (main_dispatcher.is_null()) {
+		// Nothing to do.
+		return;
 	}
-	*/
+
+	int deepness = 0;
+	DispatcherPipelineView *view = pipeline_view_add_dispatcher();
+	view->set_dispatcher_name("Main");
+	view->set_bg_color(get_bg_color_by_deepness(deepness));
+
+	pipeline_dispatcher_view_update(view, main_dispatcher, deepness);
 }
 
 void EditorWorldECS::pipeline_system_bundle_remove(const StringName &p_name) {
@@ -1030,19 +1107,6 @@ void EditorWorldECS::pipeline_system_remove(const StringName &p_name) {
 	editor->get_undo_redo()->create_action(TTR("Remove system"));
 	editor->get_undo_redo()->add_do_method(pipeline.ptr(), "remove_system", p_name);
 	editor->get_undo_redo()->add_undo_method(pipeline.ptr(), "insert_system", p_name);
-	editor->get_undo_redo()->commit_action();
-}
-
-void EditorWorldECS::pipeline_system_dispatcher_set_pipeline(const StringName &p_system_name, const StringName &p_pipeline_name) {
-	if (world_ecs == nullptr) {
-		return;
-	}
-
-	editor->get_undo_redo()->create_action(TTR("System dispatcher pipeline change."));
-	editor->get_undo_redo()->add_do_method(world_ecs, "set_system_dispatchers_pipeline", p_system_name, p_pipeline_name);
-	// Undo by resetting the `map` because the `set_system_dispatchers_pipeline`
-	// changes the array not trivially.
-	editor->get_undo_redo()->add_undo_method(world_ecs, "set_system_dispatchers_map", world_ecs->get_system_dispatchers_map().duplicate(true));
 	editor->get_undo_redo()->commit_action();
 }
 
@@ -1200,6 +1264,7 @@ void EditorWorldECS::add_error(const String &p_msg) {
 	Label *lbl = memnew(Label);
 	lbl->set_text("- [Error] " + p_msg);
 	lbl->add_theme_color_override("font_color", Color(0.95, 0.05, 0));
+	lbl->set_autowrap(true);
 	errors_warnings_container->add_child(lbl);
 }
 
@@ -1207,6 +1272,7 @@ void EditorWorldECS::add_warning(const String &p_msg) {
 	Label *lbl = memnew(Label);
 	lbl->set_text("- [Warning] " + p_msg);
 	lbl->add_theme_color_override("font_color", Color(0.96, 0.9, 0.45));
+	lbl->set_autowrap(true);
 	errors_warnings_container->add_child(lbl);
 }
 
@@ -1244,8 +1310,8 @@ void EditorWorldECS::pipeline_panel_clear() {
 	}
 }
 
-StageElementInfoBox *EditorWorldECS::pipeline_view_add_stage() {
-	StageElementInfoBox *info_box = memnew(StageElementInfoBox(editor, this));
+DispatcherPipelineView *EditorWorldECS::pipeline_view_add_dispatcher() {
+	DispatcherPipelineView *info_box = memnew(DispatcherPipelineView(editor, this));
 	pipeline_view_panel->add_child(info_box);
 	return info_box;
 }
