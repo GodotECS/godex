@@ -57,15 +57,6 @@ PipelineElementInfoBox::PipelineElementInfoBox(EditorNode *p_editor, EditorWorld
 	extra_info_lbl->add_theme_color_override("font_color", Color(0.7, 0.7, 0.7));
 	box->add_child(extra_info_lbl);
 
-	dispatcher_pipeline_name = memnew(LineEdit);
-	dispatcher_pipeline_name->set_placeholder(TTR("Pipeline name."));
-	dispatcher_pipeline_name->set_right_icon(editor->get_theme_base()->get_theme_icon("Rename", "EditorIcons"));
-	dispatcher_pipeline_name->set_visible(false);
-	dispatcher_pipeline_name->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-	dispatcher_pipeline_name->set_v_size_flags(SizeFlags::SIZE_EXPAND);
-	dispatcher_pipeline_name->connect("text_changed", callable_mp(this, &PipelineElementInfoBox::dispatcher_pipeline_change));
-	box->add_child(dispatcher_pipeline_name);
-
 	icon_btn = memnew(Button);
 	icon_btn->set_flat(true);
 	icon_btn->set_disabled(true);
@@ -90,7 +81,6 @@ void PipelineElementInfoBox::setup_system(const StringName &p_name, SystemMode p
 			break;
 		case SYSTEM_DISPATCHER:
 			icon_name = "ShaderMaterial";
-			dispatcher_pipeline_name->set_visible(true);
 			break;
 		case SYSTEM_SCRIPT:
 			icon_name = "Script";
@@ -106,12 +96,6 @@ void PipelineElementInfoBox::setup_system(const StringName &p_name, SystemMode p
 	icon_btn->set_icon(editor->get_theme_base()->get_theme_icon(icon_name, "EditorIcons"));
 
 	mode = p_mode;
-}
-
-void PipelineElementInfoBox::set_pipeline_dispatcher(const StringName &p_current_pipeline_name) {
-	// Set the pipeline name before marking this system as dispatcher so
-	// we can avoid trigger the name change.
-	dispatcher_pipeline_name->set_text(p_current_pipeline_name);
 }
 
 void PipelineElementInfoBox::set_extra_info(const String &p_desc) {
@@ -134,15 +118,6 @@ void PipelineElementInfoBox::system_remove() {
 	} else {
 		editor_world_ecs->pipeline_system_remove(name);
 	}
-}
-
-void PipelineElementInfoBox::dispatcher_pipeline_change(const String &p_value) {
-	if (mode != SYSTEM_DISPATCHER) {
-		// Nothing to do.
-		return;
-	}
-
-	editor_world_ecs->pipeline_system_dispatcher_set_pipeline(name, p_value);
 }
 
 SystemView::SystemView() {
@@ -526,7 +501,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 			panel_w->set_anchor(SIDE_BOTTOM, 1.0);
 			Ref<StyleBoxFlat> style;
 			style.instance();
-			style->set_bg_color(Color(0.12, 0.145, 0.192));
+			style->set_bg_color(Color(0.02, 0.04, 0.10));
 			panel_w->add_theme_style_override("panel", style);
 			main_container_pipeline_view->add_child(panel_w);
 
@@ -1023,7 +998,6 @@ void EditorWorldECS::pipeline_features_update() {
 
 			if (ECS::is_system_dispatcher(system_id)) {
 				// This is a dispatcher system, don't print the dependencies.
-				info_box->set_pipeline_dispatcher(world_ecs->get_system_dispatchers_pipeline(key_name));
 				info_box->setup_system(key_name, PipelineElementInfoBox::SYSTEM_DISPATCHER);
 			} else if (ECS::is_temporary_system(system_id)) {
 				// TemporarySystem
@@ -1133,19 +1107,6 @@ void EditorWorldECS::pipeline_system_remove(const StringName &p_name) {
 	editor->get_undo_redo()->create_action(TTR("Remove system"));
 	editor->get_undo_redo()->add_do_method(pipeline.ptr(), "remove_system", p_name);
 	editor->get_undo_redo()->add_undo_method(pipeline.ptr(), "insert_system", p_name);
-	editor->get_undo_redo()->commit_action();
-}
-
-void EditorWorldECS::pipeline_system_dispatcher_set_pipeline(const StringName &p_system_name, const StringName &p_pipeline_name) {
-	if (world_ecs == nullptr) {
-		return;
-	}
-
-	editor->get_undo_redo()->create_action(TTR("System dispatcher pipeline change."));
-	editor->get_undo_redo()->add_do_method(world_ecs, "set_system_dispatchers_pipeline", p_system_name, p_pipeline_name);
-	// Undo by resetting the `map` because the `set_system_dispatchers_pipeline`
-	// changes the array not trivially.
-	editor->get_undo_redo()->add_undo_method(world_ecs, "set_system_dispatchers_map", world_ecs->get_system_dispatchers_map().duplicate(true));
 	editor->get_undo_redo()->commit_action();
 }
 

@@ -33,7 +33,6 @@ private:
 	Label *system_name_lbl = nullptr;
 	Label *extra_info_lbl = nullptr;
 	Button *icon_btn = nullptr;
-	LineEdit *dispatcher_pipeline_name = nullptr;
 
 	StringName name;
 	SystemMode mode = SYSTEM_INVALID;
@@ -44,14 +43,12 @@ public:
 	~PipelineElementInfoBox();
 
 	void setup_system(const StringName &p_name, SystemMode p_mode);
-	void set_pipeline_dispatcher(const StringName &p_current_pipeline_name);
 	void set_extra_info(const String &p_desc);
 	void set_is_bundle(bool p_bundle);
 
 	Point2 name_global_transform() const;
 
 	void system_remove();
-	void dispatcher_pipeline_change(const String &p_value);
 };
 
 class SystemView : public MarginContainer {
@@ -184,7 +181,6 @@ public:
 
 	void pipeline_system_bundle_remove(const StringName &p_name);
 	void pipeline_system_remove(const StringName &p_name);
-	void pipeline_system_dispatcher_set_pipeline(const StringName &p_system_name, const StringName &p_pipeline_name);
 
 	void add_sys_show();
 	void add_sys_hide();
