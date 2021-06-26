@@ -567,7 +567,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		panel->set_anchor(SIDE_BOTTOM, 1.0);
 		wrapper->add_child(panel);
 
-		errors_warnings_container = memnew(HBoxContainer);
+		errors_warnings_container = memnew(VBoxContainer);
 		errors_warnings_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 		//errors_warnings_container->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 		panel->add_child(errors_warnings_container);
@@ -1264,6 +1264,7 @@ void EditorWorldECS::add_error(const String &p_msg) {
 	Label *lbl = memnew(Label);
 	lbl->set_text("- [Error] " + p_msg);
 	lbl->add_theme_color_override("font_color", Color(0.95, 0.05, 0));
+	lbl->set_autowrap(true);
 	errors_warnings_container->add_child(lbl);
 }
 
@@ -1271,6 +1272,7 @@ void EditorWorldECS::add_warning(const String &p_msg) {
 	Label *lbl = memnew(Label);
 	lbl->set_text("- [Warning] " + p_msg);
 	lbl->add_theme_color_override("font_color", Color(0.96, 0.9, 0.45));
+	lbl->set_autowrap(true);
 	errors_warnings_container->add_child(lbl);
 }
 

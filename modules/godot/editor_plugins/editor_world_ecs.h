@@ -138,7 +138,7 @@ class EditorWorldECS : public PanelContainer {
 	VBoxContainer *pipeline_view_panel = nullptr;
 
 	Panel *errors_warnings_panel = nullptr;
-	HBoxContainer *errors_warnings_container = nullptr;
+	VBoxContainer *errors_warnings_container = nullptr;
 
 	// Rename pipeline
 	AcceptDialog *pipeline_window_rename = nullptr;
