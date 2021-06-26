@@ -49,7 +49,7 @@ void SharedComponentResource::init(const StringName &p_component_name) {
 	ERR_FAIL_COND_MSG(ECS::is_component_sharable(component_id) == false, "It's not possible to initialize a SharedComponentResource for a component that is not shareable.");
 
 	component_name = p_component_name;
-	depot.instance();
+	depot.instantiate();
 	depot->init(component_name);
 }
 
@@ -67,7 +67,7 @@ godex::SID SharedComponentResource::get_sid(World *p_world) {
 		return sids[index].sid;
 	} else {
 		if (depot.is_null()) {
-			depot.instance();
+			depot.instantiate();
 			depot->init(component_name);
 		}
 		const godex::component_id component_id = depot->get_component_id();

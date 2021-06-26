@@ -13,7 +13,7 @@
 Ref<Components3DGizmoPlugin> component_gizmo;
 
 void register_godex_types() {
-	component_gizmo.instance();
+	component_gizmo.instantiate();
 
 	godex::DynamicSystemInfo::for_each_name = StringName("_for_each");
 

@@ -236,9 +236,9 @@ TEST_CASE("[Modules][ECS] Test HierarchicalStorage.") {
 	hierarchy.insert(1, Child(0));
 	hierarchy.insert(2, Child(1));
 
-	transform_storage.insert(0, TransformComponent(Transform(Basis(), Vector3(1, 0, 0))));
-	transform_storage.insert(1, TransformComponent(Transform(Basis(), Vector3(1, 0, 0))));
-	transform_storage.insert(2, TransformComponent(Transform(Basis(), Vector3(1, 0, 0))));
+	transform_storage.insert(0, TransformComponent(Transform3D(Basis(), Vector3(1, 0, 0))));
+	transform_storage.insert(1, TransformComponent(Transform3D(Basis(), Vector3(1, 0, 0))));
+	transform_storage.insert(2, TransformComponent(Transform3D(Basis(), Vector3(1, 0, 0))));
 
 	{
 		const TransformComponent *tc_entity_0 = std::as_const(transform_storage).get(0);
@@ -266,7 +266,7 @@ TEST_CASE("[Modules][ECS] Test HierarchicalStorage.") {
 	{
 		{
 			TransformComponent *tc_entity_0 = transform_storage.get(0);
-			*tc_entity_0 = Transform(Basis(), Vector3(3.0, 0., 0.));
+			*tc_entity_0 = Transform3D(Basis(), Vector3(3.0, 0., 0.));
 		}
 
 		// Flush the above change.
@@ -292,7 +292,7 @@ TEST_CASE("[Modules][ECS] Test HierarchicalStorage.") {
 	{
 		{
 			TransformComponent *tc_entity_2 = transform_storage.get(2, Space::GLOBAL);
-			*tc_entity_2 = Transform(Basis(), Vector3(7.0, 0., 0.));
+			*tc_entity_2 = Transform3D(Basis(), Vector3(7.0, 0., 0.));
 		}
 
 		// Flush the above change.

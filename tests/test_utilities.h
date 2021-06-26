@@ -23,7 +23,7 @@ bool build_and_register_ecs_script(const StringName &p_script_name, const String
 	CRASH_COND_MSG(script_initialized == false, "Please call `initialize_script_ecs` before executing the function. So call the function `finalize_script_ecs` at the end.");
 
 	Ref<GDScript> script;
-	script.instance();
+	script.instantiate();
 	GDScriptParser parser;
 	Error err = parser.parse(p_code, "res://test/justs/a/test/path/" + p_script_name, false);
 	ERR_FAIL_COND_V(err != OK, false);

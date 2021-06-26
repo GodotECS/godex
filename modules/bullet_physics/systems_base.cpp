@@ -392,7 +392,7 @@ void bt_overlap_check(
 			if (*val == Variant("@entity_id")) {
 				*val = entity;
 			} else if (*val == Variant("@transform")) {
-				Transform t;
+				Transform3D t;
 				B_TO_G(area->get_transform(), t);
 				*val = t;
 			}

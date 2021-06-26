@@ -2,18 +2,18 @@
 
 #include "../../../components/component.h"
 #include "../../../storage/hierarchical_storage.h"
-#include "core/math/transform.h"
+#include "core/math/transform_3d.h"
 
-class TransformComponent : public Transform {
+class TransformComponent : public Transform3D {
 	COMPONENT(TransformComponent, HierarchicalStorage)
 
 	static void _bind_methods();
 	static void _get_storage_config(Dictionary &r_dictionary);
 
-	TransformComponent(const Transform &p_transform);
+	TransformComponent(const Transform3D &p_transform);
 
-	void set_self_script(const Transform &p_transf);
-	Transform get_self_script() const;
+	void set_self_script(const Transform3D &p_transf);
+	Transform3D get_self_script() const;
 
 	void set_rotation(const Vector3 &p_euler);
 	const Vector3 get_rotation() const;

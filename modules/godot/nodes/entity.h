@@ -13,9 +13,9 @@ class WorldECS;
 class World;
 
 /// Class used to store some extra information for the editor.
-class ComponentGizmoData : public Reference {
+class ComponentGizmoData : public RefCounted {
 public:
-	virtual void on_position_update(const Transform &p_new_transform) {}
+	virtual void on_position_update(const Transform3D &p_new_transform) {}
 };
 
 /// If you know ECS, this setup may sound strange to you, and indeed it's
@@ -150,8 +150,8 @@ public:
 					} else {
 						// This `Entity` doesn't havea TransformComponent, lock
 						// the gizmo at center.
-						set_transform(Transform());
-						set_component_value("TransformComponent", "transform", Transform());
+						set_transform(Transform3D());
+						set_component_value("TransformComponent", "transform", Transform3D());
 					}
 					set_notify_local_transform(true);
 				}
@@ -515,15 +515,15 @@ void EntityInternal<C>::add_component(const StringName &p_component_name, const 
 		if (ECS::is_component_sharable(ECS::get_component_id(p_component_name))) {
 			// This is a shared component.
 			Ref<SharedComponentDepot> d;
-			d.instance();
+			d.instantiate();
 			depot = d;
 		} else if (ECS::is_component_dynamic(ECS::get_component_id(p_component_name))) {
 			Ref<ScriptComponentDepot> d;
-			d.instance();
+			d.instantiate();
 			depot = d;
 		} else {
 			Ref<StaticComponentDepot> d;
-			d.instance();
+			d.instantiate();
 			depot = d;
 		}
 
@@ -602,7 +602,7 @@ bool EntityInternal<C>::set_component_value(const StringName &p_component_name, 
 				p_component_name == "TransformComponent") {
 			Entity3D *entity = (Entity3D *)owner;
 			if (p_property_name == "origin") {
-				entity->set_translation(p_value);
+				entity->set_position(p_value);
 
 			} else if (p_property_name == "rotation_deg") {
 				entity->set_rotation_degrees(p_value);
