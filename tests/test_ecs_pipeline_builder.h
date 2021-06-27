@@ -1270,4 +1270,25 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to compose sub pipe
 	finalize_script_ecs();
 }
 } // namespace godex_tests
+
+void test_H_system_1(Query<const PbComponentA> &p_query) {}
+
+namespace godex_tests {
+TEST_CASE("[Modules][ECS] Verify the pipeline builder is correctly using the System flags.") {
+	const godex::system_id test_H_system_1_id = ECS::register_system(test_H_system_1, "test_H_system_1")
+														.with_flags(EXCLUDE_PIPELINE_COMPOSITION)
+														.get_id();
+
+	Vector<StringName> system_bundles;
+
+	Vector<StringName> systems;
+	systems.push_back("test_H_system_1");
+
+	Pipeline pipeline;
+	PipelineBuilder::build_pipeline(system_bundles, systems, &pipeline);
+
+	/// Make sure this system is not part of the final pipeline.
+	CHECK(-1 == pipeline.get_system_stage(test_H_system_1_id));
+}
+} // namespace godex_tests
 #endif // TEST_ECS_PIPELINE_BUILDER_H

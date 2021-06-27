@@ -354,7 +354,11 @@ StrafingResult move(
 void bt_pawn_walk(
 		const FrameTime *frame_time,
 		BtPhysicsSpaces *p_spaces,
-		Query<BtRigidBody, BtStreamedShape, BtPawn, const TransformComponent> &p_query) {
+		Query<
+				BtRigidBody,
+				BtStreamedShape,
+				BtPawn,
+				const TransformComponent> &p_query) {
 	for (auto [body, shape, pawn, transform] : p_query.space(GLOBAL)) {
 		if (pawn->disabled) {
 			continue;

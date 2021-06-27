@@ -770,6 +770,10 @@ void internal_detect_warnings_lost_events(
 		Set<GeneratedEventInfo> &generated_events,
 		Set<GeneratedEventInfo> &changed_events) {
 	for (const List<ExecutionGraph::SystemNode *>::Element *e = dispatcher->sorted_systems.front(); e; e = e->next()) {
+		if ((ECS::get_system_flags(e->get()->id) & BUILDER_IGNORE_WARNING_CHANGED_EVENTS) != 0) {
+			continue;
+		}
+
 		// Detect if this system is generating an event.
 		for (Set<godex::component_id>::Element *generated_component = e->get()->info.mutable_components_storage.front(); generated_component; generated_component = generated_component->next()) {
 			if (ECS::is_component_events(generated_component->get())) {
@@ -866,6 +870,11 @@ void PipelineBuilder::detect_warnings_lost_events(ExecutionGraph *r_graph) {
 void internal_build_stages(Ref<ExecutionGraph::Dispatcher> dispatcher) {
 	dispatcher->stages.push_back(ExecutionGraph::StageNode());
 	for (const List<ExecutionGraph::SystemNode *>::Element *e = dispatcher->sorted_systems.front(); e; e = e->next()) {
+		if ((ECS::get_system_flags(e->get()->id) & EXCLUDE_PIPELINE_COMPOSITION) != 0) {
+			// Exclude this system from the final pipeline building.
+			continue;
+		}
+
 		if (e->get()->is_dispatcher()) {
 			// This is a dispatcher, so build the stages first.
 			internal_build_stages(e->get()->sub_dispatcher);

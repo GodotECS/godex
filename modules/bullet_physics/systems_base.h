@@ -86,4 +86,23 @@ void bt_overlap_check(
 
 void bt_body_sync(
 		BtPhysicsSpaces *p_spaces,
-		Query<BtRigidBody, TransformComponent> &p_query);
+		Query<const BtRigidBody, TransformComponent> &p_query);
+
+/// This system is here only to suppress the PipelineBuilder false positive
+/// uncatched changed events. The vaiour above systems need to take the various
+/// components mutably and they take care to sync it, so there is no need to
+/// fetch the changed event again: However, the PipelineBuilder doesn't know that
+/// so it raise a warning. This system that is not included afterwards fix it.
+void bt_suppress_changed_warning(
+		Query<
+				Changed<BtRigidBody>,
+				Changed<BtArea>,
+				Changed<BtBox>,
+				Changed<BtSphere>,
+				Changed<BtCapsule>,
+				Changed<BtCone>,
+				Changed<BtCylinder>,
+				Changed<BtWorldMargin>,
+				Changed<BtConvex>,
+				Changed<BtStreamedShape>,
+				Changed<BtTrimesh>> &p_query);
