@@ -232,7 +232,7 @@ DispatcherPipelineView::DispatcherPipelineView(EditorNode *p_editor, EditorWorld
 	panel->set_anchor(SIDE_TOP, 0.0);
 	panel->set_anchor(SIDE_RIGHT, 1.0);
 	panel->set_anchor(SIDE_BOTTOM, 1.0);
-	panel_style.instance();
+	panel_style.instantiate();
 	panel->add_theme_style_override("panel", panel_style);
 	add_child(panel);
 
@@ -542,7 +542,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		errors_warnings_panel->set_anchor(SIDE_RIGHT, 1.0);
 		errors_warnings_panel->set_anchor(SIDE_BOTTOM, 1.0);
 		Ref<StyleBoxFlat> style;
-		style.instance();
+		style.instantiate();
 		style->set_bg_color(Color(0.01, 0.01, 0.01));
 		errors_warnings_panel->add_theme_style_override("panel", style);
 		main_vb->add_child(errors_warnings_panel);

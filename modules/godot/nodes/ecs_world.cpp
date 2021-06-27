@@ -398,7 +398,7 @@ void WorldECS::init_default() {
 	bundles.push_back(StringName("Physics"));
 
 	Ref<PipelineECS> pip;
-	pip.instance();
+	pip.instantiate();
 	pip->set_system_bundles(bundles);
 	pip->set_pipeline_name("Main");
 
