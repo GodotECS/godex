@@ -18,7 +18,8 @@ class DynamicSystemInfo;
 } // namespace godex
 
 enum Phase : int {
-	PHASE_CONFIG = 0,
+	PHASE_MIN = 0,
+	PHASE_CONFIG,
 	PHASE_INPUT,
 	PHASE_PRE_PROCESS,
 	PHASE_PROCESS,
