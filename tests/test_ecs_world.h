@@ -32,7 +32,7 @@ TEST_CASE("[Modules][ECS] Test world has self databag.") {
 TEST_CASE("[Modules][ECS] Test world") {
 	World world;
 
-	TransformComponent entity_1_transform_component(Transform(Basis(), Vector3(10.0, 10.0, 10.0)));
+	TransformComponent entity_1_transform_component(Transform3D(Basis(), Vector3(10.0, 10.0, 10.0)));
 
 	EntityID entity_1 = world.create_entity();
 	world.add_component(
@@ -50,7 +50,7 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 	LocalVector<ScriptProperty> props;
 	props.push_back({ PropertyInfo(Variant::INT, "variable_1"), 1 });
 	props.push_back({ PropertyInfo(Variant::BOOL, "variable_2"), false });
-	props.push_back({ PropertyInfo(Variant::TRANSFORM, "variable_3"), Transform() });
+	props.push_back({ PropertyInfo(Variant::TRANSFORM3D, "variable_3"), Transform3D() });
 
 	const uint32_t test_world_component_id = ECS::register_or_update_script_component(
 			"TestWorldComponent1.gd",
@@ -73,7 +73,7 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 
 		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_1") == Variant(1));
 		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_2") == Variant(false));
-		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_3") == Variant(Transform()));
+		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_3") == Variant(Transform3D()));
 	}
 
 	// ~~ Test change component values ~~
@@ -83,13 +83,13 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 		void *test_component = storage->get_ptr(entity_1);
 		ECS::unsafe_component_set_by_name(test_world_component_id, test_component, "variable_1", 2);
 		ECS::unsafe_component_set_by_name(test_world_component_id, test_component, "variable_2", true);
-		ECS::unsafe_component_set_by_name(test_world_component_id, test_component, "variable_3", Transform(Basis(), Vector3(10., 10., 10.)));
+		ECS::unsafe_component_set_by_name(test_world_component_id, test_component, "variable_3", Transform3D(Basis(), Vector3(10., 10., 10.)));
 
 		// Take it again, to confirm we are operating on the stored object.
 		test_component = storage->get_ptr(entity_1);
 		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_1") == Variant(2));
 		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_2") == Variant(true));
-		CHECK(ABS(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_3").operator Transform().origin.x - 10.) <= CMP_EPSILON);
+		CHECK(ABS(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_3").operator Transform3D().origin.x - 10.) <= CMP_EPSILON);
 	}
 
 	// ~~ Test change value with a wrong type ~~
@@ -111,7 +111,7 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 		Dictionary entity_2_data;
 		entity_2_data["variable_1"] = 100;
 		entity_2_data["variable_2"] = true;
-		entity_2_data["variable_3"] = Transform(Basis(), Vector3(-10., 0., 0.));
+		entity_2_data["variable_3"] = Transform3D(Basis(), Vector3(-10., 0., 0.));
 
 		world.add_component(
 				entity_2,
@@ -123,7 +123,7 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 
 		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_1") == Variant(100));
 		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_2") == Variant(true));
-		CHECK(ABS(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_3").operator Transform().origin.x - (-10.)) <= CMP_EPSILON);
+		CHECK(ABS(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_3").operator Transform3D().origin.x - (-10.)) <= CMP_EPSILON);
 	}
 
 	// ~~ Test partial custom initialization ~~
@@ -131,7 +131,7 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 		EntityID entity_3 = world.create_entity();
 		Dictionary entity_3_data;
 		entity_3_data["variable_1"] = 100;
-		entity_3_data["variable_3"] = Transform(Basis(), Vector3(-10., 0., 0.));
+		entity_3_data["variable_3"] = Transform3D(Basis(), Vector3(-10., 0., 0.));
 
 		world.add_component(
 				entity_3,
@@ -144,7 +144,7 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_1") == Variant(100));
 		// Check default.
 		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_2") == Variant(false));
-		CHECK(ABS(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_3").operator Transform().origin.x - (-10.)) <= CMP_EPSILON);
+		CHECK(ABS(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_3").operator Transform3D().origin.x - (-10.)) <= CMP_EPSILON);
 	}
 
 	// ~~ Test custom initialization with wrong value type ~~
@@ -153,7 +153,7 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 		Dictionary entity_4_data;
 		entity_4_data["variable_1"] = 100;
 		entity_4_data["variable_2"] = Vector3(); // Wrong value type `variable_2` is a bool.
-		entity_4_data["variable_3"] = Transform(Basis(), Vector3(-10., 0., 0.));
+		entity_4_data["variable_3"] = Transform3D(Basis(), Vector3(-10., 0., 0.));
 
 		world.add_component(
 				entity_4,
@@ -166,7 +166,7 @@ TEST_CASE("[Modules][ECS] Test storage script component") {
 		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_1") == Variant(100));
 		// Make sure the default is set, and not the `Vector3()`.
 		CHECK(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_2") == Variant(false));
-		CHECK(ABS(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_3").operator Transform().origin.x - (-10.)) <= CMP_EPSILON);
+		CHECK(ABS(ECS::unsafe_component_get_by_name(test_world_component_id, test_component, "variable_3").operator Transform3D().origin.x - (-10.)) <= CMP_EPSILON);
 	}
 
 	// ~~ Test databag initialization ~~

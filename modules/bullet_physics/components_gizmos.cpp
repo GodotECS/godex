@@ -87,8 +87,8 @@ void BtBoxGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_c
 	ERR_FAIL_COND(entity == nullptr);
 	ERR_FAIL_COND(entity->has_component(box_component_name) == false);
 
-	Transform gt = entity->get_global_transform();
-	Transform gi = gt.affine_inverse();
+	Transform3D gt = entity->get_global_transform();
+	Transform3D gi = gt.affine_inverse();
 
 	Vector3 ray_from = p_camera->project_ray_origin(p_point);
 	Vector3 ray_dir = p_camera->project_ray_normal(p_point);
@@ -218,8 +218,8 @@ void BtSphereGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *
 	ERR_FAIL_COND(entity == nullptr);
 	ERR_FAIL_COND(entity->has_component(sphere_component_name) == false);
 
-	Transform gt = entity->get_global_transform();
-	Transform gi = gt.affine_inverse();
+	Transform3D gt = entity->get_global_transform();
+	Transform3D gi = gt.affine_inverse();
 
 	Vector3 ray_from = p_camera->project_ray_origin(p_point);
 	Vector3 ray_dir = p_camera->project_ray_normal(p_point);
@@ -377,8 +377,8 @@ void BtCapsuleGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D 
 	ERR_FAIL_COND(entity == nullptr);
 	ERR_FAIL_COND(entity->has_component(capsule_component_name) == false);
 
-	Transform gt = entity->get_global_transform();
-	Transform gi = gt.affine_inverse();
+	Transform3D gt = entity->get_global_transform();
+	Transform3D gi = gt.affine_inverse();
 
 	Vector3 ray_from = p_camera->project_ray_origin(p_point);
 	Vector3 ray_dir = p_camera->project_ray_normal(p_point);
@@ -527,8 +527,8 @@ void BtConeGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_
 	ERR_FAIL_COND(entity == nullptr);
 	ERR_FAIL_COND(entity->has_component(cone_component_name) == false);
 
-	Transform gt = entity->get_global_transform();
-	Transform gi = gt.affine_inverse();
+	Transform3D gt = entity->get_global_transform();
+	Transform3D gi = gt.affine_inverse();
 
 	Vector3 ray_from = p_camera->project_ray_origin(p_point);
 	Vector3 ray_dir = p_camera->project_ray_normal(p_point);
@@ -691,8 +691,8 @@ void BtCylinderGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D
 	ERR_FAIL_COND(entity == nullptr);
 	ERR_FAIL_COND(entity->has_component(cylinder_component_name) == false);
 
-	Transform gt = entity->get_global_transform();
-	Transform gi = gt.affine_inverse();
+	Transform3D gt = entity->get_global_transform();
+	Transform3D gi = gt.affine_inverse();
 
 	Vector3 ray_from = p_camera->project_ray_origin(p_point);
 	Vector3 ray_dir = p_camera->project_ray_normal(p_point);
@@ -1007,8 +1007,8 @@ void BtPawnGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_
 	ERR_FAIL_COND(entity == nullptr);
 	ERR_FAIL_COND(entity->has_component(pawn_component_name) == false);
 
-	Transform gt = entity->get_global_transform();
-	Transform gi = gt.affine_inverse();
+	Transform3D gt = entity->get_global_transform();
+	Transform3D gi = gt.affine_inverse();
 
 	Vector3 ray_from = p_camera->project_ray_origin(p_point);
 	Vector3 ray_dir = p_camera->project_ray_normal(p_point);

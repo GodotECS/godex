@@ -319,7 +319,7 @@ Ref<SystemBundle> ScriptEcs::__reload_system_bundle(Ref<Script> p_script, const 
 		const String res = SystemBundle::validate_script(p_script);
 		ERR_FAIL_COND_V_MSG(res != "", Ref<SystemBundle>(), "This script [" + p_path + "] is not a valid SystemBundle: " + res);
 
-		bundle.instance();
+		bundle.instantiate();
 		bundle->script_path = p_path;
 
 		system_bundle_names.push_back(name);
@@ -355,7 +355,7 @@ Ref<System> ScriptEcs::__reload_system(Ref<Script> p_script, const String &p_pat
 		const String res = System::validate_script(p_script);
 		ERR_FAIL_COND_V_MSG(res != "", Ref<System>(), "This script [" + p_path + "] is not a valid System: " + res);
 
-		system.instance();
+		system.instantiate();
 		system->script_path = p_path;
 
 		system_names.push_back(name);
@@ -391,7 +391,7 @@ Ref<Component> ScriptEcs::__reload_component(Ref<Script> p_script, const String 
 		const String res = Component::validate_script(p_script);
 		ERR_FAIL_COND_V_MSG(res != "", Ref<Component>(), "This script [" + p_path + "] is not valid: " + res);
 
-		component.instance();
+		component.instantiate();
 		component->script_path = p_path;
 
 		component_names.push_back(name);

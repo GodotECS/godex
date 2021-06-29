@@ -16,7 +16,7 @@ class MeshComponentGizmo : public ComponentGizmo {
 		~EditorMeshData();
 		void set_mesh(Ref<Mesh> p_mesh);
 
-		virtual void on_position_update(const Transform &p_new_transform) override;
+		virtual void on_position_update(const Transform3D &p_new_transform) override;
 	};
 
 public:

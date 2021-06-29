@@ -19,7 +19,7 @@ public:
 		bool is_compatible(const SystemNode *p_system) const;
 	};
 
-	struct Dispatcher : public Reference {
+	struct Dispatcher : public RefCounted {
 		SystemNode *dispatched_by = nullptr;
 
 		/// List of the dispatcher systems

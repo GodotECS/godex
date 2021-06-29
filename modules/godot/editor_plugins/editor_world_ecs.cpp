@@ -232,7 +232,7 @@ DispatcherPipelineView::DispatcherPipelineView(EditorNode *p_editor, EditorWorld
 	panel->set_anchor(SIDE_TOP, 0.0);
 	panel->set_anchor(SIDE_RIGHT, 1.0);
 	panel->set_anchor(SIDE_BOTTOM, 1.0);
-	panel_style.instance();
+	panel_style.instantiate();
 	panel->add_theme_style_override("panel", panel_style);
 	add_child(panel);
 
@@ -310,10 +310,10 @@ void ComponentElement::init_variable(const String &p_name, Variant p_default) {
 	types[Variant::FLOAT] = c++;
 	types[Variant::VECTOR3] = c++;
 	types[Variant::VECTOR3I] = c++;
-	types[Variant::QUAT] = c++;
+	types[Variant::QUATERNION] = c++;
 	types[Variant::AABB] = c++;
 	types[Variant::BASIS] = c++;
-	types[Variant::TRANSFORM] = c++;
+	types[Variant::TRANSFORM3D] = c++;
 	types[Variant::VECTOR2] = c++;
 	types[Variant::VECTOR2I] = c++;
 	types[Variant::TRANSFORM2D] = c++;
@@ -500,7 +500,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 			panel_w->set_anchor(SIDE_RIGHT, 1.0);
 			panel_w->set_anchor(SIDE_BOTTOM, 1.0);
 			Ref<StyleBoxFlat> style;
-			style.instance();
+			style.instantiate();
 			style->set_bg_color(Color(0.02, 0.04, 0.10));
 			panel_w->add_theme_style_override("panel", style);
 			main_container_pipeline_view->add_child(panel_w);
@@ -542,7 +542,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		errors_warnings_panel->set_anchor(SIDE_RIGHT, 1.0);
 		errors_warnings_panel->set_anchor(SIDE_BOTTOM, 1.0);
 		Ref<StyleBoxFlat> style;
-		style.instance();
+		style.instantiate();
 		style->set_bg_color(Color(0.01, 0.01, 0.01));
 		errors_warnings_panel->add_theme_style_override("panel", style);
 		main_vb->add_child(errors_warnings_panel);
@@ -911,7 +911,7 @@ void EditorWorldECS::pipeline_add() {
 	StringName name = "Default" + itos(default_count);
 
 	Ref<PipelineECS> pip;
-	pip.instance();
+	pip.instantiate();
 	pip->set_pipeline_name(name);
 	set_pipeline(pip);
 
@@ -1229,7 +1229,7 @@ void EditorWorldECS::add_sys_add() {
 		if (world_ecs->get_pipelines().is_empty()) {
 			// No pipelines, just create the default one.
 			Ref<PipelineECS> def_pip;
-			def_pip.instance();
+			def_pip.instantiate();
 			def_pip->set_pipeline_name("Default");
 			world_ecs->get_pipelines().push_back(def_pip);
 			world_ecs->notify_property_list_changed();

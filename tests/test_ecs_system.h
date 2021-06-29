@@ -213,7 +213,7 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 		code += "	transform_com.origin.x += 100.0\n";
 		code += "	if test_comp != null:\n";
 		code += "		test_comp.variable_1 += 1\n";
-		code += "		test_comp.variable_2 = Transform()\n";
+		code += "		test_comp.variable_2 = Transform3D()\n";
 		code += "\n";
 
 		CHECK(build_and_register_ecs_script("TestDynamicSystem1.gd", code));
@@ -614,17 +614,17 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 	//  |   |- Entity 2   1 Local | 3 Global
 	EntityID entity_0 = world
 								.create_entity()
-								.with(TransformComponent(Transform(Basis(), Vector3(1, 0, 0))));
+								.with(TransformComponent(Transform3D(Basis(), Vector3(1, 0, 0))));
 
 	EntityID entity_1 = world
 								.create_entity()
 								.with(Child(entity_0))
-								.with(TransformComponent(Transform(Basis(), Vector3(1, 0, 0))));
+								.with(TransformComponent(Transform3D(Basis(), Vector3(1, 0, 0))));
 
 	EntityID entity_2 = world
 								.create_entity()
 								.with(Child(entity_1))
-								.with(TransformComponent(Transform(Basis(), Vector3(1, 0, 0))));
+								.with(TransformComponent(Transform3D(Basis(), Vector3(1, 0, 0))));
 
 	// Try move `Entity_0` using `LOCAL`.
 	{

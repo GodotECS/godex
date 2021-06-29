@@ -453,7 +453,7 @@ bool SharedComponentDepot::_setv(const StringName &p_name, const Variant &p_valu
 
 		if (data.is_null()) {
 			// The shared component is still null, so create it.
-			data.instance();
+			data.instantiate();
 			data->init(component_name);
 		}
 

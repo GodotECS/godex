@@ -485,7 +485,7 @@ TEST_CASE("[Modules][ECS] Test QueryResultTuple: packing and unpaking following 
 
 		TagA another_tag_a;
 		TagB another_tag_b;
-		TransformComponent transf(Transform(Basis(), Vector3(1, 0, 0)));
+		TransformComponent transf(Transform3D(Basis(), Vector3(1, 0, 0)));
 
 		set<0>(tuple, EntityID(10));
 		set<1>(tuple, &c);
@@ -549,7 +549,7 @@ TEST_CASE("[Modules][ECS] Test static query") {
 
 	EntityID entity_2 = world
 								.create_entity()
-								.with(TransformComponent(Transform(Basis(), Vector3(0.0, 0.0, 23.0))));
+								.with(TransformComponent(Transform3D(Basis(), Vector3(0.0, 0.0, 23.0))));
 
 	EntityID entity_3 = world
 								.create_entity()
@@ -1254,7 +1254,7 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 			CHECK(query.access_count() == 2);
 			CHECK(query.get_access(0)->is_mutable());
 			CHECK(query.get_access(1)->is_mutable() == false);
-			query.get_access(0)->set("transform", Transform(Basis(), Vector3(100.0, 100.0, 100.0)));
+			query.get_access(0)->set("transform", Transform3D(Basis(), Vector3(100.0, 100.0, 100.0)));
 		}
 
 		CHECK(query.has(entity_2) == false);
@@ -1267,7 +1267,7 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 			CHECK(query.access_count() == 2);
 			CHECK(query.get_access(0)->is_mutable());
 			CHECK(query.get_access(1)->is_mutable() == false);
-			query.get_access(0)->set("transform", Transform(Basis(), Vector3(200.0, 200.0, 200.0)));
+			query.get_access(0)->set("transform", Transform3D(Basis(), Vector3(200.0, 200.0, 200.0)));
 		}
 
 		// Nothing more to do at this point.
@@ -1288,7 +1288,7 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 		{
 			CHECK(query.access_count() == 1);
 			CHECK(query.get_access(0)->is_mutable() == false);
-			const Transform t = query.get_access(0)->get("transform");
+			const Transform3D t = query.get_access(0)->get("transform");
 			// Check if the entity_1 is changed.
 			CHECK(t.origin.x - 100.0 <= CMP_EPSILON);
 		}
@@ -1301,7 +1301,7 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 		{
 			CHECK(query.access_count() == 1);
 			CHECK(query.get_access(0)->is_mutable() == false);
-			const Transform t = query.get_access(0)->get("transform");
+			const Transform3D t = query.get_access(0)->get("transform");
 			// Make sure the entity_2 is not changed.
 			CHECK(t.origin.x <= CMP_EPSILON);
 		}
@@ -1314,7 +1314,7 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 		{
 			CHECK(query.access_count() == 1);
 			CHECK(query.get_access(0)->is_mutable() == false);
-			const Transform t = query.get_access(0)->get("transform");
+			const Transform3D t = query.get_access(0)->get("transform");
 			// Make sure the entity_3 is changed.
 			CHECK(t.origin.x - 200.0 <= CMP_EPSILON);
 		}

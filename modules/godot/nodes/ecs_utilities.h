@@ -121,7 +121,7 @@ String databag_validate_script(Ref<Script> p_script);
 
 /// Used by the Entity3D & Entity2D to store the entity variables, when the
 /// entity is not inside a world.
-class ComponentDepot : public Reference {
+class ComponentDepot : public RefCounted {
 	friend class ScriptEcs;
 
 protected:

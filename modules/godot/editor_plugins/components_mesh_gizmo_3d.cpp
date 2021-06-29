@@ -20,7 +20,7 @@ void MeshComponentGizmo::EditorMeshData::set_mesh(Ref<Mesh> p_mesh) {
 	RenderingServer::get_singleton()->instance_set_base(instance, base);
 }
 
-void MeshComponentGizmo::EditorMeshData::on_position_update(const Transform &p_new_transform) {
+void MeshComponentGizmo::EditorMeshData::on_position_update(const Transform3D &p_new_transform) {
 	RenderingServer::get_singleton()->instance_set_transform(instance, p_new_transform);
 }
 
@@ -47,7 +47,7 @@ void MeshComponentGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 		{
 			Ref<ComponentGizmoData> *d = entity->get_internal_entity().gizmo_data.lookup_ptr(mesh_component_name);
 			if (d == nullptr || d->is_null()) {
-				editor_mesh.instance();
+				editor_mesh.instantiate();
 				entity->get_internal_entity().gizmo_data.insert(mesh_component_name, editor_mesh);
 				RenderingServer::get_singleton()->instance_attach_object_instance_id(editor_mesh->instance, entity->get_instance_id());
 				RenderingServer::get_singleton()->instance_set_scenario(editor_mesh->instance, scenario);

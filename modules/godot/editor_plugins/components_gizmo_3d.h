@@ -43,7 +43,7 @@ public:
 	RelativeHandle find_gizmo_by_handle(const EditorNode3DGizmo *p_gizmo, int p_idx) const;
 };
 
-class ComponentGizmo : public Reference {
+class ComponentGizmo : public RefCounted {
 	friend class Components3DGizmoPlugin;
 
 protected:

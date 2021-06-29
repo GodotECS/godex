@@ -213,7 +213,7 @@ void PipelineBuilder::build_graph(
 
 	// Crate the main dispatcher.
 	Ref<ExecutionGraph::Dispatcher> main;
-	main.instance();
+	main.instantiate();
 	r_graph->dispatchers.insert("main", main);
 
 	// Initialize the system, by fetching the various dependencies.
@@ -443,7 +443,7 @@ void PipelineBuilder::fetch_system_info(
 				dispatcher = *lookup_dispatcher;
 			}
 			if (dispatcher.is_null()) {
-				dispatcher.instance();
+				dispatcher.instantiate();
 				r_graph->dispatchers.insert(dispatcher_name, dispatcher);
 			}
 		}
@@ -458,7 +458,7 @@ void PipelineBuilder::fetch_system_info(
 
 		if (dispatcher == nullptr) {
 			// The dispatcher doesn't exists yet, create it.
-			r_graph->systems[id].sub_dispatcher.instance();
+			r_graph->systems[id].sub_dispatcher.instantiate();
 			r_graph->dispatchers.insert(p_system, r_graph->systems[id].sub_dispatcher);
 		} else {
 			r_graph->systems[id].sub_dispatcher = *dispatcher;
