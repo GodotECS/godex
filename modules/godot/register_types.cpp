@@ -116,7 +116,7 @@ void register_godot_types() {
 							.set_description("Physics dispatcher"))
 
 			.add(ECS::register_system(physics_init_frame, "physics_init_frame")
-							.execute_in(PHASE_CONFIG, "Physics"))
+							.execute_in(PHASE_MIN, "Physics"))
 
 			.add(ECS::register_system(call_physics_process, "CallPhysicsProcess")
 							.execute_in(PHASE_PROCESS, "Physics")
@@ -126,8 +126,8 @@ void register_godot_types() {
 							.execute_in(PHASE_POST_PROCESS, "Physics")
 							.set_description("Steps the PhysicsServer3D."))
 
-			.add(ECS::register_system(physics_init_frame, "physics_finalize_frame")
-							.execute_in(PHASE_FINALIZE_PROCESS, "Physics"));
+			.add(ECS::register_system(physics_finalize_frame, "physics_finalize_frame")
+							.execute_in(PHASE_MAX, "Physics"));
 
 	ClassDB::register_class<SharedComponentResource>();
 
