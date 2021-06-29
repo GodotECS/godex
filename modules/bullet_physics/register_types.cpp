@@ -72,7 +72,12 @@ void register_bullet_physics_types() {
 
 			.add(ECS::register_system(bt_body_sync, "BtBodySync")
 							.execute_in(PHASE_POST_PROCESS, "Physics")
-							.set_description("Bullet Physics - Read the Physics Engine and update the Bodies."));
+							.set_description("Bullet Physics - Read the Physics Engine and update the Bodies."))
+
+			.add(ECS::register_system(bt_suppress_changed_warning, "bt_suppress_changed_warning")
+							.execute_in(PHASE_MAX, "Physics")
+							.set_description("Bullet Physics - Warning suppressor, does nothing and it's not included in the processing.")
+							.with_flags(EXCLUDE_PIPELINE_COMPOSITION));
 
 	// Register Walk `System`s
 	ECS::register_system(bt_pawn_walk, "BtPawnWalk")
@@ -88,7 +93,8 @@ void register_bullet_physics_types() {
 			.add("BtPawnWalk")
 			.add("BtSpacesStep")
 			.add("BtOverlapCheck")
-			.add("BtBodySync");
+			.add("BtBodySync")
+			.add("bt_suppress_changed_warning");
 
 	// Register gizmos
 	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtBoxGizmo));

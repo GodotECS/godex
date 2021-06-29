@@ -50,6 +50,11 @@ SystemInfo &SystemInfo::before(const StringName &p_system_name) {
 	return *this;
 }
 
+SystemInfo &SystemInfo::with_flags(int p_flags) {
+	flags = p_flags;
+	return *this;
+}
+
 SystemBundleInfo &SystemBundleInfo::set_description(const String &p_description) {
 	description = p_description;
 	return *this;
@@ -632,6 +637,11 @@ const LocalVector<Dependency> &ECS::get_system_dependencies(godex::system_id p_i
 	static const LocalVector<Dependency> dep;
 	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, dep, "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
 	return systems_info[p_id].dependencies;
+}
+
+int ECS::get_system_flags(godex::system_id p_id) {
+	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, Flags::NONE, "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
+	return systems_info[p_id].flags;
 }
 
 void ECS::set_dynamic_system_target(godex::system_id p_id, ScriptInstance *p_target) {

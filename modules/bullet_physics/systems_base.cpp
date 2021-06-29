@@ -261,7 +261,17 @@ void bt_spaces_step(
 		const FrameTime *p_iterator_info,
 		// TODO this is not used, though we need it just to be sure they are not
 		// touched by anything else.
-		Query<BtRigidBody, BtArea, BtBox, BtSphere, BtCapsule, BtCone, BtCylinder, BtWorldMargin, BtConvex, BtTrimesh> &p_query) {
+		Query<
+				BtRigidBody,
+				BtArea,
+				BtBox,
+				BtSphere,
+				BtCapsule,
+				BtCone,
+				BtCylinder,
+				BtWorldMargin,
+				BtConvex,
+				BtTrimesh> &p_query) {
 	const real_t physics_delta = p_iterator_info->get_physics_delta();
 
 	// TODO consider to create a system for each space? So it has much more control.
@@ -293,9 +303,7 @@ void bt_overlap_check(
 
 	LocalVector<btCollisionObject *> new_overlaps;
 
-	for (auto [entity, area_] : p_query) {
-		BtArea *area = area_;
-
+	for (auto [entity, area] : p_query) {
 		if (unlikely(area->__current_space == BT_SPACE_NONE)) {
 			// This Area is not in world, nothing to do.
 			continue;
@@ -439,7 +447,7 @@ void bt_overlap_check(
 
 void bt_body_sync(
 		BtPhysicsSpaces *p_spaces,
-		Query<BtRigidBody, TransformComponent> &p_query) {
+		Query<const BtRigidBody, TransformComponent> &p_query) {
 	for (uint32_t i = 0; i < BtSpaceIndex::BT_SPACE_MAX; i += 1) {
 		const BtSpaceIndex w_i = (BtSpaceIndex)i;
 
@@ -458,3 +466,17 @@ void bt_body_sync(
 		p_spaces->get_space(w_i)->moved_bodies.clear();
 	}
 }
+
+void bt_suppress_changed_warning(
+		Query<
+				Changed<BtRigidBody>,
+				Changed<BtArea>,
+				Changed<BtBox>,
+				Changed<BtSphere>,
+				Changed<BtCapsule>,
+				Changed<BtCone>,
+				Changed<BtCylinder>,
+				Changed<BtWorldMargin>,
+				Changed<BtConvex>,
+				Changed<BtStreamedShape>,
+				Changed<BtTrimesh>> &p_query) {}
