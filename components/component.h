@@ -104,6 +104,6 @@ const T *unwrap_component(const Object *p_access_databag) {
 	}
 }
 
-#define EVENT() \
+#define EVENT__TODO_REMOVE_THIS() \
 	void __is_event() {}
 } // namespace godex

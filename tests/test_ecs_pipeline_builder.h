@@ -1070,7 +1070,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to detect cyclic de
 
 struct PbEventA {
 	COMPONENT_BATCH(PbEventA, DenseVector, 2)
-	EVENT()
+	EVENT__TODO_REMOVE_THIS()
 };
 
 void test_F_system_1(Query<const PbEventA> &p_query) {}
