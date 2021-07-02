@@ -118,6 +118,9 @@ constexpr component_id COMPONENT_NONE = UINT32_MAX;
 typedef uint32_t databag_id;
 constexpr databag_id DATABAG_NONE = UINT32_MAX;
 
+typedef uint32_t event_id;
+constexpr event_id EVENT_NONE = UINT32_MAX;
+
 typedef uint32_t system_id;
 constexpr system_id SYSTEM_NONE = UINT32_MAX;
 

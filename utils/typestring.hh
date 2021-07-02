@@ -1,3 +1,4 @@
+// clang-format off
 /*~
  * Copyright (C) 2015, 2016 George Makrydakis <george@irrequietus.eu>
  *
@@ -273,3 +274,4 @@ using tycat
     decltype(irqus::typeek(irqus::typestring<TYPESTRING64(,x)>()))
 #endif
 #endif /* IRQUS_TYPESTRING_HH_ */
+// clang-format on

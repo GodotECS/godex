@@ -20,6 +20,8 @@ LocalVector<StringName> ECS::components;
 LocalVector<ComponentInfo> ECS::components_info;
 LocalVector<StringName> ECS::databags;
 LocalVector<DatabagInfo> ECS::databags_info;
+LocalVector<StringName> ECS::events;
+LocalVector<EventInfo> ECS::events_info;
 LocalVector<StringName> ECS::systems;
 LocalVector<SystemInfo> ECS::systems_info;
 LocalVector<StringName> ECS::system_bundles;
@@ -175,6 +177,7 @@ bool ECS::is_component_dynamic(godex::component_id p_component_id) {
 }
 
 bool ECS::is_component_events(godex::component_id p_component_id) {
+#warning TODO remove this component_event!
 	ERR_FAIL_COND_V_MSG(verify_component_id(p_component_id) == false, false, "The component " + itos(p_component_id) + " is invalid.");
 	return components_info[p_component_id].is_event;
 }
@@ -334,6 +337,43 @@ void ECS::unsafe_databag_call(
 			p_argcount,
 			r_ret,
 			r_error);
+}
+
+bool ECS::verify_event_id(godex::event_id p_id) {
+	return p_id < events.size();
+}
+
+EventStorageBase *ECS::create_events_storage(godex::event_id p_event_id) {
+#ifdef DEBUG_ENABLED
+	// Crash cond because this function is not supposed to fail in any way.
+	CRASH_COND_MSG(ECS::verify_event_id(p_event_id) == false, "This event id " + itos(p_event_id) + " is not valid. Are you passing an Event ID?");
+#endif
+	//if (event_indo[p_event_id].dynamic_event_info) {
+	//	// This is a script event
+	//	return events_info[p_event_id].dynamic_event_info->create_storage();
+	//} else {
+	// This is a native event.
+	return events_info[p_event_id].create_storage();
+	//}
+}
+
+void ECS::destroy_events_storage(godex::event_id p_event_id, EventStorageBase *p_storage) {
+#ifdef DEBUG_ENABLED
+	// Crash cond because this function is not supposed to fail in any way.
+	CRASH_COND_MSG(ECS::verify_event_id(p_event_id) == false, "This event id " + itos(p_event_id) + " is not valid. Are you passing an Event ID?");
+#endif
+	if (p_storage == nullptr) {
+		// Nothing to do.
+		return;
+	}
+
+	//if (event_indo[p_event_id].dynamic_event_info) {
+	//	// This is a script event
+	//	return events_info[p_event_id].dynamic_event_info->destroy_storage(p_storage);
+	//} else {
+	// This is a native event.
+	return events_info[p_event_id].destroy_storage(p_storage);
+	//}
 }
 
 SystemBundleInfo &ECS::register_system_bundle(const StringName &p_name) {

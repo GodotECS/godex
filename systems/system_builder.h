@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../databags/databag.h"
+#include "../events/events.h"
 #include "../iterators/query.h"
 #include "../spawners/spawner.h"
 #include <type_traits>
@@ -98,6 +99,24 @@ struct DataFetcher<Storage<C> *> {
 template <class I>
 struct DataFetcher<Spawner<I> &> {
 	Spawner<I> inner;
+
+	DataFetcher(World *p_world) :
+			inner(p_world) {}
+};
+
+/// EventEmitter
+template <class E>
+struct DataFetcher<EventEmitter<E> &> {
+	EventEmitter<E> inner;
+
+	DataFetcher(World *p_world) :
+			inner(p_world) {}
+};
+
+/// Events
+template <class E, typename EmitterName>
+struct DataFetcher<Events<E, EmitterName> &> {
+	Events<E, EmitterName> inner;
 
 	DataFetcher(World *p_world) :
 			inner(p_world) {}

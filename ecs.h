@@ -11,6 +11,7 @@ class World;
 class WorldECS;
 class Pipeline;
 class DynamicComponentInfo;
+class EventStorageBase;
 
 namespace godex {
 class Databag;
@@ -69,6 +70,13 @@ struct ComponentInfo {
 /// component registration.
 struct DatabagInfo {
 	godex::Databag *(*create_databag)() = nullptr;
+
+	DataAccessorFuncs accessor_funcs;
+};
+
+struct EventInfo {
+	EventStorageBase *(*create_storage)() = nullptr;
+	void (*destroy_storage)(EventStorageBase *p_storage) = nullptr;
 
 	DataAccessorFuncs accessor_funcs;
 };
@@ -171,6 +179,9 @@ private:
 	static LocalVector<StringName> databags;
 	static LocalVector<DatabagInfo> databags_info;
 
+	static LocalVector<StringName> events;
+	static LocalVector<EventInfo> events_info;
+
 	static LocalVector<StringName> systems;
 	static LocalVector<SystemInfo> systems_info;
 
@@ -257,6 +268,15 @@ public:
 	static bool unsafe_databag_set_by_index(godex::databag_id p_databag_id, void *p_databag, uint32_t p_index, const Variant &p_data);
 	static bool unsafe_databag_get_by_index(godex::databag_id p_databag_id, const void *p_databag, uint32_t p_index, Variant &r_data);
 	static void unsafe_databag_call(godex::databag_id p_databag_id, void *p_databag, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error);
+
+	// ~~ Events ~~
+	template <class E>
+	static void register_event();
+
+	static bool verify_event_id(godex::event_id p_event_id);
+
+	static EventStorageBase *create_events_storage(godex::event_id p_event_id);
+	static void destroy_events_storage(godex::event_id p_event_id, EventStorageBase *p_storage);
 
 	// ~~ SystemBundle ~~
 	static SystemBundleInfo &register_system_bundle(const StringName &p_name);
@@ -543,7 +563,9 @@ void ECS::register_databag() {
 
 	StringName databag_name = R::get_class_static();
 	R::databag_id = databags.size();
-	R::_bind_methods();
+	if constexpr (godex_has_bind_methods<R>::value) {
+		R::_bind_methods();
+	}
 	databags.push_back(databag_name);
 	databags_info.push_back(DatabagInfo{
 			R::create_databag_no_type,
@@ -561,6 +583,37 @@ void ECS::register_databag() {
 
 	// Add a new scripting constant, for fast and easy `databag` access.
 	ClassDB::bind_integer_constant(get_class_static(), StringName(), databag_name, R::databag_id);
+
+	print_line("Databag: " + databag_name + " registered with ID: " + itos(R::databag_id));
+}
+
+template <class E>
+void ECS::register_event() {
+	StringName event_name = E::get_class_static();
+	E::event_id = events.size();
+	if constexpr (godex_has_bind_methods<E>::value) {
+		E::_bind_methods();
+	}
+	events.push_back(event_name);
+	events_info.push_back(EventInfo{
+			E::create_storage_no_type,
+			E::destroy_storage_no_type,
+			DataAccessorFuncs{
+					E::get_properties,
+					E::get_property_default,
+					E::set_by_name,
+					E::get_by_name,
+					E::set_by_index,
+					E::get_by_index,
+					E::static_call } });
+
+	// Store the function pointer that clear the static memory.
+	notify_static_destructor.push_back(&E::__static_destructor);
+
+	// Add a new scripting constant, for fast and easy `databag` access.
+	ClassDB::bind_integer_constant(get_class_static(), StringName(), event_name, E::event_id);
+
+	print_line("Event: " + event_name + " registered with ID: " + itos(E::event_id));
 }
 
 VARIANT_ENUM_CAST(Space)

@@ -1163,14 +1163,67 @@ struct MyEvent1Test {
 	EVENT(MyEvent1Test, EVENT_CLEAR_MODE_ON_FETCH)
 };
 
-//void test_fetch_event(Events<MyEvent1Test, EMITTER(Test1)> &p_events) {
-//void test_fetch_event(Events<MyEvent1Test, static constexpr const char type_name_str[] = { "type name" };> &p_events) {
-//}
+void test_emit_event(EventEmitter<MyEvent1Test> &p_emitter) {
+	p_emitter.emit("Test11", MyEvent1Test());
+}
+
+void test_fetch_event(Events<MyEvent1Test, EMITTER(Test1)> &p_events) {
+}
 
 namespace godex {
-TEST_CASE("[Modules][ECS] Test event mechanism.") {
-	Events<MyEvent1Test, EMITTER(Test11)> events(nullptr);
-	CHECK(events.get_emitter_name() == String("Test11"));
+TEST_CASE("[Modules][ECS] Test `Events` class is able to fetch the emitter name.") {
+	{
+		// Make sure the Events is correctly reporting the EmitterName set at compile
+		// time.
+		Events<MyEvent1Test, EMITTER(Test11)> events(nullptr);
+		CHECK(events.get_emitter_name() == String("Test11"));
+	}
+}
+
+TEST_CASE("[Modules][ECS] Make sure the events storages are automatically created.") {
+	ECS::register_system(test_emit_event, "test_emit_event");
+	ECS::register_system(test_fetch_event, "test_fetch_event");
+	ECS::register_event<MyEvent1Test>();
+
+	// Make sure the world creates the event storage when the `EventEmitter` is encountered.
+	{
+		Pipeline pipeline;
+		{
+			Vector<StringName> system_bundles;
+
+			Vector<StringName> systems;
+			systems.push_back("test_emit_event");
+
+			PipelineBuilder::build_pipeline(system_bundles, systems, &pipeline);
+		}
+
+		World world;
+		pipeline.prepare(&world);
+
+		EventStorage<MyEvent1Test> *storage = world.get_events_storage<MyEvent1Test>();
+		// Make sure the storage is been created at this point, since `prepare` does it.
+		CHECK(storage != nullptr);
+	}
+
+	// Make sure the world creates the event storage when the `Events` is encountered.
+	{
+		Pipeline pipeline;
+		{
+			Vector<StringName> system_bundles;
+
+			Vector<StringName> systems;
+			systems.push_back("test_fetch_event");
+
+			PipelineBuilder::build_pipeline(system_bundles, systems, &pipeline);
+		}
+
+		World world;
+		pipeline.prepare(&world);
+
+		EventStorage<MyEvent1Test> *storage = world.get_events_storage<MyEvent1Test>();
+		// Make sure the storage is been created at this point, since `prepare` does it.
+		CHECK(storage != nullptr);
+	}
 }
 } // namespace godex
 
