@@ -3,9 +3,9 @@
 
 #include "../ecs.h"
 #include "../storage/event_storage.h"
-#include "../utils/string_literal_utils.h"
+#include "../utils/typestring.hh"
 
-#define EMITTER(str) TA_STRING_LITERAL(#str)
+#define EMITTER(str) typestring_is(#str)
 
 namespace godex {
 #define EVENT(m_class, m_clear_mode)                                   \
@@ -73,7 +73,7 @@ public:
 ///		}
 /// }
 /// ```
-template <class E, const char *EmitterName>
+template <class E, typename EmitterName>
 class Events {
 	World *world;
 
@@ -82,6 +82,6 @@ public:
 			world(p_world) {}
 
 	String get_emitter_name() const {
-		return String(EmitterName);
+		return String(EmitterName::data());
 	}
 };

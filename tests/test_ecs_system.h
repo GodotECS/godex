@@ -1163,8 +1163,9 @@ struct MyEvent1Test {
 	EVENT(MyEvent1Test, EVENT_CLEAR_MODE_ON_FETCH)
 };
 
-void test_fetch_event(Events<MyEvent1Test, EMITTER(Test1)> &p_events) {
-}
+//void test_fetch_event(Events<MyEvent1Test, EMITTER(Test1)> &p_events) {
+//void test_fetch_event(Events<MyEvent1Test, static constexpr const char type_name_str[] = { "type name" };> &p_events) {
+//}
 
 namespace godex {
 TEST_CASE("[Modules][ECS] Test event mechanism.") {
