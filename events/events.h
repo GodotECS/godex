@@ -3,6 +3,9 @@
 
 #include "../ecs.h"
 #include "../storage/event_storage.h"
+#include "../utils/string_literal_utils.h"
+
+#define EMITTER(str) TA_STRING_LITERAL(#str)
 
 namespace godex {
 #define EVENT(m_class, m_clear_mode)                                   \
@@ -39,3 +42,46 @@ private:                                                               \
 public:                                                                \
 	m_class() = default;
 }; // namespace godex
+
+/// Utility to emit an ECS event. This can be used by c++ systems:
+/// ```
+/// void my_emitter_system(EventEmitter<MyEvent> &p_emitter){
+///		p_emitter.emit("EmitterName1", MyEvent());
+///		p_emitter.emit("EmitterName2", MyEvent());
+/// }
+/// ```
+template <class E>
+class EventEmitter {
+	World *world;
+
+public:
+	EventEmitter(World *p_world) :
+			world(p_world) {}
+
+	void emit(const String &p_emitter_name, const E &) {
+		// TODO store the event in the world
+		//world->
+	}
+};
+
+/// Utility that allow to fetch the events from the world. You can even use it
+/// in a C++ system like this:
+/// ```
+/// void my_emitter_system(Events<MyEvent, EMITTER(EmitterName1)> &p_events){
+///		for(const MyEvent& event : p_events) {
+///			event....;
+///		}
+/// }
+/// ```
+template <class E, const char *EmitterName>
+class Events {
+	World *world;
+
+public:
+	Events(World *p_world) :
+			world(p_world) {}
+
+	String get_emitter_name() const {
+		return String(EmitterName);
+	}
+};

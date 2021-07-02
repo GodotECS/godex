@@ -11,12 +11,20 @@ enum EventClearMode {
 
 class EventStorageBase {
 public:
+	virtual ~EventStorageBase() {
+	}
+
 	virtual void add_event_emitter(const StringName &p_emitter) {
 		CRASH_NOW_MSG("Override this function.");
 	}
 
 	virtual void add_event_dynamic(const StringName &p_emitter, const Dictionary &p_data) {
 		CRASH_NOW_MSG("Override this function.");
+	}
+
+	virtual const void *get_events_ptr(const StringName &p_emitter) const {
+		CRASH_NOW_MSG("Override this function.");
+		return nullptr;
 	}
 
 	// TODO add dynamic read to allow GDScript systems to fetch events.
@@ -32,7 +40,7 @@ class EventStorage : public EventStorageBase {
 
 public:
 	virtual void add_event_emitter(const StringName &p_emitter) override {
-		ERR_FAIL_COND_MSG(events_map.has(p_emitter), "The emitter `" + p_emitter + "` for the event `" + E::event_name() + "` exists.");
+		ERR_FAIL_COND_MSG(events_map.has(p_emitter), "The emitter `" + p_emitter + "` for the event `" + E::get_class_static() + "` exists.");
 		events_map.insert(p_emitter, LocalVector<E>());
 	}
 
@@ -47,20 +55,24 @@ public:
 		add_event(p_emitter, insert_data);
 	}
 
+	virtual const void *get_events_ptr(const StringName &p_emitter) const override {
+		return (const void *)get_events(p_emitter);
+	}
+
 	virtual void flush_emitter_events(const StringName &p_emitter) override {
 		LocalVector<E> *emitter = events_map.lookup_ptr(p_emitter);
-		ERR_FAIL_COND_MSG(emitter == nullptr, "The emitter `" + p_emitter + "` for the event `" + E::event_name() + "` doesn't exists.");
+		ERR_FAIL_COND_MSG(emitter == nullptr, "The emitter `" + p_emitter + "` for the event `" + E::get_class_static() + "` doesn't exists.");
 		emitter->clear();
 	}
 
 public:
 	void add_event(const StringName &p_emitter, E p_event) {
 		LocalVector<E> *emitter = events_map.lookup_ptr(p_emitter);
-		ERR_FAIL_COND_MSG(emitter == nullptr, "The emitter `" + p_emitter + "` for the event `" + E::event_name() + "` doesn't exists.");
+		ERR_FAIL_COND_MSG(emitter == nullptr, "The emitter `" + p_emitter + "` for the event `" + E::get_class_static() + "` doesn't exists.");
 		emitter->push_back(p_event);
 	}
 
-	const LocalVector<E> *get_events(const StringName &p_emitter, E p_event) const {
+	const LocalVector<E> *get_events(const StringName &p_emitter) const {
 		return events_map.lookup_ptr(p_emitter);
 	}
 };

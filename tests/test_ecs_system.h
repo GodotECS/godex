@@ -5,6 +5,7 @@
 
 #include "../components/dynamic_component.h"
 #include "../ecs.h"
+#include "../events/events.h"
 #include "../modules/godot/components/transform_component.h"
 #include "../modules/godot/nodes/ecs_utilities.h"
 #include "../pipeline/pipeline.h"
@@ -1157,5 +1158,19 @@ TEST_CASE("[Modules][ECS] Test fetch entity from nodepath, using a dynamic syste
 	finalize_script_ecs();
 }
 } // namespace godex_tests_system
+
+struct MyEvent1Test {
+	EVENT(MyEvent1Test, EVENT_CLEAR_MODE_ON_FETCH)
+};
+
+void test_fetch_event(Events<MyEvent1Test, EMITTER(Test1)> &p_events) {
+}
+
+namespace godex {
+TEST_CASE("[Modules][ECS] Test event mechanism.") {
+	Events<MyEvent1Test, EMITTER(Test11)> events(nullptr);
+	CHECK(events.get_emitter_name() == String("Test11"));
+}
+} // namespace godex
 
 #endif // TEST_ECS_SYSTEM_H
