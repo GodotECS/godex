@@ -37,17 +37,6 @@ diff --git a/main/main.cpp b/main/main.cpp
 index c9911464bb..a513a13954 100644
 --- a/main/main.cpp
 +++ b/main/main.cpp
-@@ -1284,8 +1284,8 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
- 	}
- 
- 	/* todo restore
--    OS::get_singleton()->_allow_layered = GLOBAL_DEF("display/window/per_pixel_transparency/allowed", false);
--    video_mode.layered = GLOBAL_DEF("display/window/per_pixel_transparency/enabled", false);
-+	OS::get_singleton()->_allow_layered = GLOBAL_DEF("display/window/per_pixel_transparency/allowed", false);
-+	video_mode.layered = GLOBAL_DEF("display/window/per_pixel_transparency/enabled", false);
- */
- 	GLOBAL_DEF("rendering/quality/intended_usage/framebuffer_allocation", 2);
- 	GLOBAL_DEF("rendering/quality/intended_usage/framebuffer_allocation.mobile", 3);
 @@ -2464,6 +2464,11 @@ bool Main::iteration() {
  
  	bool exit = false;
