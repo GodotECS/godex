@@ -406,7 +406,7 @@ void EntityInternal<C>::_get_property_list(List<PropertyInfo> *p_list) const {
 
 			for (uint32_t i = 0; i < properties->size(); i += 1) {
 				const PropertyInfo &e = (*properties)[i];
-				if ((e.usage & PROPERTY_USAGE_STORAGE) == 0) {
+				if (ECS::is_component_dynamic(id) == false && (e.usage & PROPERTY_USAGE_STORAGE) == 0) {
 					// No store.
 					continue;
 				}
@@ -510,21 +510,28 @@ const OAHashMap<StringName, Ref<ComponentDepot>> &EntityInternal<C>::get_compone
 template <class C>
 void EntityInternal<C>::add_component(const StringName &p_component_name, const Dictionary &p_values) {
 	if (entity_id.is_null()) {
+		const godex::component_id id = ECS::get_component_id(p_component_name);
+		const bool is_valid = ECS::verify_component_id(id);
+
 		// We are on editor.
 		Ref<ComponentDepot> depot;
-		if (ECS::is_component_sharable(ECS::get_component_id(p_component_name))) {
+		if (is_valid && ECS::is_component_sharable(id)) {
 			// This is a shared component.
 			Ref<SharedComponentDepot> d;
 			d.instantiate();
 			depot = d;
-		} else if (ECS::is_component_dynamic(ECS::get_component_id(p_component_name))) {
+		} else if (is_valid == false || ECS::is_component_dynamic(id)) {
+			// If the component is not yet knonw, just store the data in the script depot.
+			// It's likely an unloaded script.
 			Ref<ScriptComponentDepot> d;
 			d.instantiate();
 			depot = d;
-		} else {
+		} else if (is_valid) {
 			Ref<StaticComponentDepot> d;
 			d.instantiate();
 			depot = d;
+		} else {
+			ERR_FAIL_COND_MSG(ECS::verify_component_id(id) == false, "The entity " + get_path() + " is trying to add the component " + p_component_name + " but this component doesn't exist.");
 		}
 
 		components_data.set(p_component_name, depot);
