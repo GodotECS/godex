@@ -120,6 +120,7 @@ void EntityEditor::create_component_inspector(StringName p_component_name, VBoxC
 	} else {
 		const godex::component_id id = ECS::get_component_id(p_component_name);
 		ERR_FAIL_COND(id == godex::COMPONENT_NONE);
+		const bool is_scripted_component = ECS::is_component_dynamic(id);
 		const LocalVector<PropertyInfo> *properties = ECS::get_component_properties(id);
 
 		const float default_float_step = EDITOR_GET("interface/inspector/default_float_step");
@@ -129,7 +130,7 @@ void EntityEditor::create_component_inspector(StringName p_component_name, VBoxC
 			const PropertyInfo &e = (*properties)[prop_i];
 			EditorProperty *prop = nullptr;
 
-			if ((e.usage & PROPERTY_USAGE_EDITOR) == 0) {
+			if (is_scripted_component == false && (e.usage & PROPERTY_USAGE_EDITOR) == 0) {
 				// This property is not meant to be displayed on editor.
 				continue;
 			}
