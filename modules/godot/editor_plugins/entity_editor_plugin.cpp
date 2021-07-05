@@ -35,7 +35,7 @@ void EntityEditor::create_editors() {
 	const Color section_color = get_theme_color("prop_subsection", "Editor");
 
 	add_component_menu = memnew(MenuButton);
-	add_component_menu->set_text("Add component");
+	add_component_menu->set_text(TTR("Add Component"));
 	add_component_menu->set_icon(editor->get_theme_base()->get_theme_icon("New", "EditorIcons"));
 	add_component_menu->set_flat(false);
 	add_component_menu->get_popup()->connect("id_pressed", callable_mp(this, &EntityEditor::_add_component_pressed));
@@ -61,12 +61,6 @@ void EntityEditor::update_editors() {
 		const LocalVector<StringName> &components = ECS::get_registered_components();
 		for (uint32_t i = 0; i < components.size(); i += 1) {
 			add_component_menu->get_popup()->add_item(components[i]);
-		}
-
-		// Make sure to load all the components.
-		const LocalVector<Ref<Component>> &scripts = ScriptEcs::get_singleton()->get_components();
-		for (uint32_t i = 0; i < scripts.size(); i += 1) {
-			add_component_menu->get_popup()->add_item(scripts[i]->get_name());
 		}
 	}
 
