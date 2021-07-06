@@ -234,7 +234,7 @@ void EntityEditor::create_component_inspector(StringName p_component_name, VBoxC
 						bool exp_range = false;
 						bool greater = true, lesser = true;
 
-						if ((e.hint == PROPERTY_HINT_RANGE || e.hint == PROPERTY_HINT_EXP_RANGE) && e.hint_string.get_slice_count(",") >= 2) {
+						if (e.hint == PROPERTY_HINT_RANGE && e.hint_string.get_slice_count(",") >= 2) {
 							greater = false; //if using ranged, assume false by default
 							lesser = false;
 							min = e.hint_string.get_slice(",", 0).to_float();
@@ -243,7 +243,7 @@ void EntityEditor::create_component_inspector(StringName p_component_name, VBoxC
 								step = e.hint_string.get_slice(",", 2).to_float();
 							}
 							hide_slider = false;
-							exp_range = e.hint == PROPERTY_HINT_EXP_RANGE;
+							exp_range = false;
 							for (int i = 2; i < e.hint_string.get_slice_count(","); i++) {
 								const String slice = e.hint_string.get_slice(",", i).strip_edges();
 								if (slice == "or_greater") {
@@ -251,6 +251,9 @@ void EntityEditor::create_component_inspector(StringName p_component_name, VBoxC
 								}
 								if (slice == "or_lesser") {
 									lesser = true;
+								}
+								if (slice == "exp") {
+									exp_range = true;
 								}
 							}
 						}
