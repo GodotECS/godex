@@ -612,7 +612,7 @@ bool EntityInternal<C>::set_component_value(const StringName &p_component_name, 
 				entity->set_position(p_value);
 
 			} else if (p_property_name == "rotation_deg") {
-				entity->set_rotation_degrees(p_value);
+				entity->set_rotation(Vector3(p_value) * (Math_PI / 180));
 
 			} else if (p_property_name == "scale") {
 				entity->set_scale(p_value);
