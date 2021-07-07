@@ -1224,6 +1224,63 @@ TEST_CASE("[Modules][ECS] Make sure the events storages are automatically create
 		// Make sure the storage is been created at this point, since `prepare` does it.
 		CHECK(storage != nullptr);
 	}
+
+	// TODO  test the events behave correctly as expected:
+	// - Emit
+	// - Fetch
+	// - Flush old on emit.
+}
+} // namespace godex_tests
+
+struct MyEvent2Test {
+	EVENT(MyEvent2Test)
+};
+
+void test2_emit_event(EventsEmitter<MyEvent2Test> &p_emitter) {}
+void test2_fetch1_event(Events<MyEvent2Test, EMITTER(Test1)> &p_events) {}
+void test2_fetch2_event(Events<MyEvent2Test, EMITTER(Test1)> &p_events) {}
+void test2_fetch3_event(Events<MyEvent2Test, EMITTER(Test2)> &p_events) {}
+
+void test_fetch_databag_mut(TestSystem1Databag *) {}
+void test_fetch_databag_const(TestSystem1Databag *) {}
+
+namespace godex_tests {
+TEST_CASE("[Modules][ECS] Make sure the function `can_systems_run_in_parallel` works as expected.") {
+	ECS::register_system(test2_emit_event, "test2_emit_event");
+	ECS::register_system(test2_fetch1_event, "test2_fetch1_event");
+	ECS::register_system(test2_fetch2_event, "test2_fetch2_event");
+	ECS::register_system(test2_fetch3_event, "test2_fetch3_event");
+	ECS::register_system(test_fetch_databag_mut, "test_fetch_databag_mut");
+	ECS::register_system(test_fetch_databag_const, "test_fetch_databag_const");
+	ECS::register_event<MyEvent2Test>();
+
+	// Make sure that two systems that emits two different events can run in parallel.
+	CHECK(ECS::can_systems_run_in_parallel(ECS::get_system_id("test2_emit_event"), ECS::get_system_id("test_emit_event")));
+
+	// Make sure the system that emit the event can't run in parallel with the
+	// systems that fetch it.
+	CHECK(!ECS::can_systems_run_in_parallel(ECS::get_system_id("test_emit_event"), ECS::get_system_id("test_fetch_event")));
+
+	// Check the above on the other set of systems.
+	CHECK(!ECS::can_systems_run_in_parallel(ECS::get_system_id("test2_emit_event"), ECS::get_system_id("test2_fetch1_event")));
+	CHECK(!ECS::can_systems_run_in_parallel(ECS::get_system_id("test2_emit_event"), ECS::get_system_id("test2_fetch2_event")));
+	CHECK(!ECS::can_systems_run_in_parallel(ECS::get_system_id("test2_emit_event"), ECS::get_system_id("test2_fetch3_event")));
+
+	// Make sure the fetch events can run in parallel no matter what.
+	CHECK(ECS::can_systems_run_in_parallel(ECS::get_system_id("test2_fetch1_event"), ECS::get_system_id("test2_fetch2_event")));
+	CHECK(ECS::can_systems_run_in_parallel(ECS::get_system_id("test2_fetch2_event"), ECS::get_system_id("test2_fetch3_event")));
+	CHECK(ECS::can_systems_run_in_parallel(ECS::get_system_id("test2_fetch3_event"), ECS::get_system_id("test_fetch_event")));
+
+	// Make sure the systems fetching the databags can't run in parallel.
+	CHECK(!ECS::can_systems_run_in_parallel(ECS::get_system_id("test_fetch_databag_mut"), ECS::get_system_id("test_fetch_databag_const")));
+
+	// But can run with the events one.
+	CHECK(ECS::can_systems_run_in_parallel(ECS::get_system_id("test_fetch_databag_mut"), ECS::get_system_id("test2_emit_event")));
+	CHECK(ECS::can_systems_run_in_parallel(ECS::get_system_id("test_fetch_databag_mut"), ECS::get_system_id("test2_fetch3_event")));
+	CHECK(ECS::can_systems_run_in_parallel(ECS::get_system_id("test_fetch_databag_const"), ECS::get_system_id("test2_emit_event")));
+	CHECK(ECS::can_systems_run_in_parallel(ECS::get_system_id("test_fetch_databag_const"), ECS::get_system_id("test2_fetch3_event")));
+
+	// TODO add other checks, like query, etc??
 }
 } // namespace godex_tests
 
