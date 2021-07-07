@@ -5,8 +5,7 @@
 #include "core/variant/dictionary.h"
 
 enum EventClearMode {
-	EVENT_CLEAR_MODE_ON_FETCH,
-	EVENT_CLEAR_MODE_END_OF_FRAME,
+	EVENT_CLEAR_MODE_FLUSH_ON_EMIT,
 };
 
 class EventStorageBase {

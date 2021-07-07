@@ -1160,17 +1160,17 @@ TEST_CASE("[Modules][ECS] Test fetch entity from nodepath, using a dynamic syste
 } // namespace godex_tests_system
 
 struct MyEvent1Test {
-	EVENT(MyEvent1Test, EVENT_CLEAR_MODE_ON_FETCH)
+	EVENT(MyEvent1Test)
 };
 
-void test_emit_event(EventEmitter<MyEvent1Test> &p_emitter) {
+void test_emit_event(EventsEmitter<MyEvent1Test> &p_emitter) {
 	p_emitter.emit("Test11", MyEvent1Test());
 }
 
 void test_fetch_event(Events<MyEvent1Test, EMITTER(Test1)> &p_events) {
 }
 
-namespace godex {
+namespace godex_tests {
 TEST_CASE("[Modules][ECS] Test `Events` class is able to fetch the emitter name.") {
 	{
 		// Make sure the Events is correctly reporting the EmitterName set at compile
@@ -1225,6 +1225,6 @@ TEST_CASE("[Modules][ECS] Make sure the events storages are automatically create
 		CHECK(storage != nullptr);
 	}
 }
-} // namespace godex
+} // namespace godex_tests
 
 #endif // TEST_ECS_SYSTEM_H

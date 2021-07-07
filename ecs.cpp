@@ -566,6 +566,15 @@ bool collides(const Set<uint32_t> &p_set_1, const Set<uint32_t> &p_set_2) {
 	return false;
 }
 
+bool collides(const Set<uint32_t> &p_set_1, const OAHashMap<uint32_t, Set<String>> &p_map_2) {
+	for (Set<uint32_t>::Element *e = p_set_1.front(); e; e = e->next()) {
+		if (p_map_2.has(e->get())) {
+			return true;
+		}
+	}
+	return false;
+}
+
 bool ECS::can_systems_run_in_parallel(godex::system_id p_system_a, godex::system_id p_system_b) {
 	ERR_FAIL_COND_V_MSG(verify_system_id(p_system_a) == false, false, "The SystemID: " + itos(p_system_a) + " doesn't exists. Are you passing a System ID?");
 	ERR_FAIL_COND_V_MSG(verify_system_id(p_system_b) == false, false, "The SystemID: " + itos(p_system_b) + " doesn't exists. Are you passing a System ID?");
@@ -622,6 +631,20 @@ bool ECS::can_systems_run_in_parallel(godex::system_id p_system_a, godex::system
 	}
 	if (collides(info_b.immutable_components, info_a.mutable_components_storage)) {
 		// System B is reading a component storage mutating in System A.
+		return false;
+	}
+
+	// Check the events
+	if (collides(info_a.events_emitters, info_b.events_emitters)) {
+		// System A is emitting the same event the System B is emitting.
+		return false;
+	}
+	if (collides(info_a.events_emitters, info_b.events_receivers)) {
+		// System A is emitting an event that system B is receiving.
+		return false;
+	}
+	if (collides(info_b.events_emitters, info_a.events_receivers)) {
+		// System B is emitting an event that system A is receiving.
 		return false;
 	}
 

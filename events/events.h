@@ -8,7 +8,10 @@
 #define EMITTER(str) typestring_is(#str)
 
 namespace godex {
-#define EVENT(m_class, m_clear_mode)                                                  \
+#define EVENT(m_class) \
+	EVENT_CUSTOM_FLUSH(m_class, EVENT_CLEAR_MODE_FLUSH_ON_EMIT)
+
+#define EVENT_CUSTOM_FLUSH(m_class, m_clear_mode)                                     \
 	ECSCLASS(m_class)                                                                 \
 	friend class World;                                                               \
                                                                                       \
@@ -52,17 +55,17 @@ public:                                                                         
 
 /// Utility to emit an ECS event. This can be used by c++ systems:
 /// ```
-/// void my_emitter_system(EventEmitter<MyEvent> &p_emitter){
+/// void my_emitter_system(EventsEmitter<MyEvent> &p_emitter){
 ///		p_emitter.emit("EmitterName1", MyEvent());
 ///		p_emitter.emit("EmitterName2", MyEvent());
 /// }
 /// ```
 template <class E>
-class EventEmitter {
+class EventsEmitter {
 	World *world;
 
 public:
-	EventEmitter(World *p_world) :
+	EventsEmitter(World *p_world) :
 			world(p_world) {}
 
 	void emit(const String &p_emitter_name, const E &) {

@@ -76,6 +76,17 @@ void Pipeline::prepare(World *p_world) {
 					ERR_CONTINUE_MSG(storage == nullptr, "The storage is not supposed to be nullptr at this point. Storage: " + ECS::get_component_name(e->get()) + "#" + itos(e->get()));
 					storage->set_tracing_change(true);
 				}
+
+				for (const Set<uint32_t>::Element *e = info.events_emitters.front(); e; e = e->next()) {
+					p_world->create_events_storage(e->get());
+				}
+
+				for (
+						OAHashMap<uint32_t, Set<String>>::Iterator it = info.events_receivers.iter();
+						it.valid;
+						it = info.events_receivers.next_iter(it)) {
+					p_world->create_events_storage(*it.key);
+				}
 			}
 		}
 	}

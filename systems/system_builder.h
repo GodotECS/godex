@@ -69,6 +69,37 @@ struct InfoConstructor<D *, Cs...> : InfoConstructor<Cs...> {
 	}
 };
 
+/// Fetches the `EventsEmitter`.
+/// The `EventsEmitter` is supposed to be takes as mutable reference.
+/// ```
+/// void test_func(const EventsEmitter<MyEventType> &p_emitter){}
+/// ```
+template <class E, class... Cs>
+struct InfoConstructor<EventsEmitter<E> &, Cs...> : InfoConstructor<Cs...> {
+	InfoConstructor(SystemExeInfo &r_info) :
+			InfoConstructor<Cs...>(r_info) {
+		r_info.events_emitters.insert(E::get_event_id());
+	}
+};
+
+/// Fetches the `Events`.
+/// The `Events` is supposed to be takes as mutable reference.
+/// ```
+/// void test_func(const Events<MyEventType, EMITTER(EmitterName)> &p_events){}
+/// ```
+template <class E, typename EmitterName, class... Cs>
+struct InfoConstructor<Events<E, EmitterName> &, Cs...> : InfoConstructor<Cs...> {
+	InfoConstructor(SystemExeInfo &r_info) :
+			InfoConstructor<Cs...>(r_info) {
+		Set<String> *emitters = r_info.events_receivers.lookup_ptr(E::get_event_id());
+		if (emitters == nullptr) {
+			r_info.events_receivers.insert(E::get_event_id(), Set<String>());
+			emitters = r_info.events_receivers.lookup_ptr(E::get_event_id());
+		}
+		emitters->insert(EmitterName::data());
+	}
+};
+
 /// Creates a SystemExeInfo, extracting the information from a system function.
 template <class... RCs>
 void get_system_info_from_function(SystemExeInfo &r_info, void (*system_func)(RCs...)) {
@@ -104,10 +135,10 @@ struct DataFetcher<Spawner<I> &> {
 			inner(p_world) {}
 };
 
-/// EventEmitter
+/// EventsEmitter
 template <class E>
-struct DataFetcher<EventEmitter<E> &> {
-	EventEmitter<E> inner;
+struct DataFetcher<EventsEmitter<E> &> {
+	EventsEmitter<E> inner;
 
 	DataFetcher(World *p_world) :
 			inner(p_world) {}

@@ -1291,4 +1291,54 @@ TEST_CASE("[Modules][ECS] Verify the pipeline builder is correctly using the Sys
 	CHECK(-1 == pipeline.get_system_stage(test_H_system_1_id));
 }
 } // namespace godex_tests
+
+struct MyEvent1TestPB {
+	EVENT(MyEvent1TestPB)
+};
+
+void test_I_emit_event(EventsEmitter<MyEvent1TestPB> &p_emitter) {
+}
+
+void test_I_fetch_event1(Events<MyEvent1TestPB, EMITTER(Test1)> &p_events) {
+}
+
+void test_I_fetch_event2(Events<MyEvent1TestPB, EMITTER(Test2)> &p_events) {
+}
+
+void test_I_fetch_event3(Events<MyEvent1TestPB, EMITTER(Test1)> &p_events) {
+}
+
+namespace godex_tests {
+TEST_CASE("[Modules][ECS] Make sure the `Events` dependency are correct taken into account.") {
+	ECS::register_system(test_I_emit_event, "test_I_emit_event");
+	ECS::register_system(test_I_fetch_event1, "test_I_fetch_event1");
+	ECS::register_system(test_I_fetch_event2, "test_I_fetch_event2");
+	ECS::register_system(test_I_fetch_event3, "test_I_fetch_event3");
+	ECS::register_event<MyEvent1TestPB>();
+
+	Pipeline pipeline;
+	{
+		Vector<StringName> system_bundles;
+
+		Vector<StringName> systems;
+		systems.push_back("test_I_emit_event");
+		systems.push_back("test_I_fetch_event1");
+		systems.push_back("test_I_fetch_event2");
+		systems.push_back("test_I_fetch_event3");
+
+		PipelineBuilder::build_pipeline(system_bundles, systems, &pipeline);
+	}
+
+	// Make sure the event emitter is not running with other system that catches the same event.
+	CHECK(pipeline.get_system_stage(ECS::get_system_id("test_I_fetch_event1")) != pipeline.get_system_stage(ECS::get_system_id("test_I_emit_event")));
+	CHECK(pipeline.get_system_stage(ECS::get_system_id("test_I_fetch_event2")) != pipeline.get_system_stage(ECS::get_system_id("test_I_emit_event")));
+	CHECK(pipeline.get_system_stage(ECS::get_system_id("test_I_fetch_event3")) != pipeline.get_system_stage(ECS::get_system_id("test_I_emit_event")));
+
+	// Make sure the system that fetches the events all run in parallel, even if
+	// receiving from the same emitter, since receiving is always const.
+	CHECK(pipeline.get_system_stage(ECS::get_system_id("test_I_fetch_event1")) == pipeline.get_system_stage(ECS::get_system_id("test_I_fetch_event2")));
+	CHECK(pipeline.get_system_stage(ECS::get_system_id("test_I_fetch_event2")) == pipeline.get_system_stage(ECS::get_system_id("test_I_fetch_event3")));
+}
+} // namespace godex_tests
+
 #endif // TEST_ECS_PIPELINE_BUILDER_H
