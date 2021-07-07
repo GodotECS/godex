@@ -8,10 +8,7 @@
 #define EMITTER(str) typestring_is(#str)
 
 namespace godex {
-#define EVENT(m_class) \
-	EVENT_CUSTOM_FLUSH(m_class, EVENT_CLEAR_MODE_FLUSH_ON_EMIT)
-
-#define EVENT_CUSTOM_FLUSH(m_class, m_clear_mode)                                     \
+#define EVENT(m_class)                                                  \
 	ECSCLASS(m_class)                                                                 \
 	friend class World;                                                               \
                                                                                       \
@@ -20,7 +17,6 @@ namespace godex {
                                                                                       \
 public:                                                                               \
 	static uint32_t get_event_id() { return event_id; }                               \
-	static EventClearMode get_clear_mode() { return m_clear_mode; }                   \
 	ECS_PROPERTY_MAPPER(m_class)                                                      \
 	ECS_METHOD_MAPPER(m_class)                                                        \
 	static void __static_destructor() {                                               \

@@ -4,10 +4,6 @@
 #include "core/templates/oa_hash_map.h"
 #include "core/variant/dictionary.h"
 
-enum EventClearMode {
-	EVENT_CLEAR_MODE_FLUSH_ON_EMIT,
-};
-
 class EventStorageBase {
 public:
 	virtual ~EventStorageBase() {
