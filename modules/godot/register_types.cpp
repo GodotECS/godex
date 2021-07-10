@@ -5,6 +5,7 @@
 #include "components/physics/shape_3d_component.h"
 #include "components/transform_component.h"
 #include "core/object/message_queue.h"
+#include "databags/databag_timer.h"
 #include "databags/godot_engine_databags.h"
 #include "databags/input_databag.h"
 #include "databags/scene_tree_databag.h"
@@ -90,6 +91,9 @@ void register_godot_types() {
 
 	// Input
 	ECS::register_databag<InputDatabag>();
+
+	// Events
+	ECS::register_databag<TimersDatabag>();
 
 	// Engine
 
