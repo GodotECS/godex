@@ -47,6 +47,7 @@ class TimersDatabag : public godex::Databag {
 
 	// In μs (microseconds)
 	uint64_t now{ 0 };
+	uint64_t paused_time{ 0 };
 	LocalVector<godex::Timer, godex::TimerIndex> timers;
 	LocalVector<godex::TimerHandle, godex::TimerIndex> destroyed_timers;
 
@@ -55,11 +56,29 @@ class TimersDatabag : public godex::Databag {
 		timers[p_timer_handle.timer_index].end_time = p_microseconds;
 	}
 
+	// For internal usage only: has no safety checks.
+	_FORCE_INLINE_ uint64_t internal_get_now() const {
+		return now - paused_time;
+	}
+
 public:
 	TimersDatabag() {}
 
-	/// Used by `WorldECS` to update time.
-	void set_now(const uint64_t p_now);
+	/// Used by `timer_updater_system` `System` to update time by setting a new current time.
+	void internal_set_now(const uint64_t p_now);
+
+	/// Used by `timer_updater_system` `System` to update paused time.
+	void internal_set_pause(const uint64_t p_pause);
+
+	/// Used by `timer_updater_system` `System` to retrieve paused time.
+	_FORCE_INLINE_ uint64_t internal_get_pause() const {
+		return paused_time;
+	}
+
+	/// Used by `timer_updater_system` `System` to retrieve current time without taking into account paused time.
+	_FORCE_INLINE_ uint64_t internal_get_full_now() const {
+		return now;
+	}
 
 	/// <summary>
 	/// Check if the handle refers to the original timer and if it is still running.
