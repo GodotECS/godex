@@ -67,3 +67,11 @@ const Node *SceneTreeDatabag::find_node(const String &p_mask, bool p_recursive, 
 Node *SceneTreeDatabag::find_node_script(const String &p_mask, bool p_recursive, bool p_owner) {
 	return find_node(p_mask, p_recursive, p_owner);
 }
+
+void SceneTreeInfoDatabag::_bind_methods() {
+	add_method("is_paused", &SceneTreeInfoDatabag::is_paused);
+}
+
+bool SceneTreeInfoDatabag::is_paused() const {
+	return world_ecs->get_tree()->is_paused();
+}

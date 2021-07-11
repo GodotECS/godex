@@ -379,6 +379,8 @@ WorldECS::WorldECS() {
 	// Add SceneTreeDatabag to the World, so Systems can fetch the scene tree.
 	world->create_databag<SceneTreeDatabag>();
 	world->get_databag<SceneTreeDatabag>()->world_ecs = this;
+	world->create_databag<SceneTreeInfoDatabag>();
+	world->get_databag<SceneTreeInfoDatabag>()->world_ecs = this;
 }
 
 WorldECS::~WorldECS() {

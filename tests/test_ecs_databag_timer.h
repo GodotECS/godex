@@ -8,8 +8,8 @@
 
 namespace godex_tests {
 
-TEST_CASE("[Modules][ECS] Test basic timer databag operations.") {
-	// Test TimerHandle to uint64_t and inverse conversions
+TEST_CASE("[Modules][ECS] Test timer databag operations.") {
+	// Test TimerHandle to uint64_t and inverse conversions used mainly on gdscript interface
 	{
 		uint32_t testCases[18][2] = { { 0, 0 }, { UINT32_MAX, UINT32_MAX }, { UINT32_MAX, 0 }, { 0, UINT32_MAX }, { UINT32_MAX - 42, UINT32_MAX / 42 }, { UINT32_MAX, 8 }, { 16, UINT32_MAX }, { 11, 0 }, { 0, 6 }, { 1993, 28 }, { 2863311530, 2863311530 }, { 1431655765, 1431655765 }, { 2863311530, 1431655765 }, { 1431655765, 2863311530 }, { 2863289685, 2863289685 }, { 1431677610, 1431677610 }, { 2863289685, 1431677610 }, { 1431677610, 2863289685 } };
 		for (long unsigned int i = 0; i < sizeof(testCases) / sizeof(*testCases); i++) {
@@ -35,10 +35,10 @@ TEST_CASE("[Modules][ECS] Test basic timer databag operations.") {
 		CHECK(td.is_done(handle) == false);
 		CHECK(td.get_remaining_seconds(handle) >= (1.0 - CMP_EPSILON));
 
-		td.set_now(0.5 * 1'000'000.0);
+		td.internal_set_now(0.5 * 1'000'000.0);
 		CHECK(td.get_remaining_seconds(handle) >= (0.5 - CMP_EPSILON));
 
-		td.set_now(2 * 1'000'000.0);
+		td.internal_set_now(2 * 1'000'000.0);
 		CHECK(td.is_done(handle));
 
 		td.destroy_timer(handle);
@@ -49,11 +49,48 @@ TEST_CASE("[Modules][ECS] Test basic timer databag operations.") {
 		CHECK(td.is_done(handle) == false);
 		CHECK(td.get_remaining_seconds(handle) >= (1.0 - CMP_EPSILON));
 
-		td.set_now(2.5 * 1'000'000.0);
+		td.internal_set_now(2.5 * 1'000'000.0);
 		CHECK(td.get_remaining_seconds(handle) >= (0.5 - CMP_EPSILON));
 
-		td.set_now(4 * 1'000'000.0);
+		td.internal_set_now(4 * 1'000'000.0);
 		CHECK(td.is_done(handle));
+	}
+
+	// Test basic global pause timer databag operations
+	{
+		TimersDatabag td;
+
+		godex::TimerHandle handle = td.new_precise_timer(1.0 * 1'000'000.0);
+
+		bool paused = true;
+		uint64_t old_now = td.internal_get_full_now();
+		uint64_t old_paused_time = td.internal_get_pause();
+		uint64_t new_now = old_now + 1.5 * 1'000'000.0;
+
+		// this is only a substitute of what the timer updater system would be doing.
+		td.internal_set_now(new_now);
+		if (paused) {
+			td.internal_set_pause(old_paused_time + (new_now - old_now));
+		}
+		// End of substitute
+
+		CHECK(td.is_done(handle) == false);
+		CHECK(td.get_remaining_seconds(handle) >= (1.0 - CMP_EPSILON));
+
+		paused = false;
+		old_now = td.internal_get_full_now();
+		old_paused_time = td.internal_get_pause();
+		new_now = old_now + 1.5 * 1'000'000.0;
+
+		// this is only a substitute of what the timer updater system would be doing.
+		td.internal_set_now(new_now);
+		if (paused) {
+			td.internal_set_pause(old_paused_time + (new_now - old_now));
+		}
+		// End of substitute
+
+		CHECK(td.is_done(handle));
+		CHECK(td.get_remaining_seconds(handle) >= (-0.5 - CMP_EPSILON));
 	}
 }
 } // namespace godex_tests

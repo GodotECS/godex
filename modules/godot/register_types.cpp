@@ -20,6 +20,7 @@
 #include "nodes/shared_component_resource.h"
 #include "systems/mesh_updater_system.h"
 #include "systems/physics_process_system.h"
+#include "systems/timer_updater_system.h"
 
 // TODO improve this workflow once the new pipeline is integrated.
 class REP : public Object {
@@ -78,6 +79,7 @@ void register_godot_types() {
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Register engine databags
 	// Engine
 	ECS::register_databag<SceneTreeDatabag>();
+	ECS::register_databag<SceneTreeInfoDatabag>();
 	ECS::register_databag<OsDatabag>();
 	ECS::register_databag<EngineDatabag>();
 	ECS::register_databag<MessageQueueDatabag>();
@@ -132,6 +134,18 @@ void register_godot_types() {
 
 			.add(ECS::register_system(physics_finalize_frame, "physics_finalize_frame")
 							.execute_in(PHASE_MAX, "Physics"));
+
+	// Utilities
+	ECS::register_system_bundle("Utilities")
+			.set_description("Core and global systems: timers, ... (Currently nothing else)")
+			.add(ECS::register_system(timer_updater_system, "TimerUpdaterSystem")
+							.execute_in(PHASE_CONFIG)
+							.set_description("Updates the `TimerDatabag`"))
+
+			.add(ECS::register_system(timer_event_launcher_system, "TimerEventLauncherSystem")
+							.execute_in(PHASE_CONFIG)
+							.set_description("Throws events of finished event timers")
+							.after("TimerUpdaterSystem"));
 
 	ClassDB::register_class<SharedComponentResource>();
 

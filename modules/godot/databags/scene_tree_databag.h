@@ -38,3 +38,20 @@ public:
 	const Node *find_node(const String &p_mask, bool p_recursive = true, bool p_owner = true) const;
 	Node *find_node_script(const String &p_mask, bool p_recursive = true, bool p_owner = true);
 };
+
+/// This Databag gives access to the SceneTree functions that are safe to call
+/// from multithreaded systems.
+/// If you only need one of these functions from the scene tree, using this
+/// instead of SceneTreeDatabag will allow its user to be multithreaded anyways
+struct SceneTreeInfoDatabag : public godex::Databag {
+	DATABAG(SceneTreeInfoDatabag)
+	friend class WorldECS;
+
+private:
+	WorldECS *world_ecs = nullptr;
+
+public:
+	static void _bind_methods();
+
+	bool is_paused() const;
+};

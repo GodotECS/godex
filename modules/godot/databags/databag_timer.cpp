@@ -12,8 +12,12 @@ void TimersDatabag::_bind_methods() {
 	add_method("get_remaining_microseconds", &TimersDatabag::script_get_remaining_microseconds);
 }
 
-void TimersDatabag::set_now(const uint64_t p_now) {
+void TimersDatabag::internal_set_now(const uint64_t p_now) {
 	now = p_now;
+}
+
+void TimersDatabag::internal_set_pause(const uint64_t p_new_pause) {
+	paused_time = p_new_pause;
 }
 
 bool TimersDatabag::is_valid_timer_handle(const godex::TimerHandle p_timer_handle) const {
@@ -28,11 +32,11 @@ godex::TimerHandle TimersDatabag::new_timer(const real_t p_end_in_seconds) {
 godex::TimerHandle TimersDatabag::new_precise_timer(const uint64_t p_end_in_microseconds) {
 	if (destroyed_timers.size() > 0) {
 		godex::TimerHandle finalHandle = destroyed_timers[destroyed_timers.size() - 1];
-		internal_restart_precise_timer(finalHandle, now + p_end_in_microseconds);
+		internal_restart_precise_timer(finalHandle, internal_get_now() + p_end_in_microseconds);
 		destroyed_timers.remove_unordered(destroyed_timers.size() - 1);
 		return finalHandle;
 	} else {
-		timers.push_back(godex::Timer(now + p_end_in_microseconds, 1));
+		timers.push_back(godex::Timer(internal_get_now() + p_end_in_microseconds, 1));
 		return godex::TimerHandle(timers.size() - 1, 1);
 	}
 }
@@ -49,7 +53,7 @@ void TimersDatabag::restart_precise_timer(const godex::TimerHandle p_timer_handl
 
 bool TimersDatabag::is_done(const godex::TimerHandle p_timer_handle) const {
 	ERR_FAIL_COND_V_MSG(!is_valid_timer_handle(p_timer_handle), true, "The handle" + itos(p_timer_handle.timer_index) + " is not a valid handle.");
-	return timers[p_timer_handle.timer_index].end_time <= now;
+	return timers[p_timer_handle.timer_index].end_time <= internal_get_now();
 }
 
 void TimersDatabag::destroy_timer(const godex::TimerHandle p_timer_handle) {
@@ -62,9 +66,9 @@ void TimersDatabag::destroy_timer(const godex::TimerHandle p_timer_handle) {
 }
 
 real_t TimersDatabag::get_remaining_seconds(const godex::TimerHandle p_timer_handle) const {
-	return (is_done(p_timer_handle) ? -static_cast<double>(now - timers[p_timer_handle.timer_index].end_time) : static_cast<double>(timers[p_timer_handle.timer_index].end_time - now)) / 1'000'000.0;
+	return (is_done(p_timer_handle) ? -static_cast<double>(internal_get_now() - timers[p_timer_handle.timer_index].end_time) : static_cast<double>(timers[p_timer_handle.timer_index].end_time - internal_get_now())) / 1'000'000.0;
 }
 
 int64_t TimersDatabag::get_remaining_microseconds(const godex::TimerHandle p_timer_handle) const {
-	return is_done(p_timer_handle) ? -static_cast<int64_t>(now - timers[p_timer_handle.timer_index].end_time) : static_cast<int64_t>(timers[p_timer_handle.timer_index].end_time - now);
+	return is_done(p_timer_handle) ? -static_cast<int64_t>(internal_get_now() - timers[p_timer_handle.timer_index].end_time) : static_cast<int64_t>(timers[p_timer_handle.timer_index].end_time - internal_get_now());
 }
