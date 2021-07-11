@@ -407,6 +407,8 @@ enum class DataAccessorTargetType {
 	Databag,
 	Component,
 	Storage,
+	EventEmitter,
+	EventFetcher,
 };
 
 /// This is useful to access the Component / Databag / Storage.

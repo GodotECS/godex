@@ -109,6 +109,14 @@ void godex::DynamicSystemInfo::with_storage(godex::component_id p_component_id) 
 	storages.push_back(p_component_id);
 }
 
+void godex::DynamicSystemInfo::with_event_emitter(godex::event_id p_event_id) {
+	CRASH_COND_MSG(compiled, "This function can be called only within the prepare function.");
+}
+
+void godex::DynamicSystemInfo::with_event_fetcher(godex::event_id p_event_id, const String &p_emitter_name) {
+	CRASH_COND_MSG(compiled, "This function can be called only within the prepare function.");
+}
+
 bool godex::DynamicSystemInfo::build() {
 	CRASH_COND_MSG(compiled, "The query is not supposed to be compiled twice.");
 	compiled = true;

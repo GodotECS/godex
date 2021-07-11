@@ -278,6 +278,13 @@ public:
 	static EventStorageBase *create_events_storage(godex::event_id p_event_id);
 	static void destroy_events_storage(godex::event_id p_event_id, EventStorageBase *p_storage);
 
+	static bool unsafe_event_set_by_name(godex::event_id p_event_id, void *p_event, const StringName &p_name, const Variant &p_data);
+	static bool unsafe_event_get_by_name(godex::event_id p_event_id, const void *p_event, const StringName &p_name, Variant &r_data);
+	static Variant unsafe_event_get_by_name(godex::event_id p_event_id, const void *p_event, const StringName &p_name);
+	static bool unsafe_event_set_by_index(godex::event_id p_event_id, void *p_event, uint32_t p_index, const Variant &p_data);
+	static bool unsafe_event_get_by_index(godex::event_id p_event_id, const void *p_event, uint32_t p_index, Variant &r_data);
+	static void unsafe_event_call(godex::event_id p_event_id, void *p_event, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error);
+
 	// ~~ SystemBundle ~~
 	static SystemBundleInfo &register_system_bundle(const StringName &p_name);
 

@@ -376,6 +376,32 @@ void ECS::destroy_events_storage(godex::event_id p_event_id, EventStorageBase *p
 	//}
 }
 
+bool ECS::unsafe_event_set_by_name(godex::event_id p_event_id, void *p_event, const StringName &p_name, const Variant &p_data) {
+	return events_info[p_event_id].accessor_funcs.set_by_name(p_event, p_name, p_data);
+}
+
+bool ECS::unsafe_event_get_by_name(godex::event_id p_event_id, const void *p_event, const StringName &p_name, Variant &r_data) {
+	return events_info[p_event_id].accessor_funcs.get_by_name(p_event, p_name, r_data);
+}
+
+Variant ECS::unsafe_event_get_by_name(godex::event_id p_event_id, const void *p_event, const StringName &p_name) {
+	Variant ret;
+	ECS::unsafe_event_get_by_name(p_event_id, p_event, p_name, ret);
+	return ret;
+}
+
+bool ECS::unsafe_event_set_by_index(godex::event_id p_event_id, void *p_event, uint32_t p_index, const Variant &p_data) {
+	return events_info[p_event_id].accessor_funcs.set_by_index(p_event, p_index, p_data);
+}
+
+bool ECS::unsafe_event_get_by_index(godex::event_id p_event_id, const void *p_event, uint32_t p_index, Variant &r_data) {
+	return events_info[p_event_id].accessor_funcs.get_by_index(p_event, p_index, r_data);
+}
+
+void ECS::unsafe_event_call(godex::event_id p_event_id, void *p_event, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) {
+	events_info[p_event_id].accessor_funcs.call(p_event, p_method, p_args, p_argcount, r_ret, r_error);
+}
+
 SystemBundleInfo &ECS::register_system_bundle(const StringName &p_name) {
 	{
 		const uint32_t id = get_system_bundle_id(p_name);
