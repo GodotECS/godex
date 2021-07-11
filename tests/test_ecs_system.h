@@ -1161,29 +1161,45 @@ TEST_CASE("[Modules][ECS] Test fetch entity from nodepath, using a dynamic syste
 
 struct MyEvent1Test {
 	EVENT(MyEvent1Test)
+
+	static void _bind_methods() {
+		ECS_BIND_PROPERTY(MyEvent1Test, PropertyInfo(Variant::INT, "a"), a);
+	}
+
+	int a = 0;
 };
 
 void test_emit_event(EventsEmitter<MyEvent1Test> &p_emitter) {
-	p_emitter.emit("Test11", MyEvent1Test());
+	MyEvent1Test e;
+	e.a = 10;
+	p_emitter.emit("Test1", e);
 }
 
 void test_fetch_event(Events<MyEvent1Test, EMITTER(Test1)> &p_events) {
+	int c = 0;
+	for (const MyEvent1Test *e : p_events) {
+		c += 1;
+		CHECK(e->a == 10);
+	}
+	CHECK(c == 1);
 }
 
 namespace godex_tests {
 TEST_CASE("[Modules][ECS] Test `Events` class is able to fetch the emitter name.") {
+	ECS::register_event<MyEvent1Test>();
 	{
 		// Make sure the Events is correctly reporting the EmitterName set at compile
 		// time.
-		Events<MyEvent1Test, EMITTER(Test11)> events(nullptr);
+		World world;
+		Events<MyEvent1Test, EMITTER(Test11)> events(&world);
 		CHECK(events.get_emitter_name() == String("Test11"));
 	}
 }
 
 TEST_CASE("[Modules][ECS] Make sure the events storages are automatically created.") {
 	ECS::register_system(test_emit_event, "test_emit_event");
-	ECS::register_system(test_fetch_event, "test_fetch_event");
-	ECS::register_event<MyEvent1Test>();
+	ECS::register_system(test_fetch_event, "test_fetch_event")
+			.after("test_emit_event");
 
 	// Make sure the world creates the event storage when the `EventEmitter` is encountered.
 	{
@@ -1223,12 +1239,36 @@ TEST_CASE("[Modules][ECS] Make sure the events storages are automatically create
 		EventStorage<MyEvent1Test> *storage = world.get_events_storage<MyEvent1Test>();
 		// Make sure the storage is been created at this point, since `prepare` does it.
 		CHECK(storage != nullptr);
+		// Make sure the emitter has been created.
+		CHECK(storage->has_emitter("Test1"));
 	}
 
-	// TODO  test the events behave correctly as expected:
-	// - Emit
-	// - Fetch
-	// - Flush old on emit.
+	{
+		Pipeline pipeline;
+		{
+			Vector<StringName> system_bundles;
+
+			Vector<StringName> systems;
+			systems.push_back("test_emit_event");
+			systems.push_back("test_fetch_event");
+
+			PipelineBuilder::build_pipeline(system_bundles, systems, &pipeline);
+		}
+
+		World world;
+		pipeline.prepare(&world);
+
+		const EventStorage<MyEvent1Test> *storage = world.get_events_storage<MyEvent1Test>();
+
+		pipeline.dispatch(&world);
+		CHECK(storage->get_events("Test1")->size() == 1);
+
+		pipeline.dispatch(&world);
+		CHECK(storage->get_events("Test1")->size() == 1);
+
+		pipeline.dispatch(&world);
+		CHECK(storage->get_events("Test1")->size() == 1);
+	}
 }
 } // namespace godex_tests
 

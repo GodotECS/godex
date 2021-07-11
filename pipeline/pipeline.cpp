@@ -37,6 +37,12 @@ void Pipeline::prepare(World *p_world) {
 		}
 	}
 
+	for (uint32_t i = 0; i < p_world->events_storages.size(); i += 1) {
+		if (p_world->events_storages[i] != nullptr) {
+			p_world->events_storages[i]->flush_events();
+		}
+	}
+
 	// Crete components and databags storages.
 	SystemExeInfo info;
 
@@ -86,6 +92,10 @@ void Pipeline::prepare(World *p_world) {
 						it.valid;
 						it = info.events_receivers.next_iter(it)) {
 					p_world->create_events_storage(*it.key);
+					EventStorageBase *s = p_world->get_events_storage(*it.key);
+					for (const Set<String>::Element *e = it.value->front(); e; e = e->next()) {
+						s->add_event_emitter(e->get());
+					}
 				}
 			}
 		}

@@ -4,11 +4,12 @@
 #include "../ecs.h"
 #include "../storage/event_storage.h"
 #include "../utils/typestring.hh"
+#include "../world/world.h"
 
 #define EMITTER(str) typestring_is(#str)
 
 namespace godex {
-#define EVENT(m_class)                                                  \
+#define EVENT(m_class)                                                                \
 	ECSCLASS(m_class)                                                                 \
 	friend class World;                                                               \
                                                                                       \
@@ -58,15 +59,17 @@ public:                                                                         
 /// ```
 template <class E>
 class EventsEmitter {
-	World *world;
+	EventStorage<E> *storage = nullptr;
 
 public:
-	EventsEmitter(World *p_world) :
-			world(p_world) {}
+	EventsEmitter(World *p_world) {
+		storage = p_world->get_events_storage<E>();
+		// Flush the old events.
+		storage->flush_events();
+	}
 
-	void emit(const String &p_emitter_name, const E &) {
-		// TODO store the event in the world
-		//world->
+	void emit(const String &p_emitter_name, const E &p_event) {
+		storage->add_event(p_emitter_name, p_event);
 	}
 };
 
@@ -81,13 +84,67 @@ public:
 /// ```
 template <class E, typename EmitterName>
 class Events {
-	World *world;
+	const LocalVector<E> *emitter_storage = nullptr;
 
 public:
-	Events(World *p_world) :
-			world(p_world) {}
+	struct Iterator {
+	private:
+		const LocalVector<E> *emitter_storage = nullptr;
 
-	String get_emitter_name() const {
+	public:
+		using iterator_category = std::forward_iterator_tag;
+		using difference_type = std::ptrdiff_t;
+		using value_type = const E *;
+		uint32_t index = 0;
+
+		Iterator(const LocalVector<E> *p_emitter_storage, uint32_t p_index) :
+				emitter_storage(p_emitter_storage),
+				index(p_index) {}
+
+		bool is_valid() const {
+			return index < emitter_storage->size();
+		}
+
+		value_type operator*() const {
+			return emitter_storage->ptr() + index;
+		}
+
+		Iterator &operator++() {
+			index += 1;
+			return *this;
+		}
+
+		Iterator operator++(int) {
+			Iterator tmp = *this;
+			++(*this);
+			return tmp;
+		}
+
+		friend bool operator==(const Iterator &a, const Iterator &b) { return a.index == b.index; }
+		friend bool operator!=(const Iterator &a, const Iterator &b) { return a.index != b.index; }
+	};
+
+public:
+	Events(World *p_world) {
+		EventStorage<E> *storage = p_world->get_events_storage<E>();
+		if (storage != nullptr) {
+			emitter_storage = storage->get_events(get_emitter_name());
+		}
+	}
+
+	static String get_emitter_name() {
 		return String(EmitterName::data());
+	}
+
+	/// Returns the forward iterator to fetch the events.
+	Iterator begin() {
+		ERR_FAIL_COND_V_MSG(emitter_storage == nullptr, Iterator(emitter_storage, 0), "The emitter `" + E::get_class_static() + "::" + get_emitter_name() + "` storage doesn't exist.");
+		return Iterator(emitter_storage, 0);
+	}
+
+	/// Used to know the last element of the `Iterator`.
+	Iterator end() {
+		ERR_FAIL_COND_V_MSG(emitter_storage == nullptr, Iterator(emitter_storage, 0), "The emitter `" + E::get_class_static() + "::" + get_emitter_name() + "` storage doesn't exist.");
+		return Iterator(emitter_storage, emitter_storage->size());
 	}
 };
