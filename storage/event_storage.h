@@ -26,7 +26,10 @@ public:
 		return nullptr;
 	}
 
-	// TODO add dynamic read to allow GDScript systems to fetch events.
+	virtual Array get_events_array(const String &p_emitter) const {
+		CRASH_NOW_MSG("Override this function.");
+		return Array();
+	}
 
 	virtual void flush_events() {
 		CRASH_NOW_MSG("Override this function.");
@@ -60,6 +63,28 @@ public:
 
 	virtual const void *get_events_ptr(const String &p_emitter) const override {
 		return (const void *)get_events(p_emitter);
+	}
+
+	virtual Array get_events_array(const String &p_emitter) const override {
+		const LocalVector<PropertyInfo> *props = E::get_properties();
+
+		Array ret;
+		const LocalVector<E> *events = get_events(p_emitter);
+		if (events) {
+			ret.resize(events->size());
+			for (uint32_t i = 0; i < events->size(); i += 1) {
+				Dictionary dic;
+
+				for (uint32_t p = 0; p < props->size(); p += 1) {
+					Variant v;
+					E::get_by_index((void *)(events->ptr() + i), p, v);
+					dic[(*props)[p].name] = v;
+				}
+
+				ret[i] = dic;
+			}
+		}
+		return ret;
 	}
 
 	virtual void flush_events() override {

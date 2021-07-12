@@ -86,9 +86,8 @@ bool DynamicQuery::build() {
 	// (AccessComponent is a parent of Object).
 	accessors.resize(component_ids.size());
 	for (uint32_t i = 0; i < component_ids.size(); i += 1) {
-		accessors[i].init(
+		accessors[i].init_component(
 				component_ids[i],
-				DataAccessorTargetType::Component,
 				mutability[i]);
 	}
 

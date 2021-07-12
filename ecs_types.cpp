@@ -2,17 +2,36 @@
 
 #include "ecs.h"
 
-void DataAccessor::init(uint32_t p_identifier, DataAccessorTargetType p_type, bool p_mut) {
+void DataAccessor::init_databag(uint32_t p_identifier, bool p_mut) {
 	target_identifier = p_identifier;
-	target_type = p_type;
+	target_type = DataAccessorTargetType::Databag;
 	mut = p_mut;
-	if (p_type == DataAccessorTargetType::EventEmitter) {
-		// The Event Emitter is always mutable.
-		mut = true;
-	} else if (p_type == DataAccessorTargetType::EventFetcher) {
-		// The Event Fetcher is always immutable.
-		mut = false;
-	}
+}
+
+void DataAccessor::init_component(uint32_t p_identifier, bool p_mut) {
+	target_identifier = p_identifier;
+	target_type = DataAccessorTargetType::Component;
+	mut = p_mut;
+}
+
+void DataAccessor::init_storage(uint32_t p_identifier) {
+	target_identifier = p_identifier;
+	target_type = DataAccessorTargetType::Storage;
+	// The storage is always mutable.
+	mut = true;
+}
+
+void DataAccessor::init_event_emitter(uint32_t p_identifier) {
+	target_identifier = p_identifier;
+	target_type = DataAccessorTargetType::EventEmitter;
+	mut = true;
+}
+
+void DataAccessor::init_event_fetcher(uint32_t p_identifier, const String &p_target_identifier_name) {
+	target_identifier = p_identifier;
+	target_type = DataAccessorTargetType::EventFetcher;
+	mut = false;
+	target_identifier_name = p_target_identifier_name;
 }
 
 uint32_t DataAccessor::get_target_identifier() const {
@@ -159,6 +178,18 @@ Variant DataAccessor::call(const StringName &p_method, const Variant **p_args, i
 				break;
 			case DataAccessorTargetType::EventFetcher:
 				if (String(p_method) == "fetch") { // TODO convert to a static StringName??
+					EventStorageBase *storage = static_cast<EventStorageBase *>(target);
+					if (p_argcount > 0) {
+						r_error.error = Callable::CallError::CALL_ERROR_TOO_MANY_ARGUMENTS;
+						r_error.argument = p_argcount;
+						r_error.expected = 0;
+						ERR_PRINT("The EventFetcher::fetch function doesn't need arguments: `fetcher.fetch()`");
+					} else {
+						ret = storage->get_events_array(target_identifier_name);
+					}
+				} else {
+					r_error.error = Callable::CallError::CALL_ERROR_INVALID_METHOD;
+					ERR_PRINT("The method " + p_method + " doesn't exist on the `EventEmitter`");
 				}
 				break;
 		}

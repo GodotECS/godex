@@ -152,6 +152,11 @@ private:                                                                        
 		setters.push_back(p_set);                                                                                                      \
 		getters.push_back(p_get);                                                                                                      \
 	}                                                                                                                                  \
+	static void clear_properties_static() {                                                                                            \
+		property_map.clear();                                                                                                          \
+	}                                                                                                                                  \
+                                                                                                                                       \
+public:                                                                                                                                \
 	static const LocalVector<PropertyInfo> *get_properties() {                                                                         \
 		return &properties;                                                                                                            \
 	}                                                                                                                                  \
@@ -161,15 +166,10 @@ private:                                                                        
 		get_by_name(&c, p_name, ret);                                                                                                  \
 		return ret;                                                                                                                    \
 	}                                                                                                                                  \
-	static void clear_properties_static() {                                                                                            \
-		property_map.clear();                                                                                                          \
-	}                                                                                                                                  \
 	static uint32_t get_property_index(const StringName &p_name) {                                                                     \
 		const int64_t i = property_map.find(p_name);                                                                                   \
 		return i == -1 ? UINT32_MAX : uint32_t(i);                                                                                     \
 	}                                                                                                                                  \
-                                                                                                                                       \
-public:                                                                                                                                \
 	static bool set_by_name(void *p_self, const StringName &p_name, const Variant &p_data) {                                           \
 		m_class *self = static_cast<m_class *>(p_self);                                                                                \
 		const uint32_t i = get_property_index(p_name);                                                                                 \
@@ -411,16 +411,20 @@ enum class DataAccessorTargetType {
 	EventFetcher,
 };
 
-/// This is useful to access the Component / Databag / Storage.
 class DataAccessor : public Object {
 private:
 	uint32_t target_identifier;
+	String target_identifier_name;
 	DataAccessorTargetType target_type;
 	bool mut = false;
 	void *target = nullptr;
 
 public:
-	void init(uint32_t p_identifier, DataAccessorTargetType p_type, bool p_mut);
+	void init_databag(uint32_t p_identifier, bool p_mut);
+	void init_component(uint32_t p_identifier, bool p_mut);
+	void init_storage(uint32_t p_identifier);
+	void init_event_emitter(uint32_t p_identifier);
+	void init_event_fetcher(uint32_t p_identifier, const String &p_target_identifier_name = String());
 
 	uint32_t get_target_identifier() const;
 	DataAccessorTargetType get_target_type() const;

@@ -58,7 +58,7 @@ class DynamicSystemInfo {
 	// Accessors databag.
 	LocalVector<DataAccessor> databag_accessors;
 
-	// Accessors databag.
+	// Accessors storage.
 	LocalVector<DataAccessor> storage_accessors;
 
 public:

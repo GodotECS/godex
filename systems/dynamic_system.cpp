@@ -143,9 +143,8 @@ bool godex::DynamicSystemInfo::build() {
 		// Set the databag accessors.
 		for (uint32_t i = 0; i < databags.size(); i += 1) {
 			// Init the accessor
-			databag_accessors[i].init(
+			databag_accessors[i].init_databag(
 					databags[i].databag_id,
-					DataAccessorTargetType::Databag,
 					databags[i].is_mutable);
 
 			// Assign the accessor.
@@ -159,11 +158,7 @@ bool godex::DynamicSystemInfo::build() {
 		// Set the storage accessors.
 		for (uint32_t i = 0; i < storages.size(); i += 1) {
 			// Init the `Storage` accessor.
-			storage_accessors[i].init(
-					storages[i],
-					DataAccessorTargetType::Storage,
-					// The storages are always mutable.
-					true);
+			storage_accessors[i].init_storage(storages[i]);
 
 			// Assign the accessor.
 			access[storage_element_map[i]] = &storage_accessors[i];
