@@ -1,11 +1,12 @@
 #pragma once
 
 #include "../components/component.h"
-#include "core/object/object.h"
+#include "../utils/fetchers.h"
 #include "core/string/string_name.h"
 #include "core/templates/local_vector.h"
 
 class World;
+class ComponentDynamicExposer;
 
 namespace godex {
 
@@ -13,8 +14,8 @@ namespace godex {
 /// that the scripts can still interact with the `World`.
 /// Cache this query allow to save the time needed to lookup the components IDs,
 /// so it's advised store it and use when needed.
-class DynamicQuery : public Object {
-	GDCLASS(DynamicQuery, Object)
+class DynamicQuery : public GodexWorldFetcher {
+	GDCLASS(DynamicQuery, GodexWorldFetcher)
 
 	enum FetchMode {
 		WITH_MODE,
@@ -29,7 +30,7 @@ class DynamicQuery : public Object {
 	LocalVector<godex::component_id> component_ids;
 	LocalVector<bool> mutability;
 	LocalVector<FetchMode> mode;
-	LocalVector<DataAccessor> accessors;
+	LocalVector<ComponentDynamicExposer> accessors;
 	LocalVector<StorageBase *> storages;
 	LocalVector<StorageBase *> reject_storages;
 
@@ -70,13 +71,14 @@ public:
 	/// The returned pointer is valid only for the execution of the query.
 	/// If you reset the query, copy it (move the object), this pointer is invalidated.
 	Object *get_access_gd(uint32_t p_index);
-	DataAccessor *get_access(uint32_t p_index);
+	ComponentDynamicExposer *get_access(uint32_t p_index);
 
+	virtual void get_system_info(SystemExeInfo *p_info) const override;
 	/// Start the execution of this query.
 	void begin_script(Object *p_world);
-	void begin(World *p_world);
+	virtual void begin(World *p_world) override;
 	/// Ends the query execution.
-	void end();
+	virtual void end() override;
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Iterator
 	/// Returns `false` if this query can still return the components via `get`.
@@ -97,6 +99,5 @@ public:
 	uint32_t script_get_current_entity_id() const;
 	EntityID get_current_entity_id() const;
 	uint32_t count() const;
-	void get_system_info(SystemExeInfo &p_info) const;
 };
 } // namespace godex

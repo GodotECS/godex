@@ -8,6 +8,8 @@
 #include "core/variant/binder_common.h"
 #include "modules/gdscript/gdscript.h"
 
+struct SystemExeInfo;
+
 template <typename T, typename = void>
 struct godex_has_get_spawners : std::false_type {};
 
@@ -403,40 +405,13 @@ public:                                                                         
 		return singleton;                                                                             \
 	}
 
-enum class DataAccessorTargetType {
-	Databag,
-	Component,
-	Storage,
-	EventEmitter,
-	EventFetcher,
-};
-
-class DataAccessor : public Object {
-private:
-	uint32_t target_identifier;
-	String target_identifier_name;
-	DataAccessorTargetType target_type;
-	bool mut = false;
-	void *target = nullptr;
+class GodexWorldFetcher : public Object {
+	GDCLASS(GodexWorldFetcher, Object)
 
 public:
-	void init_databag(uint32_t p_identifier, bool p_mut);
-	void init_component(uint32_t p_identifier, bool p_mut);
-	void init_storage(uint32_t p_identifier);
-	void init_event_emitter(uint32_t p_identifier);
-	void init_event_fetcher(uint32_t p_identifier, const String &p_target_identifier_name = String());
-
-	uint32_t get_target_identifier() const;
-	DataAccessorTargetType get_target_type() const;
-	bool is_mutable() const;
-
-	void set_target(void *p_target);
-	void *get_target();
-	const void *get_target() const;
-
-	virtual bool _setv(const StringName &p_name, const Variant &p_value) override;
-	virtual bool _getv(const StringName &p_name, Variant &r_ret) const override;
-	virtual Variant call(const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) override;
+	virtual void get_system_info(SystemExeInfo *r_info) const = 0;
+	virtual void begin(class World *p_world) = 0;
+	virtual void end() = 0;
 };
 
 struct PropertyInfoWithDefault {
