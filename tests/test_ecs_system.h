@@ -5,6 +5,7 @@
 
 #include "../components/dynamic_component.h"
 #include "../ecs.h"
+#include "../events/events.h"
 #include "../modules/godot/components/transform_component.h"
 #include "../modules/godot/nodes/ecs_utilities.h"
 #include "../pipeline/pipeline.h"
@@ -40,7 +41,7 @@ struct TestSystem1Databag : public godex::Databag {
 
 struct Event1Component {
 	COMPONENT_BATCH(Event1Component, DenseVector, 2)
-	EVENT()
+	EVENT__TODO_REMOVE_THIS()
 
 	static void _bind_methods() {
 		ECS_BIND_PROPERTY(Event1Component, PropertyInfo(Variant::INT, "a"), a);
@@ -1157,5 +1158,170 @@ TEST_CASE("[Modules][ECS] Test fetch entity from nodepath, using a dynamic syste
 	finalize_script_ecs();
 }
 } // namespace godex_tests_system
+
+struct MyEvent1Test {
+	EVENT(MyEvent1Test)
+
+	static void _bind_methods() {
+		ECS_BIND_PROPERTY(MyEvent1Test, PropertyInfo(Variant::INT, "a"), a);
+	}
+
+	int a = 0;
+};
+
+void test_emit_event(EventsEmitter<MyEvent1Test> &p_emitter) {
+	MyEvent1Test e;
+	e.a = 10;
+	p_emitter.emit("Test1", e);
+}
+
+void test_fetch_event(Events<MyEvent1Test, EMITTER(Test1)> &p_events) {
+	int c = 0;
+	for (const MyEvent1Test *e : p_events) {
+		c += 1;
+		CHECK(e->a == 10);
+	}
+	CHECK(c == 1);
+}
+
+namespace godex_tests {
+TEST_CASE("[Modules][ECS] Test `Events` class is able to fetch the emitter name.") {
+	ECS::register_event<MyEvent1Test>();
+	{
+		// Make sure the Events is correctly reporting the EmitterName set at compile
+		// time.
+		World world;
+		Events<MyEvent1Test, EMITTER(Test11)> events(&world);
+		CHECK(events.get_emitter_name() == String("Test11"));
+	}
+}
+
+TEST_CASE("[Modules][ECS] Make sure the events storages are automatically created.") {
+	ECS::register_system(test_emit_event, "test_emit_event");
+	ECS::register_system(test_fetch_event, "test_fetch_event")
+			.after("test_emit_event");
+
+	// Make sure the world creates the event storage when the `EventEmitter` is encountered.
+	{
+		Pipeline pipeline;
+		{
+			Vector<StringName> system_bundles;
+
+			Vector<StringName> systems;
+			systems.push_back("test_emit_event");
+
+			PipelineBuilder::build_pipeline(system_bundles, systems, &pipeline);
+		}
+
+		World world;
+		pipeline.prepare(&world);
+
+		EventStorage<MyEvent1Test> *storage = world.get_events_storage<MyEvent1Test>();
+		// Make sure the storage is been created at this point, since `prepare` does it.
+		CHECK(storage != nullptr);
+	}
+
+	// Make sure the world creates the event storage when the `Events` is encountered.
+	{
+		Pipeline pipeline;
+		{
+			Vector<StringName> system_bundles;
+
+			Vector<StringName> systems;
+			systems.push_back("test_fetch_event");
+
+			PipelineBuilder::build_pipeline(system_bundles, systems, &pipeline);
+		}
+
+		World world;
+		pipeline.prepare(&world);
+
+		EventStorage<MyEvent1Test> *storage = world.get_events_storage<MyEvent1Test>();
+		// Make sure the storage is been created at this point, since `prepare` does it.
+		CHECK(storage != nullptr);
+		// Make sure the emitter has been created.
+		CHECK(storage->has_emitter("Test1"));
+	}
+
+	{
+		Pipeline pipeline;
+		{
+			Vector<StringName> system_bundles;
+
+			Vector<StringName> systems;
+			systems.push_back("test_emit_event");
+			systems.push_back("test_fetch_event");
+
+			PipelineBuilder::build_pipeline(system_bundles, systems, &pipeline);
+		}
+
+		World world;
+		pipeline.prepare(&world);
+
+		const EventStorage<MyEvent1Test> *storage = world.get_events_storage<MyEvent1Test>();
+
+		pipeline.dispatch(&world);
+		CHECK(storage->get_events("Test1")->size() == 1);
+
+		pipeline.dispatch(&world);
+		CHECK(storage->get_events("Test1")->size() == 1);
+
+		pipeline.dispatch(&world);
+		CHECK(storage->get_events("Test1")->size() == 1);
+	}
+}
+} // namespace godex_tests
+
+struct MyEvent2Test {
+	EVENT(MyEvent2Test)
+};
+
+void test2_emit_event(EventsEmitter<MyEvent2Test> &p_emitter) {}
+void test2_fetch1_event(Events<MyEvent2Test, EMITTER(Test1)> &p_events) {}
+void test2_fetch2_event(Events<MyEvent2Test, EMITTER(Test1)> &p_events) {}
+void test2_fetch3_event(Events<MyEvent2Test, EMITTER(Test2)> &p_events) {}
+
+void test_fetch_databag_mut(TestSystem1Databag *) {}
+void test_fetch_databag_const(TestSystem1Databag *) {}
+
+namespace godex_tests {
+TEST_CASE("[Modules][ECS] Make sure the function `can_systems_run_in_parallel` works as expected.") {
+	ECS::register_system(test2_emit_event, "test2_emit_event");
+	ECS::register_system(test2_fetch1_event, "test2_fetch1_event");
+	ECS::register_system(test2_fetch2_event, "test2_fetch2_event");
+	ECS::register_system(test2_fetch3_event, "test2_fetch3_event");
+	ECS::register_system(test_fetch_databag_mut, "test_fetch_databag_mut");
+	ECS::register_system(test_fetch_databag_const, "test_fetch_databag_const");
+	ECS::register_event<MyEvent2Test>();
+
+	// Make sure that two systems that emits two different events can run in parallel.
+	CHECK(ECS::can_systems_run_in_parallel(ECS::get_system_id("test2_emit_event"), ECS::get_system_id("test_emit_event")));
+
+	// Make sure the system that emit the event can't run in parallel with the
+	// systems that fetch it.
+	CHECK(!ECS::can_systems_run_in_parallel(ECS::get_system_id("test_emit_event"), ECS::get_system_id("test_fetch_event")));
+
+	// Check the above on the other set of systems.
+	CHECK(!ECS::can_systems_run_in_parallel(ECS::get_system_id("test2_emit_event"), ECS::get_system_id("test2_fetch1_event")));
+	CHECK(!ECS::can_systems_run_in_parallel(ECS::get_system_id("test2_emit_event"), ECS::get_system_id("test2_fetch2_event")));
+	CHECK(!ECS::can_systems_run_in_parallel(ECS::get_system_id("test2_emit_event"), ECS::get_system_id("test2_fetch3_event")));
+
+	// Make sure the fetch events can run in parallel no matter what.
+	CHECK(ECS::can_systems_run_in_parallel(ECS::get_system_id("test2_fetch1_event"), ECS::get_system_id("test2_fetch2_event")));
+	CHECK(ECS::can_systems_run_in_parallel(ECS::get_system_id("test2_fetch2_event"), ECS::get_system_id("test2_fetch3_event")));
+	CHECK(ECS::can_systems_run_in_parallel(ECS::get_system_id("test2_fetch3_event"), ECS::get_system_id("test_fetch_event")));
+
+	// Make sure the systems fetching the databags can't run in parallel.
+	CHECK(!ECS::can_systems_run_in_parallel(ECS::get_system_id("test_fetch_databag_mut"), ECS::get_system_id("test_fetch_databag_const")));
+
+	// But can run with the events one.
+	CHECK(ECS::can_systems_run_in_parallel(ECS::get_system_id("test_fetch_databag_mut"), ECS::get_system_id("test2_emit_event")));
+	CHECK(ECS::can_systems_run_in_parallel(ECS::get_system_id("test_fetch_databag_mut"), ECS::get_system_id("test2_fetch3_event")));
+	CHECK(ECS::can_systems_run_in_parallel(ECS::get_system_id("test_fetch_databag_const"), ECS::get_system_id("test2_emit_event")));
+	CHECK(ECS::can_systems_run_in_parallel(ECS::get_system_id("test_fetch_databag_const"), ECS::get_system_id("test2_fetch3_event")));
+
+	// TODO add other checks, like query, etc??
+}
+} // namespace godex_tests
 
 #endif // TEST_ECS_SYSTEM_H

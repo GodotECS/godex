@@ -53,29 +53,4 @@ public:
 	static void _bind_methods() {}
 };
 
-template <class T>
-T *unwrap_databag(Object *p_access_databag) {
-	DataAccessor *bag = dynamic_cast<DataAccessor *>(p_access_databag);
-	if (unlikely(bag == nullptr || bag->get_target() == nullptr)) {
-		return nullptr;
-	}
-	if (likely(bag->get_target_identifier() == T::get_databag_id() && bag->get_target_type() == DataAccessorTargetType::Databag)) {
-		return static_cast<T *>(bag->get_target());
-	} else {
-		return nullptr;
-	}
-}
-
-template <class T>
-const T *unwrap_databag(const Object *p_access_databag) {
-	const DataAccessor *bag = dynamic_cast<const DataAccessor *>(p_access_databag);
-	if (unlikely(bag == nullptr || bag->get_target() == nullptr)) {
-		return nullptr;
-	}
-	if (likely(bag->get_target_identifier() == T::get_databag_id() && bag->get_target_type() == DataAccessorTargetType::Databag)) {
-		return static_cast<const T *>(bag->get_target());
-	} else {
-		return nullptr;
-	}
-}
 } // namespace godex

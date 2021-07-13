@@ -1,6 +1,7 @@
 #include "ecs_utilities.h"
 
 #include "../../../ecs.h"
+#include "../../../iterators/dynamic_query.h"
 #include "../../../systems/dynamic_system.h"
 #include "core/config/engine.h"
 #include "core/config/project_settings.h"
@@ -16,14 +17,9 @@ void System::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("execute_before", "system_name"), &System::execute_before);
 
 	ClassDB::bind_method(D_METHOD("set_space", "space"), &System::set_space);
+	ClassDB::bind_method(D_METHOD("with_query", "query"), &System::with_query_gd);
 	ClassDB::bind_method(D_METHOD("with_databag", "databag_id", "mutability"), &System::with_databag);
 	ClassDB::bind_method(D_METHOD("with_storage", "component_id"), &System::with_storage);
-	ClassDB::bind_method(D_METHOD("with_component", "component_id", "mutability"), &System::with_component);
-	ClassDB::bind_method(D_METHOD("maybe_component", "component_id", "mutability"), &System::maybe_component);
-	ClassDB::bind_method(D_METHOD("changed_component", "component_id", "mutability"), &System::changed_component);
-	ClassDB::bind_method(D_METHOD("not_component", "component_id"), &System::not_component);
-
-	ClassDB::bind_method(D_METHOD("get_current_entity_id"), &System::get_current_entity_id);
 
 	ClassDB::bind_method(D_METHOD("get_system_id"), &System::get_system_id);
 
@@ -77,6 +73,15 @@ void System::set_space(Space p_space) {
 	info->set_space(p_space);
 }
 
+void System::with_query_gd(Object *p_query) {
+	with_query(Object::cast_to<godex::DynamicQuery>(p_query));
+}
+
+void System::with_query(godex::DynamicQuery *p_query) {
+	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
+	info->with_query(p_query);
+}
+
 void System::with_databag(uint32_t p_databag_id, Mutability p_mutability) {
 	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
 	info->with_databag(p_databag_id, p_mutability == MUTABLE);
@@ -87,33 +92,8 @@ void System::with_storage(uint32_t p_component_id) {
 	info->with_storage(p_component_id);
 }
 
-void System::with_component(uint32_t p_component_id, Mutability p_mutability) {
-	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
-	info->with_component(p_component_id, p_mutability == MUTABLE);
-}
-
-void System::maybe_component(uint32_t p_component_id, Mutability p_mutability) {
-	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
-	info->maybe_component(p_component_id, p_mutability == MUTABLE);
-}
-
-void System::changed_component(uint32_t p_component_id, Mutability p_mutability) {
-	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
-	info->changed_component(p_component_id, p_mutability == MUTABLE);
-}
-
-void System::not_component(uint32_t p_component_id) {
-	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
-	info->not_component(p_component_id);
-}
-
 godex::system_id System::get_system_id() const {
 	return id;
-}
-
-uint32_t System::get_current_entity_id() const {
-	ERR_FAIL_COND_V_MSG(info == nullptr, UINT32_MAX, "This systems doesn't seems ready.");
-	return info->get_current_entity_id();
 }
 
 void System::__force_set_system_info(godex::DynamicSystemInfo *p_info, godex::system_id p_id) {
@@ -151,20 +131,20 @@ String System::validate_script(Ref<Script> p_script) {
 	List<MethodInfo> methods;
 	p_script->get_script_method_list(&methods);
 	bool has_prepare = false;
-	bool has_for_each = false;
+	bool has_execute = false;
 	for (List<MethodInfo>::Element *e = methods.front(); e; e = e->next()) {
 		if (e->get().name == "_prepare") {
 			has_prepare = true;
 		}
-		if (e->get().name == "_for_each") {
-			has_for_each = true;
+		if (e->get().name == "_execute") {
+			has_execute = true;
 			// TODO consider add input check, so to notify the user if the system is not valid.
 		}
 	}
 	if (has_prepare == false) {
 		return TTR("This script is not overriding the function `_prepare()`.");
 	}
-	if (has_for_each == false) {
+	if (has_execute == false) {
 		return TTR("This script is not overriding the function `_for_each()`.");
 	}
 

@@ -88,7 +88,6 @@ bool DynamicQuery::build() {
 	for (uint32_t i = 0; i < component_ids.size(); i += 1) {
 		accessors[i].init(
 				component_ids[i],
-				DataAccessorTargetType::Component,
 				mutability[i]);
 	}
 
@@ -114,10 +113,25 @@ Object *DynamicQuery::get_access_gd(uint32_t p_index) {
 	return accessors.ptr() + p_index;
 }
 
-DataAccessor *DynamicQuery::get_access(uint32_t p_index) {
+ComponentDynamicExposer *DynamicQuery::get_access(uint32_t p_index) {
 	ERR_FAIL_COND_V_MSG(is_valid() == false, nullptr, "The query is invalid.");
 	build();
 	return accessors.ptr() + p_index;
+}
+
+void DynamicQuery::get_system_info(SystemExeInfo *p_info) const {
+	ERR_FAIL_COND(is_valid() == false);
+	for (uint32_t i = 0; i < component_ids.size(); i += 1) {
+		if (mutability[i]) {
+			p_info->mutable_components.insert(component_ids[i]);
+		} else {
+			p_info->immutable_components.insert(component_ids[i]);
+		}
+
+		if (mode[i] == CHANGED_MODE) {
+			p_info->need_changed.insert(component_ids[i]);
+		}
+	}
 }
 
 void DynamicQuery::begin_script(Object *p_world) {
@@ -304,19 +318,4 @@ uint32_t DynamicQuery::count() const {
 		}
 	}
 	return count;
-}
-
-void DynamicQuery::get_system_info(SystemExeInfo &p_info) const {
-	ERR_FAIL_COND(is_valid() == false);
-	for (uint32_t i = 0; i < component_ids.size(); i += 1) {
-		if (mutability[i]) {
-			p_info.mutable_components.insert(component_ids[i]);
-		} else {
-			p_info.immutable_components.insert(component_ids[i]);
-		}
-
-		if (mode[i] == CHANGED_MODE) {
-			p_info.need_changed.insert(component_ids[i]);
-		}
-	}
 }

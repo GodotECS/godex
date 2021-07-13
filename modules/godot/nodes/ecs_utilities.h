@@ -10,7 +10,8 @@ class SharedComponentResource;
 
 namespace godex {
 class DynamicSystemInfo;
-}
+class DynamicQuery;
+} // namespace godex
 
 class System : public Resource {
 	GDCLASS(System, Resource)
@@ -29,8 +30,8 @@ class System : public Resource {
 
 public:
 	enum Mutability {
-		IMMUTABLE,
-		MUTABLE
+		IMMUTABLE = 0,
+		MUTABLE = 1
 	};
 
 public:
@@ -42,16 +43,12 @@ public:
 	void execute_before(uint32_t p_system);
 
 	void set_space(Space p_space);
+	void with_query_gd(Object *p_query);
+	void with_query(godex::DynamicQuery *p_query);
 	void with_databag(uint32_t p_databag_id, Mutability p_mutability);
 	void with_storage(uint32_t p_component_id);
-	void with_component(uint32_t p_component_id, Mutability p_mutability);
-	void maybe_component(uint32_t p_component_id, Mutability p_mutability);
-	void changed_component(uint32_t p_component_id, Mutability p_mutability);
-	void not_component(uint32_t p_component_id);
 
 	godex::system_id get_system_id() const;
-
-	uint32_t get_current_entity_id() const;
 
 	/// This function is only used by few tests. Never use this, use `prepare` instead.
 	// TODO remove this function.

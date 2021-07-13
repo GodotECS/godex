@@ -2,6 +2,7 @@
 
 #include "core/string/string_name.h"
 #include "core/templates/local_vector.h"
+#include "core/templates/oa_hash_map.h"
 
 class World;
 class Pipeline;
@@ -18,6 +19,8 @@ struct SystemExeInfo {
 	Set<uint32_t> mutable_databags;
 	Set<uint32_t> immutable_databags;
 	Set<uint32_t> need_changed;
+	Set<uint32_t> events_emitters;
+	OAHashMap<uint32_t, Set<String>> events_receivers;
 	// Used if the system is a normal system.
 	func_system_execute system_func = nullptr;
 

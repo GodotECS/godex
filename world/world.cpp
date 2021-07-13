@@ -220,7 +220,6 @@ void World::create_storage(uint32_t p_component_id) {
 		return;
 	}
 
-	// Using crash because this function is not expected to fail.
 	ERR_FAIL_COND_MSG(ECS::verify_component_id(p_component_id) == false, "The component id " + itos(p_component_id) + " is not registered.");
 
 	if (unlikely(p_component_id >= storages.size())) {
@@ -260,7 +259,6 @@ void World::create_storage(uint32_t p_component_id) {
 }
 
 void World::destroy_storage(uint32_t p_component_id) {
-	// Using crash because this function is not expected to fail.
 	ERR_FAIL_UNSIGNED_INDEX_MSG(p_component_id, storages.size(), "The component storage id " + itos(p_component_id) + " is unknown; so can't be destroyed.");
 
 	if (storages[p_component_id] == nullptr) {
@@ -270,6 +268,41 @@ void World::destroy_storage(uint32_t p_component_id) {
 
 	delete storages[p_component_id];
 	storages[p_component_id] = nullptr;
+}
+
+void World::create_events_storage(godex::event_id p_event_id) {
+	if (is_dispatching_in_progress) {
+		// When dispatching is in progress, the storage is already created:
+		// so just skip this.
+		return;
+	}
+
+	ERR_FAIL_COND_MSG(ECS::verify_event_id(p_event_id) == false, "The event id " + itos(p_event_id) + " is not registered.");
+
+	if (unlikely(p_event_id >= events_storages.size())) {
+		const uint32_t start = events_storages.size();
+		events_storages.resize(p_event_id + 1);
+		for (uint32_t i = start; i < events_storages.size(); i += 1) {
+			events_storages[i] = nullptr;
+		}
+	} else if (likely(events_storages[p_event_id] != nullptr)) {
+		// The storage exists, nothing to do.
+		return;
+	}
+
+	events_storages[p_event_id] = ECS::create_events_storage(p_event_id);
+}
+
+void World::destroy_events_storage(godex::event_id p_event_id) {
+	ERR_FAIL_UNSIGNED_INDEX_MSG(p_event_id, events_storages.size(), "The events storage id " + itos(p_event_id) + " is unknown; so can't be destroyed.");
+
+	if (events_storages[p_event_id] == nullptr) {
+		// Nothing to do.
+		return;
+	}
+
+	ECS::destroy_events_storage(p_event_id, events_storages[p_event_id]);
+	events_storages[p_event_id] = nullptr;
 }
 
 void World::create_databag(godex::databag_id p_id) {
@@ -326,4 +359,24 @@ const godex::Databag *World::get_databag(godex::databag_id p_id) const {
 	}
 
 	return databags[p_id];
+}
+
+EventStorageBase *World::get_events_storage(godex::event_id p_id) {
+	CRASH_COND_MSG(p_id == UINT32_MAX, "The event is not registered.");
+
+	if (unlikely(p_id >= events_storages.size())) {
+		return nullptr;
+	}
+
+	return events_storages[p_id];
+}
+
+const EventStorageBase *World::get_events_storage(godex::event_id p_id) const {
+	CRASH_COND_MSG(p_id == UINT32_MAX, "The event is not registered.");
+
+	if (unlikely(p_id >= events_storages.size())) {
+		return nullptr;
+	}
+
+	return events_storages[p_id];
 }

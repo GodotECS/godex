@@ -2,6 +2,7 @@
 
 #include "../databags/databag.h"
 #include "../ecs_types.h"
+#include "../storage/event_storage.h"
 #include "../storage/storage.h"
 #include "core/string/string_name.h"
 #include "core/templates/local_vector.h"
@@ -97,6 +98,7 @@ class World : public godex::Databag {
 	WorldCommands commands;
 	LocalVector<StorageBase *> storages;
 	LocalVector<godex::Databag *> databags;
+	LocalVector<EventStorageBase *> events_storages;
 	EntityBuilder entity_builder = EntityBuilder(this);
 	bool is_dispatching_in_progress = false;
 	OAHashMap<NodePath, EntityID> entity_paths;
@@ -242,6 +244,20 @@ public:
 	/// Retuns a databag pointer.
 	const godex::Databag *get_databag(godex::databag_id p_id) const;
 
+	/// Retuns the events storage pointer.
+	template <class E>
+	EventStorage<E> *get_events_storage();
+
+	/// Retuns the events storage constant pointer.
+	template <class E>
+	const EventStorage<E> *get_events_storage() const;
+
+	/// Retuns the events storage pointer.
+	EventStorageBase *get_events_storage(godex::event_id p_id);
+
+	/// Retuns the events storage constant pointer.
+	const EventStorageBase *get_events_storage(godex::event_id p_id) const;
+
 private:
 	/// Creates a new component storage into the world, if the storage
 	/// already exists, does nothing.
@@ -254,6 +270,14 @@ private:
 	template <class C>
 	void destroy_storage();
 	void destroy_storage(uint32_t p_component_id);
+
+	template <class E>
+	void create_events_storage();
+	void create_events_storage(godex::event_id p_event_id);
+
+	template <class E>
+	void destroy_events_storage();
+	void destroy_events_storage(godex::event_id p_event_id);
 };
 
 template <class C>
@@ -359,6 +383,15 @@ void World::destroy_storage() {
 	destroy_storage(C::get_component_id());
 }
 
+template <class E>
+void World::create_events_storage() {
+	create_events_storage(E::get_event_id());
+}
+template <class E>
+void World::destroy_events_storage() {
+	destroy_events_storage(E::get_event_id());
+}
+
 template <class R>
 R *World::get_databag() {
 	const godex::databag_id id = R::get_databag_id();
@@ -381,4 +414,28 @@ const R *World::get_databag() const {
 	}
 
 	return static_cast<const R *>(r);
+}
+
+template <class E>
+EventStorage<E> *World::get_events_storage() {
+	const godex::event_id id = E::get_event_id();
+	EventStorageBase *s = get_events_storage(id);
+
+	if (unlikely(s == nullptr)) {
+		return nullptr;
+	}
+
+	return static_cast<EventStorage<E> *>(s);
+}
+
+template <class E>
+const EventStorage<E> *World::get_events_storage() const {
+	const godex::event_id id = E::get_event_id();
+	const EventStorageBase *s = get_events_storage(id);
+
+	if (unlikely(s == nullptr)) {
+		return nullptr;
+	}
+
+	return static_cast<const EventStorage<E> *>(s);
 }
