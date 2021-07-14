@@ -42,11 +42,6 @@ void godex::DynamicSystemInfo::execute_before(const StringName &p_system_name) {
 	ECS::get_system_info(system_id).before(p_system_name);
 }
 
-void godex::DynamicSystemInfo::set_space(Space p_space) {
-	CRASH_COND_MSG(compiled, "The system is already build, this function can't be called now.");
-	space = p_space;
-}
-
 void godex::DynamicSystemInfo::with_query(DynamicQuery *p_query) {
 	CRASH_COND_MSG(compiled, "The system is already build, this function can't be called now.");
 	p_query->build();
@@ -149,9 +144,6 @@ void godex::DynamicSystemInfo::executor(World *p_world, DynamicSystemInfo &p_inf
 	// First extract the databags.
 	for (uint32_t i = 0; i < p_info.fetchers.size(); i += 1) {
 		// Set the accessors pointers.
-		if (DynamicQuery *q = Object::cast_to<DynamicQuery>(p_info.fetchers[i])) {
-			q->set_space(p_info.space);
-		}
 		p_info.fetchers[i]->begin(p_world);
 	}
 

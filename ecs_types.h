@@ -387,6 +387,7 @@ public:                                                                         
 			return;                                                                                                                                                                   \
 		}                                                                                                                                                                             \
 		methods[index]->call(this, p_args, p_argcount, r_ret, r_error);                                                                                                               \
+		r_error.error = Callable::CallError::CALL_OK;                                                                                                                                 \
 	}                                                                                                                                                                                 \
                                                                                                                                                                                       \
 private:

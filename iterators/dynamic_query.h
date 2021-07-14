@@ -70,8 +70,8 @@ public:
 	uint32_t access_count() const;
 	/// The returned pointer is valid only for the execution of the query.
 	/// If you reset the query, copy it (move the object), this pointer is invalidated.
-	Object *get_access_gd(uint32_t p_index);
-	ComponentDynamicExposer *get_access(uint32_t p_index);
+	Object *get_access_by_index_gd(uint32_t p_index) const;
+	ComponentDynamicExposer *get_access_by_index(uint32_t p_index) const;
 
 	virtual void get_system_info(SystemExeInfo *p_info) const override;
 	/// Start the execution of this query.
@@ -81,11 +81,9 @@ public:
 	virtual void end() override;
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Iterator
-	/// Returns `false` if this query can still return the components via `get`.
-	bool is_not_done() const;
 
 	/// Advance entity
-	void next();
+	bool next();
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Random Access
 	bool script_has(uint32_t p_id) const;
@@ -99,5 +97,9 @@ public:
 	uint32_t script_get_current_entity_id() const;
 	EntityID get_current_entity_id() const;
 	uint32_t count() const;
+
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Set / Get / Call
+	virtual void setvar(const Variant &p_key, const Variant &p_value, bool *r_valid = nullptr) override;
+	virtual Variant getvar(const Variant &p_key, bool *r_valid = nullptr) const override;
 };
 } // namespace godex

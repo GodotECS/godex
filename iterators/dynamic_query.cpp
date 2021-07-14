@@ -15,12 +15,11 @@ void DynamicQuery::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_valid"), &DynamicQuery::is_valid);
 	ClassDB::bind_method(D_METHOD("build"), &DynamicQuery::build);
 	ClassDB::bind_method(D_METHOD("reset"), &DynamicQuery::reset);
-	ClassDB::bind_method(D_METHOD("get_component", "index"), &DynamicQuery::get_access_gd);
+	ClassDB::bind_method(D_METHOD("get_component", "index"), &DynamicQuery::get_access_by_index_gd);
 
 	ClassDB::bind_method(D_METHOD("begin", "world"), &DynamicQuery::begin_script);
 	ClassDB::bind_method(D_METHOD("end"), &DynamicQuery::end);
 
-	ClassDB::bind_method(D_METHOD("is_not_done"), &DynamicQuery::is_not_done);
 	ClassDB::bind_method(D_METHOD("next"), &DynamicQuery::next);
 
 	ClassDB::bind_method(D_METHOD("has", "entity_index"), &DynamicQuery::script_has);
@@ -107,16 +106,14 @@ uint32_t DynamicQuery::access_count() const {
 	return component_ids.size();
 }
 
-Object *DynamicQuery::get_access_gd(uint32_t p_index) {
+Object *DynamicQuery::get_access_by_index_gd(uint32_t p_index) const {
 	ERR_FAIL_COND_V_MSG(is_valid() == false, nullptr, "The query is invalid.");
-	build();
-	return accessors.ptr() + p_index;
+	return (Object *)(accessors.ptr() + p_index);
 }
 
-ComponentDynamicExposer *DynamicQuery::get_access(uint32_t p_index) {
+ComponentDynamicExposer *DynamicQuery::get_access_by_index(uint32_t p_index) const {
 	ERR_FAIL_COND_V_MSG(is_valid() == false, nullptr, "The query is invalid.");
-	build();
-	return accessors.ptr() + p_index;
+	return (ComponentDynamicExposer *)(accessors.ptr() + p_index);
 }
 
 void DynamicQuery::get_system_info(SystemExeInfo *p_info) const {
@@ -189,13 +186,7 @@ void DynamicQuery::begin(World *p_world) {
 		ERR_PRINT("The Query can't be used if there are only non determinant filters (like `Without` and `Maybe`).");
 	}
 
-	if (entities.count > 0) {
-		if (has(entities.entities[0])) {
-			fetch(entities.entities[0]);
-		} else {
-			next();
-		}
-	}
+	// The Query is ready to fetch, let's rock!
 }
 
 void DynamicQuery::end() {
@@ -206,22 +197,20 @@ void DynamicQuery::end() {
 	entities.count = 0;
 }
 
-bool DynamicQuery::is_not_done() const {
-	return iterator_index < entities.count;
-}
-
-void DynamicQuery::next() {
+bool DynamicQuery::next() {
 	// Search the next Entity to fetch.
-	iterator_index += 1;
 	while (iterator_index < entities.count) {
 		const EntityID entity_id = entities.entities[iterator_index];
-		if (has(entity_id)) {
-			return fetch(entity_id);
-		}
 		iterator_index += 1;
+
+		if (has(entity_id)) {
+			fetch(entity_id);
+			return true;
+		}
 	}
 
 	// Nothing more to fetch.
+	return false;
 }
 
 bool DynamicQuery::script_has(uint32_t p_id) const {
@@ -318,4 +307,26 @@ uint32_t DynamicQuery::count() const {
 		}
 	}
 	return count;
+}
+
+void DynamicQuery::setvar(const Variant &p_key, const Variant &p_value, bool *r_valid) {
+	*r_valid = true;
+	// Assume valid, nothing to do.
+}
+
+Variant DynamicQuery::getvar(const Variant &p_key, bool *r_valid) const {
+	if (p_key.get_type() == Variant::INT) {
+		Object *obj = get_access_by_index_gd(p_key);
+		if (obj == nullptr) {
+			*r_valid = false;
+			return Variant();
+		} else {
+			*r_valid = true;
+			return obj;
+		}
+	} else {
+		*r_valid = false;
+		ERR_PRINT("The proper syntax is: `query[0].my_component_variable`.");
+		return Variant();
+	}
 }

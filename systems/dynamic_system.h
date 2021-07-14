@@ -43,8 +43,6 @@ class DynamicSystemInfo {
 
 	uint32_t system_id = UINT32_MAX;
 
-	Space space = Space::LOCAL;
-
 	// List of world fetchers.
 	LocalVector<GodexWorldFetcher *> fetchers;
 
@@ -62,8 +60,6 @@ public:
 	void execute_in(Phase p_phase, const StringName &p_dispatcher_name = StringName());
 	void execute_after(const StringName &p_system_name);
 	void execute_before(const StringName &p_system_name);
-
-	void set_space(Space p_space);
 
 	void with_query(DynamicQuery *p_query);
 	void with_databag(uint32_t p_databag_id, bool p_mutable);

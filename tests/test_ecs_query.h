@@ -987,6 +987,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery fetch mutability.") {
 	godex::DynamicQuery query_test_mut;
 	query_test_mut.with_component(TestAccessMutabilityComponent1::get_component_id(), true);
 	query_test_mut.begin(&world);
+	query_test_mut.next();
 
 	CHECK(storage1->count_get_mut == 1);
 	CHECK(storage2->count_get_mut == 0);
@@ -995,6 +996,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery fetch mutability.") {
 	query_test_without_mut.not_component(TestAccessMutabilityComponent1::get_component_id());
 	query_test_without_mut.with_component(TestAccessMutabilityComponent2::get_component_id(), true);
 	query_test_without_mut.begin(&world);
+	query_test_without_mut.next();
 
 	CHECK(storage1->count_get_mut == 1);
 	CHECK(storage2->count_get_mut == 1);
@@ -1003,6 +1005,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery fetch mutability.") {
 	godex::DynamicQuery query_test_maybe_alone_mut;
 	query_test_maybe_alone_mut.maybe_component(TestAccessMutabilityComponent1::get_component_id(), true);
 	query_test_maybe_alone_mut.begin(&world);
+	query_test_maybe_alone_mut.next();
 
 	CHECK(storage1->count_get_mut == 1);
 
@@ -1013,6 +1016,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery fetch mutability.") {
 	godex::DynamicQuery query_test_immut;
 	query_test_immut.with_component(TestAccessMutabilityComponent1::get_component_id(), false);
 	query_test_immut.begin(&world);
+	query_test_immut.next();
 	CHECK(storage1->count_get_mut == 1);
 	CHECK(storage1->count_get_immut == 1);
 
@@ -1021,6 +1025,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery fetch mutability.") {
 	query_test_without_immut.not_component(TestAccessMutabilityComponent1::get_component_id());
 	query_test_without_immut.with_component(TestAccessMutabilityComponent2::get_component_id(), false);
 	query_test_without_immut.begin(&world);
+	query_test_without_immut.next();
 
 	CHECK(storage1->count_get_mut == 1);
 	CHECK(storage1->count_get_immut == 1);
@@ -1029,6 +1034,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery fetch mutability.") {
 	godex::DynamicQuery query_test_maybe_alone_immut;
 	query_test_maybe_alone_immut.maybe_component(TestAccessMutabilityComponent1::get_component_id(), false);
 	query_test_maybe_alone_immut.begin(&world);
+	query_test_maybe_alone_immut.next();
 
 	CHECK(storage1->count_get_mut == 1);
 	CHECK(storage1->count_get_immut == 1);
@@ -1084,7 +1090,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery try fetch combination.") {
 		query.maybe_component(TestAccessMutabilityComponent2::get_component_id());
 		query.begin(&world);
 		// Nothing to fetch, because `Maybe` alone is meaningless.
-		CHECK(query.is_not_done() == false);
+		CHECK(query.next() == false);
 	}
 
 	{
@@ -1093,7 +1099,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery try fetch combination.") {
 		query.not_component(TestAccessMutabilityComponent2::get_component_id());
 		query.begin(&world);
 		// Nothing to fetch, because `Without` alone is meaningless.
-		CHECK(query.is_not_done() == false);
+		CHECK(query.next() == false);
 	}
 
 	{
@@ -1103,7 +1109,8 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery try fetch combination.") {
 		query.not_component(TestAccessMutabilityComponent2::get_component_id());
 		query.begin(&world);
 		// Nothing to fetch, because `Maybe` and `Without` are meaningless alone.
-		CHECK(query.is_not_done() == false);
+		CHECK(query.next() == false);
+		CHECK(query.count() == 0);
 	}
 }
 
@@ -1121,6 +1128,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery changed.") {
 		godex::DynamicQuery query;
 		query.with_component(TestAccessMutabilityComponent1::get_component_id(), true);
 		query.begin(&world);
+		query.next(); // trigger
 		CHECK(query.has(entity_1));
 	}
 
@@ -1139,6 +1147,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery changed.") {
 		godex::DynamicQuery query;
 		query.with_component(TestAccessMutabilityComponent1::get_component_id(), false);
 		query.begin(&world);
+		query.next(); // trigger
 		CHECK(query.has(entity_1));
 	}
 
@@ -1147,7 +1156,8 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery changed.") {
 		godex::DynamicQuery query;
 		query.changed_component(TestAccessMutabilityComponent1::get_component_id(), false);
 		query.begin(&world);
-		CHECK(query.is_not_done() == false);
+		CHECK(query.next() == false);
+		CHECK(query.count() == 0);
 	}
 }
 
@@ -1252,9 +1262,9 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 
 		{
 			CHECK(query.access_count() == 2);
-			CHECK(query.get_access(0)->is_mutable());
-			CHECK(query.get_access(1)->is_mutable() == false);
-			query.get_access(0)->set("transform", Transform3D(Basis(), Vector3(100.0, 100.0, 100.0)));
+			CHECK(query.get_access_by_index(0)->is_mutable());
+			CHECK(query.get_access_by_index(1)->is_mutable() == false);
+			query.get_access_by_index(0)->set("transform", Transform3D(Basis(), Vector3(100.0, 100.0, 100.0)));
 		}
 
 		CHECK(query.has(entity_2) == false);
@@ -1265,9 +1275,9 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 
 		{
 			CHECK(query.access_count() == 2);
-			CHECK(query.get_access(0)->is_mutable());
-			CHECK(query.get_access(1)->is_mutable() == false);
-			query.get_access(0)->set("transform", Transform3D(Basis(), Vector3(200.0, 200.0, 200.0)));
+			CHECK(query.get_access_by_index(0)->is_mutable());
+			CHECK(query.get_access_by_index(1)->is_mutable() == false);
+			query.get_access_by_index(0)->set("transform", Transform3D(Basis(), Vector3(200.0, 200.0, 200.0)));
 		}
 
 		// Nothing more to do at this point.
@@ -1282,46 +1292,40 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 		query.begin(&world);
 
 		// Entity 1
-		CHECK(query.is_not_done());
+		CHECK(query.next());
 		CHECK(query.get_current_entity_id() == entity_1);
 
 		{
 			CHECK(query.access_count() == 1);
-			CHECK(query.get_access(0)->is_mutable() == false);
-			const Transform3D t = query.get_access(0)->get("transform");
+			CHECK(query.get_access_by_index(0)->is_mutable() == false);
+			const Transform3D t = query.get_access_by_index(0)->get("transform");
 			// Check if the entity_1 is changed.
 			CHECK(t.origin.x - 100.0 <= CMP_EPSILON);
 		}
 
-		query.next();
-
 		// Entity 2
-		CHECK(query.is_not_done());
+		CHECK(query.next());
 		CHECK(query.get_current_entity_id() == entity_2);
 		{
 			CHECK(query.access_count() == 1);
-			CHECK(query.get_access(0)->is_mutable() == false);
-			const Transform3D t = query.get_access(0)->get("transform");
+			CHECK(query.get_access_by_index(0)->is_mutable() == false);
+			const Transform3D t = query.get_access_by_index(0)->get("transform");
 			// Make sure the entity_2 is not changed.
 			CHECK(t.origin.x <= CMP_EPSILON);
 		}
 
-		query.next();
-
 		// Entity 3
-		CHECK(query.is_not_done());
+		CHECK(query.next());
 		CHECK(query.get_current_entity_id() == entity_3);
 		{
 			CHECK(query.access_count() == 1);
-			CHECK(query.get_access(0)->is_mutable() == false);
-			const Transform3D t = query.get_access(0)->get("transform");
+			CHECK(query.get_access_by_index(0)->is_mutable() == false);
+			const Transform3D t = query.get_access_by_index(0)->get("transform");
 			// Make sure the entity_3 is changed.
 			CHECK(t.origin.x - 200.0 <= CMP_EPSILON);
 		}
 
-		query.next();
-
-		CHECK(query.is_not_done() == false);
+		CHECK(query.next() == false);
 		CHECK(query.count() == 3);
 		query.end();
 	}
@@ -1335,13 +1339,11 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 		query.begin(&world);
 
 		// This query fetches the entity that have only the `TransformComponent`.
-		CHECK(query.is_not_done());
+		CHECK(query.next());
 		CHECK(query.get_current_entity_id() == entity_2);
 
-		query.next();
-
 		// Now it's done
-		CHECK(query.is_not_done() == false);
+		CHECK(query.next() == false);
 		CHECK(query.count() == 1);
 		query.end();
 	}
@@ -1356,26 +1358,23 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 		query.begin(&world);
 
 		// This query fetches the entity that have only the `TransformComponent`.
-		CHECK(query.is_not_done());
+		CHECK(query.next());
 		CHECK(query.get_current_entity_id() == entity_1);
-		CHECK(query.get_access(0)->get_target() != nullptr);
-		CHECK(query.get_access(1)->get_target() != nullptr);
-		query.next();
+		CHECK(query.get_access_by_index(0)->get_target() != nullptr);
+		CHECK(query.get_access_by_index(1)->get_target() != nullptr);
 
-		CHECK(query.is_not_done());
+		CHECK(query.next());
 		CHECK(query.get_current_entity_id() == entity_2);
-		CHECK(query.get_access(0)->get_target() != nullptr);
-		CHECK(query.get_access(1)->get_target() == nullptr);
-		query.next();
+		CHECK(query.get_access_by_index(0)->get_target() != nullptr);
+		CHECK(query.get_access_by_index(1)->get_target() == nullptr);
 
-		CHECK(query.is_not_done());
+		CHECK(query.next());
 		CHECK(query.get_current_entity_id() == entity_3);
-		CHECK(query.get_access(0)->get_target() != nullptr);
-		CHECK(query.get_access(1)->get_target() != nullptr);
-		query.next();
+		CHECK(query.get_access_by_index(0)->get_target() != nullptr);
+		CHECK(query.get_access_by_index(1)->get_target() != nullptr);
 
 		// Now it's done
-		CHECK(query.is_not_done() == false);
+		CHECK(query.next() == false);
 		CHECK(query.count() == 3);
 		query.end();
 	}
@@ -1412,33 +1411,30 @@ TEST_CASE("[Modules][ECS] Test dynamic query with dynamic storages.") {
 	query.begin(&world);
 
 	// Entity 1
-	CHECK(query.is_not_done());
+	CHECK(query.next());
 	CHECK(query.get_current_entity_id() == entity_1);
 
 	{
 		CHECK(query.access_count() == 1);
-		CHECK(query.get_access(0)->is_mutable());
-		query.get_access(0)->set("variable_1", 20);
-		query.get_access(0)->set("variable_2", true);
-		query.get_access(0)->set("variable_3", Vector2(10., 10.)); // Test if wrong type is still handled: `variable_3` is a `Vector3`.
+		CHECK(query.get_access_by_index(0)->is_mutable());
+		query.get_access_by_index(0)->set("variable_1", 20);
+		query.get_access_by_index(0)->set("variable_2", true);
+		query.get_access_by_index(0)->set("variable_3", Vector2(10., 10.)); // Test if wrong type is still handled: `variable_3` is a `Vector3`.
 	}
 
-	query.next();
-
 	// Entity 2
-	CHECK(query.is_not_done());
+	CHECK(query.next());
 	CHECK(query.get_current_entity_id() == entity_2);
 
 	{
 		CHECK(query.access_count() == 1);
-		CHECK(query.get_access(0)->is_mutable());
-		query.get_access(0)->set("variable_1", 30);
-		query.get_access(0)->set("variable_2", true);
-		query.get_access(0)->set("variable_3", Vector3(10.0, 0, 0));
+		CHECK(query.get_access_by_index(0)->is_mutable());
+		query.get_access_by_index(0)->set("variable_1", 30);
+		query.get_access_by_index(0)->set("variable_2", true);
+		query.get_access_by_index(0)->set("variable_3", Vector3(10.0, 0, 0));
 	}
 
-	query.next();
-	CHECK(query.is_not_done() == false);
+	CHECK(!query.next());
 	query.end();
 
 	// ~~ Make sure the data got written using another immutable query. ~~
@@ -1449,38 +1445,35 @@ TEST_CASE("[Modules][ECS] Test dynamic query with dynamic storages.") {
 	query.begin(&world);
 
 	// Entity 1
-	CHECK(query.is_not_done());
+	CHECK(query.next());
 	CHECK(query.get_current_entity_id() == entity_1);
 
 	{
 		CHECK(query.access_count() == 1);
-		CHECK(query.get_access(0)->is_mutable() == false);
-		CHECK(query.get_access(0)->get("variable_1") == Variant(20));
-		CHECK(query.get_access(0)->get("variable_2") == Variant(true));
+		CHECK(query.get_access_by_index(0)->is_mutable() == false);
+		CHECK(query.get_access_by_index(0)->get("variable_1") == Variant(20));
+		CHECK(query.get_access_by_index(0)->get("variable_2") == Variant(true));
 		// Make sure this doesn't changed, since we submitted a wrong value.
-		CHECK(query.get_access(0)->get("variable_3") == Variant(Vector3()));
+		CHECK(query.get_access_by_index(0)->get("variable_3") == Variant(Vector3()));
 	}
 
-	query.next();
-
 	// Entity 2
-	CHECK(query.is_not_done());
+	CHECK(query.next());
 	CHECK(query.get_current_entity_id() == entity_2);
 
 	{
 		CHECK(query.access_count() == 1);
-		CHECK(query.get_access(0)->is_mutable() == false);
-		CHECK(query.get_access(0)->get("variable_1") == Variant(30));
-		CHECK(query.get_access(0)->get("variable_2") == Variant(true));
-		CHECK(ABS(query.get_access(0)->get("variable_3").operator Vector3().x - 10.0) < CMP_EPSILON);
+		CHECK(query.get_access_by_index(0)->is_mutable() == false);
+		CHECK(query.get_access_by_index(0)->get("variable_1") == Variant(30));
+		CHECK(query.get_access_by_index(0)->get("variable_2") == Variant(true));
+		CHECK(ABS(query.get_access_by_index(0)->get("variable_3").operator Vector3().x - 10.0) < CMP_EPSILON);
 
 		// Try to mutate an immutable value.
-		query.get_access(0)->set("variable_2", false);
-		CHECK(query.get_access(0)->get("variable_2") != Variant(false));
+		query.get_access_by_index(0)->set("variable_2", false);
+		CHECK(query.get_access_by_index(0)->get("variable_2") != Variant(false));
 	}
 
-	query.next();
-	CHECK(query.is_not_done() == false);
+	CHECK(!query.next());
 	query.end();
 }
 

@@ -39,15 +39,25 @@ bool ComponentDynamicExposer::is_valid() const {
 }
 
 bool ComponentDynamicExposer::_set(const StringName &p_name, const Variant &p_value) {
-	return ECS::unsafe_component_set_by_name(component_id, component_ptr, p_name, p_value);
+	if (mut) {
+		ERR_FAIL_COND_V(component_ptr == nullptr, false);
+		return ECS::unsafe_component_set_by_name(component_id, component_ptr, p_name, p_value);
+	} else {
+		return false;
+	}
 }
 
 bool ComponentDynamicExposer::_get(const StringName &p_name, Variant &r_ret) const {
+	ERR_FAIL_COND_V(component_ptr == nullptr, false);
 	return ECS::unsafe_component_get_by_name(component_id, component_ptr, p_name, r_ret);
 }
 
 Variant ComponentDynamicExposer::call(const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) {
-	Variant ret;
+	Variant ret = Object::call(p_method, p_args, p_argcount, r_error);
+	if (r_error.error == Callable::CallError::CALL_OK) {
+		return ret;
+	}
+
 	ERR_FAIL_COND_V(component_ptr == nullptr, ret);
 	WARN_PRINT_ONCE("TODO check method mutability here?");
 	ECS::unsafe_component_call(
@@ -108,7 +118,11 @@ void DatabagDynamicFetcher::end() {
 }
 
 bool DatabagDynamicFetcher::_set(const StringName &p_name, const Variant &p_value) {
-	return ECS::unsafe_databag_set_by_name(databag_id, databag_ptr, p_name, p_value);
+	if (mut) {
+		return ECS::unsafe_databag_set_by_name(databag_id, databag_ptr, p_name, p_value);
+	} else {
+		return false;
+	}
 }
 
 bool DatabagDynamicFetcher::_get(const StringName &p_name, Variant &r_ret) const {
@@ -116,7 +130,11 @@ bool DatabagDynamicFetcher::_get(const StringName &p_name, Variant &r_ret) const
 }
 
 Variant DatabagDynamicFetcher::call(const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) {
-	Variant ret;
+	Variant ret = GodexWorldFetcher::call(p_method, p_args, p_argcount, r_error);
+	if (r_error.error == Callable::CallError::CALL_OK) {
+		return ret;
+	}
+
 	ERR_FAIL_COND_V(databag_ptr == nullptr, ret);
 	WARN_PRINT_ONCE("TODO check method mutability here?");
 	ECS::unsafe_databag_call(
@@ -181,7 +199,11 @@ bool StorageDynamicFetcher::_get(const StringName &p_name, Variant &r_ret) const
 }
 
 Variant StorageDynamicFetcher::call(const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) {
-	Variant ret;
+	Variant ret = GodexWorldFetcher::call(p_method, p_args, p_argcount, r_error);
+	if (r_error.error == Callable::CallError::CALL_OK) {
+		return ret;
+	}
+
 	ERR_FAIL_COND_V(storage_ptr == nullptr, ret);
 	storage_ptr->da_call(
 			p_method,
@@ -245,7 +267,11 @@ bool EventsEmitterDynamicFetcher::_get(const StringName &p_name, Variant &r_ret)
 }
 
 Variant EventsEmitterDynamicFetcher::call(const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) {
-	Variant ret;
+	Variant ret = GodexWorldFetcher::call(p_method, p_args, p_argcount, r_error);
+	if (r_error.error == Callable::CallError::CALL_OK) {
+		return ret;
+	}
+
 	ERR_FAIL_COND_V(event_storage_ptr == nullptr, ret);
 	if (String(p_method) == "emit") { // TODO convert to a static StringName??
 		if (p_argcount > 2) {
@@ -342,7 +368,11 @@ bool EventsReceiverDynamicFetcher::_get(const StringName &p_name, Variant &r_ret
 }
 
 Variant EventsReceiverDynamicFetcher::call(const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) {
-	Variant ret;
+	Variant ret = GodexWorldFetcher::call(p_method, p_args, p_argcount, r_error);
+	if (r_error.error == Callable::CallError::CALL_OK) {
+		return ret;
+	}
+
 	ERR_FAIL_COND_V(event_storage_ptr == nullptr, ret);
 	if (String(p_method) == "fetch") { // TODO convert to a static StringName??
 		if (p_argcount > 0) {

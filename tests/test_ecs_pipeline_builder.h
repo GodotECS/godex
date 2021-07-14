@@ -548,7 +548,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder bundles.") {
 		code += "	query.with_component(ECS.PbComponentA, IMMUTABLE)\n";
 		code += "	with_query(query)\n";
 		code += "\n";
-		code += "func _for_each(a, b):\n";
+		code += "func _execute(q):\n";
 		code += "	pass\n";
 		code += "\n";
 

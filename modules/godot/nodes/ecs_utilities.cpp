@@ -16,7 +16,6 @@ void System::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("execute_after", "system_name"), &System::execute_after);
 	ClassDB::bind_method(D_METHOD("execute_before", "system_name"), &System::execute_before);
 
-	ClassDB::bind_method(D_METHOD("set_space", "space"), &System::set_space);
 	ClassDB::bind_method(D_METHOD("with_query", "query"), &System::with_query_gd);
 	ClassDB::bind_method(D_METHOD("with_databag", "databag_id", "mutability"), &System::with_databag);
 	ClassDB::bind_method(D_METHOD("with_storage", "component_id"), &System::with_storage);
@@ -27,7 +26,7 @@ void System::_bind_methods() {
 	BIND_ENUM_CONSTANT(MUTABLE);
 
 	ClassDB::add_virtual_method(get_class_static(), MethodInfo("_prepare"));
-	// TODO how to define `_for_each`? It has  dynamic argument, depending on the `_prepare` function.
+	// TODO how to define `_execute`? It has  dynamic argument, depending on the `_prepare` function.
 }
 
 const String &System::get_script_path() const {
@@ -66,11 +65,6 @@ void System::execute_before(uint32_t p_system) {
 	const StringName name = ECS::get_system_name(p_system);
 	ERR_FAIL_COND(name == StringName());
 	info->execute_before(name);
-}
-
-void System::set_space(Space p_space) {
-	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
-	info->set_space(p_space);
 }
 
 void System::with_query_gd(Object *p_query) {
@@ -145,7 +139,7 @@ String System::validate_script(Ref<Script> p_script) {
 		return TTR("This script is not overriding the function `_prepare()`.");
 	}
 	if (has_execute == false) {
-		return TTR("This script is not overriding the function `_for_each()`.");
+		return TTR("This script is not overriding the function `_execute(...)`.");
 	}
 
 	List<PropertyInfo> properties;

@@ -205,16 +205,20 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
-		code += "	with_component(ECS.TransformComponent, MUTABLE)\n";
-		code += "	maybe_component(ECS.TestDynamicSystemComponent1_gd, MUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.TransformComponent, MUTABLE)\n";
+		code += "	query.maybe_component(ECS.TestDynamicSystemComponent1_gd, MUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "\n";
-		code += "func _for_each(transform_com, test_comp):\n";
-		code += "	assert(transform_com.is_valid())\n";
-		code += "	assert(transform_com.is_mutable())\n";
-		code += "	transform_com.origin.x += 100.0\n";
-		code += "	if test_comp != null:\n";
-		code += "		test_comp.variable_1 += 1\n";
-		code += "		test_comp.variable_2 = Transform3D()\n";
+		code += "func _execute(q):\n";
+		code += "	while q.next():\n";
+		code += "		assert(q[0].is_valid())\n";
+		code += "		assert(q[0].is_mutable())\n";
+		code += "		q[0].origin.x += 100.0\n";
+		code += "		if q[1].is_valid():\n";
+		code += "			q[1].variable_1 += 1\n";
+		code += "			# Try to set a different type.\n";
+		code += "			q[1].set(\"variable_2\", Transform3D())\n";
 		code += "\n";
 
 		CHECK(build_and_register_ecs_script("TestDynamicSystem1.gd", code));
@@ -315,9 +319,8 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 		code += "\n";
 		code += "func _prepare():\n";
 		code += "	with_databag(ECS.TestSystemSubPipeDatabag, MUTABLE)\n";
-		code += "	with_component(ECS.TransformComponent, IMMUTABLE)\n";
 		code += "\n";
-		code += "func _for_each(test_databag, a):\n";
+		code += "func _execute(test_databag):\n";
 		code += "	test_databag.iterations += 1\n";
 		code += "\n";
 
@@ -331,9 +334,8 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 		code += "func _prepare():\n";
 		code += "	execute_in(ECS.PHASE_PROCESS, ECS.test_sub_pipeline_execute)\n";
 		code += "	with_databag(ECS.TestSystemSubPipeDatabag, MUTABLE)\n";
-		code += "	with_component(ECS.TransformComponent, IMMUTABLE)\n";
 		code += "\n";
-		code += "func _for_each(test_databag, a):\n";
+		code += "func _execute(test_databag):\n";
 		code += "	test_databag.sub_iterations += 1\n";
 		code += "\n";
 
@@ -469,9 +471,8 @@ TEST_CASE("[Modules][ECS] Test system databag fetch with dynamic query.") {
 		code += "\n";
 		code += "func _prepare():\n";
 		code += "	with_databag(ECS.TestSystemSubPipeDatabag, MUTABLE)\n";
-		code += "	with_component(ECS.TransformComponent, IMMUTABLE)\n";
 		code += "\n";
-		code += "func _for_each(test_databag, transform_com):\n";
+		code += "func _execute(test_databag):\n";
 		code += "	assert(test_databag.is_valid())\n";
 		code += "	assert(test_databag.is_mutable())\n";
 		code += "	test_databag.exe_count = 10\n";
@@ -825,12 +826,15 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 			code += "extends System\n";
 			code += "\n";
 			code += "func _prepare():\n";
-			code += "	set_space(ECS.GLOBAL)\n";
-			code += "	with_component(ECS.TransformComponent, MUTABLE)\n";
+			code += "	var query = DynamicQuery.new()\n";
+			code += "	query.set_space(ECS.GLOBAL)\n";
+			code += "	query.with_component(ECS.TransformComponent, MUTABLE)\n";
+			code += "	with_query(query)\n";
 			code += "\n";
-			code += "func _for_each(transform_com):\n";
-			code += "	if get_current_entity_id() == 2:\n";
-			code += "		transform_com.transform.origin.x = 10.0\n";
+			code += "func _execute(query):\n";
+			code += "	while query.next():\n";
+			code += "		if query.get_current_entity_id() == 2:\n";
+			code += "			query[0].transform.origin.x = 10.0\n";
 			code += "\n";
 
 			CHECK(build_and_register_ecs_script("TestMoveHierarchySystem.gd", code));
@@ -894,12 +898,14 @@ TEST_CASE("[Modules][ECS] Test Add/remove from dynamic system.") {
 		code += "func _prepare():\n";
 		code += "	with_databag(ECS.WorldCommands, MUTABLE)\n";
 		code += "	with_storage(ECS.Test1Component)\n";
-		code += "	with_component(ECS.TransformComponent, IMMUTABLE)\n";
 		code += "\n";
-		code += "func _for_each(world_commands, comp_storage, transform_com):\n";
+		code += "func _execute(world_commands, comp_storage):\n";
+		code += "	print(\"A1\")\n";
 		code += "	var entity_2 = world_commands.create_entity()\n";
+		code += "	print(\"A2\")\n";
 		code += "	comp_storage.insert(entity_2, {\"a\": 975})\n";
 		code += "	var entity_3 = world_commands.create_entity()\n";
+		code += "	print(\"A3\")\n";
 		code += "	comp_storage.insert(entity_3)\n";
 		code += "\n";
 
@@ -913,9 +919,8 @@ TEST_CASE("[Modules][ECS] Test Add/remove from dynamic system.") {
 		code += "func _prepare():\n";
 		code += "	with_databag(ECS.WorldCommands, MUTABLE)\n";
 		code += "	with_storage(ECS.Test1Component)\n";
-		code += "	with_component(ECS.TransformComponent, IMMUTABLE)\n";
 		code += "\n";
-		code += "func _for_each(world_commands, comp_storage, transform_com):\n";
+		code += "func _execute(world_commands, comp_storage):\n";
 		code += "	comp_storage.remove(2)\n";
 		code += "	comp_storage.remove(1)\n";
 		code += "\n";
@@ -992,10 +997,13 @@ TEST_CASE("[Modules][ECS] Test fetch changed from dynamic system.") {
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
-		code += "	changed_component(ECS.TransformComponent, MUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.changed_component(ECS.TransformComponent, MUTABLE)\n";
+		code += "	with_query(query)";
 		code += "\n";
-		code += "func _for_each(transform_com):\n";
-		code += "	transform_com.transform.origin.x = 100.0\n";
+		code += "func _execute(query):\n";
+		code += "	while query.next():\n";
+		code += "		query[0].transform.origin.x = 100.0\n";
 		code += "\n";
 
 		CHECK(build_and_register_ecs_script("TestChangedDynamicSystem.gd", code));
@@ -1111,12 +1119,15 @@ TEST_CASE("[Modules][ECS] Test fetch entity from nodepath, using a dynamic syste
 		code += "\n";
 		code += "func _prepare():\n";
 		code += "	with_databag(ECS.World, IMMUTABLE)\n";
-		code += "	with_component(ECS.Test1Component, MUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.Test1Component, MUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "\n";
-		code += "func _for_each(world, test_component):\n";
+		code += "func _execute(world, query):\n";
 		code += "	var entity_1 = world.get_entity_from_path(\"/root/node_1\")\n";
-		code += "	if entity_1 == get_current_entity_id():\n";
-		code += "		test_component.a = 1000\n";
+		code += "	if query.has(entity_1):\n";
+		code += "		query.fetch(entity_1)\n";
+		code += "		query[0].a = 1000\n";
 		code += "\n";
 
 		CHECK(build_and_register_ecs_script("TestFetchEntityFromNodePath.gd", code));
