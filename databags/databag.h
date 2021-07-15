@@ -52,5 +52,4 @@ class Databag {
 public:
 	static void _bind_methods() {}
 };
-
 } // namespace godex
