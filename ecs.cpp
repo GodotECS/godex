@@ -176,12 +176,6 @@ bool ECS::is_component_dynamic(godex::component_id p_component_id) {
 	return components_info[p_component_id].dynamic_component_info != nullptr;
 }
 
-bool ECS::is_component_events(godex::component_id p_component_id) {
-#warning TODO remove this component_event!
-	ERR_FAIL_COND_V_MSG(verify_component_id(p_component_id) == false, false, "The component " + itos(p_component_id) + " is invalid.");
-	return components_info[p_component_id].is_event;
-}
-
 bool ECS::is_component_sharable(godex::component_id p_component_id) {
 	ERR_FAIL_COND_V_MSG(verify_component_id(p_component_id) == false, false, "The component " + itos(p_component_id) + " is invalid.");
 	return components_info[p_component_id].is_shareable;
@@ -988,18 +982,6 @@ uint32_t ECS::register_or_update_script_component(
 	print_line("ComponentScript: " + p_name + " registered with ID: " + itos(id));
 
 	return id;
-}
-
-uint32_t ECS::register_or_update_script_component_event(
-		const StringName &p_name,
-		const LocalVector<ScriptProperty> &p_properties,
-		StorageType p_storage_type,
-		Vector<StringName> p_spawners) {
-	const uint32_t cid = register_or_update_script_component(p_name, p_properties, p_storage_type, p_spawners);
-	ERR_FAIL_COND_V(cid == UINT32_MAX, UINT32_MAX);
-
-	components_info[cid].is_event = true;
-	return cid;
 }
 
 uint32_t ECS::get_components_count() {

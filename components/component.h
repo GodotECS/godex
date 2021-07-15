@@ -77,7 +77,4 @@ private:                                                                        
 	}                                                                                         \
 	COMPONENT_INTERNAL(m_class)                                                               \
 	m_class() = default;
-
-#define EVENT__TODO_REMOVE_THIS() \
-	void __is_event() {}
 } // namespace godex

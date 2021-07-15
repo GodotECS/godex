@@ -83,7 +83,7 @@ public:
 /// }
 /// ```
 template <class E, typename EmitterName>
-class Events {
+class EventsReceiver {
 	const LocalVector<E> *emitter_storage = nullptr;
 
 public:
@@ -125,7 +125,7 @@ public:
 	};
 
 public:
-	Events(World *p_world) {
+	EventsReceiver(World *p_world) {
 		EventStorage<E> *storage = p_world->get_events_storage<E>();
 		if (storage != nullptr) {
 			emitter_storage = storage->get_events(get_emitter_name());

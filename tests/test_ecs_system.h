@@ -39,17 +39,16 @@ struct TestSystem1Databag : public godex::Databag {
 	int a = 10;
 };
 
-struct Event1Component {
-	COMPONENT_BATCH(Event1Component, DenseVector, 2)
-	EVENT__TODO_REMOVE_THIS()
+struct BatchableComponent1 {
+	COMPONENT_BATCH(BatchableComponent1, DenseVector, 2)
 
 	static void _bind_methods() {
-		ECS_BIND_PROPERTY(Event1Component, PropertyInfo(Variant::INT, "a"), a);
+		ECS_BIND_PROPERTY(BatchableComponent1, PropertyInfo(Variant::INT, "a"), a);
 	}
 
 	int a = 0;
 
-	Event1Component(int p_a) :
+	BatchableComponent1(int p_a) :
 			a(p_a) {}
 };
 
@@ -93,18 +92,18 @@ void test_system_check_databag(TestSystem1Databag *test_res) {
 	CHECK(test_res != nullptr);
 }
 
-void test_system_generate_events(Query<EntityID, TransformComponent> &p_query, Storage<Event1Component> *p_events) {
+void test_system_generate_batch(Query<EntityID, TransformComponent> &p_query, Storage<BatchableComponent1> *p_events) {
 	CRASH_COND_MSG(p_events == nullptr, "When taken mutable it's never supposed to be nullptr.");
 
 	for (auto [entity, _t] : p_query) {
-		p_events->insert(entity, Event1Component(123));
-		p_events->insert(entity, Event1Component(456));
-		p_events->insert(entity, Event1Component(12));
-		p_events->insert(entity, Event1Component(33));
+		p_events->insert(entity, BatchableComponent1(123));
+		p_events->insert(entity, BatchableComponent1(456));
+		p_events->insert(entity, BatchableComponent1(12));
+		p_events->insert(entity, BatchableComponent1(33));
 	}
 }
 
-void test_system_check_events(Query<Batch<const Event1Component>> &p_query) {
+void test_system_check_events(Query<Batch<const BatchableComponent1>> &p_query) {
 	uint32_t entities_with_events = 0;
 
 	for (auto [event] : p_query) {
@@ -532,9 +531,9 @@ void test_make_entity_1_root(Storage<Child> *p_hierarchy) {
 }
 
 TEST_CASE("[Modules][ECS] Test event mechanism.") {
-	godex::system_id generate_event_system_id = ECS::register_system(test_system_generate_events, "test_system_generate_events").get_id();
+	godex::system_id generate_event_system_id = ECS::register_system(test_system_generate_batch, "test_system_generate_batch").get_id();
 	godex::system_id check_event_system_id = ECS::register_system(test_system_check_events, "test_system_check_events").get_id();
-	ECS::register_component<Event1Component>();
+	ECS::register_component<BatchableComponent1>();
 
 	World world;
 
@@ -553,15 +552,10 @@ TEST_CASE("[Modules][ECS] Test event mechanism.") {
 
 	// Make sure no component event is left at the end of each cycle.
 	for (uint32_t i = 0; i < 5; i += 1) {
-		if (world.get_storage(Event1Component::get_component_id())) {
-			// The first check the storages is `nullptr`, so this check.
-			CHECK(world.get_storage(Event1Component::get_component_id())->has(entity) == false);
-		}
-
 		pipeline.dispatch(&world);
 
-		// At the end of each dispatch the events are dropped.
-		CHECK(world.get_storage(Event1Component::get_component_id())->has(entity) == false);
+		// Make sure we don't add more than 2 components.
+		CHECK(world.get_storage<BatchableComponent1>()->get_batch_size(entity) == 2);
 	}
 }
 
@@ -1186,7 +1180,7 @@ void test_emit_event(EventsEmitter<MyEvent1Test> &p_emitter) {
 	p_emitter.emit("Test1", e);
 }
 
-void test_fetch_event(Events<MyEvent1Test, EMITTER(Test1)> &p_events) {
+void test_fetch_event(EventsReceiver<MyEvent1Test, EMITTER(Test1)> &p_events) {
 	int c = 0;
 	for (const MyEvent1Test *e : p_events) {
 		c += 1;
@@ -1202,7 +1196,7 @@ TEST_CASE("[Modules][ECS] Test `Events` class is able to fetch the emitter name.
 		// Make sure the Events is correctly reporting the EmitterName set at compile
 		// time.
 		World world;
-		Events<MyEvent1Test, EMITTER(Test11)> events(&world);
+		EventsReceiver<MyEvent1Test, EMITTER(Test11)> events(&world);
 		CHECK(events.get_emitter_name() == String("Test11"));
 	}
 }
@@ -1262,7 +1256,7 @@ TEST_CASE("[Modules][ECS] Make sure the events storages are automatically create
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
-		code += "	with_event_emitter(ECS.MyEvent1Test)\n";
+		code += "	with_events_emitter(ECS.MyEvent1Test)\n";
 		code += "\n";
 		code += "func _execute(event_emitter):\n";
 		code += "	pass\n";
@@ -1276,7 +1270,7 @@ TEST_CASE("[Modules][ECS] Make sure the events storages are automatically create
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
-		code += "	with_event_receiver(ECS.MyEvent1Test, \"EmitterTest\")\n";
+		code += "	with_events_receiver(ECS.MyEvent1Test, \"EmitterTest\")\n";
 		code += "\n";
 		code += "func _execute(event_receiver):\n";
 		code += "	pass\n";
@@ -1324,6 +1318,7 @@ TEST_CASE("[Modules][ECS] Make sure the events storages are automatically create
 		// Make sure the emitter has been created.
 		CHECK(storage->has_emitter("EmitterTest"));
 	}
+	finalize_script_ecs();
 }
 
 TEST_CASE("[Modules][ECS] Test EventEmitter and EventReceiver") {
@@ -1362,7 +1357,7 @@ TEST_CASE("[Modules][ECS] Test EventEmitter and EventReceiver") {
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
-		code += "	with_event_emitter(ECS.MyEvent1Test)\n";
+		code += "	with_events_emitter(ECS.MyEvent1Test)\n";
 		code += "\n";
 		code += "func _execute(event_emitter):\n";
 		code += "	event_emitter.emit(\"Test1\", {'a': 10})\n";
@@ -1377,7 +1372,7 @@ TEST_CASE("[Modules][ECS] Test EventEmitter and EventReceiver") {
 		code += "\n";
 		code += "func _prepare():\n";
 		code += "	execute_after(ECS.TestBEventEmitterSystem_gd)\n";
-		code += "	with_event_receiver(ECS.MyEvent1Test, \"Test1\")\n";
+		code += "	with_events_receiver(ECS.MyEvent1Test, \"Test1\")\n";
 		code += "\n";
 		code += "func _execute(event_receiver):\n";
 		code += "	var count: int = 0\n";
@@ -1417,6 +1412,7 @@ TEST_CASE("[Modules][ECS] Test EventEmitter and EventReceiver") {
 		pipeline.dispatch(&world);
 		CHECK(storage->get_events("Test1")->size() == 1);
 	}
+	finalize_script_ecs();
 }
 } // namespace godex_tests
 
@@ -1425,9 +1421,9 @@ struct MyEvent2Test {
 };
 
 void test2_emit_event(EventsEmitter<MyEvent2Test> &p_emitter) {}
-void test2_fetch1_event(Events<MyEvent2Test, EMITTER(Test1)> &p_events) {}
-void test2_fetch2_event(Events<MyEvent2Test, EMITTER(Test1)> &p_events) {}
-void test2_fetch3_event(Events<MyEvent2Test, EMITTER(Test2)> &p_events) {}
+void test2_fetch1_event(EventsReceiver<MyEvent2Test, EMITTER(Test1)> &p_events) {}
+void test2_fetch2_event(EventsReceiver<MyEvent2Test, EMITTER(Test1)> &p_events) {}
+void test2_fetch3_event(EventsReceiver<MyEvent2Test, EMITTER(Test2)> &p_events) {}
 
 void test_fetch_databag_mut(TestSystem1Databag *) {}
 void test_fetch_databag_const(TestSystem1Databag *) {}

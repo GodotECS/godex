@@ -19,8 +19,8 @@ void System::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("with_query", "query"), &System::with_query_gd);
 	ClassDB::bind_method(D_METHOD("with_databag", "databag_id", "mutability"), &System::with_databag);
 	ClassDB::bind_method(D_METHOD("with_storage", "component_id"), &System::with_storage);
-	ClassDB::bind_method(D_METHOD("with_event_emitter", "event_id"), &System::with_event_emitter);
-	ClassDB::bind_method(D_METHOD("with_event_receiver", "event_id", "emitter_name"), &System::with_event_receiver);
+	ClassDB::bind_method(D_METHOD("with_events_emitter", "event_id"), &System::with_events_emitter);
+	ClassDB::bind_method(D_METHOD("with_events_receiver", "event_id", "emitter_name"), &System::with_events_receiver);
 
 	ClassDB::bind_method(D_METHOD("get_system_id"), &System::get_system_id);
 
@@ -88,14 +88,14 @@ void System::with_storage(uint32_t p_component_id) {
 	info->with_storage(p_component_id);
 }
 
-void System::with_event_emitter(godex::event_id p_event_id) {
+void System::with_events_emitter(godex::event_id p_event_id) {
 	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
-	info->with_event_emitter(p_event_id);
+	info->with_events_emitter(p_event_id);
 }
 
-void System::with_event_receiver(godex::event_id p_event_id, const String &p_emitter_name) {
+void System::with_events_receiver(godex::event_id p_event_id, const String &p_emitter_name) {
 	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
-	info->with_event_receiver(p_event_id, p_emitter_name);
+	info->with_events_receiver(p_event_id, p_emitter_name);
 }
 
 godex::system_id System::get_system_id() const {

@@ -59,7 +59,6 @@ struct ComponentInfo {
 	void (*get_storage_config)(Dictionary &) = nullptr;
 	DynamicComponentInfo *dynamic_component_info = nullptr;
 	bool notify_release_write = false;
-	bool is_event = false;
 	bool is_shareable = false;
 	LocalVector<godex::spawner_id> spawners;
 
@@ -222,7 +221,6 @@ public:
 	static void register_component(StorageBase *(*create_storage)());
 
 	static uint32_t register_or_update_script_component(const StringName &p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type, Vector<StringName> p_spawners);
-	static uint32_t register_or_update_script_component_event(const StringName &p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type, Vector<StringName> p_spawners);
 
 	static uint32_t get_components_count();
 	static bool verify_component_id(uint32_t p_component_id);
@@ -235,7 +233,6 @@ public:
 	static godex::component_id get_component_id(StringName p_component_name);
 	static StringName get_component_name(godex::component_id p_component_id);
 	static bool is_component_dynamic(godex::component_id p_component_id);
-	static bool is_component_events(godex::component_id p_component_id);
 	static bool is_component_sharable(godex::component_id p_component_id);
 	static bool storage_notify_release_write(godex::component_id p_component_id);
 
@@ -539,7 +536,6 @@ void ECS::register_component(StorageBase *(*create_storage)()) {
 					get_storage_config,
 					nullptr,
 					notify_release_write,
-					false,
 					shared_component_storage,
 					spawners,
 					DataAccessorFuncs{

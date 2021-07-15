@@ -63,14 +63,14 @@ void godex::DynamicSystemInfo::with_storage(godex::component_id p_component_id) 
 	fetchers.push_back(fetcher);
 }
 
-void godex::DynamicSystemInfo::with_event_emitter(godex::event_id p_event_id) {
+void godex::DynamicSystemInfo::with_events_emitter(godex::event_id p_event_id) {
 	CRASH_COND_MSG(compiled, "This function can be called only within the prepare function.");
 	EventsEmitterDynamicFetcher *fetcher = memnew(EventsEmitterDynamicFetcher);
 	fetcher->init(p_event_id);
 	fetchers.push_back(fetcher);
 }
 
-void godex::DynamicSystemInfo::with_event_receiver(godex::event_id p_event_id, const String &p_emitter_name) {
+void godex::DynamicSystemInfo::with_events_receiver(godex::event_id p_event_id, const String &p_emitter_name) {
 	CRASH_COND_MSG(compiled, "This function can be called only within the prepare function.");
 	EventsReceiverDynamicFetcher *fetcher = memnew(EventsReceiverDynamicFetcher);
 	fetcher->init(p_event_id, p_emitter_name);

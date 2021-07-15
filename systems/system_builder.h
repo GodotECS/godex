@@ -85,10 +85,10 @@ struct InfoConstructor<EventsEmitter<E> &, Cs...> : InfoConstructor<Cs...> {
 /// Fetches the `Events`.
 /// The `Events` is supposed to be takes as mutable reference.
 /// ```
-/// void test_func(const Events<MyEventType, EMITTER(EmitterName)> &p_events){}
+/// void test_func(const EventsReceiver<MyEventType, EMITTER(EmitterName)> &p_events){}
 /// ```
 template <class E, typename EmitterName, class... Cs>
-struct InfoConstructor<Events<E, EmitterName> &, Cs...> : InfoConstructor<Cs...> {
+struct InfoConstructor<EventsReceiver<E, EmitterName> &, Cs...> : InfoConstructor<Cs...> {
 	InfoConstructor(SystemExeInfo &r_info) :
 			InfoConstructor<Cs...>(r_info) {
 		Set<String> *emitters = r_info.events_receivers.lookup_ptr(E::get_event_id());
@@ -146,8 +146,8 @@ struct DataFetcher<EventsEmitter<E> &> {
 
 /// Events
 template <class E, typename EmitterName>
-struct DataFetcher<Events<E, EmitterName> &> {
-	Events<E, EmitterName> inner;
+struct DataFetcher<EventsReceiver<E, EmitterName> &> {
+	EventsReceiver<E, EmitterName> inner;
 
 	DataFetcher(World *p_world) :
 			inner(p_world) {}

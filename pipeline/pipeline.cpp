@@ -167,11 +167,6 @@ void Pipeline::dispatch_sub_dispatcher(World *p_world, int p_dispatcher_index) {
 			p_world->get_storage(dispatcher.exec_stages[stage_i].notify_list_release_write[f])->on_system_release();
 		}
 	}
-
-	// Clear any generated component storages.
-	for (uint32_t c = 0; c < dispatcher.event_generator.size(); c += 1) {
-		p_world->get_storage(dispatcher.event_generator[c])->clear();
-	}
 }
 
 int Pipeline::get_system_stage(godex::system_id p_system, int p_start_from_dispatcher) const {

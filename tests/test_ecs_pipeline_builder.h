@@ -1120,25 +1120,14 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to detect cyclic de
 }
 } // namespace godex_tests
 
-struct PbEventA {
-	COMPONENT_BATCH(PbEventA, DenseVector, 2)
-	EVENT__TODO_REMOVE_THIS()
-};
-
-void test_F_system_1(Query<const PbEventA> &p_query) {}
-void test_F_system_2(Storage<PbEventA> *p_storage) {}
 void test_F_system_3(Query<Changed<PbComponentA>> &p_query) {}
 void test_F_system_4(Query<PbComponentA> &p_query) {}
 
 namespace godex_tests {
 TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to detect lost events.") {
-	ECS::register_component<PbEventA>();
-
 	initialize_script_ecs();
 
 	ECS::register_system_bundle("TestF_CppBundle")
-			.add(ECS::register_system(test_F_system_1, "test_F_system_1"))
-			.add(ECS::register_system(test_F_system_2, "test_F_system_2"))
 			.add(ECS::register_system(test_F_system_3, "test_F_system_3"))
 			.add(ECS::register_system(test_F_system_4, "test_F_system_4"));
 
@@ -1155,9 +1144,8 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to detect lost even
 	// Make sure the graph wasn't created.
 	CHECK(graph.is_valid());
 	CHECK(graph.get_error_msg().is_empty());
-	CHECK(graph.get_warnings().size() == 2);
+	CHECK(graph.get_warnings().size() == 1);
 	ERR_PRINT(graph.get_warnings()[0]);
-	ERR_PRINT(graph.get_warnings()[1]);
 
 	finalize_script_ecs();
 }
@@ -1355,17 +1343,17 @@ struct MyEvent1TestPB {
 void test_I_emit_event(EventsEmitter<MyEvent1TestPB> &p_emitter) {
 }
 
-void test_I_fetch_event1(Events<MyEvent1TestPB, EMITTER(Test1)> &p_events) {
+void test_I_fetch_event1(EventsReceiver<MyEvent1TestPB, EMITTER(Test1)> &p_events) {
 }
 
-void test_I_fetch_event2(Events<MyEvent1TestPB, EMITTER(Test2)> &p_events) {
+void test_I_fetch_event2(EventsReceiver<MyEvent1TestPB, EMITTER(Test2)> &p_events) {
 }
 
-void test_I_fetch_event3(Events<MyEvent1TestPB, EMITTER(Test1)> &p_events) {
+void test_I_fetch_event3(EventsReceiver<MyEvent1TestPB, EMITTER(Test1)> &p_events) {
 }
 
 namespace godex_tests {
-TEST_CASE("[Modules][ECS] Make sure the `Events` dependency are correct taken into account.") {
+TEST_CASE("[Modules][ECS] Make sure the `EventsReceiver` dependency are correct taken into account.") {
 	ECS::register_system(test_I_emit_event, "test_I_emit_event");
 	ECS::register_system(test_I_fetch_event1, "test_I_fetch_event1");
 	ECS::register_system(test_I_fetch_event2, "test_I_fetch_event2");
