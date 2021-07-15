@@ -617,7 +617,7 @@ void ECS::register_event() {
 	// Store the function pointer that clear the static memory.
 	notify_static_destructor.push_back(&E::__static_destructor);
 
-	// Add a new scripting constant, for fast and easy `databag` access.
+	// Add a new scripting constant, for fast and easy `Event` access.
 	ClassDB::bind_integer_constant(get_class_static(), StringName(), event_name, E::event_id);
 
 	print_line("Event: " + event_name + " registered with ID: " + itos(E::event_id));

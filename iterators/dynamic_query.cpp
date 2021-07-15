@@ -64,6 +64,7 @@ void DynamicQuery::_with_component(uint32_t p_component_id, bool p_mutable, Fetc
 	ERR_FAIL_COND_MSG(component_ids.find(p_component_id) != -1, "The component " + itos(p_component_id) + " is already part of this query.");
 
 	component_ids.push_back(p_component_id);
+	components_name.push_back(ECS::get_component_name(p_component_id));
 	mutability.push_back(p_mutable);
 	mode.push_back(p_mode);
 }
@@ -96,9 +97,10 @@ bool DynamicQuery::build() {
 void DynamicQuery::reset() {
 	valid = true;
 	can_change = true;
-	component_ids.clear();
-	mutability.clear();
-	accessors.clear();
+	component_ids.reset();
+	components_name.reset();
+	mutability.reset();
+	accessors.reset();
 	world = nullptr;
 }
 
@@ -323,6 +325,24 @@ Variant DynamicQuery::getvar(const Variant &p_key, bool *r_valid) const {
 		} else {
 			*r_valid = true;
 			return obj;
+		}
+	} else if (p_key.get_type() == Variant::STRING_NAME) {
+		const int64_t index = components_name.find(p_key);
+		if (index >= 0) {
+			*r_valid = true;
+			return get_access_by_index_gd(index);
+		} else {
+			*r_valid = false;
+			return Variant();
+		}
+	} else if (p_key.get_type() == Variant::STRING) {
+		const int64_t index = components_name.find(StringName(p_key.operator String()));
+		if (index >= 0) {
+			*r_valid = true;
+			return get_access_by_index_gd(index);
+		} else {
+			*r_valid = false;
+			return Variant();
 		}
 	} else {
 		*r_valid = false;

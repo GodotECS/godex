@@ -834,7 +834,7 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 			code += "func _execute(query):\n";
 			code += "	while query.next():\n";
 			code += "		if query.get_current_entity_id() == 2:\n";
-			code += "			query[0].transform.origin.x = 10.0\n";
+			code += "			query[\"TransformComponent\"].origin.x = 10.0\n";
 			code += "\n";
 
 			CHECK(build_and_register_ecs_script("TestMoveHierarchySystem.gd", code));
@@ -1254,6 +1254,79 @@ TEST_CASE("[Modules][ECS] Make sure the events storages are automatically create
 		CHECK(storage->has_emitter("Test1"));
 	}
 
+	// Now test using GDScript
+	initialize_script_ecs();
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	with_event_emitter(ECS.MyEvent1Test)\n";
+		code += "\n";
+		code += "func _execute(event_emitter):\n";
+		code += "	pass\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("TestAEventEmitterSystem.gd", code));
+	}
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	with_event_receiver(ECS.MyEvent1Test, \"EmitterTest\")\n";
+		code += "\n";
+		code += "func _execute(event_receiver):\n";
+		code += "	pass\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("TestAEventReceiverSystem.gd", code));
+	}
+	flush_ecs_script_preparation();
+
+	{
+		Pipeline pipeline;
+		{
+			Vector<StringName> system_bundles;
+
+			Vector<StringName> systems;
+			systems.push_back("TestAEventEmitterSystem.gd");
+
+			PipelineBuilder::build_pipeline(system_bundles, systems, &pipeline);
+		}
+
+		World world;
+		pipeline.prepare(&world);
+
+		EventStorage<MyEvent1Test> *storage = world.get_events_storage<MyEvent1Test>();
+		// Make sure the storage is been created at this point, since `prepare` does it.
+		CHECK(storage != nullptr);
+	}
+	{
+		Pipeline pipeline;
+		{
+			Vector<StringName> system_bundles;
+
+			Vector<StringName> systems;
+			systems.push_back("TestAEventReceiverSystem.gd");
+
+			PipelineBuilder::build_pipeline(system_bundles, systems, &pipeline);
+		}
+
+		World world;
+		pipeline.prepare(&world);
+
+		EventStorage<MyEvent1Test> *storage = world.get_events_storage<MyEvent1Test>();
+		// Make sure the storage is been created at this point, since `prepare` does it.
+		CHECK(storage != nullptr);
+		// Make sure the emitter has been created.
+		CHECK(storage->has_emitter("EmitterTest"));
+	}
+}
+
+TEST_CASE("[Modules][ECS] Test EventEmitter and EventReceiver") {
 	{
 		Pipeline pipeline;
 		{
@@ -1262,6 +1335,70 @@ TEST_CASE("[Modules][ECS] Make sure the events storages are automatically create
 			Vector<StringName> systems;
 			systems.push_back("test_emit_event");
 			systems.push_back("test_fetch_event");
+
+			PipelineBuilder::build_pipeline(system_bundles, systems, &pipeline);
+		}
+
+		World world;
+		pipeline.prepare(&world);
+
+		const EventStorage<MyEvent1Test> *storage = world.get_events_storage<MyEvent1Test>();
+
+		pipeline.dispatch(&world);
+		CHECK(storage->get_events("Test1")->size() == 1);
+
+		pipeline.dispatch(&world);
+		CHECK(storage->get_events("Test1")->size() == 1);
+
+		pipeline.dispatch(&world);
+		CHECK(storage->get_events("Test1")->size() == 1);
+	}
+
+	// Now test using GDScript
+	initialize_script_ecs();
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	with_event_emitter(ECS.MyEvent1Test)\n";
+		code += "\n";
+		code += "func _execute(event_emitter):\n";
+		code += "	event_emitter.emit(\"Test1\", {'a': 10})\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("TestBEventEmitterSystem.gd", code));
+	}
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	execute_after(ECS.TestBEventEmitterSystem_gd)\n";
+		code += "	with_event_receiver(ECS.MyEvent1Test, \"Test1\")\n";
+		code += "\n";
+		code += "func _execute(event_receiver):\n";
+		code += "	var count: int = 0\n";
+		code += "	for event in event_receiver.fetch():\n";
+		code += "		assert(event.a == 10)\n";
+		code += "		count += 1\n";
+		code += "	assert(count == 1)\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("TestBEventReceiverSystem.gd", code));
+	}
+	flush_ecs_script_preparation();
+
+	{
+		Pipeline pipeline;
+		{
+			Vector<StringName> system_bundles;
+
+			Vector<StringName> systems;
+			systems.push_back("TestBEventEmitterSystem.gd");
+			systems.push_back("TestBEventReceiverSystem.gd");
 
 			PipelineBuilder::build_pipeline(system_bundles, systems, &pipeline);
 		}

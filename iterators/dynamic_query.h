@@ -28,6 +28,7 @@ class DynamicQuery : public GodexWorldFetcher {
 	bool can_change = true;
 	Space space = Space::LOCAL;
 	LocalVector<godex::component_id> component_ids;
+	LocalVector<StringName> components_name; // Used to get by component name
 	LocalVector<bool> mutability;
 	LocalVector<FetchMode> mode;
 	LocalVector<ComponentDynamicExposer> accessors;

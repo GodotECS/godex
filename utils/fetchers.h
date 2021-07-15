@@ -108,9 +108,7 @@ public:
 	virtual void begin(World *p_world) override;
 	virtual void end() override;
 
-	bool _set(const StringName &p_name, const Variant &p_value);
-	bool _get(const StringName &p_name, Variant &r_ret) const;
-	virtual Variant call(const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) override;
+	void emit(const String &p_emitter_name, const Variant &p_data = Variant());
 };
 
 class EventsReceiverDynamicFetcher : public GodexWorldFetcher {
@@ -136,9 +134,7 @@ public:
 	virtual void begin(World *p_world) override;
 	virtual void end() override;
 
-	bool _set(const StringName &p_name, const Variant &p_value);
-	bool _get(const StringName &p_name, Variant &r_ret) const;
-	virtual Variant call(const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) override;
+	Array fetch();
 };
 
 namespace godex {

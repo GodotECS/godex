@@ -217,6 +217,7 @@ Variant StorageDynamicFetcher::call(const StringName &p_method, const Variant **
 void EventsEmitterDynamicFetcher::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_mutable"), &EventsEmitterDynamicFetcher::is_mutable);
 	ClassDB::bind_method(D_METHOD("is_valid"), &EventsEmitterDynamicFetcher::is_valid);
+	ClassDB::bind_method(D_METHOD("emit", "emitter_name", "data"), &EventsEmitterDynamicFetcher::emit, DEFVAL(Variant()));
 }
 
 void EventsEmitterDynamicFetcher::init(uint32_t p_identifier) {
@@ -250,68 +251,24 @@ void EventsEmitterDynamicFetcher::get_system_info(SystemExeInfo *r_info) const {
 
 void EventsEmitterDynamicFetcher::begin(World *p_world) {
 	event_storage_ptr = p_world->get_events_storage(event_id);
+	if (event_storage_ptr) {
+		event_storage_ptr->flush_events();
+	}
 }
 
 void EventsEmitterDynamicFetcher::end() {
 	event_storage_ptr = nullptr;
 }
 
-bool EventsEmitterDynamicFetcher::_set(const StringName &p_name, const Variant &p_value) {
-	// Nothing to set.
-	return false;
-}
-
-bool EventsEmitterDynamicFetcher::_get(const StringName &p_name, Variant &r_ret) const {
-	// Nothing to get.
-	return false;
-}
-
-Variant EventsEmitterDynamicFetcher::call(const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) {
-	Variant ret = GodexWorldFetcher::call(p_method, p_args, p_argcount, r_error);
-	if (r_error.error == Callable::CallError::CALL_OK) {
-		return ret;
-	}
-
-	ERR_FAIL_COND_V(event_storage_ptr == nullptr, ret);
-	if (String(p_method) == "emit") { // TODO convert to a static StringName??
-		if (p_argcount > 2) {
-			r_error.error = Callable::CallError::CALL_ERROR_TOO_MANY_ARGUMENTS;
-			r_error.argument = p_argcount;
-			r_error.expected = 2;
-			ERR_PRINT("The EventEmitter::emit function accept the emitter name and the event data. emitter.emit(\"MyEmitter\", {\"var_name\": 123})");
-		} else if (p_argcount < 2) {
-			r_error.error = Callable::CallError::CALL_ERROR_TOO_FEW_ARGUMENTS;
-			r_error.argument = p_argcount;
-			r_error.expected = 2;
-			ERR_PRINT("The EventEmitter::emit function accept the emitter name and the event data. emitter.emit(\"MyEmitter\", {\"var_name\": 123})");
-		} else if (p_args[0]->get_type() != Variant::STRING && p_args[0]->get_type() != Variant::STRING_NAME) {
-			r_error.error = Callable::CallError::CALL_ERROR_INVALID_ARGUMENT;
-			r_error.argument = 2;
-			r_error.expected = 2;
-			ERR_PRINT("The EventEmitter::emit function accept the emitter name and the event data. emitter.emit(\"MyEmitter\", {\"var_name\": 123})");
-		} else if (p_args[1]->get_type() != Variant::DICTIONARY && p_args[1]->get_type() != Variant::NIL) {
-			r_error.error = Callable::CallError::CALL_ERROR_INVALID_ARGUMENT;
-			r_error.argument = 2;
-			r_error.expected = 2;
-			ERR_PRINT("The EventEmitter::emit function accept the emitter name and the event data. emitter.emit(\"MyEmitter\", {\"var_name\": 123})");
-		} else {
-			// Valid, execute the call.
-			Dictionary dic;
-			if (p_args[1]->get_type() == Variant::DICTIONARY) {
-				dic = *p_args[1];
-			}
-			event_storage_ptr->add_event_dynamic(*p_args[0], dic);
-		}
-	} else {
-		r_error.error = Callable::CallError::CALL_ERROR_INVALID_METHOD;
-		ERR_PRINT("The method " + p_method + " doesn't exist on the `EventEmitter`");
-	}
-	return ret;
+void EventsEmitterDynamicFetcher::emit(const String &p_emitter_name, const Variant &p_data) {
+	ERR_FAIL_COND(event_storage_ptr == nullptr);
+	event_storage_ptr->add_event_dynamic(p_emitter_name, p_data);
 }
 
 void EventsReceiverDynamicFetcher::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_mutable"), &EventsReceiverDynamicFetcher::is_mutable);
 	ClassDB::bind_method(D_METHOD("is_valid"), &EventsReceiverDynamicFetcher::is_valid);
+	ClassDB::bind_method(D_METHOD("fetch"), &EventsReceiverDynamicFetcher::fetch);
 }
 
 void EventsReceiverDynamicFetcher::init(uint32_t p_identifier, const String &p_emitter_name) {
@@ -357,36 +314,7 @@ void EventsReceiverDynamicFetcher::end() {
 	event_storage_ptr = nullptr;
 }
 
-bool EventsReceiverDynamicFetcher::_set(const StringName &p_name, const Variant &p_value) {
-	// Nothing to set.
-	return false;
-}
-
-bool EventsReceiverDynamicFetcher::_get(const StringName &p_name, Variant &r_ret) const {
-	// Nothing to get.
-	return false;
-}
-
-Variant EventsReceiverDynamicFetcher::call(const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) {
-	Variant ret = GodexWorldFetcher::call(p_method, p_args, p_argcount, r_error);
-	if (r_error.error == Callable::CallError::CALL_OK) {
-		return ret;
-	}
-
-	ERR_FAIL_COND_V(event_storage_ptr == nullptr, ret);
-	if (String(p_method) == "fetch") { // TODO convert to a static StringName??
-		if (p_argcount > 0) {
-			r_error.error = Callable::CallError::CALL_ERROR_TOO_MANY_ARGUMENTS;
-			r_error.argument = p_argcount;
-			r_error.expected = 0;
-			ERR_PRINT("The EventFetcher::fetch function doesn't need arguments: `fetcher.fetch()`");
-		} else {
-			// Function call is valid, returns the Events.
-			ret = event_storage_ptr->get_events_array(emitter_name);
-		}
-	} else {
-		r_error.error = Callable::CallError::CALL_ERROR_INVALID_METHOD;
-		ERR_PRINT("The method " + p_method + " doesn't exist on the `EventEmitter`");
-	}
-	return ret;
+Array EventsReceiverDynamicFetcher::fetch() {
+	ERR_FAIL_COND_V(event_storage_ptr == nullptr, Array());
+	return event_storage_ptr->get_events_array(emitter_name);
 }

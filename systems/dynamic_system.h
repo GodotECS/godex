@@ -65,7 +65,7 @@ public:
 	void with_databag(uint32_t p_databag_id, bool p_mutable);
 	void with_storage(godex::component_id p_component_id);
 	void with_event_emitter(godex::event_id p_event_id);
-	void with_event_fetcher(godex::event_id p_event_id, const String &p_emitter_name);
+	void with_event_receiver(godex::event_id p_event_id, const String &p_emitter_name);
 
 	bool build();
 	void reset();
