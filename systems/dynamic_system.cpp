@@ -1,6 +1,7 @@
 #include "dynamic_system.h"
 
 #include "../pipeline/pipeline.h"
+#include "../utils/fetchers.h"
 #include "modules/gdscript/gdscript.cpp"
 
 // This include contains the function needed to convert a script system to a
@@ -17,16 +18,7 @@ void godex::__dynamic_system_info_static_destructor() {
 godex::DynamicSystemInfo::DynamicSystemInfo() {}
 
 godex::DynamicSystemInfo::~DynamicSystemInfo() {
-	if (query) {
-		memdelete(query);
-		query = nullptr;
-	}
-}
-
-void godex::DynamicSystemInfo::init_query() {
-	if (query == nullptr) {
-		query = memnew(DynamicQuery);
-	}
+	reset();
 }
 
 void godex::DynamicSystemInfo::set_system_id(uint32_t p_id) {
@@ -50,63 +42,39 @@ void godex::DynamicSystemInfo::execute_before(const StringName &p_system_name) {
 	ECS::get_system_info(system_id).before(p_system_name);
 }
 
-void godex::DynamicSystemInfo::set_space(Space p_space) {
-	CRASH_COND_MSG(compiled, "The query can't be composed, when the system is already been compiled.");
-
-	init_query();
-	query->set_space(p_space);
+void godex::DynamicSystemInfo::with_query(DynamicQuery *p_query) {
+	CRASH_COND_MSG(compiled, "The system is already build, this function can't be called now.");
+	p_query->build();
+	fetchers.push_back(p_query);
 }
 
 void godex::DynamicSystemInfo::with_databag(uint32_t p_databag_id, bool p_mutable) {
-	CRASH_COND_MSG(compiled, "The query can't be composed, when the system is already been compiled.");
-
-	const uint32_t index = databag_element_map.size() + storage_element_map.size() + query_element_map.size();
-	databag_element_map.push_back(index);
-	databags.push_back({ p_databag_id, p_mutable });
-}
-
-void godex::DynamicSystemInfo::with_component(uint32_t p_component_id, bool p_mutable) {
-	CRASH_COND_MSG(compiled, "The query can't be composed, when the system is already been compiled.");
-
-	init_query();
-	const uint32_t index = databag_element_map.size() + storage_element_map.size() + query_element_map.size();
-	query_element_map.push_back(index);
-	query->with_component(p_component_id, p_mutable);
-}
-
-void godex::DynamicSystemInfo::maybe_component(uint32_t p_component_id, bool p_mutable) {
-	CRASH_COND_MSG(compiled, "The query can't be composed, when the system is already been compiled.");
-
-	init_query();
-	const uint32_t index = databag_element_map.size() + storage_element_map.size() + query_element_map.size();
-	query_element_map.push_back(index);
-	query->maybe_component(p_component_id, p_mutable);
-}
-
-void godex::DynamicSystemInfo::changed_component(uint32_t p_component_id, bool p_mutable) {
-	CRASH_COND_MSG(compiled, "The query can't be composed, when the system is already been compiled.");
-
-	init_query();
-	const uint32_t index = databag_element_map.size() + storage_element_map.size() + query_element_map.size();
-	query_element_map.push_back(index);
-	query->changed_component(p_component_id, p_mutable);
-}
-
-void godex::DynamicSystemInfo::not_component(uint32_t p_component_id) {
-	CRASH_COND_MSG(compiled, "The query can't be composed, when the system is already been compiled.");
-
-	init_query();
-	const uint32_t index = databag_element_map.size() + storage_element_map.size() + query_element_map.size();
-	query_element_map.push_back(index);
-	query->not_component(p_component_id);
+	CRASH_COND_MSG(compiled, "The system is already build, this function can't be called now.");
+	DatabagDynamicFetcher *fetcher = memnew(DatabagDynamicFetcher);
+	fetcher->init(p_databag_id, p_mutable);
+	fetchers.push_back(fetcher);
 }
 
 void godex::DynamicSystemInfo::with_storage(godex::component_id p_component_id) {
-	CRASH_COND_MSG(compiled, "The query can't be composed, when the system is already been compiled.");
+	CRASH_COND_MSG(compiled, "The system is already build, this function can't be called now.");
 
-	const uint32_t index = databag_element_map.size() + storage_element_map.size() + query_element_map.size();
-	storage_element_map.push_back(index);
-	storages.push_back(p_component_id);
+	StorageDynamicFetcher *fetcher = memnew(StorageDynamicFetcher);
+	fetcher->init(p_component_id);
+	fetchers.push_back(fetcher);
+}
+
+void godex::DynamicSystemInfo::with_events_emitter(godex::event_id p_event_id) {
+	CRASH_COND_MSG(compiled, "This function can be called only within the prepare function.");
+	EventsEmitterDynamicFetcher *fetcher = memnew(EventsEmitterDynamicFetcher);
+	fetcher->init(p_event_id);
+	fetchers.push_back(fetcher);
+}
+
+void godex::DynamicSystemInfo::with_events_receiver(godex::event_id p_event_id, const String &p_emitter_name) {
+	CRASH_COND_MSG(compiled, "This function can be called only within the prepare function.");
+	EventsReceiverDynamicFetcher *fetcher = memnew(EventsReceiverDynamicFetcher);
+	fetcher->init(p_event_id, p_emitter_name);
+	fetchers.push_back(fetcher);
 }
 
 bool godex::DynamicSystemInfo::build() {
@@ -118,67 +86,18 @@ bool godex::DynamicSystemInfo::build() {
 	if (gd_script_instance) {
 		// This is a GDScript, take the direct function access.
 		Ref<GDScript> script = target_script->get_script();
-		gdscript_function = script->get_member_functions()[for_each_name];
+		gdscript_function = script->get_member_functions()[execute_func_name];
 	}
 
-	init_query();
-	query->build();
+	access.resize(fetchers.size());
+	access_ptr.resize(access.size());
 
-	// ~~ Init the script accessors. ~~
-	{
-		access.resize(databag_element_map.size() + storage_element_map.size() + query_element_map.size());
-		access_ptr.resize(access.size());
-
-		// ~~ Databags
-		databag_accessors.resize(databags.size());
-
-		// Set the databag accessors.
-		for (uint32_t i = 0; i < databags.size(); i += 1) {
-			// Init the accessor
-			databag_accessors[i].init(
-					databags[i].databag_id,
-					DataAccessorTargetType::Databag,
-					databags[i].is_mutable);
-
-			// Assign the accessor.
-			access[databag_element_map[i]] = &databag_accessors[i];
-			access_ptr[databag_element_map[i]] = &access[databag_element_map[i]];
-		}
-
-		// ~~ Storages
-		storage_accessors.resize(storages.size());
-
-		// Set the storage accessors.
-		for (uint32_t i = 0; i < storages.size(); i += 1) {
-			// Init the `Storage` accessor.
-			storage_accessors[i].init(
-					storages[i],
-					DataAccessorTargetType::Storage,
-					// The storages are always mutable.
-					true);
-
-			// Assign the accessor.
-			access[storage_element_map[i]] = &storage_accessors[i];
-			access_ptr[storage_element_map[i]] = &access[storage_element_map[i]];
-		}
-
-		// Init the query accessors.
-		// Map the query components, so the function can be called with the
-		// right parameter order.
-		// It's fine store the accessor pointers here because the query is
-		// stored together with the `DynamicSystemInfo`.
-		for (uint32_t c = 0; c < query->access_count(); c += 1) {
-			Object *ac = query->get_access(c);
-			access[query_element_map[c]] = ac;
-			access_ptr[query_element_map[c]] = &access[query_element_map[c]];
-		}
+	for (uint32_t i = 0; i < fetchers.size(); i += 1) {
+		access[i] = fetchers[i];
+		access_ptr[i] = &access[i];
 	}
 
 	return true;
-}
-
-EntityID godex::DynamicSystemInfo::get_current_entity_id() const {
-	return query->get_current_entity_id();
 }
 
 void godex::DynamicSystemInfo::reset() {
@@ -186,22 +105,17 @@ void godex::DynamicSystemInfo::reset() {
 	compiled = false;
 	gdscript_function = nullptr;
 	system_id = UINT32_MAX;
-	databag_element_map.reset();
-	storage_element_map.reset();
-	query_element_map.reset();
-	databags.reset();
-	storages.reset();
-	if (query) {
-		memdelete(query);
-		query = nullptr;
-	}
+
 	access.reset();
 	access_ptr.reset();
-	databag_accessors.reset();
-	storage_accessors.reset();
+
+	for (uint32_t i = 0; i < fetchers.size(); i += 1) {
+		memdelete(fetchers[i]);
+	}
+	fetchers.reset();
 }
 
-StringName godex::DynamicSystemInfo::for_each_name;
+StringName godex::DynamicSystemInfo::execute_func_name;
 
 void godex::DynamicSystemInfo::get_info(DynamicSystemInfo &p_info, func_system_execute p_exec, SystemExeInfo &r_out) {
 	// Assume is invalid.
@@ -211,26 +125,8 @@ void godex::DynamicSystemInfo::get_info(DynamicSystemInfo &p_info, func_system_e
 	// Script function.
 	ERR_FAIL_COND_MSG(p_info.target_script == nullptr, "[FATAL] This system doesn't have target assigned.");
 
-	// Script execution.
-	ERR_FAIL_COND(p_info.query->is_valid() == false);
-
-	// Set the components dependencies.
-	if (p_info.query) {
-		p_info.query->get_system_info(r_out);
-	}
-
-	// Set the storages dependencies.
-	for (uint32_t i = 0; i < p_info.storages.size(); i += 1) {
-		r_out.mutable_components_storage.insert(p_info.storages[i]);
-	}
-
-	// Set the databags dependencies.
-	for (uint32_t i = 0; i < p_info.databags.size(); i += 1) {
-		if (p_info.databags[i].is_mutable) {
-			r_out.mutable_databags.insert(p_info.databags[i].databag_id);
-		} else {
-			r_out.immutable_databags.insert(p_info.databags[i].databag_id);
-		}
+	for (uint32_t i = 0; i < p_info.fetchers.size(); i += 1) {
+		p_info.fetchers[i]->get_system_info(&r_out);
 	}
 
 	r_out.system_func = p_exec;
@@ -244,46 +140,34 @@ void godex::DynamicSystemInfo::executor(World *p_world, DynamicSystemInfo &p_inf
 
 	// Script function.
 	ERR_FAIL_COND_MSG(p_info.target_script == nullptr, "[FATAL] This system doesn't have target assigned.");
-	ERR_FAIL_COND_MSG(p_info.query->is_valid() == false, "[FATAL] Please check the system " + ECS::get_system_name(p_info.system_id) + " _prepare because the generated query is invalid.");
 
 	// First extract the databags.
-	for (uint32_t i = 0; i < p_info.databags.size(); i += 1) {
+	for (uint32_t i = 0; i < p_info.fetchers.size(); i += 1) {
 		// Set the accessors pointers.
-		p_info.databag_accessors[i].set_target(p_world->get_databag(p_info.databags[i].databag_id));
+		p_info.fetchers[i]->begin(p_world);
 	}
 
-	// Then extract the storages.
-	for (uint32_t i = 0; i < p_info.storages.size(); i += 1) {
-		// Set the accessors pointers.
-		p_info.storage_accessors[i].set_target(p_world->get_storage(p_info.storages[i]));
+	Callable::CallError err;
+	// Call the script function.
+	if (p_info.gdscript_function) {
+		// Accelerated GDScript function access.
+		p_info.gdscript_function->call(
+				static_cast<GDScriptInstance *>(p_info.target_script),
+				const_cast<const Variant **>(p_info.access_ptr.ptr()),
+				p_info.access_ptr.size(),
+				err);
+	} else {
+		// Other script execution.
+		p_info.target_script->call(
+				execute_func_name,
+				const_cast<const Variant **>(p_info.access_ptr.ptr()),
+				p_info.access_ptr.size(),
+				err);
 	}
 
-	// Execute the query
-
-	for (p_info.query->begin(p_world);
-			p_info.query->is_not_done();
-			p_info.query->next()) {
-		Callable::CallError err;
-		// Call the script function.
-		if (p_info.gdscript_function) {
-			// Accelerated GDScript function access.
-			p_info.gdscript_function->call(
-					static_cast<GDScriptInstance *>(p_info.target_script),
-					const_cast<const Variant **>(p_info.access_ptr.ptr()),
-					p_info.access_ptr.size(),
-					err);
-		} else {
-			// Other script execution.
-			p_info.target_script->call(
-					for_each_name,
-					const_cast<const Variant **>(p_info.access_ptr.ptr()),
-					p_info.access_ptr.size(),
-					err);
-		}
-		if (err.error != Callable::CallError::CALL_OK) {
-			p_info.query->end();
-			ERR_FAIL_COND_MSG(err.error != Callable::CallError::CALL_OK, "System function execution error: " + itos(err.error) + " System name: " + ECS::get_system_name(p_info.system_id) + ". Please check the parameters.");
-		}
+	for (uint32_t i = 0; i < p_info.fetchers.size(); i += 1) {
+		p_info.fetchers[i]->end();
 	}
-	p_info.query->end();
+
+	ERR_FAIL_COND_MSG(err.error != Callable::CallError::CALL_OK, "System function execution error: " + itos(err.error) + " System name: " + ECS::get_system_name(p_info.system_id) + ". Please check the parameters.");
 }

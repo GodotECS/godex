@@ -77,33 +77,4 @@ private:                                                                        
 	}                                                                                         \
 	COMPONENT_INTERNAL(m_class)                                                               \
 	m_class() = default;
-
-template <class T>
-T *unwrap_component(Object *p_access_databag) {
-	DataAccessor *comp = dynamic_cast<DataAccessor *>(p_access_databag);
-	if (unlikely(comp == nullptr || comp->get_target() == nullptr)) {
-		return nullptr;
-	}
-	if (likely(comp->get_target_identifier() == T::get_component_id() && comp->get_target_type() == DataAccessorTargetType::Component)) {
-		return static_cast<T *>(comp->get_target());
-	} else {
-		return nullptr;
-	}
-}
-
-template <class T>
-const T *unwrap_component(const Object *p_access_databag) {
-	const DataAccessor *comp = dynamic_cast<const DataAccessor *>(p_access_databag);
-	if (unlikely(comp == nullptr || comp->get_target() == nullptr)) {
-		return nullptr;
-	}
-	if (likely(comp->get_target_identifier() == T::get_component_id() && comp->get_target_type() == DataAccessorTargetType::Component)) {
-		return static_cast<const T *>(comp->target);
-	} else {
-		return nullptr;
-	}
-}
-
-#define EVENT() \
-	void __is_event() {}
 } // namespace godex

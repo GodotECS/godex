@@ -11,6 +11,7 @@ class World;
 class WorldECS;
 class Pipeline;
 class DynamicComponentInfo;
+class EventStorageBase;
 
 namespace godex {
 class Databag;
@@ -58,7 +59,6 @@ struct ComponentInfo {
 	void (*get_storage_config)(Dictionary &) = nullptr;
 	DynamicComponentInfo *dynamic_component_info = nullptr;
 	bool notify_release_write = false;
-	bool is_event = false;
 	bool is_shareable = false;
 	LocalVector<godex::spawner_id> spawners;
 
@@ -69,6 +69,13 @@ struct ComponentInfo {
 /// component registration.
 struct DatabagInfo {
 	godex::Databag *(*create_databag)() = nullptr;
+
+	DataAccessorFuncs accessor_funcs;
+};
+
+struct EventInfo {
+	EventStorageBase *(*create_storage)() = nullptr;
+	void (*destroy_storage)(EventStorageBase *p_storage) = nullptr;
 
 	DataAccessorFuncs accessor_funcs;
 };
@@ -171,6 +178,9 @@ private:
 	static LocalVector<StringName> databags;
 	static LocalVector<DatabagInfo> databags_info;
 
+	static LocalVector<StringName> events;
+	static LocalVector<EventInfo> events_info;
+
 	static LocalVector<StringName> systems;
 	static LocalVector<SystemInfo> systems_info;
 
@@ -211,7 +221,6 @@ public:
 	static void register_component(StorageBase *(*create_storage)());
 
 	static uint32_t register_or_update_script_component(const StringName &p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type, Vector<StringName> p_spawners);
-	static uint32_t register_or_update_script_component_event(const StringName &p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type, Vector<StringName> p_spawners);
 
 	static uint32_t get_components_count();
 	static bool verify_component_id(uint32_t p_component_id);
@@ -224,7 +233,6 @@ public:
 	static godex::component_id get_component_id(StringName p_component_name);
 	static StringName get_component_name(godex::component_id p_component_id);
 	static bool is_component_dynamic(godex::component_id p_component_id);
-	static bool is_component_events(godex::component_id p_component_id);
 	static bool is_component_sharable(godex::component_id p_component_id);
 	static bool storage_notify_release_write(godex::component_id p_component_id);
 
@@ -257,6 +265,22 @@ public:
 	static bool unsafe_databag_set_by_index(godex::databag_id p_databag_id, void *p_databag, uint32_t p_index, const Variant &p_data);
 	static bool unsafe_databag_get_by_index(godex::databag_id p_databag_id, const void *p_databag, uint32_t p_index, Variant &r_data);
 	static void unsafe_databag_call(godex::databag_id p_databag_id, void *p_databag, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error);
+
+	// ~~ Events ~~
+	template <class E>
+	static void register_event();
+
+	static bool verify_event_id(godex::event_id p_event_id);
+
+	static EventStorageBase *create_events_storage(godex::event_id p_event_id);
+	static void destroy_events_storage(godex::event_id p_event_id, EventStorageBase *p_storage);
+
+	static bool unsafe_event_set_by_name(godex::event_id p_event_id, void *p_event, const StringName &p_name, const Variant &p_data);
+	static bool unsafe_event_get_by_name(godex::event_id p_event_id, const void *p_event, const StringName &p_name, Variant &r_data);
+	static Variant unsafe_event_get_by_name(godex::event_id p_event_id, const void *p_event, const StringName &p_name);
+	static bool unsafe_event_set_by_index(godex::event_id p_event_id, void *p_event, uint32_t p_index, const Variant &p_data);
+	static bool unsafe_event_get_by_index(godex::event_id p_event_id, const void *p_event, uint32_t p_index, Variant &r_data);
+	static void unsafe_event_call(godex::event_id p_event_id, void *p_event, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error);
 
 	// ~~ SystemBundle ~~
 	static SystemBundleInfo &register_system_bundle(const StringName &p_name);
@@ -512,7 +536,6 @@ void ECS::register_component(StorageBase *(*create_storage)()) {
 					get_storage_config,
 					nullptr,
 					notify_release_write,
-					false,
 					shared_component_storage,
 					spawners,
 					DataAccessorFuncs{
@@ -543,7 +566,9 @@ void ECS::register_databag() {
 
 	StringName databag_name = R::get_class_static();
 	R::databag_id = databags.size();
-	R::_bind_methods();
+	if constexpr (godex_has_bind_methods<R>::value) {
+		R::_bind_methods();
+	}
 	databags.push_back(databag_name);
 	databags_info.push_back(DatabagInfo{
 			R::create_databag_no_type,
@@ -561,6 +586,37 @@ void ECS::register_databag() {
 
 	// Add a new scripting constant, for fast and easy `databag` access.
 	ClassDB::bind_integer_constant(get_class_static(), StringName(), databag_name, R::databag_id);
+
+	print_line("Databag: " + databag_name + " registered with ID: " + itos(R::databag_id));
+}
+
+template <class E>
+void ECS::register_event() {
+	StringName event_name = E::get_class_static();
+	E::event_id = events.size();
+	if constexpr (godex_has_bind_methods<E>::value) {
+		E::_bind_methods();
+	}
+	events.push_back(event_name);
+	events_info.push_back(EventInfo{
+			E::create_storage_no_type,
+			E::destroy_storage_no_type,
+			DataAccessorFuncs{
+					E::get_properties,
+					E::get_property_default,
+					E::set_by_name,
+					E::get_by_name,
+					E::set_by_index,
+					E::get_by_index,
+					E::static_call } });
+
+	// Store the function pointer that clear the static memory.
+	notify_static_destructor.push_back(&E::__static_destructor);
+
+	// Add a new scripting constant, for fast and easy `Event` access.
+	ClassDB::bind_integer_constant(get_class_static(), StringName(), event_name, E::event_id);
+
+	print_line("Event: " + event_name + " registered with ID: " + itos(E::event_id));
 }
 
 VARIANT_ENUM_CAST(Space)

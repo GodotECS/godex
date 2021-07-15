@@ -20,6 +20,8 @@ LocalVector<StringName> ECS::components;
 LocalVector<ComponentInfo> ECS::components_info;
 LocalVector<StringName> ECS::databags;
 LocalVector<DatabagInfo> ECS::databags_info;
+LocalVector<StringName> ECS::events;
+LocalVector<EventInfo> ECS::events_info;
 LocalVector<StringName> ECS::systems;
 LocalVector<SystemInfo> ECS::systems_info;
 LocalVector<StringName> ECS::system_bundles;
@@ -135,6 +137,9 @@ void ECS::__static_destructor() {
 	databags.reset();
 	databags_info.reset();
 
+	events.reset();
+	events_info.reset();
+
 	// Clear the system bundles static data.
 	system_bundles.reset();
 	system_bundles_info.reset();
@@ -172,11 +177,6 @@ StringName ECS::get_component_name(uint32_t p_component_id) {
 bool ECS::is_component_dynamic(godex::component_id p_component_id) {
 	ERR_FAIL_COND_V_MSG(verify_component_id(p_component_id) == false, false, "The component " + itos(p_component_id) + " is invalid.");
 	return components_info[p_component_id].dynamic_component_info != nullptr;
-}
-
-bool ECS::is_component_events(godex::component_id p_component_id) {
-	ERR_FAIL_COND_V_MSG(verify_component_id(p_component_id) == false, false, "The component " + itos(p_component_id) + " is invalid.");
-	return components_info[p_component_id].is_event;
 }
 
 bool ECS::is_component_sharable(godex::component_id p_component_id) {
@@ -334,6 +334,69 @@ void ECS::unsafe_databag_call(
 			p_argcount,
 			r_ret,
 			r_error);
+}
+
+bool ECS::verify_event_id(godex::event_id p_id) {
+	return p_id < events.size();
+}
+
+EventStorageBase *ECS::create_events_storage(godex::event_id p_event_id) {
+#ifdef DEBUG_ENABLED
+	// Crash cond because this function is not supposed to fail in any way.
+	CRASH_COND_MSG(ECS::verify_event_id(p_event_id) == false, "This event id " + itos(p_event_id) + " is not valid. Are you passing an Event ID?");
+#endif
+	//if (event_indo[p_event_id].dynamic_event_info) {
+	//	// This is a script event
+	//	return events_info[p_event_id].dynamic_event_info->create_storage();
+	//} else {
+	// This is a native event.
+	return events_info[p_event_id].create_storage();
+	//}
+}
+
+void ECS::destroy_events_storage(godex::event_id p_event_id, EventStorageBase *p_storage) {
+#ifdef DEBUG_ENABLED
+	// Crash cond because this function is not supposed to fail in any way.
+	CRASH_COND_MSG(ECS::verify_event_id(p_event_id) == false, "This event id " + itos(p_event_id) + " is not valid. Are you passing an Event ID?");
+#endif
+	if (p_storage == nullptr) {
+		// Nothing to do.
+		return;
+	}
+
+	//if (event_indo[p_event_id].dynamic_event_info) {
+	//	// This is a script event
+	//	return events_info[p_event_id].dynamic_event_info->destroy_storage(p_storage);
+	//} else {
+	// This is a native event.
+	return events_info[p_event_id].destroy_storage(p_storage);
+	//}
+}
+
+bool ECS::unsafe_event_set_by_name(godex::event_id p_event_id, void *p_event, const StringName &p_name, const Variant &p_data) {
+	return events_info[p_event_id].accessor_funcs.set_by_name(p_event, p_name, p_data);
+}
+
+bool ECS::unsafe_event_get_by_name(godex::event_id p_event_id, const void *p_event, const StringName &p_name, Variant &r_data) {
+	return events_info[p_event_id].accessor_funcs.get_by_name(p_event, p_name, r_data);
+}
+
+Variant ECS::unsafe_event_get_by_name(godex::event_id p_event_id, const void *p_event, const StringName &p_name) {
+	Variant ret;
+	ECS::unsafe_event_get_by_name(p_event_id, p_event, p_name, ret);
+	return ret;
+}
+
+bool ECS::unsafe_event_set_by_index(godex::event_id p_event_id, void *p_event, uint32_t p_index, const Variant &p_data) {
+	return events_info[p_event_id].accessor_funcs.set_by_index(p_event, p_index, p_data);
+}
+
+bool ECS::unsafe_event_get_by_index(godex::event_id p_event_id, const void *p_event, uint32_t p_index, Variant &r_data) {
+	return events_info[p_event_id].accessor_funcs.get_by_index(p_event, p_index, r_data);
+}
+
+void ECS::unsafe_event_call(godex::event_id p_event_id, void *p_event, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) {
+	events_info[p_event_id].accessor_funcs.call(p_event, p_method, p_args, p_argcount, r_ret, r_error);
 }
 
 SystemBundleInfo &ECS::register_system_bundle(const StringName &p_name) {
@@ -526,6 +589,15 @@ bool collides(const Set<uint32_t> &p_set_1, const Set<uint32_t> &p_set_2) {
 	return false;
 }
 
+bool collides(const Set<uint32_t> &p_set_1, const OAHashMap<uint32_t, Set<String>> &p_map_2) {
+	for (Set<uint32_t>::Element *e = p_set_1.front(); e; e = e->next()) {
+		if (p_map_2.has(e->get())) {
+			return true;
+		}
+	}
+	return false;
+}
+
 bool ECS::can_systems_run_in_parallel(godex::system_id p_system_a, godex::system_id p_system_b) {
 	ERR_FAIL_COND_V_MSG(verify_system_id(p_system_a) == false, false, "The SystemID: " + itos(p_system_a) + " doesn't exists. Are you passing a System ID?");
 	ERR_FAIL_COND_V_MSG(verify_system_id(p_system_b) == false, false, "The SystemID: " + itos(p_system_b) + " doesn't exists. Are you passing a System ID?");
@@ -582,6 +654,20 @@ bool ECS::can_systems_run_in_parallel(godex::system_id p_system_a, godex::system
 	}
 	if (collides(info_b.immutable_components, info_a.mutable_components_storage)) {
 		// System B is reading a component storage mutating in System A.
+		return false;
+	}
+
+	// Check the events
+	if (collides(info_a.events_emitters, info_b.events_emitters)) {
+		// System A is emitting the same event the System B is emitting.
+		return false;
+	}
+	if (collides(info_a.events_emitters, info_b.events_receivers)) {
+		// System A is emitting an event that system B is receiving.
+		return false;
+	}
+	if (collides(info_b.events_emitters, info_a.events_receivers)) {
+		// System B is emitting an event that system A is receiving.
 		return false;
 	}
 
@@ -899,18 +985,6 @@ uint32_t ECS::register_or_update_script_component(
 	print_line("ComponentScript: " + p_name + " registered with ID: " + itos(id));
 
 	return id;
-}
-
-uint32_t ECS::register_or_update_script_component_event(
-		const StringName &p_name,
-		const LocalVector<ScriptProperty> &p_properties,
-		StorageType p_storage_type,
-		Vector<StringName> p_spawners) {
-	const uint32_t cid = register_or_update_script_component(p_name, p_properties, p_storage_type, p_spawners);
-	ERR_FAIL_COND_V(cid == UINT32_MAX, UINT32_MAX);
-
-	components_info[cid].is_event = true;
-	return cid;
 }
 
 uint32_t ECS::get_components_count() {

@@ -670,7 +670,6 @@ Object *WorldECS::get_entity_component(uint32_t entity_id, uint32_t p_component_
 	if (has_entity_component(entity_id, p_component_id)) {
 		component_accessor.init(
 				p_component_id,
-				DataAccessorTargetType::Component,
 				true);
 		component_accessor.set_target(world->get_storage(p_component_id)->get_ptr(entity_id));
 	} else {
@@ -698,16 +697,15 @@ Object *WorldECS::get_databag_by_name(const StringName &p_databag_name) {
 }
 
 Object *WorldECS::get_databag(uint32_t p_databag_id) {
-	databag_accessor.set_target(nullptr);
+	databag_accessor.end();
 
 	CRASH_COND_MSG(world == nullptr, "The world is never nullptr.");
 	ERR_FAIL_COND_V_MSG(ECS::verify_databag_id(p_databag_id) == false, &databag_accessor, "The passed `databag_name` is not valid.");
 
 	databag_accessor.init(
 			p_databag_id,
-			DataAccessorTargetType::Databag,
 			true);
-	databag_accessor.set_target(world->get_databag(p_databag_id));
+	databag_accessor.begin(world);
 
 	return &databag_accessor;
 }

@@ -37,6 +37,12 @@ void Pipeline::prepare(World *p_world) {
 		}
 	}
 
+	for (uint32_t i = 0; i < p_world->events_storages.size(); i += 1) {
+		if (p_world->events_storages[i] != nullptr) {
+			p_world->events_storages[i]->flush_events();
+		}
+	}
+
 	// Crete components and databags storages.
 	SystemExeInfo info;
 
@@ -75,6 +81,21 @@ void Pipeline::prepare(World *p_world) {
 					StorageBase *storage = p_world->get_storage(e->get());
 					ERR_CONTINUE_MSG(storage == nullptr, "The storage is not supposed to be nullptr at this point. Storage: " + ECS::get_component_name(e->get()) + "#" + itos(e->get()));
 					storage->set_tracing_change(true);
+				}
+
+				for (const Set<uint32_t>::Element *e = info.events_emitters.front(); e; e = e->next()) {
+					p_world->create_events_storage(e->get());
+				}
+
+				for (
+						OAHashMap<uint32_t, Set<String>>::Iterator it = info.events_receivers.iter();
+						it.valid;
+						it = info.events_receivers.next_iter(it)) {
+					p_world->create_events_storage(*it.key);
+					EventStorageBase *s = p_world->get_events_storage(*it.key);
+					for (const Set<String>::Element *e = it.value->front(); e; e = e->next()) {
+						s->add_event_emitter(e->get());
+					}
 				}
 			}
 		}
@@ -145,11 +166,6 @@ void Pipeline::dispatch_sub_dispatcher(World *p_world, int p_dispatcher_index) {
 		for (uint32_t f = 0; f < dispatcher.exec_stages[stage_i].notify_list_release_write.size(); f += 1) {
 			p_world->get_storage(dispatcher.exec_stages[stage_i].notify_list_release_write[f])->on_system_release();
 		}
-	}
-
-	// Clear any generated component storages.
-	for (uint32_t c = 0; c < dispatcher.event_generator.size(); c += 1) {
-		p_world->get_storage(dispatcher.event_generator[c])->clear();
 	}
 }
 

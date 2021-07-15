@@ -8,6 +8,8 @@
 #include "core/variant/binder_common.h"
 #include "modules/gdscript/gdscript.h"
 
+struct SystemExeInfo;
+
 template <typename T, typename = void>
 struct godex_has_get_spawners : std::false_type {};
 
@@ -28,9 +30,6 @@ struct godex_has_storage_config<T, decltype(void(std::declval<T &>()._get_storag
 
 template <typename T, typename = void>
 struct godex_has_is_event : std::false_type {};
-
-template <typename T>
-struct godex_has_is_event<T, decltype(void(std::declval<T &>().__is_event()))> : std::true_type {};
 
 #define ECSCLASS(m_class)                             \
 private:                                              \
@@ -118,6 +117,9 @@ constexpr component_id COMPONENT_NONE = UINT32_MAX;
 typedef uint32_t databag_id;
 constexpr databag_id DATABAG_NONE = UINT32_MAX;
 
+typedef uint32_t event_id;
+constexpr event_id EVENT_NONE = UINT32_MAX;
+
 typedef uint32_t system_id;
 constexpr system_id SYSTEM_NONE = UINT32_MAX;
 
@@ -149,6 +151,11 @@ private:                                                                        
 		setters.push_back(p_set);                                                                                                      \
 		getters.push_back(p_get);                                                                                                      \
 	}                                                                                                                                  \
+	static void clear_properties_static() {                                                                                            \
+		property_map.clear();                                                                                                          \
+	}                                                                                                                                  \
+                                                                                                                                       \
+public:                                                                                                                                \
 	static const LocalVector<PropertyInfo> *get_properties() {                                                                         \
 		return &properties;                                                                                                            \
 	}                                                                                                                                  \
@@ -158,15 +165,10 @@ private:                                                                        
 		get_by_name(&c, p_name, ret);                                                                                                  \
 		return ret;                                                                                                                    \
 	}                                                                                                                                  \
-	static void clear_properties_static() {                                                                                            \
-		property_map.clear();                                                                                                          \
-	}                                                                                                                                  \
 	static uint32_t get_property_index(const StringName &p_name) {                                                                     \
 		const int64_t i = property_map.find(p_name);                                                                                   \
 		return i == -1 ? UINT32_MAX : uint32_t(i);                                                                                     \
 	}                                                                                                                                  \
-                                                                                                                                       \
-public:                                                                                                                                \
 	static bool set_by_name(void *p_self, const StringName &p_name, const Variant &p_data) {                                           \
 		m_class *self = static_cast<m_class *>(p_self);                                                                                \
 		const uint32_t i = get_property_index(p_name);                                                                                 \
@@ -382,6 +384,7 @@ public:                                                                         
 			return;                                                                                                                                                                   \
 		}                                                                                                                                                                             \
 		methods[index]->call(this, p_args, p_argcount, r_ret, r_error);                                                                                                               \
+		r_error.error = Callable::CallError::CALL_OK;                                                                                                                                 \
 	}                                                                                                                                                                                 \
                                                                                                                                                                                       \
 private:
@@ -400,34 +403,13 @@ public:                                                                         
 		return singleton;                                                                             \
 	}
 
-enum class DataAccessorTargetType {
-	Databag,
-	Component,
-	Storage,
-};
-
-/// This is useful to access the Component / Databag / Storage.
-class DataAccessor : public Object {
-private:
-	uint32_t target_identifier;
-	DataAccessorTargetType target_type;
-	bool mut = false;
-	void *target = nullptr;
+class GodexWorldFetcher : public Object {
+	GDCLASS(GodexWorldFetcher, Object)
 
 public:
-	void init(uint32_t p_identifier, DataAccessorTargetType p_type, bool p_mut);
-
-	uint32_t get_target_identifier() const;
-	DataAccessorTargetType get_target_type() const;
-	bool is_mutable() const;
-
-	void set_target(void *p_target);
-	void *get_target();
-	const void *get_target() const;
-
-	virtual bool _setv(const StringName &p_name, const Variant &p_value) override;
-	virtual bool _getv(const StringName &p_name, Variant &r_ret) const override;
-	virtual Variant call(const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) override;
+	virtual void get_system_info(SystemExeInfo *r_info) const = 0;
+	virtual void begin(class World *p_world) = 0;
+	virtual void end() = 0;
 };
 
 struct PropertyInfoWithDefault {

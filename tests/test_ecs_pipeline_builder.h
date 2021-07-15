@@ -77,9 +77,11 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "\n";
 		code += "func _prepare():\n";
 		code += "	execute_after(ECS.test_Z_system_1)\n";
-		code += "	with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "\n";
-		code += "func _for_each(a):\n";
+		code += "func _execute(a):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -127,11 +129,13 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "\n";
 		code += "func _prepare():\n";
 		code += "	execute_in(ECS.PHASE_POST_PROCESS)\n";
-		code += "	with_component(ECS.PbComponentA, MUTABLE)\n";
-		code += "	with_component(ECS.PbComponentB, MUTABLE)\n";
-		code += "	with_databag(ECS.PbDatabagA, MUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.PbComponentA, MUTABLE)\n";
+		code += "	query.with_component(ECS.PbComponentB, MUTABLE)\n";
+		code += "	query.with_databag(ECS.PbDatabagA, MUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "\n";
-		code += "func _for_each(a, b, c):\n";
+		code += "func _execute(q):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -147,11 +151,13 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "\n";
 		code += "func _prepare():\n";
 		code += "	execute_in(ECS.PHASE_CONFIG)\n";
-		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
-		code += "	with_component(ECS.PbComponentB, IMMUTABLE)\n";
-		code += "	with_databag(ECS.PbDatabagA, IMMUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	query.with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "	query.with_databag(ECS.PbDatabagA, IMMUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "\n";
-		code += "func _for_each(a, b, c):\n";
+		code += "func _execute(q):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -164,10 +170,12 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
-		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
-		code += "	with_component(ECS.PbComponentB, MUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	query.with_component(ECS.PbComponentB, MUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "\n";
-		code += "func _for_each(a, b):\n";
+		code += "func _execute(q):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -182,10 +190,12 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
-		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
-		code += "	with_component(ECS.PbComponentB, MUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	query.with_component(ECS.PbComponentB, MUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "\n";
-		code += "func _for_each(a, b):\n";
+		code += "func _execute(q):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -200,11 +210,13 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
-		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
-		code += "	with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	query.with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "	with_databag(ECS.PbDatabagA, IMMUTABLE)\n";
 		code += "\n";
-		code += "func _for_each(a, b, c):\n";
+		code += "func _execute(q, db):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -218,11 +230,13 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "\n";
 		code += "func _prepare():\n";
 		code += "	execute_in(ECS.PHASE_CONFIG)\n";
-		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
-		code += "	with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	query.with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "	with_databag(ECS.PbDatabagA, IMMUTABLE)\n";
 		code += "\n";
-		code += "func _for_each(a, b, c):\n";
+		code += "func _execute(q, db):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -236,11 +250,13 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "\n";
 		code += "func _prepare():\n";
 		code += "	execute_before(ECS.test_A_system_1)\n";
-		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
-		code += "	with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	query.with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "	with_databag(ECS.PbDatabagA, IMMUTABLE)\n";
 		code += "\n";
-		code += "func _for_each(a, b, c):\n";
+		code += "func _execute(q, db):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -254,10 +270,12 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "\n";
 		code += "func _prepare():\n";
 		code += "	execute_after(ECS.test_A_system_13_gd)\n";
-		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
-		code += "	with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	query.with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "\n";
-		code += "func _for_each(a, b):\n";
+		code += "func _execute(q, db):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -270,10 +288,12 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "\n";
 		code += "func _prepare():\n";
 		code += "	execute_after(ECS.test_A_system_12_gd)\n";
-		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
-		code += "	with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	query.with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "\n";
-		code += "func _for_each(a, b):\n";
+		code += "func _execute(q):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -285,10 +305,12 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
-		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
-		code += "	with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	query.with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "\n";
-		code += "func _for_each(a, b):\n";
+		code += "func _execute(q):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -301,10 +323,12 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "\n";
 		code += "func _prepare():\n";
 		code += "	execute_before(ECS.test_A_system_12_gd)\n";
-		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
-		code += "	with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	query.with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "\n";
-		code += "func _for_each(a, b):\n";
+		code += "func _execute(q):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -472,9 +496,11 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder bundles.") {
 		code += "\n";
 		code += "func _prepare():\n";
 		code += "	execute_in(ECS.PHASE_CONFIG)\n";
-		code += "	with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "\n";
-		code += "func _for_each(a):\n";
+		code += "func _execute(a):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -486,9 +512,11 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder bundles.") {
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
-		code += "	with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.PbComponentB, IMMUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "\n";
-		code += "func _for_each(a):\n";
+		code += "func _execute(q):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -516,9 +544,11 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder bundles.") {
 		code += "\n";
 		code += "func _prepare():\n";
 		code += "	execute_in(ECS.PHASE_CONFIG)\n";
-		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "\n";
-		code += "func _for_each(a, b):\n";
+		code += "func _execute(q):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -530,10 +560,12 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder bundles.") {
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
-		code += "	with_component(ECS.PbComponentA, MUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.PbComponentA, MUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "	with_databag(ECS.PbDatabagA, MUTABLE)\n";
 		code += "\n";
-		code += "func _for_each(a, b):\n";
+		code += "func _execute(q):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -566,9 +598,11 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder bundles.") {
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
-		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "\n";
-		code += "func _for_each(a):\n";
+		code += "func _execute(q):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -691,10 +725,12 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder put the systems that fetch 
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
-		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "	with_databag(ECS.World, IMMUTABLE)\n";
 		code += "\n";
-		code += "func _for_each(a, b):\n";
+		code += "func _execute(q):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -706,10 +742,12 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder put the systems that fetch 
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
-		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "	with_databag(ECS.SceneTreeDatabag, IMMUTABLE)\n";
 		code += "\n";
-		code += "func _for_each(a, b):\n";
+		code += "func _execute(q):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -721,9 +759,11 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder put the systems that fetch 
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
-		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "\n";
-		code += "func _for_each(a):\n";
+		code += "func _execute(q):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -735,9 +775,11 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder put the systems that fetch 
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
-		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "\n";
-		code += "func _for_each(a):\n";
+		code += "func _execute(q):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -751,9 +793,11 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder put the systems that fetch 
 		code += "\n";
 		code += "func _prepare():\n";
 		code += "	execute_in(ECS.PHASE_PROCESS, ECS.test_C_system_13_dispatcher)\n";
-		code += "	with_databag(ECS.World, IMMUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_databag(ECS.World, IMMUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "\n";
-		code += "func _for_each(a):\n";
+		code += "func _execute(q):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -937,9 +981,11 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to detect cyclic de
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
-		code += "	with_component(ECS.PbComponentA, MUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.PbComponentA, MUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "\n";
-		code += "func _for_each(a):\n";
+		code += "func _execute(q):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -952,9 +998,11 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to detect cyclic de
 		code += "\n";
 		code += "func _prepare():\n";
 		code += "	execute_after(ECS.test_D_system_3)\n";
-		code += "	with_component(ECS.PbComponentA, MUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.PbComponentA, MUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "\n";
-		code += "func _for_each(a):\n";
+		code += "func _execute(q):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -1012,9 +1060,11 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to detect cyclic de
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
-		code += "	with_component(ECS.PbComponentA, MUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.PbComponentA, MUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "\n";
-		code += "func _for_each(a):\n";
+		code += "func _execute(q):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -1027,9 +1077,11 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to detect cyclic de
 		code += "\n";
 		code += "func _prepare():\n";
 		code += "	execute_after(ECS.test_D_system_3)\n";
-		code += "	with_component(ECS.PbComponentA, MUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.PbComponentA, MUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "\n";
-		code += "func _for_each(a):\n";
+		code += "func _execute(q):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -1068,25 +1120,14 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to detect cyclic de
 }
 } // namespace godex_tests
 
-struct PbEventA {
-	COMPONENT_BATCH(PbEventA, DenseVector, 2)
-	EVENT()
-};
-
-void test_F_system_1(Query<const PbEventA> &p_query) {}
-void test_F_system_2(Storage<PbEventA> *p_storage) {}
 void test_F_system_3(Query<Changed<PbComponentA>> &p_query) {}
 void test_F_system_4(Query<PbComponentA> &p_query) {}
 
 namespace godex_tests {
 TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to detect lost events.") {
-	ECS::register_component<PbEventA>();
-
 	initialize_script_ecs();
 
 	ECS::register_system_bundle("TestF_CppBundle")
-			.add(ECS::register_system(test_F_system_1, "test_F_system_1"))
-			.add(ECS::register_system(test_F_system_2, "test_F_system_2"))
 			.add(ECS::register_system(test_F_system_3, "test_F_system_3"))
 			.add(ECS::register_system(test_F_system_4, "test_F_system_4"));
 
@@ -1103,9 +1144,8 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to detect lost even
 	// Make sure the graph wasn't created.
 	CHECK(graph.is_valid());
 	CHECK(graph.get_error_msg().is_empty());
-	CHECK(graph.get_warnings().size() == 2);
+	CHECK(graph.get_warnings().size() == 1);
 	ERR_PRINT(graph.get_warnings()[0]);
-	ERR_PRINT(graph.get_warnings()[1]);
 
 	finalize_script_ecs();
 }
@@ -1168,9 +1208,11 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to compose sub pipe
 		code += "\n";
 		code += "func _prepare():\n";
 		code += "	execute_in(ECS.PHASE_PROCESS, ECS.test_G_system_dispatcher_1)\n";
-		code += "	with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.PbComponentA, IMMUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "\n";
-		code += "func _for_each(a):\n";
+		code += "func _execute(q):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -1184,9 +1226,11 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to compose sub pipe
 		code += "\n";
 		code += "func _prepare():\n";
 		code += "	execute_in(ECS.PHASE_PROCESS, ECS.test_G_system_dispatcher_2)\n";
-		code += "	with_component(ECS.PbDatabagA, MUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.PbDatabagA, MUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "\n";
-		code += "func _for_each(a):\n";
+		code += "func _execute(q):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -1291,4 +1335,54 @@ TEST_CASE("[Modules][ECS] Verify the pipeline builder is correctly using the Sys
 	CHECK(-1 == pipeline.get_system_stage(test_H_system_1_id));
 }
 } // namespace godex_tests
+
+struct MyEvent1TestPB {
+	EVENT(MyEvent1TestPB)
+};
+
+void test_I_emit_event(EventsEmitter<MyEvent1TestPB> &p_emitter) {
+}
+
+void test_I_fetch_event1(EventsReceiver<MyEvent1TestPB, EMITTER(Test1)> &p_events) {
+}
+
+void test_I_fetch_event2(EventsReceiver<MyEvent1TestPB, EMITTER(Test2)> &p_events) {
+}
+
+void test_I_fetch_event3(EventsReceiver<MyEvent1TestPB, EMITTER(Test1)> &p_events) {
+}
+
+namespace godex_tests {
+TEST_CASE("[Modules][ECS] Make sure the `EventsReceiver` dependency are correct taken into account.") {
+	ECS::register_system(test_I_emit_event, "test_I_emit_event");
+	ECS::register_system(test_I_fetch_event1, "test_I_fetch_event1");
+	ECS::register_system(test_I_fetch_event2, "test_I_fetch_event2");
+	ECS::register_system(test_I_fetch_event3, "test_I_fetch_event3");
+	ECS::register_event<MyEvent1TestPB>();
+
+	Pipeline pipeline;
+	{
+		Vector<StringName> system_bundles;
+
+		Vector<StringName> systems;
+		systems.push_back("test_I_emit_event");
+		systems.push_back("test_I_fetch_event1");
+		systems.push_back("test_I_fetch_event2");
+		systems.push_back("test_I_fetch_event3");
+
+		PipelineBuilder::build_pipeline(system_bundles, systems, &pipeline);
+	}
+
+	// Make sure the event emitter is not running with other system that catches the same event.
+	CHECK(pipeline.get_system_stage(ECS::get_system_id("test_I_fetch_event1")) != pipeline.get_system_stage(ECS::get_system_id("test_I_emit_event")));
+	CHECK(pipeline.get_system_stage(ECS::get_system_id("test_I_fetch_event2")) != pipeline.get_system_stage(ECS::get_system_id("test_I_emit_event")));
+	CHECK(pipeline.get_system_stage(ECS::get_system_id("test_I_fetch_event3")) != pipeline.get_system_stage(ECS::get_system_id("test_I_emit_event")));
+
+	// Make sure the system that fetches the events all run in parallel, even if
+	// receiving from the same emitter, since receiving is always const.
+	CHECK(pipeline.get_system_stage(ECS::get_system_id("test_I_fetch_event1")) == pipeline.get_system_stage(ECS::get_system_id("test_I_fetch_event2")));
+	CHECK(pipeline.get_system_stage(ECS::get_system_id("test_I_fetch_event2")) == pipeline.get_system_stage(ECS::get_system_id("test_I_fetch_event3")));
+}
+} // namespace godex_tests
+
 #endif // TEST_ECS_PIPELINE_BUILDER_H

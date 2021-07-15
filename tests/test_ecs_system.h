@@ -5,6 +5,7 @@
 
 #include "../components/dynamic_component.h"
 #include "../ecs.h"
+#include "../events/events.h"
 #include "../modules/godot/components/transform_component.h"
 #include "../modules/godot/nodes/ecs_utilities.h"
 #include "../pipeline/pipeline.h"
@@ -38,17 +39,16 @@ struct TestSystem1Databag : public godex::Databag {
 	int a = 10;
 };
 
-struct Event1Component {
-	COMPONENT_BATCH(Event1Component, DenseVector, 2)
-	EVENT()
+struct BatchableComponent1 {
+	COMPONENT_BATCH(BatchableComponent1, DenseVector, 2)
 
 	static void _bind_methods() {
-		ECS_BIND_PROPERTY(Event1Component, PropertyInfo(Variant::INT, "a"), a);
+		ECS_BIND_PROPERTY(BatchableComponent1, PropertyInfo(Variant::INT, "a"), a);
 	}
 
 	int a = 0;
 
-	Event1Component(int p_a) :
+	BatchableComponent1(int p_a) :
 			a(p_a) {}
 };
 
@@ -92,18 +92,18 @@ void test_system_check_databag(TestSystem1Databag *test_res) {
 	CHECK(test_res != nullptr);
 }
 
-void test_system_generate_events(Query<EntityID, TransformComponent> &p_query, Storage<Event1Component> *p_events) {
+void test_system_generate_batch(Query<EntityID, TransformComponent> &p_query, Storage<BatchableComponent1> *p_events) {
 	CRASH_COND_MSG(p_events == nullptr, "When taken mutable it's never supposed to be nullptr.");
 
 	for (auto [entity, _t] : p_query) {
-		p_events->insert(entity, Event1Component(123));
-		p_events->insert(entity, Event1Component(456));
-		p_events->insert(entity, Event1Component(12));
-		p_events->insert(entity, Event1Component(33));
+		p_events->insert(entity, BatchableComponent1(123));
+		p_events->insert(entity, BatchableComponent1(456));
+		p_events->insert(entity, BatchableComponent1(12));
+		p_events->insert(entity, BatchableComponent1(33));
 	}
 }
 
-void test_system_check_events(Query<Batch<const Event1Component>> &p_query) {
+void test_system_check_events(Query<Batch<const BatchableComponent1>> &p_query) {
 	uint32_t entities_with_events = 0;
 
 	for (auto [event] : p_query) {
@@ -204,16 +204,20 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
-		code += "	with_component(ECS.TransformComponent, MUTABLE)\n";
-		code += "	maybe_component(ECS.TestDynamicSystemComponent1_gd, MUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.TransformComponent, MUTABLE)\n";
+		code += "	query.maybe_component(ECS.TestDynamicSystemComponent1_gd, MUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "\n";
-		code += "func _for_each(transform_com, test_comp):\n";
-		code += "	assert(transform_com.is_valid())\n";
-		code += "	assert(transform_com.is_mutable())\n";
-		code += "	transform_com.origin.x += 100.0\n";
-		code += "	if test_comp != null:\n";
-		code += "		test_comp.variable_1 += 1\n";
-		code += "		test_comp.variable_2 = Transform3D()\n";
+		code += "func _execute(q):\n";
+		code += "	while q.next():\n";
+		code += "		assert(q[0].is_valid())\n";
+		code += "		assert(q[0].is_mutable())\n";
+		code += "		q[0].origin.x += 100.0\n";
+		code += "		if q[1].is_valid():\n";
+		code += "			q[1].variable_1 += 1\n";
+		code += "			# Try to set a different type.\n";
+		code += "			q[1].set(\"variable_2\", Transform3D())\n";
 		code += "\n";
 
 		CHECK(build_and_register_ecs_script("TestDynamicSystem1.gd", code));
@@ -314,9 +318,8 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 		code += "\n";
 		code += "func _prepare():\n";
 		code += "	with_databag(ECS.TestSystemSubPipeDatabag, MUTABLE)\n";
-		code += "	with_component(ECS.TransformComponent, IMMUTABLE)\n";
 		code += "\n";
-		code += "func _for_each(test_databag, a):\n";
+		code += "func _execute(test_databag):\n";
 		code += "	test_databag.iterations += 1\n";
 		code += "\n";
 
@@ -330,9 +333,8 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 		code += "func _prepare():\n";
 		code += "	execute_in(ECS.PHASE_PROCESS, ECS.test_sub_pipeline_execute)\n";
 		code += "	with_databag(ECS.TestSystemSubPipeDatabag, MUTABLE)\n";
-		code += "	with_component(ECS.TransformComponent, IMMUTABLE)\n";
 		code += "\n";
-		code += "func _for_each(test_databag, a):\n";
+		code += "func _execute(test_databag):\n";
 		code += "	test_databag.sub_iterations += 1\n";
 		code += "\n";
 
@@ -468,9 +470,8 @@ TEST_CASE("[Modules][ECS] Test system databag fetch with dynamic query.") {
 		code += "\n";
 		code += "func _prepare():\n";
 		code += "	with_databag(ECS.TestSystemSubPipeDatabag, MUTABLE)\n";
-		code += "	with_component(ECS.TransformComponent, IMMUTABLE)\n";
 		code += "\n";
-		code += "func _for_each(test_databag, transform_com):\n";
+		code += "func _execute(test_databag):\n";
 		code += "	assert(test_databag.is_valid())\n";
 		code += "	assert(test_databag.is_mutable())\n";
 		code += "	test_databag.exe_count = 10\n";
@@ -530,9 +531,9 @@ void test_make_entity_1_root(Storage<Child> *p_hierarchy) {
 }
 
 TEST_CASE("[Modules][ECS] Test event mechanism.") {
-	godex::system_id generate_event_system_id = ECS::register_system(test_system_generate_events, "test_system_generate_events").get_id();
+	godex::system_id generate_event_system_id = ECS::register_system(test_system_generate_batch, "test_system_generate_batch").get_id();
 	godex::system_id check_event_system_id = ECS::register_system(test_system_check_events, "test_system_check_events").get_id();
-	ECS::register_component<Event1Component>();
+	ECS::register_component<BatchableComponent1>();
 
 	World world;
 
@@ -551,15 +552,10 @@ TEST_CASE("[Modules][ECS] Test event mechanism.") {
 
 	// Make sure no component event is left at the end of each cycle.
 	for (uint32_t i = 0; i < 5; i += 1) {
-		if (world.get_storage(Event1Component::get_component_id())) {
-			// The first check the storages is `nullptr`, so this check.
-			CHECK(world.get_storage(Event1Component::get_component_id())->has(entity) == false);
-		}
-
 		pipeline.dispatch(&world);
 
-		// At the end of each dispatch the events are dropped.
-		CHECK(world.get_storage(Event1Component::get_component_id())->has(entity) == false);
+		// Make sure we don't add more than 2 components.
+		CHECK(world.get_storage<BatchableComponent1>()->get_batch_size(entity) == 2);
 	}
 }
 
@@ -824,12 +820,15 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 			code += "extends System\n";
 			code += "\n";
 			code += "func _prepare():\n";
-			code += "	set_space(ECS.GLOBAL)\n";
-			code += "	with_component(ECS.TransformComponent, MUTABLE)\n";
+			code += "	var query = DynamicQuery.new()\n";
+			code += "	query.set_space(ECS.GLOBAL)\n";
+			code += "	query.with_component(ECS.TransformComponent, MUTABLE)\n";
+			code += "	with_query(query)\n";
 			code += "\n";
-			code += "func _for_each(transform_com):\n";
-			code += "	if get_current_entity_id() == 2:\n";
-			code += "		transform_com.transform.origin.x = 10.0\n";
+			code += "func _execute(query):\n";
+			code += "	while query.next():\n";
+			code += "		if query.get_current_entity_id() == 2:\n";
+			code += "			query[\"TransformComponent\"].origin.x = 10.0\n";
 			code += "\n";
 
 			CHECK(build_and_register_ecs_script("TestMoveHierarchySystem.gd", code));
@@ -893,12 +892,14 @@ TEST_CASE("[Modules][ECS] Test Add/remove from dynamic system.") {
 		code += "func _prepare():\n";
 		code += "	with_databag(ECS.WorldCommands, MUTABLE)\n";
 		code += "	with_storage(ECS.Test1Component)\n";
-		code += "	with_component(ECS.TransformComponent, IMMUTABLE)\n";
 		code += "\n";
-		code += "func _for_each(world_commands, comp_storage, transform_com):\n";
+		code += "func _execute(world_commands, comp_storage):\n";
+		code += "	print(\"A1\")\n";
 		code += "	var entity_2 = world_commands.create_entity()\n";
+		code += "	print(\"A2\")\n";
 		code += "	comp_storage.insert(entity_2, {\"a\": 975})\n";
 		code += "	var entity_3 = world_commands.create_entity()\n";
+		code += "	print(\"A3\")\n";
 		code += "	comp_storage.insert(entity_3)\n";
 		code += "\n";
 
@@ -912,9 +913,8 @@ TEST_CASE("[Modules][ECS] Test Add/remove from dynamic system.") {
 		code += "func _prepare():\n";
 		code += "	with_databag(ECS.WorldCommands, MUTABLE)\n";
 		code += "	with_storage(ECS.Test1Component)\n";
-		code += "	with_component(ECS.TransformComponent, IMMUTABLE)\n";
 		code += "\n";
-		code += "func _for_each(world_commands, comp_storage, transform_com):\n";
+		code += "func _execute(world_commands, comp_storage):\n";
 		code += "	comp_storage.remove(2)\n";
 		code += "	comp_storage.remove(1)\n";
 		code += "\n";
@@ -991,10 +991,13 @@ TEST_CASE("[Modules][ECS] Test fetch changed from dynamic system.") {
 		code += "extends System\n";
 		code += "\n";
 		code += "func _prepare():\n";
-		code += "	changed_component(ECS.TransformComponent, MUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.changed_component(ECS.TransformComponent, MUTABLE)\n";
+		code += "	with_query(query)";
 		code += "\n";
-		code += "func _for_each(transform_com):\n";
-		code += "	transform_com.transform.origin.x = 100.0\n";
+		code += "func _execute(query):\n";
+		code += "	while query.next():\n";
+		code += "		query[0].transform.origin.x = 100.0\n";
 		code += "\n";
 
 		CHECK(build_and_register_ecs_script("TestChangedDynamicSystem.gd", code));
@@ -1110,12 +1113,15 @@ TEST_CASE("[Modules][ECS] Test fetch entity from nodepath, using a dynamic syste
 		code += "\n";
 		code += "func _prepare():\n";
 		code += "	with_databag(ECS.World, IMMUTABLE)\n";
-		code += "	with_component(ECS.Test1Component, MUTABLE)\n";
+		code += "	var query = DynamicQuery.new()\n";
+		code += "	query.with_component(ECS.Test1Component, MUTABLE)\n";
+		code += "	with_query(query)\n";
 		code += "\n";
-		code += "func _for_each(world, test_component):\n";
+		code += "func _execute(world, query):\n";
 		code += "	var entity_1 = world.get_entity_from_path(\"/root/node_1\")\n";
-		code += "	if entity_1 == get_current_entity_id():\n";
-		code += "		test_component.a = 1000\n";
+		code += "	if query.has(entity_1):\n";
+		code += "		query.fetch(entity_1)\n";
+		code += "		query[0].a = 1000\n";
 		code += "\n";
 
 		CHECK(build_and_register_ecs_script("TestFetchEntityFromNodePath.gd", code));
@@ -1157,5 +1163,309 @@ TEST_CASE("[Modules][ECS] Test fetch entity from nodepath, using a dynamic syste
 	finalize_script_ecs();
 }
 } // namespace godex_tests_system
+
+struct MyEvent1Test {
+	EVENT(MyEvent1Test)
+
+	static void _bind_methods() {
+		ECS_BIND_PROPERTY(MyEvent1Test, PropertyInfo(Variant::INT, "a"), a);
+	}
+
+	int a = 0;
+};
+
+void test_emit_event(EventsEmitter<MyEvent1Test> &p_emitter) {
+	MyEvent1Test e;
+	e.a = 10;
+	p_emitter.emit("Test1", e);
+}
+
+void test_fetch_event(EventsReceiver<MyEvent1Test, EMITTER(Test1)> &p_events) {
+	int c = 0;
+	for (const MyEvent1Test *e : p_events) {
+		c += 1;
+		CHECK(e->a == 10);
+	}
+	CHECK(c == 1);
+}
+
+namespace godex_tests {
+TEST_CASE("[Modules][ECS] Test `Events` class is able to fetch the emitter name.") {
+	ECS::register_event<MyEvent1Test>();
+	{
+		// Make sure the Events is correctly reporting the EmitterName set at compile
+		// time.
+		World world;
+		EventsReceiver<MyEvent1Test, EMITTER(Test11)> events(&world);
+		CHECK(events.get_emitter_name() == String("Test11"));
+	}
+}
+
+TEST_CASE("[Modules][ECS] Make sure the events storages are automatically created.") {
+	ECS::register_system(test_emit_event, "test_emit_event");
+	ECS::register_system(test_fetch_event, "test_fetch_event")
+			.after("test_emit_event");
+
+	// Make sure the world creates the event storage when the `EventEmitter` is encountered.
+	{
+		Pipeline pipeline;
+		{
+			Vector<StringName> system_bundles;
+
+			Vector<StringName> systems;
+			systems.push_back("test_emit_event");
+
+			PipelineBuilder::build_pipeline(system_bundles, systems, &pipeline);
+		}
+
+		World world;
+		pipeline.prepare(&world);
+
+		EventStorage<MyEvent1Test> *storage = world.get_events_storage<MyEvent1Test>();
+		// Make sure the storage is been created at this point, since `prepare` does it.
+		CHECK(storage != nullptr);
+	}
+
+	// Make sure the world creates the event storage when the `Events` is encountered.
+	{
+		Pipeline pipeline;
+		{
+			Vector<StringName> system_bundles;
+
+			Vector<StringName> systems;
+			systems.push_back("test_fetch_event");
+
+			PipelineBuilder::build_pipeline(system_bundles, systems, &pipeline);
+		}
+
+		World world;
+		pipeline.prepare(&world);
+
+		EventStorage<MyEvent1Test> *storage = world.get_events_storage<MyEvent1Test>();
+		// Make sure the storage is been created at this point, since `prepare` does it.
+		CHECK(storage != nullptr);
+		// Make sure the emitter has been created.
+		CHECK(storage->has_emitter("Test1"));
+	}
+
+	// Now test using GDScript
+	initialize_script_ecs();
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	with_events_emitter(ECS.MyEvent1Test)\n";
+		code += "\n";
+		code += "func _execute(event_emitter):\n";
+		code += "	pass\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("TestAEventEmitterSystem.gd", code));
+	}
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	with_events_receiver(ECS.MyEvent1Test, \"EmitterTest\")\n";
+		code += "\n";
+		code += "func _execute(event_receiver):\n";
+		code += "	pass\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("TestAEventReceiverSystem.gd", code));
+	}
+	flush_ecs_script_preparation();
+
+	{
+		Pipeline pipeline;
+		{
+			Vector<StringName> system_bundles;
+
+			Vector<StringName> systems;
+			systems.push_back("TestAEventEmitterSystem.gd");
+
+			PipelineBuilder::build_pipeline(system_bundles, systems, &pipeline);
+		}
+
+		World world;
+		pipeline.prepare(&world);
+
+		EventStorage<MyEvent1Test> *storage = world.get_events_storage<MyEvent1Test>();
+		// Make sure the storage is been created at this point, since `prepare` does it.
+		CHECK(storage != nullptr);
+	}
+	{
+		Pipeline pipeline;
+		{
+			Vector<StringName> system_bundles;
+
+			Vector<StringName> systems;
+			systems.push_back("TestAEventReceiverSystem.gd");
+
+			PipelineBuilder::build_pipeline(system_bundles, systems, &pipeline);
+		}
+
+		World world;
+		pipeline.prepare(&world);
+
+		EventStorage<MyEvent1Test> *storage = world.get_events_storage<MyEvent1Test>();
+		// Make sure the storage is been created at this point, since `prepare` does it.
+		CHECK(storage != nullptr);
+		// Make sure the emitter has been created.
+		CHECK(storage->has_emitter("EmitterTest"));
+	}
+	finalize_script_ecs();
+}
+
+TEST_CASE("[Modules][ECS] Test EventEmitter and EventReceiver") {
+	{
+		Pipeline pipeline;
+		{
+			Vector<StringName> system_bundles;
+
+			Vector<StringName> systems;
+			systems.push_back("test_emit_event");
+			systems.push_back("test_fetch_event");
+
+			PipelineBuilder::build_pipeline(system_bundles, systems, &pipeline);
+		}
+
+		World world;
+		pipeline.prepare(&world);
+
+		const EventStorage<MyEvent1Test> *storage = world.get_events_storage<MyEvent1Test>();
+
+		pipeline.dispatch(&world);
+		CHECK(storage->get_events("Test1")->size() == 1);
+
+		pipeline.dispatch(&world);
+		CHECK(storage->get_events("Test1")->size() == 1);
+
+		pipeline.dispatch(&world);
+		CHECK(storage->get_events("Test1")->size() == 1);
+	}
+
+	// Now test using GDScript
+	initialize_script_ecs();
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	with_events_emitter(ECS.MyEvent1Test)\n";
+		code += "\n";
+		code += "func _execute(event_emitter):\n";
+		code += "	event_emitter.emit(\"Test1\", {'a': 10})\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("TestBEventEmitterSystem.gd", code));
+	}
+	{
+		// Create the script.
+		String code;
+		code += "extends System\n";
+		code += "\n";
+		code += "func _prepare():\n";
+		code += "	execute_after(ECS.TestBEventEmitterSystem_gd)\n";
+		code += "	with_events_receiver(ECS.MyEvent1Test, \"Test1\")\n";
+		code += "\n";
+		code += "func _execute(event_receiver):\n";
+		code += "	var count: int = 0\n";
+		code += "	for event in event_receiver.fetch():\n";
+		code += "		assert(event.a == 10)\n";
+		code += "		count += 1\n";
+		code += "	assert(count == 1)\n";
+		code += "\n";
+
+		CHECK(build_and_register_ecs_script("TestBEventReceiverSystem.gd", code));
+	}
+	flush_ecs_script_preparation();
+
+	{
+		Pipeline pipeline;
+		{
+			Vector<StringName> system_bundles;
+
+			Vector<StringName> systems;
+			systems.push_back("TestBEventEmitterSystem.gd");
+			systems.push_back("TestBEventReceiverSystem.gd");
+
+			PipelineBuilder::build_pipeline(system_bundles, systems, &pipeline);
+		}
+
+		World world;
+		pipeline.prepare(&world);
+
+		const EventStorage<MyEvent1Test> *storage = world.get_events_storage<MyEvent1Test>();
+
+		pipeline.dispatch(&world);
+		CHECK(storage->get_events("Test1")->size() == 1);
+
+		pipeline.dispatch(&world);
+		CHECK(storage->get_events("Test1")->size() == 1);
+
+		pipeline.dispatch(&world);
+		CHECK(storage->get_events("Test1")->size() == 1);
+	}
+	finalize_script_ecs();
+}
+} // namespace godex_tests
+
+struct MyEvent2Test {
+	EVENT(MyEvent2Test)
+};
+
+void test2_emit_event(EventsEmitter<MyEvent2Test> &p_emitter) {}
+void test2_fetch1_event(EventsReceiver<MyEvent2Test, EMITTER(Test1)> &p_events) {}
+void test2_fetch2_event(EventsReceiver<MyEvent2Test, EMITTER(Test1)> &p_events) {}
+void test2_fetch3_event(EventsReceiver<MyEvent2Test, EMITTER(Test2)> &p_events) {}
+
+void test_fetch_databag_mut(TestSystem1Databag *) {}
+void test_fetch_databag_const(TestSystem1Databag *) {}
+
+namespace godex_tests {
+TEST_CASE("[Modules][ECS] Make sure the function `can_systems_run_in_parallel` works as expected.") {
+	ECS::register_system(test2_emit_event, "test2_emit_event");
+	ECS::register_system(test2_fetch1_event, "test2_fetch1_event");
+	ECS::register_system(test2_fetch2_event, "test2_fetch2_event");
+	ECS::register_system(test2_fetch3_event, "test2_fetch3_event");
+	ECS::register_system(test_fetch_databag_mut, "test_fetch_databag_mut");
+	ECS::register_system(test_fetch_databag_const, "test_fetch_databag_const");
+	ECS::register_event<MyEvent2Test>();
+
+	// Make sure that two systems that emits two different events can run in parallel.
+	CHECK(ECS::can_systems_run_in_parallel(ECS::get_system_id("test2_emit_event"), ECS::get_system_id("test_emit_event")));
+
+	// Make sure the system that emit the event can't run in parallel with the
+	// systems that fetch it.
+	CHECK(!ECS::can_systems_run_in_parallel(ECS::get_system_id("test_emit_event"), ECS::get_system_id("test_fetch_event")));
+
+	// Check the above on the other set of systems.
+	CHECK(!ECS::can_systems_run_in_parallel(ECS::get_system_id("test2_emit_event"), ECS::get_system_id("test2_fetch1_event")));
+	CHECK(!ECS::can_systems_run_in_parallel(ECS::get_system_id("test2_emit_event"), ECS::get_system_id("test2_fetch2_event")));
+	CHECK(!ECS::can_systems_run_in_parallel(ECS::get_system_id("test2_emit_event"), ECS::get_system_id("test2_fetch3_event")));
+
+	// Make sure the fetch events can run in parallel no matter what.
+	CHECK(ECS::can_systems_run_in_parallel(ECS::get_system_id("test2_fetch1_event"), ECS::get_system_id("test2_fetch2_event")));
+	CHECK(ECS::can_systems_run_in_parallel(ECS::get_system_id("test2_fetch2_event"), ECS::get_system_id("test2_fetch3_event")));
+	CHECK(ECS::can_systems_run_in_parallel(ECS::get_system_id("test2_fetch3_event"), ECS::get_system_id("test_fetch_event")));
+
+	// Make sure the systems fetching the databags can't run in parallel.
+	CHECK(!ECS::can_systems_run_in_parallel(ECS::get_system_id("test_fetch_databag_mut"), ECS::get_system_id("test_fetch_databag_const")));
+
+	// But can run with the events one.
+	CHECK(ECS::can_systems_run_in_parallel(ECS::get_system_id("test_fetch_databag_mut"), ECS::get_system_id("test2_emit_event")));
+	CHECK(ECS::can_systems_run_in_parallel(ECS::get_system_id("test_fetch_databag_mut"), ECS::get_system_id("test2_fetch3_event")));
+	CHECK(ECS::can_systems_run_in_parallel(ECS::get_system_id("test_fetch_databag_const"), ECS::get_system_id("test2_emit_event")));
+	CHECK(ECS::can_systems_run_in_parallel(ECS::get_system_id("test_fetch_databag_const"), ECS::get_system_id("test2_fetch3_event")));
+
+	// TODO add other checks, like query, etc??
+}
+} // namespace godex_tests
 
 #endif // TEST_ECS_SYSTEM_H

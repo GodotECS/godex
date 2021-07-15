@@ -9,16 +9,23 @@
 #include "iterators/dynamic_query.h"
 #include "modules/godot/editor_plugins/components_gizmo_3d.h"
 #include "systems/dynamic_system.h"
+#include "utils/fetchers.h"
 
 Ref<Components3DGizmoPlugin> component_gizmo;
 
 void register_godex_types() {
 	component_gizmo.instantiate();
 
-	godex::DynamicSystemInfo::for_each_name = StringName("_for_each");
+	godex::DynamicSystemInfo::execute_func_name = StringName("_execute");
 
 	ClassDB::register_class<ECS>();
+	ClassDB::register_virtual_class<GodexWorldFetcher>();
 	ClassDB::register_class<godex::DynamicQuery>();
+	ClassDB::register_class<ComponentDynamicExposer>();
+	ClassDB::register_class<DatabagDynamicFetcher>();
+	ClassDB::register_class<StorageDynamicFetcher>();
+	ClassDB::register_class<EventsEmitterDynamicFetcher>();
+	ClassDB::register_class<EventsReceiverDynamicFetcher>();
 
 	// One day this will be inverted.
 	ClassDB::add_compatibility_class("Entity", "Entity3D");
@@ -36,7 +43,7 @@ void register_godex_types() {
 void unregister_godex_types() {
 	// Clear dynamic system static memory.
 	godex::__dynamic_system_info_static_destructor();
-	godex::DynamicSystemInfo::for_each_name = StringName();
+	godex::DynamicSystemInfo::execute_func_name = StringName();
 
 	// Clear ECS static memory.
 	ECS::__static_destructor();

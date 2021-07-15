@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../../components/component.h"
-#include "../../../ecs_types.h"
+#include "../../../utils/fetchers.h"
 #include "scene/main/node.h"
 
 class Pipeline;
@@ -149,8 +149,8 @@ public:
 
 	// ~~ Runtime API ~~
 private:
-	DataAccessor component_accessor;
-	DataAccessor databag_accessor;
+	ComponentDynamicExposer component_accessor;
+	DatabagDynamicFetcher databag_accessor;
 
 public:
 	uint32_t create_entity();
