@@ -15,6 +15,7 @@ public:
 
 	virtual bool has_emitter(const String &p_emitter) {
 		CRASH_NOW_MSG("Override this function.");
+		return false;
 	}
 
 	virtual void add_event_dynamic(const String &p_emitter, const Dictionary &p_data) {

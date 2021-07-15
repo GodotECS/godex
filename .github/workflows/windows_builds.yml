@@ -36,16 +36,16 @@ jobs:
 
     # Upload cache on completion and check it out now
     # Editing this is pretty dangerous for Windows since it can break and needs to be properly tested with a fresh cache.
-    #- name: Load .scons_cache directory
-    #  id: windows-editor-cache
-    #  uses: actions/cache@v2
-    #  with:
-    #    path: ${{github.workspace}}/.scons_cache/
-    #    key: ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
-    #    restore-keys: |
-    #      ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
-    #      ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}
-    #      ${{github.job}}-${{env.GODOT_BASE_BRANCH}}
+    - name: Load .scons_cache directory
+      id: windows-editor-cache
+      uses: actions/cache@v2
+      with:
+        path: ${{github.workspace}}/.scons_cache/
+        key: ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+        restore-keys: |
+          ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+          ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}
+          ${{github.job}}-${{env.GODOT_BASE_BRANCH}}
 
     # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
     - name: Set up Python 3.x
