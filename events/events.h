@@ -3,7 +3,7 @@
 
 #include "../ecs.h"
 #include "../storage/event_storage.h"
-#include "../utils/typestring.hh"
+#include "../thirdparty/typestring.hh"
 #include "../world/world.h"
 
 #define EMITTER(str) typestring_is(#str)

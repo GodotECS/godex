@@ -7,7 +7,6 @@
  * own implementation of the same thing (but in a more complicated manner to
  * be revised) in 'clause': https://github.com/irrequietus/clause.
  * 
- * 
  * File subject to the terms and conditions of the Mozilla Public License v 2.0.
  * If a copy of the MPLv2 license text was not distributed with this file, you
  * can obtain it at: http://mozilla.org/MPL/2.0/.
@@ -59,7 +58,6 @@ constexpr char const typestring<C...>::vals[sizeof...(C) + 1];
  *       programming language with pattern matching where declarative semantics
  *       can really shine.
  * 
- * 
  *       Currently, there is no feature in C++ that offers the opportunity to
  *       use strings as type parameter types themselves, despite there are
  *       several, different library implementations. This implementation is a
@@ -67,20 +65,15 @@ constexpr char const typestring<C...>::vals[sizeof...(C) + 1];
  *       C++11 compliant compiler and up, with the resulting type being easily
  *       reusable throughout the code.
  * 
- * 
  * @usge Just include the header and enable -std=c++11 or -std=c++14 etc, use
  *       like in the following example:
  * 
- * 
  *            typestring_is("Hello!")
- *       
  *       
  *       is essentially identical to the following template instantiation:
  *          
- *          
  *            irqus::typestring<'H', 'e', 'l', 'l', 'o', '!'>
  * 
- *          
  *       By passing -DUSE_TYPESTRING=<power of 2> during compilation, you can
  *       set the maximum length of the 'typestring' from 1 to 1024 (2^0 to 2^10).
  *       Although all preprocessor implementations tested are capable of far
@@ -131,6 +124,7 @@ auto tycat_(typestring<X...>)
  */
 template <typename... T>
 using tycat = decltype(tycat_(T()...));
+
 } // namespace irqus
 
 //*~ part3: some necessary code generation using preprocessor metaprogramming!
