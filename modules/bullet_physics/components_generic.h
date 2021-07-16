@@ -7,7 +7,6 @@
 
 struct Force {
 	COMPONENT_BATCH(Force, DenseVector, -1)
-	SPAWNERS(OverlapEventSpawner)
 
 	static void _bind_methods();
 	static void _get_storage_config(Dictionary &r_config);
@@ -18,7 +17,6 @@ struct Force {
 
 struct Torque {
 	COMPONENT_BATCH(Torque, DenseVector, -1)
-	SPAWNERS(OverlapEventSpawner)
 
 	static void _bind_methods();
 	static void _get_storage_config(Dictionary &r_config);
@@ -28,7 +26,6 @@ struct Torque {
 
 struct Impulse {
 	COMPONENT_BATCH(Impulse, DenseVector, -1)
-	SPAWNERS(OverlapEventSpawner)
 
 	static void _bind_methods();
 	static void _get_storage_config(Dictionary &r_config);
@@ -39,7 +36,6 @@ struct Impulse {
 
 struct TorqueImpulse {
 	COMPONENT_BATCH(TorqueImpulse, DenseVector, -1)
-	SPAWNERS(OverlapEventSpawner)
 
 	static void _bind_methods();
 	static void _get_storage_config(Dictionary &r_config);

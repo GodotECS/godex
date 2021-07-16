@@ -81,7 +81,8 @@ void bt_spaces_step(
 void bt_overlap_check(
 		const BtPhysicsSpaces *p_spaces,
 		BtCache *p_cache,
-		Spawner<OverlapEventSpawner> &p_spawner,
+		EventsEmitter<BtAreaEnterEvent> &p_enter_event_emitter,
+		EventsEmitter<BtAreaExitEvent> &p_exit_event_emitter,
 		Query<EntityID, BtArea> &p_query);
 
 void bt_body_sync(
