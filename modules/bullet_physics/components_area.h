@@ -5,10 +5,6 @@
 #include "bt_def_type.h"
 #include <BulletCollision/CollisionDispatch/btGhostObject.h>
 
-struct OverlapEventSpawner {
-	SPAWNER(OverlapEventSpawner)
-};
-
 struct Overlap {
 	// Used to know if this object is Still overlapped or not.
 	int detect_frame;
@@ -18,22 +14,10 @@ struct Overlap {
 struct BtArea {
 	COMPONENT_CUSTOM_CONSTRUCTOR(BtArea, SteadyStorage)
 
-	enum EventMode {
-		NOTHING,
-		ADD_COMPONENT_ON_ENTER,
-		ADD_COMPONENT_ON_EXIT,
-		KEEP_COMPONENT_WHILE_OVERLAP
-	};
-
 	enum ReloadFlags {
 		/// Remove and insert the body into the world again.
 		RELOAD_FLAGS_BODY = 1 << 1,
 	};
-
-	int overlap_event_mode = ADD_COMPONENT_ON_ENTER;
-	StringName overlap_add_component;
-	Dictionary overlap_data;
-	godex::component_id cache_overlap_add_component_id = godex::COMPONENT_NONE;
 
 private:
 	btGhostObject ghost;
@@ -44,6 +28,9 @@ private:
 	uint32_t reload_flags = 0;
 
 public:
+	String enter_emitter_name;
+	String exit_emitter_name;
+
 	/// List of overlapping objects.
 	LocalVector<Overlap> overlaps;
 
@@ -88,6 +75,22 @@ public:
 	/// the search.
 	/// Note: after call this function any previous Index is no more valid.
 	uint32_t find_overlapping_object(btCollisionObject *p_coll_obj, uint32_t p_search_from);
+};
 
-	godex::component_id get_overlap_event_component_id();
+struct BtAreaEnterEvent {
+	EVENT(BtAreaEnterEvent)
+
+	EntityID area;
+	EntityID other_body;
+
+	static void _bind_method();
+};
+
+struct BtAreaExitEvent {
+	EVENT(BtAreaExitEvent)
+
+	EntityID area;
+	EntityID other_body;
+
+	static void _bind_method();
 };

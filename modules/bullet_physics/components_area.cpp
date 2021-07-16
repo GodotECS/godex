@@ -3,10 +3,8 @@
 #include "modules/bullet/collision_object_bullet.h"
 
 void BtArea::_bind_methods() {
-	ECS_BIND_PROPERTY(BtArea, PropertyInfo(Variant::INT, "overlap_event_mode", PROPERTY_HINT_ENUM, "Nothing,Add Component on enter,Add component on exit,Keep component while overlap"), overlap_event_mode);
-	ECS_BIND_PROPERTY(BtArea, PropertyInfo(Variant::STRING_NAME, "overlap_add_component", (PropertyHint)godex::PROPERTY_HINT_ECS_SPAWNER, "OverlapEventSpawner"), overlap_add_component);
-	ECS_BIND_PROPERTY(BtArea, PropertyInfo(Variant::DICTIONARY, "overlap_data"), overlap_data);
-
+	ECS_BIND_PROPERTY(BtArea, PropertyInfo(Variant::STRING, "enter_emitter_name"), enter_emitter_name);
+	ECS_BIND_PROPERTY(BtArea, PropertyInfo(Variant::STRING, "exit_emitter_name"), exit_emitter_name);
 	ECS_BIND_PROPERTY_FUNC(BtArea, PropertyInfo(Variant::INT, "layer", PROPERTY_HINT_LAYERS_3D_PHYSICS), set_layer, get_layer);
 	ECS_BIND_PROPERTY_FUNC(BtArea, PropertyInfo(Variant::INT, "mask", PROPERTY_HINT_LAYERS_3D_PHYSICS), set_mask, get_mask);
 }
@@ -99,9 +97,12 @@ uint32_t BtArea::find_overlapping_object(btCollisionObject *p_col_obj, uint32_t 
 	return UINT32_MAX;
 }
 
-godex::component_id BtArea::get_overlap_event_component_id() {
-	if (cache_overlap_add_component_id == godex::COMPONENT_NONE) {
-		cache_overlap_add_component_id = ECS::get_component_id(overlap_add_component);
-	}
-	return cache_overlap_add_component_id;
+void BtAreaEnterEvent::_bind_method() {
+	ECS_BIND_PROPERTY(BtAreaEnterEvent, PropertyInfo(Variant::INT, "area"), area);
+	ECS_BIND_PROPERTY(BtAreaEnterEvent, PropertyInfo(Variant::INT, "other_body"), other_body);
+}
+
+void BtAreaExitEvent::_bind_method() {
+	ECS_BIND_PROPERTY(BtAreaExitEvent, PropertyInfo(Variant::INT, "area"), area);
+	ECS_BIND_PROPERTY(BtAreaExitEvent, PropertyInfo(Variant::INT, "other_body"), other_body);
 }

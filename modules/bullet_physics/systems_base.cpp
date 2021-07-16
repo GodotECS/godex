@@ -294,7 +294,8 @@ void bt_spaces_step(
 void bt_overlap_check(
 		const BtPhysicsSpaces *p_spaces,
 		BtCache *p_cache,
-		Spawner<OverlapEventSpawner> &p_spawner,
+		EventsEmitter<BtAreaEnterEvent> &p_enter_event_emitter,
+		EventsEmitter<BtAreaExitEvent> &p_exit_event_emitter,
 		Query<EntityID, BtArea> &p_query) {
 	// Advance the counter.
 	p_cache->area_check_frame_counter += 1;
@@ -389,40 +390,16 @@ void bt_overlap_check(
 			}
 		}
 
-		const godex::component_id component_to_spawn = area->get_overlap_event_component_id();
-
-		// Parse the Overlap data and replace the keywords:
-		//  @entity_id is changed with the Area entity_id
-		//  @transform is changed with the Area transform
-		Dictionary overlap_data = area->overlap_data.duplicate(true);
-		for (const Variant *key = overlap_data.next(); key != nullptr; key = overlap_data.next(key)) {
-			Variant *val = overlap_data.getptr(*key);
-			if (*val == Variant("@entity_id")) {
-				*val = entity;
-			} else if (*val == Variant("@transform")) {
-				Transform3D t;
-				B_TO_G(area->get_transform(), t);
-				*val = t;
-			}
-		}
-
 		for (int i = int(area->overlaps.size()) - 1; i >= 0; i -= 1) {
 			if (area->overlaps[i].detect_frame != frame_id) {
 				// This object is no more overlapping
 
-				if (component_to_spawn != godex::COMPONENT_NONE) {
+				if (area->exit_emitter_name.is_empty() == false) {
 					const EntityID other_entity = area->overlaps[i].object->getUserIndex3();
-					if (area->overlap_event_mode == BtArea::ADD_COMPONENT_ON_EXIT) {
-						p_spawner.insert_dynamic(
-								component_to_spawn,
-								other_entity,
-								overlap_data);
-					} else if (area->overlap_event_mode == BtArea::KEEP_COMPONENT_WHILE_OVERLAP) {
-						// We have to remove the component
-						p_spawner.remove(
-								component_to_spawn,
-								other_entity);
-					}
+					BtAreaExitEvent e;
+					e.area = entity;
+					e.other_body = other_entity;
+					p_exit_event_emitter.emit(area->exit_emitter_name, e);
 				}
 
 				// Remove the object.
@@ -430,14 +407,13 @@ void bt_overlap_check(
 			}
 		}
 
-		if (area->overlap_event_mode == BtArea::ADD_COMPONENT_ON_ENTER ||
-				area->overlap_event_mode == BtArea::KEEP_COMPONENT_WHILE_OVERLAP) {
+		if (area->enter_emitter_name.is_empty() == false) {
 			for (uint32_t i = 0; i < new_overlaps.size(); i += 1) {
 				const EntityID other_entity = new_overlaps[i]->getUserIndex3();
-				p_spawner.insert_dynamic(
-						component_to_spawn,
-						other_entity,
-						overlap_data);
+				BtAreaEnterEvent e;
+				e.area = entity;
+				e.other_body = other_entity;
+				p_enter_event_emitter.emit(area->enter_emitter_name, e);
 			}
 		}
 

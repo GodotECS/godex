@@ -346,7 +346,7 @@ void PipelineBuilder::build_pipeline(
 			}
 
 			// If set: make sure that the `Child` storage (which is the Hierachy)
-			// is flushed for first.
+			// is flushed the first one so the hierachy changes are propagated immediately.
 			const int64_t child_index = r_pipeline->dispatchers[dispatcher_index].exec_stages[stage_index].notify_list_release_write.find(Child::get_component_id());
 			if (child_index != -1) {
 				SWAP(

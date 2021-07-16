@@ -17,8 +17,6 @@ void register_bullet_physics_types() {
 	// Initialize the Overlap check algorithms.
 	OverlapCheck::init();
 
-	ECS::register_spawner<OverlapEventSpawner>();
-
 	ECS::register_databag<BtPhysicsSpaces>();
 	ECS::register_databag<BtCache>();
 
@@ -37,6 +35,9 @@ void register_bullet_physics_types() {
 	ECS::register_component<BtConvex>();
 	ECS::register_component<BtTrimesh>();
 	ECS::register_component<BtStreamedShape>();
+
+	ECS::register_event<BtAreaEnterEvent>();
+	ECS::register_event<BtAreaExitEvent>();
 
 	// Generics
 	// TODO move this inside `modules/godot`?
