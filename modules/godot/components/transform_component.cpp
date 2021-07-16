@@ -9,7 +9,7 @@ void TransformComponent::_bind_methods() {
 	ECS_BIND_PROPERTY_FUNC(TransformComponent, PropertyInfo(Variant::VECTOR3, "scale", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), set_scale, get_scale);
 
 	// Usage is set to 0 because we need to expose this only to scripts.
-	ECS_BIND_PROPERTY(TransformComponent, PropertyInfo(Variant::VECTOR3, "basis", PROPERTY_HINT_NONE, "", 0), origin);
+	ECS_BIND_PROPERTY(TransformComponent, PropertyInfo(Variant::BASIS, "basis", PROPERTY_HINT_NONE, "", 0), basis);
 }
 
 void TransformComponent::_get_storage_config(Dictionary &r_dictionary) {
