@@ -48,7 +48,7 @@ void mesh_updater_system(
 
 		rs->get_rs()->instance_set_visible(mesh_comp->instance, mesh_comp->visible);
 		rs->get_rs()->instance_set_layer_mask(mesh_comp->instance, mesh_comp->layers);
-		// TODO add material override, once the `Changed<>` filter is integrated.
+		rs->get_rs()->instance_geometry_set_cast_shadows_setting(mesh_comp->instance, (RS::ShadowCastingSetting)mesh_comp->cast_shadow);
 	}
 }
 

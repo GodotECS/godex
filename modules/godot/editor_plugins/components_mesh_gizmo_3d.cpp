@@ -31,7 +31,8 @@ void MeshComponentGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 
 	RID scenario = entity->get_world_3d()->get_scenario();
-	if (entity->has_component(mesh_component_name) == false || scenario == RID()) {
+	Ref<ComponentDepot> component_data = entity->get_component_depot(mesh_component_name);
+	if (component_data.is_null() || scenario == RID()) {
 		// No mesh component, remove any editor mesh.
 		Ref<ComponentGizmoData> *editor_mesh = entity->get_internal_entity().gizmo_data.lookup_ptr(mesh_component_name);
 		if (editor_mesh == nullptr) {
@@ -69,9 +70,8 @@ void MeshComponentGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 
 		// Update the transform.
 		RenderingServer::get_singleton()->instance_set_transform(editor_mesh->instance, entity->get_global_transform());
-
-		// Update the material.
-		// TODO
+		RenderingServer::get_singleton()->instance_set_visible(editor_mesh->instance, component_data->get("visible"));
+		RenderingServer::get_singleton()->instance_geometry_set_cast_shadows_setting(editor_mesh->instance, (RS::ShadowCastingSetting) int(component_data->get("cast_shadow")));
 	}
 #endif
 }
