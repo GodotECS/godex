@@ -9,6 +9,7 @@
 #include "components_rigid_body.h"
 #include "components_rigid_shape.h"
 #include "databag_space.h"
+#include "events_generic.h"
 #include "overlap_check.h"
 #include "systems_base.h"
 #include "systems_walk.h"
@@ -36,8 +37,8 @@ void register_bullet_physics_types() {
 	ECS::register_component<BtTrimesh>();
 	ECS::register_component<BtStreamedShape>();
 
-	ECS::register_event<BtAreaEnterEvent>();
-	ECS::register_event<BtAreaExitEvent>();
+	ECS::register_event<OverlapStart>();
+	ECS::register_event<OverlapEnd>();
 
 	// Generics
 	// TODO move this inside `modules/godot`?

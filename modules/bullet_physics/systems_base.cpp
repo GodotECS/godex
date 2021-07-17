@@ -294,8 +294,8 @@ void bt_spaces_step(
 void bt_overlap_check(
 		const BtPhysicsSpaces *p_spaces,
 		BtCache *p_cache,
-		EventsEmitter<BtAreaEnterEvent> &p_enter_event_emitter,
-		EventsEmitter<BtAreaExitEvent> &p_exit_event_emitter,
+		EventsEmitter<OverlapStart> &p_enter_event_emitter,
+		EventsEmitter<OverlapEnd> &p_exit_event_emitter,
 		Query<EntityID, BtArea> &p_query) {
 	// Advance the counter.
 	p_cache->area_check_frame_counter += 1;
@@ -396,7 +396,7 @@ void bt_overlap_check(
 
 				if (area->exit_emitter_name.is_empty() == false) {
 					const EntityID other_entity = area->overlaps[i].object->getUserIndex3();
-					BtAreaExitEvent e;
+					OverlapEnd e;
 					e.area = entity;
 					e.other_body = other_entity;
 					p_exit_event_emitter.emit(area->exit_emitter_name, e);
@@ -410,7 +410,7 @@ void bt_overlap_check(
 		if (area->enter_emitter_name.is_empty() == false) {
 			for (uint32_t i = 0; i < new_overlaps.size(); i += 1) {
 				const EntityID other_entity = new_overlaps[i]->getUserIndex3();
-				BtAreaEnterEvent e;
+				OverlapStart e;
 				e.area = entity;
 				e.other_body = other_entity;
 				p_enter_event_emitter.emit(area->enter_emitter_name, e);

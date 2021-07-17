@@ -8,6 +8,7 @@
 #include "components_rigid_body.h"
 #include "components_rigid_shape.h"
 #include "databag_space.h"
+#include "events_generic.h"
 
 /// Configures the body.
 /// This `System` is responsible for the body lifetime.
@@ -81,8 +82,8 @@ void bt_spaces_step(
 void bt_overlap_check(
 		const BtPhysicsSpaces *p_spaces,
 		BtCache *p_cache,
-		EventsEmitter<BtAreaEnterEvent> &p_enter_event_emitter,
-		EventsEmitter<BtAreaExitEvent> &p_exit_event_emitter,
+		EventsEmitter<OverlapStart> &p_enter_event_emitter,
+		EventsEmitter<OverlapEnd> &p_exit_event_emitter,
 		Query<EntityID, BtArea> &p_query);
 
 void bt_body_sync(

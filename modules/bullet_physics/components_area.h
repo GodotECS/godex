@@ -76,21 +76,3 @@ public:
 	/// Note: after call this function any previous Index is no more valid.
 	uint32_t find_overlapping_object(btCollisionObject *p_coll_obj, uint32_t p_search_from);
 };
-
-struct BtAreaEnterEvent {
-	EVENT(BtAreaEnterEvent)
-
-	EntityID area;
-	EntityID other_body;
-
-	static void _bind_method();
-};
-
-struct BtAreaExitEvent {
-	EVENT(BtAreaExitEvent)
-
-	EntityID area;
-	EntityID other_body;
-
-	static void _bind_method();
-};

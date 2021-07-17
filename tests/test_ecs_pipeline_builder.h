@@ -5,6 +5,7 @@
 
 #include "../components/component.h"
 #include "../databags/databag.h"
+#include "../events/events.h"
 #include "../modules/godot/databags/scene_tree_databag.h"
 #include "../modules/godot/nodes/ecs_utilities.h"
 #include "../pipeline/pipeline.h"
