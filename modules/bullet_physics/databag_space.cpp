@@ -101,26 +101,38 @@ void BtPhysicsSpaces::free_space(BtSpaceIndex p_id) {
 		return;
 	}
 
-	memdelete(spaces[p_id].broadphase);
-	spaces[p_id].broadphase = nullptr;
+	if (spaces[p_id].broadphase) {
+		memdelete(spaces[p_id].broadphase);
+		spaces[p_id].broadphase = nullptr;
+	}
 
-	memdelete(spaces[p_id].collision_configuration);
-	spaces[p_id].collision_configuration = nullptr;
+	if (spaces[p_id].collision_configuration) {
+		memdelete(spaces[p_id].collision_configuration);
+		spaces[p_id].collision_configuration = nullptr;
+	}
 
-	memdelete(spaces[p_id].dispatcher);
-	spaces[p_id].dispatcher = nullptr;
+	if (spaces[p_id].dispatcher) {
+		memdelete(spaces[p_id].dispatcher);
+		spaces[p_id].dispatcher = nullptr;
+	}
 
 	delete spaces[p_id].solver;
 	spaces[p_id].solver = nullptr;
 
-	memdelete(spaces[p_id].dynamics_world);
-	spaces[p_id].dynamics_world = nullptr;
+	if (spaces[p_id].dynamics_world) {
+		memdelete(spaces[p_id].dynamics_world);
+		spaces[p_id].dynamics_world = nullptr;
+	}
 
-	memdelete(spaces[p_id].ghost_pair_callback);
-	spaces[p_id].ghost_pair_callback = nullptr;
+	if (spaces[p_id].ghost_pair_callback) {
+		memdelete(spaces[p_id].ghost_pair_callback);
+		spaces[p_id].ghost_pair_callback = nullptr;
+	}
 
-	memdelete(spaces[p_id].godot_filter_callback);
-	spaces[p_id].godot_filter_callback = nullptr;
+	if (spaces[p_id].godot_filter_callback) {
+		memdelete(spaces[p_id].godot_filter_callback);
+		spaces[p_id].godot_filter_callback = nullptr;
+	}
 }
 
 BtSpace *BtPhysicsSpaces::get_space(BtSpaceIndex p_index) {

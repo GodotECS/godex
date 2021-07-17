@@ -13,9 +13,9 @@ struct MeshComponent {
 	RID mesh_rid;
 
 	Ref<Mesh> mesh;
-	Ref<Material> material_override;
 	uint32_t layers = 1;
 	bool visible = true;
+	int cast_shadow = RS::ShadowCastingSetting::SHADOW_CASTING_SETTING_ON;
 };
 
 #endif

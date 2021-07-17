@@ -68,6 +68,8 @@ struct EntityInternal : public EntityBase {
 	void add_component(const StringName &p_component_name, const Dictionary &p_values);
 	void remove_component(const StringName &p_component_name);
 	bool has_component(const StringName &p_component_name) const;
+	// Returns the component depot.
+	Ref<ComponentDepot> get_component_depot(const StringName &p_component_name) const;
 
 	Dictionary get_component_properties_data(const StringName &p_component) const;
 
@@ -186,6 +188,10 @@ public:
 
 	bool has_component(const StringName &p_component_name) const {
 		return entity.has_component(p_component_name);
+	}
+
+	Ref<ComponentDepot> get_component_depot(const StringName &p_component_name) const {
+		return entity.get_component_depot(p_component_name);
 	}
 
 	const OAHashMap<StringName, Ref<ComponentDepot>> &get_components_data() const {
@@ -312,6 +318,10 @@ public:
 
 	bool has_component(const StringName &p_component_name) const {
 		return entity.has_component(p_component_name);
+	}
+
+	Ref<ComponentDepot> get_component_depot(const StringName &p_component_name) const {
+		return entity.get_component_depot(p_component_name);
 	}
 
 	bool set_component_value(const StringName &p_component_name, const StringName &p_property_name, const Variant &p_value, Space p_space = Space::LOCAL) {
@@ -584,6 +594,16 @@ bool EntityInternal<C>::has_component(const StringName &p_component_name) const 
 		ERR_FAIL_COND_V_MSG(id == UINT32_MAX, false, "The component " + p_component_name + " doesn't exists.");
 		ERR_FAIL_COND_V_MSG(ECS::get_singleton()->has_active_world() == false, false, "The world is supposed to be active at this point.");
 		return ECS::get_singleton()->get_active_world()->has_component(entity_id, id);
+	}
+}
+
+template <class C>
+Ref<ComponentDepot> EntityInternal<C>::get_component_depot(const StringName &p_component_name) const {
+	const Ref<ComponentDepot> *val = components_data.lookup_ptr(p_component_name);
+	if (val && val->is_valid()) {
+		return *val;
+	} else {
+		return Ref<ComponentDepot>();
 	}
 }
 
