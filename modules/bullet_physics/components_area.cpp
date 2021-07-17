@@ -96,13 +96,3 @@ uint32_t BtArea::find_overlapping_object(btCollisionObject *p_col_obj, uint32_t 
 	}
 	return UINT32_MAX;
 }
-
-void BtAreaEnterEvent::_bind_method() {
-	ECS_BIND_PROPERTY(BtAreaEnterEvent, PropertyInfo(Variant::INT, "area"), area);
-	ECS_BIND_PROPERTY(BtAreaEnterEvent, PropertyInfo(Variant::INT, "other_body"), other_body);
-}
-
-void BtAreaExitEvent::_bind_method() {
-	ECS_BIND_PROPERTY(BtAreaExitEvent, PropertyInfo(Variant::INT, "area"), area);
-	ECS_BIND_PROPERTY(BtAreaExitEvent, PropertyInfo(Variant::INT, "other_body"), other_body);
-}

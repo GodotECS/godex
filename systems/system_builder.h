@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../databags/databag.h"
-#include "../events/events.h"
+#include "../iterators/events_emitter_receiver.h"
 #include "../iterators/query.h"
 #include "../spawners/spawner.h"
 #include <type_traits>
