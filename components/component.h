@@ -34,7 +34,7 @@ public:
 	ECSCLASS(m_class)                                                  \
 	friend class World;                                                \
                                                                        \
-private:                                                               \
+public:                                                                \
 	/* Storages */                                                     \
 	static _FORCE_INLINE_ m_storage_class<m_class> *create_storage() { \
 		return new m_storage_class<m_class>;                           \

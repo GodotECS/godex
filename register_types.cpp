@@ -13,9 +13,7 @@
 
 Ref<Components3DGizmoPlugin> component_gizmo;
 
-void register_godex_types() {
-	component_gizmo.instantiate();
-
+void preregister_godex_types() {
 	godex::DynamicSystemInfo::execute_func_name = StringName("_execute");
 
 	ClassDB::register_class<ECS>();
@@ -38,6 +36,10 @@ void register_godex_types() {
 	ECS::register_databag<WorldCommands>();
 	ECS::register_databag<World>();
 	ECS::register_databag<FrameTime>();
+}
+
+void register_godex_types() {
+	component_gizmo.instantiate();
 }
 
 void unregister_godex_types() {
