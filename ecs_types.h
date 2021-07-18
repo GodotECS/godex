@@ -387,7 +387,7 @@ public:                                                                         
 		r_error.error = Callable::CallError::CALL_OK;                                                                                                                                 \
 	}                                                                                                                                                                                 \
                                                                                                                                                                                       \
-private:
+public:
 } // namespace godex
 
 #define SINGLETON_MAKER(m_class)                                                                      \
