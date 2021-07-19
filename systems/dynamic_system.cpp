@@ -118,13 +118,6 @@ void godex::DynamicSystemInfo::reset() {
 StringName godex::DynamicSystemInfo::execute_func_name;
 
 void godex::DynamicSystemInfo::get_info(DynamicSystemInfo &p_info, func_system_execute p_exec, SystemExeInfo &r_out) {
-	// Assume is invalid.
-	r_out.valid = false;
-
-	// Validate.
-	// Script function.
-	ERR_FAIL_COND_MSG(p_info.target_script == nullptr, "[FATAL] This system doesn't have target assigned.");
-
 	for (uint32_t i = 0; i < p_info.fetchers.size(); i += 1) {
 		p_info.fetchers[i]->get_system_info(&r_out);
 	}

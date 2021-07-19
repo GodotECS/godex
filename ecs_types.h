@@ -105,6 +105,7 @@ namespace godex {
 /// This is used to introduce a new editor hint: This hint is used to display
 /// the list of available spawners on editor.
 constexpr int PROPERTY_HINT_ECS_SPAWNER = PROPERTY_HINT_MAX + 1;
+constexpr int PROPERTY_HINT_ECS_EVENT_EMITTER = PROPERTY_HINT_MAX + 2;
 } // namespace godex
 
 namespace godex {

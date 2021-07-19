@@ -270,7 +270,31 @@ void EntityEditor::create_component_inspector(StringName p_component_name, VBoxC
 						editor->setup(options);
 						prop = editor;
 
+					} else if (e.hint == godex::PROPERTY_HINT_ECS_EVENT_EMITTER) {
+						// Show a full list of available event emitters for this event.
+						const StringName event_name = e.hint_string;
+						godex::event_id event_id = ECS::get_event_id(event_name);
+						ERR_CONTINUE_MSG(ECS::verify_event_id(event_id) == false, "The event " + event_name + " doesn't exist.");
+						const Set<String> &emitters = ECS::get_event_emitters(event_id);
+
+						Vector<String> enum_component_list;
+						{
+							enum_component_list.resize(emitters.size() + 1);
+							String *r = enum_component_list.ptrw();
+							r[0] = ""; // Disabled option.
+							uint32_t i = 0;
+							for (const Set<String>::Element *emitter_name = emitters.front(); emitter_name; emitter_name = emitter_name->next()) {
+								r[i + 1] = emitter_name->get();
+								i += 1;
+							}
+						}
+
+						EditorPropertyTextEnum *editor = memnew(EditorPropertyTextEnum);
+						editor->setup(enum_component_list, false);
+						prop = editor;
+
 					} else if (e.hint == godex::PROPERTY_HINT_ECS_SPAWNER) {
+						// Show the full list of available spawners for this component.
 						const StringName spawner_name = e.hint_string;
 						const Vector<StringName> components = ScriptEcs::get_singleton()->spawner_get_components(spawner_name);
 
