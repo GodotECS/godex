@@ -748,7 +748,7 @@ void WorldECS::sync_3d_transforms() {
 	}
 
 	for (List<Node *>::Element *e = entities.front(); e; e = e->next()) {
-		// Thrust this cast <3
+		// Trust this cast <3
 		Entity3D *entity_node = static_cast<Entity3D *>(e->get());
 		EntityID entity = entity_node->get_entity_id();
 		if (entity.is_valid() && storage->has(entity)) {
