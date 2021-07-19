@@ -340,6 +340,16 @@ bool ECS::verify_event_id(godex::event_id p_id) {
 	return p_id < events.size();
 }
 
+godex::event_id ECS::get_event_id(const StringName &p_name) {
+	const int64_t index = events.find(p_name);
+	return index >= 0 ? index : UINT32_MAX;
+}
+
+StringName ECS::get_event_name(godex::event_id p_event_id) {
+	ERR_FAIL_COND_V_MSG(ECS::verify_event_id(p_event_id) == false, StringName(), "This event id " + itos(p_event_id) + " is not valid. Are you passing an Event ID?");
+	return events[p_event_id];
+}
+
 EventStorageBase *ECS::create_events_storage(godex::event_id p_event_id) {
 #ifdef DEBUG_ENABLED
 	// Crash cond because this function is not supposed to fail in any way.
@@ -371,6 +381,35 @@ void ECS::destroy_events_storage(godex::event_id p_event_id, EventStorageBase *p
 	// This is a native event.
 	return events_info[p_event_id].destroy_storage(p_storage);
 	//}
+}
+
+const Set<String> &ECS::get_event_emitters(godex::event_id p_event_id) {
+#ifdef DEBUG_ENABLED
+	CRASH_COND_MSG(ECS::verify_event_id(p_event_id) == false, "This event id " + itos(p_event_id) + " is not valid. Are you passing an Event ID?");
+#endif
+
+	if (events_info[p_event_id].event_emitters_need_reload) {
+		events_info[p_event_id].event_emitters_need_reload = false;
+		events_info[p_event_id].event_emitters.clear();
+
+		// Fetch the available emitters.
+		// The emitters are defined by the systems that receive the event: for this
+		// reason here we are checking the `events_receivers`.
+		SystemExeInfo info;
+		for (uint32_t i = 0; i < systems_info.size(); i += 1) {
+			info.clear();
+			ECS::get_system_exe_info(i, info);
+
+			const Set<String> *it = info.events_receivers.lookup_ptr(p_event_id);
+			if (it) {
+				for (const Set<String>::Element *emitter_name = it->front(); emitter_name; emitter_name = emitter_name->next()) {
+					events_info[p_event_id].event_emitters.insert(emitter_name->get());
+				}
+			}
+		}
+	}
+
+	return events_info[p_event_id].event_emitters;
 }
 
 bool ECS::unsafe_event_set_by_name(godex::event_id p_event_id, void *p_event, const StringName &p_name, const Variant &p_data) {
@@ -532,12 +571,14 @@ SystemInfo &ECS::register_dynamic_system(StringName p_name) {
 		if (id != godex::SYSTEM_NONE) {
 			// The system is already registered, if it's a dynamic system reset it.
 			CRASH_COND_MSG(systems_info[id].dynamic_system_id == UINT32_MAX, "You can't register a dynamic system with the same name of a static one. Name used: " + p_name);
+			clear_emitters_for_system(id);
 			godex::DynamicSystemInfo *si = godex::get_dynamic_system_info(systems_info[id].dynamic_system_id);
 			si->reset();
 			si->set_system_id(id);
 			systems_info[id].phase = PHASE_PROCESS;
 			systems_info[id].dependencies.reset();
 			systems_info[id].type = SystemInfo::TYPE_DYNAMIC;
+			// Make sure to clear any previously fetched emitter.
 			return systems_info[id];
 		}
 	}
@@ -770,6 +811,25 @@ bool ECS::verify_system_id(godex::system_id p_id) {
 
 int ECS::get_dispatchers_count() {
 	return dispatcher_count;
+}
+
+void ECS::clear_emitters_for_system(godex::system_id p_id) {
+	ERR_FAIL_COND_MSG(verify_system_id(p_id) == false, "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
+
+	SystemExeInfo info;
+	ECS::get_system_exe_info(p_id, info);
+
+	// The emitters are defined by the systems that receive the event: for this
+	// reason here we are checking the `events_receivers`.
+	for (
+			OAHashMap<uint32_t, Set<String>>::Iterator it = info.events_receivers.iter();
+			it.valid;
+			it = info.events_receivers.next_iter(it)) {
+		if (ECS::verify_event_id(*it.key)) {
+			// This is a valid event.
+			events_info[*it.key].event_emitters_need_reload = true;
+		}
+	}
 }
 
 ECS *ECS::get_singleton() {
