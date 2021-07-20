@@ -685,7 +685,7 @@ bool WorldECS::has_entity_component_by_name(uint32_t entity_id, const StringName
 
 bool WorldECS::has_entity_component(uint32_t entity_id, uint32_t p_component_id) {
 	CRASH_COND_MSG(world == nullptr, "The world is never nullptr.");
-	ERR_FAIL_COND_V_MSG(ECS::verify_component_id(p_component_id) == false, &component_accessor, "The passed component_name is not valid.");
+	ERR_FAIL_COND_V_MSG(ECS::verify_component_id(p_component_id) == false, false, "The passed component_name is not valid.");
 	if (world->get_storage(p_component_id) == nullptr) {
 		return false;
 	}

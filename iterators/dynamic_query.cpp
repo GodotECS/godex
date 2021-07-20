@@ -110,6 +110,7 @@ uint32_t DynamicQuery::access_count() const {
 
 Object *DynamicQuery::get_access_by_index_gd(uint32_t p_index) const {
 	ERR_FAIL_COND_V_MSG(is_valid() == false, nullptr, "The query is invalid.");
+	ERR_FAIL_UNSIGNED_INDEX_V_MSG(p_index, accessors.size(), nullptr, "The index is not found.");
 	return (Object *)(accessors.ptr() + p_index);
 }
 
