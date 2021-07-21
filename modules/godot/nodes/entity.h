@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../../../components/child.h"
 #include "core/templates/list.h"
 #include "core/templates/local_vector.h"
 #include "ecs_world.h"
+#include "godex/components/child.h"
 #include "scene/2d/node_2d.h"
 #include "scene/3d/node_3d.h"
 #include "script_ecs.h"
@@ -765,6 +765,11 @@ EntityID EntityInternal<C>::_create_entity(World *p_world) const {
 	if (p_world) {
 		id = p_world->create_entity();
 
+		const bool try_set_global =
+				Object::cast_to<Entity3D>(owner) != nullptr &&
+				owner->get_parent() != nullptr &&
+				Object::cast_to<Entity3D>(owner->get_parent()) == nullptr;
+
 		for (OAHashMap<StringName, Ref<ComponentDepot>>::Iterator it = components_data.iter();
 				it.valid;
 				it = components_data.next_iter(it)) {
@@ -779,10 +784,23 @@ EntityID EntityInternal<C>::_create_entity(World *p_world) const {
 						p_world->add_shared_component(id, component_id, sid);
 					}
 				} else {
-					p_world->add_component(
-							id,
-							component_id,
-							(*it.value)->get_properties_data());
+					if (try_set_global && (*it.key) == "TransformComponent") {
+						// This is an hack to set the global transform (ignoring the
+						// TransformComponent) when the Entity is parented of a Node3D:
+						// In this way the Entity transform we set on the editor, is always
+						// respected.
+						Dictionary data;
+						data["transform"] = ((const Entity3D *)owner)->get_global_transform();
+						p_world->add_component(
+								id,
+								component_id,
+								data);
+					} else {
+						p_world->add_component(
+								id,
+								component_id,
+								(*it.value)->get_properties_data());
+					}
 				}
 			}
 		}
