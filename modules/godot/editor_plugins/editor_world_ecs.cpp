@@ -13,10 +13,10 @@
 PipelineElementInfoBox::PipelineElementInfoBox(EditorNode *p_editor, EditorWorldECS *p_editor_world_ecs) :
 		editor(p_editor),
 		editor_world_ecs(p_editor_world_ecs) {
-	add_theme_constant_override("margin_right", 2);
-	add_theme_constant_override("margin_top", 2);
-	add_theme_constant_override("margin_left", 2);
-	add_theme_constant_override("margin_bottom", 2);
+	add_theme_constant_override(SNAME("margin_right"), 2);
+	add_theme_constant_override(SNAME("margin_top"), 2);
+	add_theme_constant_override(SNAME("margin_left"), 2);
+	add_theme_constant_override(SNAME("margin_bottom"), 2);
 
 	ColorRect *bg = memnew(ColorRect);
 	bg->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
@@ -25,10 +25,10 @@ PipelineElementInfoBox::PipelineElementInfoBox(EditorNode *p_editor, EditorWorld
 	add_child(bg);
 
 	MarginContainer *inner_container = memnew(MarginContainer);
-	inner_container->add_theme_constant_override("margin_right", 2);
-	inner_container->add_theme_constant_override("margin_top", 2);
-	inner_container->add_theme_constant_override("margin_left", 10);
-	inner_container->add_theme_constant_override("margin_bottom", 2);
+	inner_container->add_theme_constant_override(SNAME("margin_right"), 2);
+	inner_container->add_theme_constant_override(SNAME("margin_top"), 2);
+	inner_container->add_theme_constant_override(SNAME("margin_left"), 10);
+	inner_container->add_theme_constant_override(SNAME("margin_bottom"), 2);
 	add_child(inner_container);
 
 	HBoxContainer *box = memnew(HBoxContainer);
@@ -37,11 +37,11 @@ PipelineElementInfoBox::PipelineElementInfoBox(EditorNode *p_editor, EditorWorld
 	inner_container->add_child(box);
 
 	remove_btn = memnew(Button);
-	remove_btn->set_icon(editor->get_theme_base()->get_theme_icon("Remove", "EditorIcons"));
+	remove_btn->set_icon(editor->get_theme_base()->get_theme_icon(SNAME("Remove"), SNAME("EditorIcons")));
 	remove_btn->set_h_size_flags(0);
 	remove_btn->set_v_size_flags(0);
 	remove_btn->set_flat(true);
-	remove_btn->connect("pressed", callable_mp(this, &PipelineElementInfoBox::system_remove), Vector<Variant>(), CONNECT_DEFERRED);
+	remove_btn->connect(SNAME("pressed"), callable_mp(this, &PipelineElementInfoBox::system_remove), Vector<Variant>(), CONNECT_DEFERRED);
 	box->add_child(remove_btn);
 
 	system_name_lbl = memnew(Label);
@@ -54,7 +54,7 @@ PipelineElementInfoBox::PipelineElementInfoBox(EditorNode *p_editor, EditorWorld
 	extra_info_lbl->set_v_size_flags(SizeFlags::SIZE_EXPAND);
 	extra_info_lbl->set_align(Label::ALIGN_RIGHT);
 	extra_info_lbl->set_visible(false);
-	extra_info_lbl->add_theme_color_override("font_color", Color(0.7, 0.7, 0.7));
+	extra_info_lbl->add_theme_color_override(SNAME("font_color"), Color(0.7, 0.7, 0.7));
 	box->add_child(extra_info_lbl);
 
 	icon_btn = memnew(Button);
@@ -74,26 +74,26 @@ void PipelineElementInfoBox::setup_system(const StringName &p_name, SystemMode p
 	StringName icon_name;
 	switch (p_mode) {
 		case SYSTEM_BUNDLE:
-			icon_name = "Load";
+			icon_name = SNAME("Load");
 			break;
 		case SYSTEM_NATIVE:
-			icon_name = "ShaderGlobalsOverride";
+			icon_name = SNAME("ShaderGlobalsOverride");
 			break;
 		case SYSTEM_DISPATCHER:
-			icon_name = "ShaderMaterial";
+			icon_name = SNAME("ShaderMaterial");
 			break;
 		case SYSTEM_SCRIPT:
-			icon_name = "Script";
+			icon_name = SNAME("Script");
 			break;
 		case SYSTEM_TEMPORARY:
-			icon_name = "Time";
+			icon_name = SNAME("Time");
 			break;
 		case SYSTEM_INVALID:
-			icon_name = "FileDeadBigThumb";
+			icon_name = SNAME("FileDeadBigThumb");
 			break;
 	}
 
-	icon_btn->set_icon(editor->get_theme_base()->get_theme_icon(icon_name, "EditorIcons"));
+	icon_btn->set_icon(editor->get_theme_base()->get_theme_icon(icon_name, SNAME("EditorIcons")));
 
 	mode = p_mode;
 }
@@ -121,10 +121,10 @@ void PipelineElementInfoBox::system_remove() {
 }
 
 SystemView::SystemView() {
-	add_theme_constant_override("margin_right", 0);
-	add_theme_constant_override("margin_top", 0);
-	add_theme_constant_override("margin_left", 0);
-	add_theme_constant_override("margin_bottom", 0);
+	add_theme_constant_override(SNAME("margin_right"), 0);
+	add_theme_constant_override(SNAME("margin_top"), 0);
+	add_theme_constant_override(SNAME("margin_left"), 0);
+	add_theme_constant_override(SNAME("margin_bottom"), 0);
 
 	color_rect = memnew(ColorRect);
 	color_rect->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
@@ -132,10 +132,10 @@ SystemView::SystemView() {
 	add_child(color_rect);
 
 	MarginContainer *inner_margin = memnew(MarginContainer);
-	inner_margin->add_theme_constant_override("margin_right", 2);
-	inner_margin->add_theme_constant_override("margin_top", 2);
-	inner_margin->add_theme_constant_override("margin_left", 2);
-	inner_margin->add_theme_constant_override("margin_bottom", 2);
+	inner_margin->add_theme_constant_override(SNAME("margin_right"), 2);
+	inner_margin->add_theme_constant_override(SNAME("margin_top"), 2);
+	inner_margin->add_theme_constant_override(SNAME("margin_left"), 2);
+	inner_margin->add_theme_constant_override(SNAME("margin_bottom"), 2);
 	inner_margin->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 	inner_margin->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 	add_child(inner_margin);
@@ -162,10 +162,10 @@ StageView::StageView(
 		EditorWorldECS *p_editor_world_ecs) :
 		editor(p_editor),
 		editor_world_ecs(p_editor_world_ecs) {
-	add_theme_constant_override("margin_right", 0);
-	add_theme_constant_override("margin_top", 0);
-	add_theme_constant_override("margin_left", 0);
-	add_theme_constant_override("margin_bottom", 0);
+	add_theme_constant_override(SNAME("margin_right"), 0);
+	add_theme_constant_override(SNAME("margin_top"), 0);
+	add_theme_constant_override(SNAME("margin_left"), 0);
+	add_theme_constant_override(SNAME("margin_bottom"), 0);
 
 	VBoxContainer *main_container = memnew(VBoxContainer);
 	main_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
@@ -178,16 +178,16 @@ StageView::StageView(
 	main_container->add_child(box_titles);
 
 	name_lbl = memnew(Label);
-	name_lbl->add_theme_font_size_override("font_size", 18);
+	name_lbl->add_theme_font_size_override(SNAME("font_size"), 18);
 	box_titles->add_child(name_lbl);
 
 	main_container->add_child(memnew(HSeparator));
 
 	MarginContainer *margin = memnew(MarginContainer);
-	margin->add_theme_constant_override("margin_right", 10);
-	margin->add_theme_constant_override("margin_top", 10);
-	margin->add_theme_constant_override("margin_left", 10);
-	margin->add_theme_constant_override("margin_bottom", 10);
+	margin->add_theme_constant_override(SNAME("margin_right"), 10);
+	margin->add_theme_constant_override(SNAME("margin_top"), 10);
+	margin->add_theme_constant_override(SNAME("margin_left"), 10);
+	margin->add_theme_constant_override(SNAME("margin_bottom"), 10);
 	margin->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 	margin->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 	main_container->add_child(margin);
@@ -220,10 +220,10 @@ DispatcherPipelineView *StageView::add_sub_dispatcher() {
 DispatcherPipelineView::DispatcherPipelineView(EditorNode *p_editor, EditorWorldECS *p_editor_world_ecs) :
 		editor(p_editor),
 		editor_world_ecs(p_editor_world_ecs) {
-	add_theme_constant_override("margin_right", 0);
-	add_theme_constant_override("margin_top", 0);
-	add_theme_constant_override("margin_left", 0);
-	add_theme_constant_override("margin_bottom", 0);
+	add_theme_constant_override(SNAME("margin_right"), 0);
+	add_theme_constant_override(SNAME("margin_top"), 0);
+	add_theme_constant_override(SNAME("margin_left"), 0);
+	add_theme_constant_override(SNAME("margin_bottom"), 0);
 
 	PanelContainer *panel = memnew(PanelContainer);
 	panel->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
@@ -233,7 +233,7 @@ DispatcherPipelineView::DispatcherPipelineView(EditorNode *p_editor, EditorWorld
 	panel->set_anchor(SIDE_RIGHT, 1.0);
 	panel->set_anchor(SIDE_BOTTOM, 1.0);
 	panel_style.instantiate();
-	panel->add_theme_style_override("panel", panel_style);
+	panel->add_theme_style_override(SNAME("panel"), panel_style);
 	add_child(panel);
 
 	box = memnew(VBoxContainer);
@@ -268,22 +268,22 @@ ComponentElement::ComponentElement(EditorNode *p_editor, const String &p_name, V
 
 	type = memnew(OptionButton);
 	type->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("bool", "EditorIcons"), "Bool");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("int", "EditorIcons"), "Int");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("float", "EditorIcons"), "Float");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("Vector3", "EditorIcons"), "Vector3");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("Vector3i", "EditorIcons"), "Vector3i");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("Quat", "EditorIcons"), "Quat");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("AABB", "EditorIcons"), "Aabb");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("Basis", "EditorIcons"), "Basis");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("Transform", "EditorIcons"), "Transform3D");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("Vector2", "EditorIcons"), "Vector2");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("Vector2i", "EditorIcons"), "Vector2i");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("Transform2D", "EditorIcons"), "Transform2D");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("Color", "EditorIcons"), "Color");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("String", "EditorIcons"), "String");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("StringName", "EditorIcons"), "StringName");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon("RID", "EditorIcons"), "Rid");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("bool"), SNAME("EditorIcons")), "Bool");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("int"), SNAME("EditorIcons")), "Int");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("float"), SNAME("EditorIcons")), "Float");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("Vector3"), SNAME("EditorIcons")), "Vector3");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("Vector3i"), SNAME("EditorIcons")), "Vector3i");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("Quat"), SNAME("EditorIcons")), "Quat");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("AABB"), SNAME("EditorIcons")), "Aabb");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("Basis"), SNAME("EditorIcons")), "Basis");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("Transform"), SNAME("EditorIcons")), "Transform3D");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("Vector2"), SNAME("EditorIcons")), "Vector2");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("Vector2i"), SNAME("EditorIcons")), "Vector2i");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("Transform2D"), SNAME("EditorIcons")), "Transform2D");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("Color"), SNAME("EditorIcons")), "Color");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("String"), SNAME("EditorIcons")), "String");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("StringName"), SNAME("EditorIcons")), "StringName");
+	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("RID"), SNAME("EditorIcons")), "Rid");
 	add_child(type);
 
 	name = memnew(LineEdit);
@@ -357,11 +357,11 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 
 		Button *create_comp_btn = memnew(Button);
 		create_comp_btn->set_text(TTR("Components"));
-		create_comp_btn->set_icon(editor->get_theme_base()->get_theme_icon("Load", "EditorIcons"));
+		create_comp_btn->set_icon(editor->get_theme_base()->get_theme_icon(SNAME("Load"), SNAME("EditorIcons")));
 		create_comp_btn->set_flat(true);
 		create_comp_btn->set_h_size_flags(0.0);
 		create_comp_btn->set_v_size_flags(0.0);
-		create_comp_btn->connect("pressed", callable_mp(this, &EditorWorldECS::components_manage_show));
+		create_comp_btn->connect(SNAME("pressed"), callable_mp(this, &EditorWorldECS::components_manage_show));
 		menu_wrapper->add_child(create_comp_btn);
 
 		menu_wrapper->add_child(memnew(VSeparator));
@@ -377,30 +377,30 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 
 			pipeline_menu = memnew(OptionButton);
 			pipeline_menu->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-			pipeline_menu->connect("item_selected", callable_mp(this, &EditorWorldECS::pipeline_on_menu_select));
+			pipeline_menu->connect(SNAME("item_selected"), callable_mp(this, &EditorWorldECS::pipeline_on_menu_select));
 			world_ecs_sub_menu_wrap->add_child(pipeline_menu);
 
 			Button *new_pipeline_btn = memnew(Button);
 			new_pipeline_btn->set_h_size_flags(0);
-			new_pipeline_btn->set_icon(editor->get_theme_base()->get_theme_icon("New", "EditorIcons"));
+			new_pipeline_btn->set_icon(editor->get_theme_base()->get_theme_icon(SNAME("New"), SNAME("EditorIcons")));
 			new_pipeline_btn->set_flat(true);
 			new_pipeline_btn->set_text(TTR("Add pipeline"));
-			new_pipeline_btn->connect("pressed", callable_mp(this, &EditorWorldECS::pipeline_add));
+			new_pipeline_btn->connect(SNAME("pressed"), callable_mp(this, &EditorWorldECS::pipeline_add));
 			world_ecs_sub_menu_wrap->add_child(new_pipeline_btn);
 
 			Button *rename_pipeline_btn = memnew(Button);
 			rename_pipeline_btn->set_text(TTR("Rename"));
 			rename_pipeline_btn->set_h_size_flags(0);
-			rename_pipeline_btn->set_icon(editor->get_theme_base()->get_theme_icon("Edit", "EditorIcons"));
+			rename_pipeline_btn->set_icon(editor->get_theme_base()->get_theme_icon(SNAME("Edit"), SNAME("EditorIcons")));
 			rename_pipeline_btn->set_flat(true);
-			rename_pipeline_btn->connect("pressed", callable_mp(this, &EditorWorldECS::pipeline_rename_show_window));
+			rename_pipeline_btn->connect(SNAME("pressed"), callable_mp(this, &EditorWorldECS::pipeline_rename_show_window));
 			world_ecs_sub_menu_wrap->add_child(rename_pipeline_btn);
 
 			Button *remove_pipeline_btn = memnew(Button);
 			remove_pipeline_btn->set_h_size_flags(0);
-			remove_pipeline_btn->set_icon(editor->get_theme_base()->get_theme_icon("Remove", "EditorIcons"));
+			remove_pipeline_btn->set_icon(editor->get_theme_base()->get_theme_icon(SNAME("Remove"), SNAME("EditorIcons")));
 			remove_pipeline_btn->set_flat(true);
-			remove_pipeline_btn->connect("pressed", callable_mp(this, &EditorWorldECS::pipeline_remove_show_confirmation));
+			remove_pipeline_btn->connect(SNAME("pressed"), callable_mp(this, &EditorWorldECS::pipeline_remove_show_confirmation));
 			world_ecs_sub_menu_wrap->add_child(remove_pipeline_btn);
 
 			pipeline_window_confirm_remove = memnew(ConfirmationDialog);
@@ -408,7 +408,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 			pipeline_window_confirm_remove->set_title(TTR("Confirm removal"));
 			pipeline_window_confirm_remove->get_label()->set_text(TTR("Do you want to drop the selected pipeline?"));
 			pipeline_window_confirm_remove->get_ok_button()->set_text(TTR("Confirm"));
-			pipeline_window_confirm_remove->connect("confirmed", callable_mp(this, &EditorWorldECS::pipeline_remove));
+			pipeline_window_confirm_remove->connect(SNAME("confirmed"), callable_mp(this, &EditorWorldECS::pipeline_remove));
 			add_child(pipeline_window_confirm_remove);
 		}
 
@@ -417,9 +417,9 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		Button *show_pipeline_btn = memnew(Button);
 		show_pipeline_btn->set_h_size_flags(0);
 		show_pipeline_btn->set_text(TTR("Pipeline view"));
-		show_pipeline_btn->set_icon(editor->get_theme_base()->get_theme_icon("PackedDataContainer", "EditorIcons"));
+		show_pipeline_btn->set_icon(editor->get_theme_base()->get_theme_icon(SNAME("PackedDataContainer"), SNAME("EditorIcons")));
 		show_pipeline_btn->set_flat(true);
-		show_pipeline_btn->connect("pressed", callable_mp(this, &EditorWorldECS::pipeline_toggle_pipeline_view));
+		show_pipeline_btn->connect(SNAME("pressed"), callable_mp(this, &EditorWorldECS::pipeline_toggle_pipeline_view));
 		menu_wrapper->add_child(show_pipeline_btn);
 	}
 
@@ -480,7 +480,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 			show_btn_add_sys->set_text(TTR("Use feature"));
 			show_btn_add_sys->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 			show_btn_add_sys->set_v_size_flags(0);
-			show_btn_add_sys->connect("pressed", callable_mp(this, &EditorWorldECS::add_sys_show));
+			show_btn_add_sys->connect(SNAME("pressed"), callable_mp(this, &EditorWorldECS::add_sys_show));
 			button_container->add_child(show_btn_add_sys);
 		}
 
@@ -502,7 +502,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 			Ref<StyleBoxFlat> style;
 			style.instantiate();
 			style->set_bg_color(Color(0.02, 0.04, 0.10));
-			panel_w->add_theme_style_override("panel", style);
+			panel_w->add_theme_style_override(SNAME("panel"), style);
 			main_container_pipeline_view->add_child(panel_w);
 
 			ScrollContainer *wrapper = memnew(ScrollContainer);
@@ -517,10 +517,10 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 			panel_w->add_child(wrapper);
 
 			MarginContainer *margin = memnew(MarginContainer);
-			margin->add_theme_constant_override("margin_right", 10);
-			margin->add_theme_constant_override("margin_top", 10);
-			margin->add_theme_constant_override("margin_left", 10);
-			margin->add_theme_constant_override("margin_bottom", 10);
+			margin->add_theme_constant_override(SNAME("margin_right"), 10);
+			margin->add_theme_constant_override(SNAME("margin_top"), 10);
+			margin->add_theme_constant_override(SNAME("margin_left"), 10);
+			margin->add_theme_constant_override(SNAME("margin_bottom"), 10);
 			margin->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 			margin->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 			wrapper->add_child(margin);
@@ -544,7 +544,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		Ref<StyleBoxFlat> style;
 		style.instantiate();
 		style->set_bg_color(Color(0.01, 0.01, 0.01));
-		errors_warnings_panel->add_theme_style_override("panel", style);
+		errors_warnings_panel->add_theme_style_override(SNAME("panel"), style);
 		main_vb->add_child(errors_warnings_panel);
 
 		ScrollContainer *wrapper = memnew(ScrollContainer);
@@ -593,7 +593,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 
 		pipeline_name_ledit = memnew(LineEdit);
 		pipeline_name_ledit->set_placeholder(TTR("Pipeline name"));
-		pipeline_name_ledit->connect("text_changed", callable_mp(this, &EditorWorldECS::pipeline_change_name));
+		pipeline_name_ledit->connect(SNAME("text_changed"), callable_mp(this, &EditorWorldECS::pipeline_change_name));
 		vert_container->add_child(pipeline_name_ledit);
 	}
 
@@ -603,7 +603,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		add_sys_window->set_min_size(Size2i(500, 500));
 		add_sys_window->set_title(TTR("Add System"));
 		add_sys_window->get_ok_button()->set_text(TTR("Add"));
-		add_sys_window->connect("confirmed", callable_mp(this, &EditorWorldECS::add_sys_add));
+		add_sys_window->connect(SNAME("confirmed"), callable_mp(this, &EditorWorldECS::add_sys_add));
 		add_child(add_sys_window);
 
 		VBoxContainer *vert_container = memnew(VBoxContainer);
@@ -613,14 +613,14 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 
 		add_sys_search = memnew(LineEdit);
 		add_sys_search->set_placeholder(TTR("Search"));
-		add_sys_search->connect("text_changed", callable_mp(this, &EditorWorldECS::add_sys_update));
+		add_sys_search->connect(SNAME("text_changed"), callable_mp(this, &EditorWorldECS::add_sys_update));
 		vert_container->add_child(add_sys_search);
 
 		add_sys_tree = memnew(Tree);
 		add_sys_tree->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 		add_sys_tree->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 		add_sys_tree->set_hide_root(true);
-		add_sys_tree->connect("item_selected", callable_mp(this, &EditorWorldECS::add_sys_update_desc));
+		add_sys_tree->connect(SNAME("item_selected"), callable_mp(this, &EditorWorldECS::add_sys_update_desc));
 		vert_container->add_child(add_sys_tree);
 
 		add_sys_desc = memnew(TextEdit);
@@ -635,7 +635,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		add_sys_desc->set_virtual_keyboard_enabled(false);
 		add_sys_desc->set_focus_mode(FOCUS_NONE);
 		add_sys_desc->set_readonly(true);
-		add_sys_desc->add_theme_color_override("font_color_readonly", Color(1.0, 1.0, 1.0));
+		add_sys_desc->add_theme_color_override(SNAME("font_color_readonly"), Color(1.0, 1.0, 1.0));
 		vert_container->add_child(add_sys_desc);
 	}
 
@@ -664,15 +664,15 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 			components_tree->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 			components_tree->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 			components_tree->set_hide_root(true);
-			components_tree->connect("item_selected", callable_mp(this, &EditorWorldECS::components_manage_on_component_select));
+			components_tree->connect(SNAME("item_selected"), callable_mp(this, &EditorWorldECS::components_manage_on_component_select));
 			vertical_container->add_child(components_tree);
 
 			Button *new_component_btn = memnew(Button);
-			new_component_btn->set_icon(editor->get_theme_base()->get_theme_icon("New", "EditorIcons"));
+			new_component_btn->set_icon(editor->get_theme_base()->get_theme_icon(SNAME("New"), SNAME("EditorIcons")));
 			new_component_btn->set_text(TTR("New component"));
 			new_component_btn->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 			new_component_btn->set_v_size_flags(0);
-			//new_component_btn->connect("pressed", callable_mp(this, &EditorWorldECS::add_sys_show)); // TODO
+			//new_component_btn->connect(SNAME("pressed"), callable_mp(this, &EditorWorldECS::add_sys_show)); // TODO
 			vertical_container->add_child(new_component_btn);
 		}
 
@@ -746,10 +746,10 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 
 			Button *add_var_btn = memnew(Button);
 			add_var_btn->set_text(TTR("Add variable"));
-			add_var_btn->set_icon(editor->get_theme_base()->get_theme_icon("Add", "EditorIcons"));
+			add_var_btn->set_icon(editor->get_theme_base()->get_theme_icon(SNAME("Add"), SNAME("EditorIcons")));
 			add_var_btn->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 			add_var_btn->set_v_size_flags(0);
-			//add_var_btn->connect("pressed", callable_mp(this, &EditorWorldECS::add_sys_show)); // TODO
+			//add_var_btn->connect(SNAME("pressed"), callable_mp(this, &EditorWorldECS::add_sys_show)); // TODO
 			vertical_container->add_child(add_var_btn);
 		}
 	}
@@ -758,7 +758,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 void EditorWorldECS::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE: {
-			EditorFileSystem::get_singleton()->connect("filesystem_changed", callable_mp(this, &EditorWorldECS::_filesystem_changed));
+			EditorFileSystem::get_singleton()->connect(SNAME("filesystem_changed"), callable_mp(this, &EditorWorldECS::_filesystem_changed));
 		}
 	}
 }
@@ -799,11 +799,11 @@ void EditorWorldECS::hide_editor() {
 void EditorWorldECS::set_world_ecs(WorldECS *p_world) {
 	if (world_ecs != nullptr) {
 		set_pipeline(Ref<PipelineECS>());
-		world_ecs->disconnect("property_list_changed", callable_mp(this, &EditorWorldECS::_changed_world_callback));
+		world_ecs->disconnect(SNAME("property_list_changed"), callable_mp(this, &EditorWorldECS::_changed_world_callback));
 	}
 
 	node_name_lbl->set_text("No world ECS selected.");
-	node_name_lbl->add_theme_color_override("font_color", Color(0.7, 0.7, 0.7));
+	node_name_lbl->add_theme_color_override(SNAME("font_color"), Color(0.7, 0.7, 0.7));
 	world_ecs_sub_menu_wrap->hide();
 	workspace_container_hb->hide();
 
@@ -811,9 +811,9 @@ void EditorWorldECS::set_world_ecs(WorldECS *p_world) {
 	pipeline_panel_clear();
 
 	if (world_ecs != nullptr) {
-		world_ecs->connect("property_list_changed", callable_mp(this, &EditorWorldECS::_changed_world_callback));
+		world_ecs->connect(SNAME("property_list_changed"), callable_mp(this, &EditorWorldECS::_changed_world_callback));
 		node_name_lbl->set_text(world_ecs->get_name());
-		node_name_lbl->add_theme_color_override("font_color", Color(0.0, 0.5, 1.0));
+		node_name_lbl->add_theme_color_override(SNAME("font_color"), Color(0.0, 0.5, 1.0));
 		world_ecs_sub_menu_wrap->show();
 		workspace_container_hb->show();
 	}
@@ -823,13 +823,13 @@ void EditorWorldECS::set_world_ecs(WorldECS *p_world) {
 
 void EditorWorldECS::set_pipeline(Ref<PipelineECS> p_pipeline) {
 	if (pipeline.is_valid()) {
-		pipeline->disconnect("property_list_changed", callable_mp(this, &EditorWorldECS::_changed_pipeline_callback));
+		pipeline->disconnect(SNAME("property_list_changed"), callable_mp(this, &EditorWorldECS::_changed_pipeline_callback));
 	}
 
 	pipeline = p_pipeline;
 
 	if (pipeline.is_valid()) {
-		pipeline->connect("property_list_changed", callable_mp(this, &EditorWorldECS::_changed_pipeline_callback));
+		pipeline->connect(SNAME("property_list_changed"), callable_mp(this, &EditorWorldECS::_changed_pipeline_callback));
 	}
 
 	pipeline_features_update();
@@ -843,8 +843,8 @@ void EditorWorldECS::pipeline_change_name(const String &p_name) {
 	}
 
 	editor->get_undo_redo()->create_action(TTR("Change pipeline name"));
-	editor->get_undo_redo()->add_do_method(pipeline.ptr(), "set_pipeline_name", p_name);
-	editor->get_undo_redo()->add_undo_method(pipeline.ptr(), "set_pipeline_name", pipeline->get_pipeline_name());
+	editor->get_undo_redo()->add_do_method(pipeline.ptr(), SNAME("set_pipeline_name"), p_name);
+	editor->get_undo_redo()->add_undo_method(pipeline.ptr(), SNAME("set_pipeline_name"), pipeline->get_pipeline_name());
 	editor->get_undo_redo()->commit_action();
 }
 
@@ -916,8 +916,8 @@ void EditorWorldECS::pipeline_add() {
 	set_pipeline(pip);
 
 	editor->get_undo_redo()->create_action(TTR("Add pipeline"));
-	editor->get_undo_redo()->add_do_method(world_ecs, "add_pipeline", pip);
-	editor->get_undo_redo()->add_undo_method(world_ecs, "remove_pipeline", pip);
+	editor->get_undo_redo()->add_do_method(world_ecs, SNAME("add_pipeline"), pip);
+	editor->get_undo_redo()->add_undo_method(world_ecs, SNAME("remove_pipeline"), pip);
 	editor->get_undo_redo()->commit_action();
 }
 
@@ -939,8 +939,8 @@ void EditorWorldECS::pipeline_remove() {
 	}
 
 	editor->get_undo_redo()->create_action(TTR("Pipeline remove"));
-	editor->get_undo_redo()->add_do_method(world_ecs, "remove_pipeline", pipeline);
-	editor->get_undo_redo()->add_undo_method(world_ecs, "add_pipeline", pipeline);
+	editor->get_undo_redo()->add_do_method(world_ecs, SNAME("remove_pipeline"), pipeline);
+	editor->get_undo_redo()->add_undo_method(world_ecs, SNAME("add_pipeline"), pipeline);
 	editor->get_undo_redo()->commit_action();
 }
 
@@ -1094,8 +1094,8 @@ void EditorWorldECS::pipeline_system_bundle_remove(const StringName &p_name) {
 	}
 
 	editor->get_undo_redo()->create_action(TTR("Remove system"));
-	editor->get_undo_redo()->add_do_method(pipeline.ptr(), "remove_system_bundle", p_name);
-	editor->get_undo_redo()->add_undo_method(pipeline.ptr(), "add_system_bundle", p_name);
+	editor->get_undo_redo()->add_do_method(pipeline.ptr(), SNAME("remove_system_bundle"), p_name);
+	editor->get_undo_redo()->add_undo_method(pipeline.ptr(), SNAME("add_system_bundle"), p_name);
 	editor->get_undo_redo()->commit_action();
 }
 
@@ -1105,8 +1105,8 @@ void EditorWorldECS::pipeline_system_remove(const StringName &p_name) {
 	}
 
 	editor->get_undo_redo()->create_action(TTR("Remove system"));
-	editor->get_undo_redo()->add_do_method(pipeline.ptr(), "remove_system", p_name);
-	editor->get_undo_redo()->add_undo_method(pipeline.ptr(), "insert_system", p_name);
+	editor->get_undo_redo()->add_do_method(pipeline.ptr(), SNAME("remove_system"), p_name);
+	editor->get_undo_redo()->add_undo_method(pipeline.ptr(), SNAME("insert_system"), p_name);
 	editor->get_undo_redo()->commit_action();
 }
 
@@ -1157,7 +1157,7 @@ void EditorWorldECS::add_sys_update(const String &p_search) {
 		}
 
 		TreeItem *item = add_sys_tree->create_item(system_bundles_root);
-		item->set_icon(0, editor->get_theme_base()->get_theme_icon("Load", "EditorIcons"));
+		item->set_icon(0, editor->get_theme_base()->get_theme_icon(SNAME("Load"), SNAME("EditorIcons")));
 		item->set_text(0, key_name);
 		item->set_meta("system_bundle_name", key_name);
 		item->set_meta("desc", desc);
@@ -1186,13 +1186,13 @@ void EditorWorldECS::add_sys_update(const String &p_search) {
 
 		TreeItem *item = add_sys_tree->create_item(systems_root);
 		if (ECS::is_system_dispatcher(system_id)) {
-			item->set_icon(0, editor->get_theme_base()->get_theme_icon("ShaderMaterial", "EditorIcons"));
+			item->set_icon(0, editor->get_theme_base()->get_theme_icon(SNAME("ShaderMaterial"), SNAME("EditorIcons")));
 		} else if (ECS::is_temporary_system(system_id)) {
-			item->set_icon(0, editor->get_theme_base()->get_theme_icon("Time", "EditorIcons"));
+			item->set_icon(0, editor->get_theme_base()->get_theme_icon(SNAME("Time"), SNAME("EditorIcons")));
 		} else if (ECS::is_dynamic_system(system_id)) {
-			item->set_icon(0, editor->get_theme_base()->get_theme_icon("Script", "EditorIcons"));
+			item->set_icon(0, editor->get_theme_base()->get_theme_icon(SNAME("Script"), SNAME("EditorIcons")));
 		} else {
-			item->set_icon(0, editor->get_theme_base()->get_theme_icon("ShaderGlobalsOverride", "EditorIcons"));
+			item->set_icon(0, editor->get_theme_base()->get_theme_icon(SNAME("ShaderGlobalsOverride"), SNAME("EditorIcons")));
 		}
 		item->set_text(0, key_name);
 		item->set_meta("system_name", key_name);
@@ -1240,12 +1240,12 @@ void EditorWorldECS::add_sys_add() {
 
 	if (selected->has_meta("system_name")) {
 		editor->get_undo_redo()->create_action(TTR("Add system"));
-		editor->get_undo_redo()->add_do_method(pipeline.ptr(), "insert_system", selected->get_meta("system_name"));
-		editor->get_undo_redo()->add_undo_method(pipeline.ptr(), "remove_system", selected->get_meta("system_name"));
+		editor->get_undo_redo()->add_do_method(pipeline.ptr(), SNAME("insert_system"), selected->get_meta("system_name"));
+		editor->get_undo_redo()->add_undo_method(pipeline.ptr(), SNAME("remove_system"), selected->get_meta("system_name"));
 	} else {
 		editor->get_undo_redo()->create_action(TTR("Add system bundle"));
-		editor->get_undo_redo()->add_do_method(pipeline.ptr(), "add_system_bundle", selected->get_meta("system_bundle_name"));
-		editor->get_undo_redo()->add_undo_method(pipeline.ptr(), "remove_system_bundle", selected->get_meta("system_bundle_name"));
+		editor->get_undo_redo()->add_do_method(pipeline.ptr(), SNAME("add_system_bundle"), selected->get_meta("system_bundle_name"));
+		editor->get_undo_redo()->add_undo_method(pipeline.ptr(), SNAME("remove_system_bundle"), selected->get_meta("system_bundle_name"));
 	}
 	editor->get_undo_redo()->commit_action();
 }
@@ -1263,7 +1263,7 @@ void EditorWorldECS::components_manage_on_component_select() {
 void EditorWorldECS::add_error(const String &p_msg) {
 	Label *lbl = memnew(Label);
 	lbl->set_text("- [Error] " + p_msg);
-	lbl->add_theme_color_override("font_color", Color(0.95, 0.05, 0));
+	lbl->add_theme_color_override(SNAME("font_color"), Color(0.95, 0.05, 0));
 	lbl->set_autowrap_mode(Label::AutowrapMode::AUTOWRAP_WORD_SMART);
 	errors_warnings_container->add_child(lbl);
 }
@@ -1271,7 +1271,7 @@ void EditorWorldECS::add_error(const String &p_msg) {
 void EditorWorldECS::add_warning(const String &p_msg) {
 	Label *lbl = memnew(Label);
 	lbl->set_text("- [Warning] " + p_msg);
-	lbl->add_theme_color_override("font_color", Color(0.96, 0.9, 0.45));
+	lbl->add_theme_color_override(SNAME("font_color"), Color(0.96, 0.9, 0.45));
 	lbl->set_autowrap_mode(Label::AutowrapMode::AUTOWRAP_WORD_SMART);
 	errors_warnings_container->add_child(lbl);
 }

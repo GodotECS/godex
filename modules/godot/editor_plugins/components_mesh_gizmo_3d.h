@@ -4,10 +4,6 @@
 #include "components_gizmo_3d.h"
 
 class MeshComponentGizmo : public ComponentGizmo {
-	StringName mesh_component_name = "MeshComponent";
-	StringName transform_component_name = "TransformComponent";
-	StringName transform_name = "transform";
-
 	struct EditorMeshData : public ComponentGizmoData {
 		RID base;
 		RID instance;

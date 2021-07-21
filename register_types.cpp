@@ -14,8 +14,6 @@
 Ref<Components3DGizmoPlugin> component_gizmo;
 
 void preregister_godex_types() {
-	godex::DynamicSystemInfo::execute_func_name = StringName("_execute");
-
 	ClassDB::register_class<ECS>();
 	ClassDB::register_virtual_class<GodexWorldFetcher>();
 	ClassDB::register_class<godex::DynamicQuery>();
@@ -45,7 +43,6 @@ void register_godex_types() {
 void unregister_godex_types() {
 	// Clear dynamic system static memory.
 	godex::__dynamic_system_info_static_destructor();
-	godex::DynamicSystemInfo::execute_func_name = StringName();
 
 	// Clear ECS static memory.
 	ECS::__static_destructor();

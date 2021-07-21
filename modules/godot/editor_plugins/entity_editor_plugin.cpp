@@ -32,13 +32,13 @@ void EntityEditor::_notification(int p_what) {
 }
 
 void EntityEditor::create_editors() {
-	const Color section_color = get_theme_color("prop_subsection", "Editor");
+	const Color section_color = get_theme_color(SNAME("prop_subsection"), "Editor");
 
 	add_component_menu = memnew(MenuButton);
 	add_component_menu->set_text(TTR("Add Component"));
-	add_component_menu->set_icon(editor->get_theme_base()->get_theme_icon("New", "EditorIcons"));
+	add_component_menu->set_icon(editor->get_theme_base()->get_theme_icon(SNAME("New"), SNAME("EditorIcons")));
 	add_component_menu->set_flat(false);
-	add_component_menu->get_popup()->connect("id_pressed", callable_mp(this, &EntityEditor::_add_component_pressed));
+	add_component_menu->get_popup()->connect(SNAME("id_pressed"), callable_mp(this, &EntityEditor::_add_component_pressed));
 	add_child(add_component_menu);
 
 	// TODO right now this is not customizable.
@@ -52,7 +52,7 @@ void EntityEditor::create_editors() {
 }
 
 void EntityEditor::update_editors() {
-	const Color section_color = get_theme_color("prop_subsection", "Editor");
+	const Color section_color = get_theme_color(SNAME("prop_subsection"), SNAME("Editor"));
 
 	if (add_component_menu) {
 		// Remove all old components.
@@ -80,10 +80,10 @@ void EntityEditor::update_editors() {
 
 			Button *del_btn = memnew(Button);
 			del_btn->set_text("Drop");
-			del_btn->set_icon(editor->get_theme_base()->get_theme_icon("Remove", "EditorIcons"));
+			del_btn->set_icon(editor->get_theme_base()->get_theme_icon(SNAME("Remove"), SNAME("EditorIcons")));
 			del_btn->set_flat(false);
 			del_btn->set_text_align(Button::ALIGN_LEFT);
-			del_btn->connect("pressed", callable_mp(this, &EntityEditor::_remove_component_pressed), varray(*it.key));
+			del_btn->connect(SNAME("pressed"), callable_mp(this, &EntityEditor::_remove_component_pressed), varray(*it.key));
 			component_section->get_vbox()->add_child(del_btn);
 
 			create_component_inspector(*it.key, component_section->get_vbox());
@@ -104,7 +104,7 @@ void EntityEditor::create_component_inspector(StringName p_component_name, VBoxC
 		p_container->add_child(prop_res);
 
 		prop_res->set_object_and_property(entity, String(p_component_name) + "/resource");
-		prop_res->connect("property_changed", callable_mp(this, &EntityEditor::_property_changed));
+		prop_res->connect(SNAME("property_changed"), callable_mp(this, &EntityEditor::_property_changed));
 
 		OAHashMap<StringName, EditorProperty *> editor_properties;
 		editor_properties.insert("resource", prop_res);
@@ -626,7 +626,7 @@ void EntityEditor::create_component_inspector(StringName p_component_name, VBoxC
 				p_container->add_child(prop);
 
 				prop->set_object_and_property(entity, String(p_component_name) + "/" + e.name);
-				prop->connect("property_changed", callable_mp(this, &EntityEditor::_property_changed));
+				prop->connect(SNAME("property_changed"), callable_mp(this, &EntityEditor::_property_changed));
 				editor_properties.insert(e.name, prop);
 			}
 		}
@@ -658,19 +658,19 @@ void EntityEditor::_add_component_pressed(uint32_t p_index) {
 	}
 
 	editor->get_undo_redo()->create_action(TTR("Add component"));
-	editor->get_undo_redo()->add_do_method(entity, "add_component", component_name);
-	editor->get_undo_redo()->add_do_method(this, "update_editors");
-	editor->get_undo_redo()->add_undo_method(entity, "remove_component", component_name);
-	editor->get_undo_redo()->add_undo_method(this, "update_editors");
+	editor->get_undo_redo()->add_do_method(entity, SNAME("add_component"), component_name);
+	editor->get_undo_redo()->add_do_method(this, SNAME("update_editors"));
+	editor->get_undo_redo()->add_undo_method(entity, SNAME("remove_component"), component_name);
+	editor->get_undo_redo()->add_undo_method(this, SNAME("update_editors"));
 	editor->get_undo_redo()->commit_action();
 }
 
 void EntityEditor::_remove_component_pressed(StringName p_component_name) {
 	editor->get_undo_redo()->create_action(TTR("Drop component"));
-	editor->get_undo_redo()->add_do_method(entity, "remove_component", p_component_name);
-	editor->get_undo_redo()->add_do_method(this, "update_editors");
-	editor->get_undo_redo()->add_undo_method(entity, "add_component", p_component_name, entity_get_component_props_data(p_component_name));
-	editor->get_undo_redo()->add_undo_method(this, "update_editors");
+	editor->get_undo_redo()->add_do_method(entity, SNAME("remove_component"), p_component_name);
+	editor->get_undo_redo()->add_do_method(this, SNAME("update_editors"));
+	editor->get_undo_redo()->add_undo_method(entity, SNAME("add_component"), p_component_name, entity_get_component_props_data(p_component_name));
+	editor->get_undo_redo()->add_undo_method(this, SNAME("update_editors"));
 	editor->get_undo_redo()->commit_action();
 }
 
@@ -681,9 +681,9 @@ void EntityEditor::_property_changed(const String &p_path, const Variant &p_valu
 	}
 
 	editor->get_undo_redo()->create_action(TTR("Set component value"));
-	editor->get_undo_redo()->add_do_method(entity, "set", p_path, p_value);
-	editor->get_undo_redo()->add_undo_method(entity, "set", p_path, entity->get(p_path));
-	editor->get_undo_redo()->add_undo_method(this, "update_editors");
+	editor->get_undo_redo()->add_do_method(entity, SNAME("set"), p_path, p_value);
+	editor->get_undo_redo()->add_undo_method(entity, SNAME("set"), p_path, entity->get(p_path));
+	editor->get_undo_redo()->add_undo_method(this, SNAME("update_editors"));
 	editor->get_undo_redo()->commit_action();
 }
 
