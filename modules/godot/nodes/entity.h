@@ -147,13 +147,13 @@ public:
 				if (Engine::get_singleton()->is_editor_hint()) {
 					// Handles transform update.
 					set_notify_local_transform(false);
-					if (has_component("TransformComponent")) {
-						set_component_value("TransformComponent", "transform", get_transform());
+					if (has_component(SNAME("TransformComponent"))) {
+						set_component_value(SNAME("TransformComponent"), SNAME("transform"), get_transform());
 					} else {
 						// This `Entity` doesn't havea TransformComponent, lock
 						// the gizmo at center.
 						set_transform(Transform3D());
-						set_component_value("TransformComponent", "transform", Transform3D());
+						set_component_value(SNAME("TransformComponent"), SNAME("transform"), Transform3D());
 					}
 					set_notify_local_transform(true);
 				}
@@ -247,9 +247,9 @@ public:
 	void set_sync_transform(bool p_active) {
 		entity.set_sync_transform(p_active);
 		if (p_active) {
-			add_to_group("__sync_transform_3d");
+			add_to_group(SNAME("__sync_transform_3d"));
 		} else {
-			remove_from_group("__sync_transform_3d");
+			remove_from_group(SNAME("__sync_transform_3d"));
 		}
 	}
 
@@ -377,9 +377,9 @@ public:
 	void set_sync_transform(bool p_active) {
 		entity.set_sync_transform(p_active);
 		if (p_active) {
-			add_to_group("__sync_transform_2d");
+			add_to_group(SNAME("__sync_transform_2d"));
 		} else {
-			remove_from_group("__sync_transform_2d");
+			remove_from_group(SNAME("__sync_transform_2d"));
 		}
 	}
 
@@ -581,7 +581,7 @@ bool EntityInternal<C>::has_component(const StringName &p_component_name) const 
 		if (ECS::is_component_sharable(ECS::get_component_id(p_component_name))) {
 			const Ref<ComponentDepot> *val = components_data.lookup_ptr(p_component_name);
 			if (val && val->is_valid()) {
-				Ref<SharedComponentResource> shared = (*val)->get("resource");
+				Ref<SharedComponentResource> shared = (*val)->get(SNAME("resource"));
 				return shared.is_valid() && shared->is_init() && shared->get_component_name() == p_component_name;
 			}
 			return false;
@@ -626,21 +626,21 @@ bool EntityInternal<C>::set_component_value(const StringName &p_component_name, 
 
 		// Hack to propagate `Node3D` transform change.
 		if (Object::cast_to<Entity3D>(owner) != nullptr &&
-				p_component_name == "TransformComponent") {
+				p_component_name == SNAME("TransformComponent")) {
 			Entity3D *entity = (Entity3D *)owner;
-			if (p_property_name == "origin") {
+			if (p_property_name == SNAME("origin")) {
 				entity->set_position(p_value);
 
-			} else if (p_property_name == "rotation_deg") {
+			} else if (p_property_name == SNAME("rotation_deg")) {
 				entity->set_rotation(Vector3(p_value) * (Math_PI / 180));
 
-			} else if (p_property_name == "scale") {
+			} else if (p_property_name == SNAME("scale")) {
 				entity->set_scale(p_value);
 
-			} else if (p_property_name == "transform") {
+			} else if (p_property_name == SNAME("transform")) {
 				entity->set_transform(p_value);
 			}
-			(*val)->set("transform", Variant(owner->get_transform()), &success);
+			(*val)->set(SNAME("transform"), Variant(owner->get_transform()), &success);
 		} else {
 			(*val)->set(p_property_name, p_value, &success);
 		}
@@ -778,13 +778,13 @@ EntityID EntityInternal<C>::_create_entity(World *p_world) const {
 
 			if (it.value->is_valid()) {
 				if (ECS::is_component_sharable(component_id)) {
-					Ref<SharedComponentResource> shared = (*it.value)->get("resource");
+					Ref<SharedComponentResource> shared = (*it.value)->get(SNAME("resource"));
 					if (shared.is_valid()) {
 						godex::SID sid = shared->get_sid(p_world);
 						p_world->add_shared_component(id, component_id, sid);
 					}
 				} else {
-					if (try_set_global && (*it.key) == "TransformComponent") {
+					if (try_set_global && (*it.key) == SNAME("TransformComponent")) {
 						// This is an hack to set the global transform (ignoring the
 						// TransformComponent) when the Entity is parented of a Node3D:
 						// In this way the Entity transform we set on the editor, is always

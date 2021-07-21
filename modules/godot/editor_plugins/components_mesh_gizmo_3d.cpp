@@ -31,25 +31,25 @@ void MeshComponentGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
 
 	RID scenario = entity->get_world_3d()->get_scenario();
-	Ref<ComponentDepot> component_data = entity->get_component_depot(mesh_component_name);
+	Ref<ComponentDepot> component_data = entity->get_component_depot(SNAME("MeshComponent"));
 	if (component_data.is_null() || scenario == RID()) {
 		// No mesh component, remove any editor mesh.
-		Ref<ComponentGizmoData> *editor_mesh = entity->get_internal_entity().gizmo_data.lookup_ptr(mesh_component_name);
+		Ref<ComponentGizmoData> *editor_mesh = entity->get_internal_entity().gizmo_data.lookup_ptr(SNAME("MeshComponent"));
 		if (editor_mesh == nullptr) {
 			// Nothing to do.
 			return;
 		}
 
-		entity->get_internal_entity().gizmo_data.remove(mesh_component_name);
+		entity->get_internal_entity().gizmo_data.remove(SNAME("MeshComponent"));
 
 	} else {
 		// Mesh data, make sure to add the editor mesh.
 		Ref<EditorMeshData> editor_mesh;
 		{
-			Ref<ComponentGizmoData> *d = entity->get_internal_entity().gizmo_data.lookup_ptr(mesh_component_name);
+			Ref<ComponentGizmoData> *d = entity->get_internal_entity().gizmo_data.lookup_ptr(SNAME("MeshComponent"));
 			if (d == nullptr || d->is_null()) {
 				editor_mesh.instantiate();
-				entity->get_internal_entity().gizmo_data.insert(mesh_component_name, editor_mesh);
+				entity->get_internal_entity().gizmo_data.insert(SNAME("MeshComponent"), editor_mesh);
 				RenderingServer::get_singleton()->instance_attach_object_instance_id(editor_mesh->instance, entity->get_instance_id());
 				RenderingServer::get_singleton()->instance_set_scenario(editor_mesh->instance, scenario);
 			} else {
@@ -58,7 +58,7 @@ void MeshComponentGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 		}
 
 		// Update the mesh.
-		Ref<Mesh> m = entity->get_component_value(mesh_component_name, "mesh");
+		Ref<Mesh> m = entity->get_component_value(SNAME("MeshComponent"), SNAME("mesh"));
 		editor_mesh->set_mesh(m);
 
 		if (m.is_valid()) {
@@ -69,8 +69,9 @@ void MeshComponentGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 		}
 
 		// Update the transform.
+
 		RenderingServer::get_singleton()->instance_set_transform(editor_mesh->instance, entity->get_global_transform());
-		RenderingServer::get_singleton()->instance_set_visible(editor_mesh->instance, component_data->get("visible"));
+		RenderingServer::get_singleton()->instance_set_visible(editor_mesh->instance, entity->is_visible() && component_data->get(SNAME("visible")));
 		RenderingServer::get_singleton()->instance_geometry_set_cast_shadows_setting(editor_mesh->instance, (RS::ShadowCastingSetting) int(component_data->get("cast_shadow")));
 	}
 #endif

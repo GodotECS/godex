@@ -472,6 +472,6 @@ bool SharedComponentDepot::_getv(const StringName &p_name, Variant &r_ret) const
 
 Dictionary SharedComponentDepot::get_properties_data() const {
 	Dictionary d;
-	d[StringName("resource")] = data;
+	d[SNAME("resource")] = data;
 	return d;
 }

@@ -86,7 +86,7 @@ bool godex::DynamicSystemInfo::build() {
 	if (gd_script_instance) {
 		// This is a GDScript, take the direct function access.
 		Ref<GDScript> script = target_script->get_script();
-		gdscript_function = script->get_member_functions()[execute_func_name];
+		gdscript_function = script->get_member_functions()[SNAME("_execute")];
 	}
 
 	access.resize(fetchers.size());
@@ -114,8 +114,6 @@ void godex::DynamicSystemInfo::reset() {
 	}
 	fetchers.reset();
 }
-
-StringName godex::DynamicSystemInfo::execute_func_name;
 
 void godex::DynamicSystemInfo::get_info(DynamicSystemInfo &p_info, func_system_execute p_exec, SystemExeInfo &r_out) {
 	for (uint32_t i = 0; i < p_info.fetchers.size(); i += 1) {
@@ -152,7 +150,7 @@ void godex::DynamicSystemInfo::executor(World *p_world, DynamicSystemInfo &p_inf
 	} else {
 		// Other script execution.
 		p_info.target_script->call(
-				execute_func_name,
+				SNAME("_execute"),
 				const_cast<const Variant **>(p_info.access_ptr.ptr()),
 				p_info.access_ptr.size(),
 				err);
