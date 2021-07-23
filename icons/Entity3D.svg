@@ -7,8 +7,8 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   inkscape:version="1.0 (4035a4fb49, 2020-05-01)"
-   sodipodi:docname="ActionCut.svg"
+   inkscape:version="1.0.2 (e86c870879, 2021-01-15)"
+   sodipodi:docname="Entity2D.svg"
    id="svg4"
    version="1.1"
    width="16"
@@ -22,7 +22,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -31,15 +31,15 @@
   <sodipodi:namedview
      inkscape:current-layer="svg4"
      inkscape:window-maximized="0"
-     inkscape:window-y="37"
+     inkscape:window-y="0"
      inkscape:window-x="0"
-     inkscape:cy="10.625008"
-     inkscape:cx="0.082800087"
-     inkscape:zoom="19.64431"
+     inkscape:cy="6.0634475"
+     inkscape:cx="18.380135"
+     inkscape:zoom="14.113895"
      showgrid="false"
      id="namedview6"
-     inkscape:window-height="1041"
-     inkscape:window-width="1916"
+     inkscape:window-height="1056"
+     inkscape:window-width="1920"
      inkscape:pageshadow="2"
      inkscape:pageopacity="0"
      guidetolerance="10"
@@ -47,9 +47,15 @@
      objecttolerance="10"
      borderopacity="1"
      bordercolor="#666666"
-     pagecolor="#ffffff" />
-  <path
-     d="M 7.9365236,1.5879289 A 6.4117031,6.4117031 0 0 0 1.5888673,8.0000383 6.4117031,6.4117031 0 0 0 5.2900392,13.810585 6.4117031,6.4117031 0 0 1 2.1884767,8.3183977 6.4117031,6.4117031 0 0 1 8.5380861,1.9082414 a 6.4117031,6.4117031 0 0 1 0.0625,0 6.4117031,6.4117031 0 0 1 2.7070319,0.5996094 6.4117031,6.4117031 0 0 0 -3.3085944,-0.9199219 6.4117031,6.4117031 0 0 0 -0.0625,0 z M 9.4150392,2.2480852 A 6.4117031,6.4117031 0 0 0 3.0654298,8.6582414 6.4117031,6.4117031 0 0 0 6.1474611,14.136757 6.4117031,6.4117031 0 0 0 7.9990236,14.412147 6.4117031,6.4117031 0 0 0 14.411133,8.0000383 6.4117031,6.4117031 0 0 0 11.327149,2.5195695 6.4117031,6.4117031 0 0 0 9.4775392,2.2480852 a 6.4117031,6.4117031 0 0 0 -0.0625,0 z"
-     style="fill:#ffff00;fill-opacity:0.996078;stroke-width:0.402618"
-     id="path835" />
+     pagecolor="#ffffff"
+     inkscape:document-rotation="0" />
+  <g
+     aria-label="E"
+     id="text890"
+     style="font-style:normal;font-weight:normal;font-size:19.1555px;line-height:1.25;font-family:sans-serif;fill:#ffff00;fill-opacity:0.996078;stroke:none;stroke-width:0.478889">
+    <path
+       d="m 4.506553,1.0177832 h 9.708696 l -0.533136,2.721802 H 7.5744261 L 7.0693494,6.3397948 h 5.7522626 l -0.54249,2.721802 H 6.536213 L 5.918897,12.260416 h 6.304105 l -0.51443,2.721802 H 1.7847509 Z"
+       style="font-style:italic;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:sans-serif;-inkscape-font-specification:'sans-serif Bold Italic';fill:#ffff00;fill-opacity:0.996078;stroke-width:0.478889"
+       id="path892" />
+  </g>
 </svg>

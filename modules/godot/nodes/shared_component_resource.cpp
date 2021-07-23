@@ -4,6 +4,8 @@
 #include "script_ecs.h"
 
 void SharedComponentResource::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("init", "name"), &SharedComponentResource::init);
+
 	ClassDB::bind_method(D_METHOD("__set_component_name", "name"), &SharedComponentResource::set_component_name);
 	ClassDB::bind_method(D_METHOD("__get_component_name"), &SharedComponentResource::get_component_name);
 
