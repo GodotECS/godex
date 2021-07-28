@@ -144,8 +144,7 @@ void register_godot_types() {
 
 			.add(ECS::register_system(timer_event_launcher_system, "TimerEventLauncherSystem")
 							.execute_in(PHASE_CONFIG)
-							.set_description("Throws events of finished event timers")
-							.after("TimerUpdaterSystem"));
+							.set_description("Throws events of finished event timers"));
 
 	ClassDB::register_class<SharedComponentResource>();
 
