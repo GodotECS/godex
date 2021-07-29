@@ -563,10 +563,6 @@ void ECS::register_component(StorageBase *(*create_storage)()) {
 	// Add a new scripting constant, for fast and easy `component` access.
 	ClassDB::bind_integer_constant(get_class_static(), StringName(), component_name, C::component_id);
 
-	if constexpr (godex_has_is_event<C>::value) {
-		components_info[C::component_id].is_event = true;
-	}
-
 	print_line("Component: " + component_name + " registered with ID: " + itos(C::component_id));
 }
 

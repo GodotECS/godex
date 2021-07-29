@@ -28,9 +28,6 @@ struct godex_has_storage_config : std::false_type {};
 template <typename T>
 struct godex_has_storage_config<T, decltype(void(std::declval<T &>()._get_storage_config(std::declval<Dictionary &>())))> : std::true_type {};
 
-template <typename T, typename = void>
-struct godex_has_is_event : std::false_type {};
-
 #define ECSCLASS(m_class)                             \
 private:                                              \
 	friend class ECS;                                 \
