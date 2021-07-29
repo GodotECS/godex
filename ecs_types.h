@@ -17,10 +17,28 @@ template <typename T>
 struct godex_has_get_spawners<T, decltype(void(std::declval<T &>().get_spawners()))> : std::true_type {};
 
 template <typename T, typename = void>
-struct godex_has_bind_methods : std::false_type {};
+struct godex_has__bind_methods : std::false_type {};
 
 template <typename T>
-struct godex_has_bind_methods<T, decltype(void(std::declval<T &>()._bind_methods()))> : std::true_type {};
+struct godex_has__bind_methods<T, decltype(void(std::declval<T &>()._bind_methods()))> : std::true_type {};
+
+template <typename T, typename = void>
+struct godex_has__get : std::false_type {};
+
+template <typename T>
+struct godex_has__get<T, decltype(void(std::declval<T &>()._get(std::declval<const StringName &>(), std::declval<Variant &>())))> : std::true_type {};
+
+template <typename T, typename = void>
+struct godex_has__set : std::false_type {};
+
+template <typename T>
+struct godex_has__set<T, decltype(void(std::declval<T &>()._set(std::declval<const StringName &>(), std::declval<const Variant &>())))> : std::true_type {};
+
+template <typename T, typename = void>
+struct godex_has__get_property_list : std::false_type {};
+
+template <typename T>
+struct godex_has__get_property_list<T, decltype(void(std::declval<T &>()._get_property_list(std::declval<List<PropertyInfo> *>())))> : std::true_type {};
 
 template <typename T, typename = void>
 struct godex_has_storage_config : std::false_type {};
@@ -133,6 +151,31 @@ constexpr SID SID_NONE = UINT32_MAX;
 
 namespace godex {
 
+template <class X>
+bool global_dynamic_get([[maybe_unused]] X *p_self, [[maybe_unused]] const StringName &p_name, [[maybe_unused]] Variant &r_data) {
+	if constexpr (godex_has__get<X>::value) {
+		return p_self->_get(p_name, r_data);
+	} else {
+		return false;
+	}
+}
+
+template <class X>
+bool global_dynamic_set([[maybe_unused]] X *p_self, [[maybe_unused]] const StringName &p_name, [[maybe_unused]] const Variant &r_data) {
+	if constexpr (godex_has__set<X>::value) {
+		return p_self->_set(p_name, r_data);
+	} else {
+		return false;
+	}
+}
+
+template <class X>
+void global_dynamic_get_property_list([[maybe_unused]] X *p_self, [[maybe_unused]] List<PropertyInfo> *r_list) {
+	if constexpr (godex_has__get_property_list<X>::value) {
+		p_self->_get_property_list(r_list);
+	}
+}
+
 typedef bool (*func_setter)(void *, const Variant &p_data);
 typedef bool (*func_getter)(const void *, Variant &r_data);
 
@@ -188,6 +231,18 @@ public:                                                                         
 		const m_class *self = static_cast<const m_class *>(p_self);                                                                    \
 		ERR_FAIL_COND_V_MSG(p_index >= getters.size(), false, "The parameter " + itos(p_index) + " doesn't exist in this component."); \
 		return getters[p_index](self, r_data);                                                                                         \
+	}                                                                                                                                  \
+	static bool dynamic_get(void *p_self, const StringName &p_name, Variant &r_data) {                                                 \
+		m_class *self = static_cast<m_class *>(p_self);                                                                                \
+		return godex::global_dynamic_get(self, p_name, r_data);                                                                        \
+	}                                                                                                                                  \
+	static bool dynamic_set(void *p_self, const StringName &p_name, const Variant &p_data) {                                           \
+		m_class *self = static_cast<m_class *>(p_self);                                                                                \
+		return godex::global_dynamic_set(self, p_name, p_data);                                                                        \
+	}                                                                                                                                  \
+	static void dynamic_get_property_list(void *p_self, List<PropertyInfo> *r_list) {                                                  \
+		m_class *self = static_cast<m_class *>(p_self);                                                                                \
+		godex::global_dynamic_get_property_list(self, r_list);                                                                         \
 	}
 
 /// Must be called in `_bind_methods` and can be used to just bind a property.

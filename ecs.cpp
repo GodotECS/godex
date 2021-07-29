@@ -259,7 +259,7 @@ bool ECS::unsafe_component_get_by_index(godex::component_id p_component_id, cons
 void ECS::unsafe_component_call(godex::component_id p_component_id, void *p_component, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) {
 	if (components_info[p_component_id].dynamic_component_info != nullptr) {
 		// This is a variant component, right now it's
-		ERR_PRINT("GDScript component doesn't supports functions call (yet?).");
+		ERR_PRINT("GDScript component doesn't support function calls (yet?).");
 	} else {
 		components_info[p_component_id].accessor_funcs.call(
 				p_component,
@@ -268,6 +268,30 @@ void ECS::unsafe_component_call(godex::component_id p_component_id, void *p_comp
 				p_argcount,
 				r_ret,
 				r_error);
+	}
+}
+
+bool ECS::unsafe_component_dynamic_get(godex::component_id p_component_id, void *p_component, const StringName &p_name, Variant &r_property) {
+	if (components_info[p_component_id].dynamic_component_info != nullptr) {
+		ERR_FAIL_COND_V_MSG(true, false, "GDScript component doesn't support dynamic get (yet?).");
+	} else {
+		return components_info[p_component_id].accessor_funcs.dynamic_get(p_component, p_name, r_property);
+	}
+}
+
+bool ECS::unsafe_component_dynamic_set(godex::component_id p_component_id, void *p_component, const StringName &p_name, const Variant &p_property) {
+	if (components_info[p_component_id].dynamic_component_info != nullptr) {
+		ERR_FAIL_COND_V_MSG(true, false, "GDScript component doesn't support dynamic set (yet?).");
+	} else {
+		return components_info[p_component_id].accessor_funcs.dynamic_set(p_component, p_name, p_property);
+	}
+}
+
+void ECS::unsafe_component_dynamic_get_property_list(godex::component_id p_component_id, void *p_component, List<PropertyInfo> *r_list) {
+	if (components_info[p_component_id].dynamic_component_info != nullptr) {
+		ERR_PRINT("GDScript component doesn't support dynamic properties (yet?).");
+	} else {
+		return components_info[p_component_id].accessor_funcs.dynamic_get_property_list(p_component, r_list);
 	}
 }
 
@@ -334,6 +358,18 @@ void ECS::unsafe_databag_call(
 			p_argcount,
 			r_ret,
 			r_error);
+}
+
+bool ECS::unsafe_databag_dynamic_get(godex::databag_id p_databag_id, void *p_databag, const StringName &p_name, Variant &r_property) {
+	return databags_info[p_databag_id].accessor_funcs.dynamic_get(p_databag, p_name, r_property);
+}
+
+bool ECS::unsafe_databag_dynamic_set(godex::databag_id p_databag_id, void *p_databag, const StringName &p_name, const Variant &p_property) {
+	return databags_info[p_databag_id].accessor_funcs.dynamic_set(p_databag, p_name, p_property);
+}
+
+void ECS::unsafe_databag_dynamic_get_property_list(godex::databag_id p_databag_id, void *p_databag, List<PropertyInfo> *r_list) {
+	databags_info[p_databag_id].accessor_funcs.dynamic_get_property_list(p_databag, r_list);
 }
 
 bool ECS::verify_event_id(godex::event_id p_id) {
@@ -436,6 +472,18 @@ bool ECS::unsafe_event_get_by_index(godex::event_id p_event_id, const void *p_ev
 
 void ECS::unsafe_event_call(godex::event_id p_event_id, void *p_event, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) {
 	events_info[p_event_id].accessor_funcs.call(p_event, p_method, p_args, p_argcount, r_ret, r_error);
+}
+
+bool ECS::unsafe_event_dynamic_get(godex::event_id p_event_id, void *p_event, const StringName &p_name, Variant &r_property) {
+	return events_info[p_event_id].accessor_funcs.dynamic_get(p_event, p_name, r_property);
+}
+
+bool ECS::unsafe_event_dynamic_set(godex::event_id p_event_id, void *p_event, const StringName &p_name, const Variant &p_property) {
+	return events_info[p_event_id].accessor_funcs.dynamic_set(p_event, p_name, p_property);
+}
+
+void ECS::unsafe_event_dynamic_get_property_list(godex::event_id p_event_id, void *p_event, List<PropertyInfo> *r_list) {
+	events_info[p_event_id].accessor_funcs.dynamic_get_property_list(p_event, r_list);
 }
 
 SystemBundleInfo &ECS::register_system_bundle(const StringName &p_name) {
