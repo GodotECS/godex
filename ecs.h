@@ -43,8 +43,6 @@ struct DataAccessorFuncs {
 	bool (*set_by_index)(void *p_self, const uint32_t p_parameter_index, const Variant &p_data) = nullptr;
 	bool (*get_by_index)(const void *p_self, const uint32_t p_parameter_index, Variant &r_data) = nullptr;
 	void (*call)(void *p_self, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) = nullptr;
-	bool (*dynamic_get)(void *p_self, const StringName &p_name, Variant &r_property) = nullptr;
-	bool (*dynamic_set)(void *p_self, const StringName &p_name, const Variant &p_property) = nullptr;
 	void (*dynamic_get_property_list)(void *p_self, List<PropertyInfo> *r_list) = nullptr;
 };
 
@@ -253,8 +251,6 @@ public:
 	static bool unsafe_component_set_by_index(godex::component_id p_component_id, void *p_component, uint32_t p_index, const Variant &p_data);
 	static bool unsafe_component_get_by_index(godex::component_id p_component_id, const void *p_component, uint32_t p_index, Variant &r_data);
 	static void unsafe_component_call(godex::component_id p_component_id, void *p_component, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error);
-	static bool unsafe_component_dynamic_get(godex::component_id p_component_id, void *p_component, const StringName &p_name, Variant &r_property);
-	static bool unsafe_component_dynamic_set(godex::component_id p_component_id, void *p_component, const StringName &p_name, const Variant &p_property);
 	static void unsafe_component_dynamic_get_property_list(godex::component_id p_component_id, void *p_component, List<PropertyInfo> *r_list);
 
 	// ~~ Databags ~~
@@ -274,8 +270,6 @@ public:
 	static bool unsafe_databag_set_by_index(godex::databag_id p_databag_id, void *p_databag, uint32_t p_index, const Variant &p_data);
 	static bool unsafe_databag_get_by_index(godex::databag_id p_databag_id, const void *p_databag, uint32_t p_index, Variant &r_data);
 	static void unsafe_databag_call(godex::databag_id p_databag_id, void *p_databag, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error);
-	static bool unsafe_databag_dynamic_get(godex::databag_id p_databag_id, void *p_databag, const StringName &p_name, Variant &r_property);
-	static bool unsafe_databag_dynamic_set(godex::databag_id p_databag_id, void *p_databag, const StringName &p_name, const Variant &p_property);
 	static void unsafe_databag_dynamic_get_property_list(godex::databag_id p_databag_id, void *p_databag, List<PropertyInfo> *r_list);
 
 	// ~~ Events ~~
@@ -297,8 +291,6 @@ public:
 	static bool unsafe_event_set_by_index(godex::event_id p_event_id, void *p_event, uint32_t p_index, const Variant &p_data);
 	static bool unsafe_event_get_by_index(godex::event_id p_event_id, const void *p_event, uint32_t p_index, Variant &r_data);
 	static void unsafe_event_call(godex::event_id p_event_id, void *p_event, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error);
-	static bool unsafe_event_dynamic_get(godex::event_id p_event_id, void *p_event, const StringName &p_name, Variant &r_property);
-	static bool unsafe_event_dynamic_set(godex::event_id p_event_id, void *p_event, const StringName &p_name, const Variant &p_property);
 	static void unsafe_event_dynamic_get_property_list(godex::event_id p_event_id, void *p_event, List<PropertyInfo> *r_list);
 
 	// ~~ SystemBundle ~~
@@ -568,8 +560,6 @@ void ECS::register_component(StorageBase *(*create_storage)()) {
 							C::set_by_index,
 							C::get_by_index,
 							C::static_call,
-							C::dynamic_get,
-							C::dynamic_set,
 							C::dynamic_get_property_list } });
 
 	// Store the function pointer that clear the static memory.
@@ -601,8 +591,6 @@ void ECS::register_databag() {
 					R::set_by_index,
 					R::get_by_index,
 					R::static_call,
-					R::dynamic_get,
-					R::dynamic_set,
 					R::dynamic_get_property_list } });
 
 	// Store the function pointer that clear the static memory.
@@ -635,8 +623,6 @@ void ECS::register_event() {
 					E::set_by_index,
 					E::get_by_index,
 					E::static_call,
-					E::dynamic_get,
-					E::dynamic_set,
 					E::dynamic_get_property_list } });
 
 	// Store the function pointer that clear the static memory.
