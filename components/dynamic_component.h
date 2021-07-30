@@ -45,6 +45,8 @@ public:
 	}
 
 public:
+	static void static_get_property_list(void *p_self, const DynamicComponentInfo *p_info, List<PropertyInfo> *r_list);
+
 	static bool static_set(void *p_self, const DynamicComponentInfo *p_info, const StringName &p_name, const Variant &p_data);
 	static bool static_get(const void *p_self, const DynamicComponentInfo *p_info, const StringName &p_name, Variant &r_data);
 

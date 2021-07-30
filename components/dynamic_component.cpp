@@ -63,6 +63,12 @@ StorageBase *DynamicComponentInfo::create_storage() {
 	return nullptr;
 }
 
+void DynamicComponentInfo::static_get_property_list(void *p_self, const DynamicComponentInfo *p_info, List<PropertyInfo> *r_list) {
+	for (uint32_t i = 0; i < p_info->properties.size(); ++i) {
+		r_list->push_back(p_info->properties[i]);
+	}
+}
+
 bool DynamicComponentInfo::static_set(void *p_self, const DynamicComponentInfo *p_info, const StringName &p_name, const Variant &p_data) {
 	const uint32_t index = p_info->get_property_id(p_name);
 	return static_set(p_self, p_info, index, p_data);

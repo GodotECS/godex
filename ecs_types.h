@@ -17,10 +17,28 @@ template <typename T>
 struct godex_has_get_spawners<T, decltype(void(std::declval<T &>().get_spawners()))> : std::true_type {};
 
 template <typename T, typename = void>
-struct godex_has_bind_methods : std::false_type {};
+struct godex_has__bind_methods : std::false_type {};
 
 template <typename T>
-struct godex_has_bind_methods<T, decltype(void(std::declval<T &>()._bind_methods()))> : std::true_type {};
+struct godex_has__bind_methods<T, decltype(void(std::declval<T &>()._bind_methods()))> : std::true_type {};
+
+template <typename T, typename = void>
+struct godex_has__get : std::false_type {};
+
+template <typename T>
+struct godex_has__get<T, decltype(void(std::declval<T &>()._get(std::declval<const StringName &>(), std::declval<Variant &>())))> : std::true_type {};
+
+template <typename T, typename = void>
+struct godex_has__set : std::false_type {};
+
+template <typename T>
+struct godex_has__set<T, decltype(void(std::declval<T &>()._set(std::declval<const StringName &>(), std::declval<const Variant &>())))> : std::true_type {};
+
+template <typename T, typename = void>
+struct godex_has__get_property_list : std::false_type {};
+
+template <typename T>
+struct godex_has__get_property_list<T, decltype(void(std::declval<T &>()._get_property_list(std::declval<List<PropertyInfo> *>())))> : std::true_type {};
 
 template <typename T, typename = void>
 struct godex_has_storage_config : std::false_type {};
@@ -133,61 +151,102 @@ constexpr SID SID_NONE = UINT32_MAX;
 
 namespace godex {
 
+template <class X>
+bool global_dynamic_get([[maybe_unused]] X *p_self, [[maybe_unused]] const StringName &p_name, [[maybe_unused]] Variant &r_data) {
+	if constexpr (godex_has__get<X>::value) {
+		return p_self->_get(p_name, r_data);
+	} else {
+		return false;
+	}
+}
+
+template <class X>
+bool global_dynamic_set([[maybe_unused]] X *p_self, [[maybe_unused]] const StringName &p_name, [[maybe_unused]] const Variant &r_data) {
+	if constexpr (godex_has__set<X>::value) {
+		return p_self->_set(p_name, r_data);
+	} else {
+		return false;
+	}
+}
+
+template <class X>
+void global_dynamic_get_property_list([[maybe_unused]] X *p_self, List<PropertyInfo> *r_list) {
+	const LocalVector<PropertyInfo> *staticProperties = X::get_properties();
+	for (uint32_t i = 0; i < staticProperties->size(); ++i) {
+		r_list->push_back((*staticProperties)[i]);
+	}
+	if constexpr (godex_has__get_property_list<X>::value) {
+		p_self->_get_property_list(r_list);
+	}
+}
+
 typedef bool (*func_setter)(void *, const Variant &p_data);
 typedef bool (*func_getter)(const void *, Variant &r_data);
 
-#define ECS_PROPERTY_MAPPER(m_class)                                                                                                   \
-private:                                                                                                                               \
-	/* Properties */                                                                                                                   \
-	static inline LocalVector<StringName> property_map;                                                                                \
-	static inline LocalVector<PropertyInfo> properties;                                                                                \
-	static inline LocalVector<godex::func_setter> setters;                                                                             \
-	static inline LocalVector<godex::func_getter> getters;                                                                             \
-	static void add_property(const PropertyInfo &p_info, godex::func_setter p_set, godex::func_getter p_get) {                         \
-		property_map.push_back(p_info.name);                                                                                           \
-		properties.push_back(p_info);                                                                                                  \
-		setters.push_back(p_set);                                                                                                      \
-		getters.push_back(p_get);                                                                                                      \
-	}                                                                                                                                  \
-	static void clear_properties_static() {                                                                                            \
-		property_map.clear();                                                                                                          \
-	}                                                                                                                                  \
-                                                                                                                                       \
-public:                                                                                                                                \
-	static const LocalVector<PropertyInfo> *get_properties() {                                                                         \
-		return &properties;                                                                                                            \
-	}                                                                                                                                  \
-	static Variant get_property_default(const StringName &p_name) {                                                                    \
-		const m_class c;                                                                                                               \
-		Variant ret;                                                                                                                   \
-		get_by_name(&c, p_name, ret);                                                                                                  \
-		return ret;                                                                                                                    \
-	}                                                                                                                                  \
-	static uint32_t get_property_index(const StringName &p_name) {                                                                     \
-		const int64_t i = property_map.find(p_name);                                                                                   \
-		return i == -1 ? UINT32_MAX : uint32_t(i);                                                                                     \
-	}                                                                                                                                  \
-	static bool set_by_name(void *p_self, const StringName &p_name, const Variant &p_data) {                                           \
-		m_class *self = static_cast<m_class *>(p_self);                                                                                \
-		const uint32_t i = get_property_index(p_name);                                                                                 \
-		ERR_FAIL_COND_V_MSG(i == UINT32_MAX, false, "The parameter " + p_name + " doesn't exist in this component.");                  \
-		return setters[i](self, p_data);                                                                                               \
-	}                                                                                                                                  \
-	static bool get_by_name(const void *p_self, const StringName &p_name, Variant &r_data) {                                           \
-		const m_class *self = static_cast<const m_class *>(p_self);                                                                    \
-		const uint32_t i = get_property_index(p_name);                                                                                 \
-		ERR_FAIL_COND_V_MSG(i == UINT32_MAX, false, "The parameter " + p_name + " doesn't exist in this component.");                  \
-		return getters[i](self, r_data);                                                                                               \
-	}                                                                                                                                  \
-	static bool set_by_index(void *p_self, const uint32_t p_index, const Variant &p_data) {                                            \
-		m_class *self = static_cast<m_class *>(p_self);                                                                                \
-		ERR_FAIL_COND_V_MSG(p_index >= setters.size(), false, "The parameter " + itos(p_index) + " doesn't exist in this component."); \
-		return setters[p_index](self, p_data);                                                                                         \
-	}                                                                                                                                  \
-	static bool get_by_index(const void *p_self, const uint32_t p_index, Variant &r_data) {                                            \
-		const m_class *self = static_cast<const m_class *>(p_self);                                                                    \
-		ERR_FAIL_COND_V_MSG(p_index >= getters.size(), false, "The parameter " + itos(p_index) + " doesn't exist in this component."); \
-		return getters[p_index](self, r_data);                                                                                         \
+#define ECS_PROPERTY_MAPPER(m_class)                                                                                                                      \
+private:                                                                                                                                                  \
+	/* Properties */                                                                                                                                      \
+	static inline LocalVector<StringName> property_map;                                                                                                   \
+	static inline LocalVector<PropertyInfo> properties;                                                                                                   \
+	static inline LocalVector<godex::func_setter> setters;                                                                                                \
+	static inline LocalVector<godex::func_getter> getters;                                                                                                \
+	static void add_property(const PropertyInfo &p_info, godex::func_setter p_set, godex::func_getter p_get) {                                            \
+		property_map.push_back(p_info.name);                                                                                                              \
+		properties.push_back(p_info);                                                                                                                     \
+		setters.push_back(p_set);                                                                                                                         \
+		getters.push_back(p_get);                                                                                                                         \
+	}                                                                                                                                                     \
+	static void clear_properties_static() {                                                                                                               \
+		property_map.clear();                                                                                                                             \
+	}                                                                                                                                                     \
+                                                                                                                                                          \
+public:                                                                                                                                                   \
+	static const LocalVector<PropertyInfo> *get_properties() {                                                                                            \
+		return &properties;                                                                                                                               \
+	}                                                                                                                                                     \
+	static Variant get_property_default(const StringName &p_name) {                                                                                       \
+		const m_class c;                                                                                                                                  \
+		Variant ret;                                                                                                                                      \
+		get_by_name(&c, p_name, ret);                                                                                                                     \
+		return ret;                                                                                                                                       \
+	}                                                                                                                                                     \
+	static uint32_t get_property_index(const StringName &p_name) {                                                                                        \
+		const int64_t i = property_map.find(p_name);                                                                                                      \
+		return i == -1 ? UINT32_MAX : uint32_t(i);                                                                                                        \
+	}                                                                                                                                                     \
+	static bool set_by_name(void *p_self, const StringName &p_name, const Variant &p_data) {                                                              \
+		m_class *self = static_cast<m_class *>(p_self);                                                                                                   \
+		const uint32_t i = get_property_index(p_name);                                                                                                    \
+		if (i == UINT32_MAX) {                                                                                                                            \
+			ERR_FAIL_COND_V_MSG(godex::global_dynamic_set(self, p_name, p_data), false, "The parameter " + p_name + " doesn't exist in this component."); \
+			return true;                                                                                                                                  \
+		} else {                                                                                                                                          \
+			return setters[i](self, p_data);                                                                                                              \
+		}                                                                                                                                                 \
+	}                                                                                                                                                     \
+	static bool get_by_name(const void *p_self, const StringName &p_name, Variant &r_data) {                                                              \
+		const m_class *self = static_cast<const m_class *>(p_self);                                                                                       \
+		const uint32_t i = get_property_index(p_name);                                                                                                    \
+		if (i == UINT32_MAX) {                                                                                                                            \
+			ERR_FAIL_COND_V_MSG(godex::global_dynamic_get(self, p_name, r_data), false, "The parameter " + p_name + " doesn't exist in this component."); \
+			return true;                                                                                                                                  \
+		} else {                                                                                                                                          \
+			return getters[i](self, r_data);                                                                                                              \
+		}                                                                                                                                                 \
+	}                                                                                                                                                     \
+	static bool set_by_index(void *p_self, const uint32_t p_index, const Variant &p_data) {                                                               \
+		m_class *self = static_cast<m_class *>(p_self);                                                                                                   \
+		ERR_FAIL_COND_V_MSG(p_index >= setters.size(), false, "The parameter " + itos(p_index) + " doesn't exist in this component.");                    \
+		return setters[p_index](self, p_data);                                                                                                            \
+	}                                                                                                                                                     \
+	static bool get_by_index(const void *p_self, const uint32_t p_index, Variant &r_data) {                                                               \
+		const m_class *self = static_cast<const m_class *>(p_self);                                                                                       \
+		ERR_FAIL_COND_V_MSG(p_index >= getters.size(), false, "The parameter " + itos(p_index) + " doesn't exist in this component.");                    \
+		return getters[p_index](self, r_data);                                                                                                            \
+	}                                                                                                                                                     \
+	static void dynamic_get_property_list(void *p_self, List<PropertyInfo> *r_list) {                                                                     \
+		m_class *self = static_cast<m_class *>(p_self);                                                                                                   \
+		godex::global_dynamic_get_property_list(self, r_list);                                                                                            \
 	}
 
 /// Must be called in `_bind_methods` and can be used to just bind a property.
