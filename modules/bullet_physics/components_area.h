@@ -37,6 +37,8 @@ public:
 	/// The current space this Area is. Do not modify this.
 	BtSpaceIndex __current_space = BT_SPACE_NONE;
 
+	Vector3 area_scale = Vector3(1.0, 1.0, 1.0);
+
 public:
 	static void _bind_methods();
 	static void _get_storage_config(Dictionary &r_config);
