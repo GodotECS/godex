@@ -24,7 +24,6 @@ struct SystemExeInfo {
 	Set<uint32_t> mutable_components_storage;
 	Set<uint32_t> mutable_databags;
 	Set<uint32_t> immutable_databags;
-	Set<uint32_t> need_changed; // TODO remove this now that it's handled by the system data?
 	Set<uint32_t> events_emitters;
 	OAHashMap<uint32_t, Set<String>> events_receivers;
 
@@ -39,7 +38,6 @@ struct SystemExeInfo {
 		mutable_components_storage.clear();
 		mutable_databags.clear();
 		immutable_databags.clear();
-		need_changed.clear();
 		events_emitters.clear();
 		events_receivers.clear();
 
@@ -47,4 +45,4 @@ struct SystemExeInfo {
 	}
 };
 
-typedef void (*func_get_system_exe_info)(SystemExeInfo &);
+typedef void (*func_get_system_exe_info)(godex::system_id, SystemExeInfo &);

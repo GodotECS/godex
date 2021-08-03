@@ -250,5 +250,4 @@ void system_data_set_active(uint8_t *p_mem, bool p_active, R (*func)(Args...)) {
 
 // ~~~~ temporary_system_exec_func definition ~~~~ //
 #include "temporary_system_exe_funcs.gen.h"
-
 } // namespace SystemBuilder

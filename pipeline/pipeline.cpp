@@ -74,8 +74,9 @@ Token Pipeline::prepare_world(World *p_world) {
 		}
 	}
 
-	if (token.index == UINT32_MAX) {
+	if (token.is_valid() == false) {
 		token.index = worlds.size();
+		token.generation = 1;
 		worlds.push_back(WorldData());
 	}
 
@@ -201,13 +202,6 @@ void Pipeline::create_used_storage(const SystemExeInfo &p_info, World *p_world) 
 
 	for (const Set<uint32_t>::Element *e = p_info.mutable_databags.front(); e; e = e->next()) {
 		p_world->create_databag(e->get());
-	}
-
-	for (const Set<uint32_t>::Element *e = p_info.need_changed.front(); e; e = e->next()) {
-		// Mark as `need_changed` this storage.
-		StorageBase *storage = p_world->get_storage(e->get());
-		ERR_CONTINUE_MSG(storage == nullptr, "The storage is not supposed to be nullptr at this point. Storage: " + ECS::get_component_name(e->get()) + "#" + itos(e->get()));
-		storage->set_tracing_change(true);
 	}
 
 	for (const Set<uint32_t>::Element *e = p_info.events_emitters.front(); e; e = e->next()) {

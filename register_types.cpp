@@ -41,9 +41,6 @@ void register_godex_types() {
 }
 
 void unregister_godex_types() {
-	// Clear dynamic system static memory.
-	godex::__dynamic_system_info_static_destructor();
-
 	// Clear ECS static memory.
 	ECS::__static_destructor();
 	ECS *ecs = ECS::get_singleton();

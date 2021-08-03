@@ -133,10 +133,10 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "	var query = DynamicQuery.new()\n";
 		code += "	query.with_component(ECS.PbComponentA, MUTABLE)\n";
 		code += "	query.with_component(ECS.PbComponentB, MUTABLE)\n";
-		code += "	query.with_databag(ECS.PbDatabagA, MUTABLE)\n";
 		code += "	with_query(query)\n";
+		code += "	with_databag(ECS.PbDatabagA, MUTABLE)\n";
 		code += "\n";
-		code += "func _execute(q):\n";
+		code += "func _execute(q, db):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -155,10 +155,10 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "	var query = DynamicQuery.new()\n";
 		code += "	query.with_component(ECS.PbComponentA, IMMUTABLE)\n";
 		code += "	query.with_component(ECS.PbComponentB, IMMUTABLE)\n";
-		code += "	query.with_databag(ECS.PbDatabagA, IMMUTABLE)\n";
 		code += "	with_query(query)\n";
+		code += "	with_databag(ECS.PbDatabagA, IMMUTABLE)\n";
 		code += "\n";
-		code += "func _execute(q):\n";
+		code += "func _execute(q, db):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -794,11 +794,9 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder put the systems that fetch 
 		code += "\n";
 		code += "func _prepare():\n";
 		code += "	execute_in(ECS.PHASE_PROCESS, ECS.test_C_system_13_dispatcher)\n";
-		code += "	var query = DynamicQuery.new()\n";
-		code += "	query.with_databag(ECS.World, IMMUTABLE)\n";
-		code += "	with_query(query)\n";
+		code += "	with_databag(ECS.World, IMMUTABLE)\n";
 		code += "\n";
-		code += "func _execute(q):\n";
+		code += "func _execute(db):\n";
 		code += "	pass\n";
 		code += "\n";
 
@@ -1116,37 +1114,6 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to detect cyclic de
 	CHECK(graph.is_valid() == false);
 	CHECK(!graph.get_error_msg().is_empty());
 	CHECK(graph.get_warnings().size() == 0);
-
-	finalize_script_ecs();
-}
-} // namespace godex_tests
-
-void test_F_system_3(Query<Changed<PbComponentA>> &p_query) {}
-void test_F_system_4(Query<PbComponentA> &p_query) {}
-
-namespace godex_tests {
-TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to detect lost events.") {
-	initialize_script_ecs();
-
-	ECS::register_system_bundle("TestF_CppBundle")
-			.add(ECS::register_system(test_F_system_3, "test_F_system_3"))
-			.add(ECS::register_system(test_F_system_4, "test_F_system_4"));
-
-	flush_ecs_script_preparation();
-
-	Vector<StringName> system_bundles;
-	system_bundles.push_back("TestF_CppBundle");
-
-	Vector<StringName> systems;
-
-	ExecutionGraph graph;
-	PipelineBuilder::build_graph(system_bundles, systems, &graph);
-
-	// Make sure the graph wasn't created.
-	CHECK(graph.is_valid());
-	CHECK(graph.get_error_msg().is_empty());
-	CHECK(graph.get_warnings().size() == 1);
-	ERR_PRINT(graph.get_warnings()[0]);
 
 	finalize_script_ecs();
 }

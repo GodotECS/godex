@@ -697,7 +697,7 @@ Object *WorldECS::get_databag_by_name(const StringName &p_databag_name) {
 }
 
 Object *WorldECS::get_databag(uint32_t p_databag_id) {
-	databag_accessor.end();
+	databag_accessor.conclude_process(world);
 
 	CRASH_COND_MSG(world == nullptr, "The world is never nullptr.");
 	ERR_FAIL_COND_V_MSG(ECS::verify_databag_id(p_databag_id) == false, &databag_accessor, "The passed `databag_name` is not valid.");
@@ -705,7 +705,7 @@ Object *WorldECS::get_databag(uint32_t p_databag_id) {
 	databag_accessor.init(
 			p_databag_id,
 			true);
-	databag_accessor.begin(world);
+	databag_accessor.initiate_process(world);
 
 	return &databag_accessor;
 }

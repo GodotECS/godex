@@ -559,6 +559,7 @@ TEST_CASE("[Modules][ECS] Test static query") {
 	// Test `Without` filter.
 	{
 		Query<const TransformComponent, Not<TagQueryTestComponent>> query(&world);
+		query.initiate_process(&world);
 
 		// This query fetches the entity that have only the `TransformComponent`.
 		CHECK(query.has(entity_1) == false);
@@ -572,6 +573,7 @@ TEST_CASE("[Modules][ECS] Test static query") {
 	// Test `Maybe` filter.
 	{
 		Query<const TransformComponent, Maybe<TagQueryTestComponent>> query(&world);
+		query.initiate_process(&world);
 
 		// This query fetches all entities but return nullptr when
 		// `TagQueryTestComponent` is not set.
@@ -623,16 +625,13 @@ TEST_CASE("[Modules][ECS] Test static query deep nesting") {
 								.with(TestFixedSizeEvent(30))
 								.with(TransformComponent());
 
-	world.get_storage<TagC>()->set_tracing_change(true);
-	world.get_storage<TagC>()->notify_changed(entity_1);
-
-	world.get_storage<TestFixedSizeEvent>()->set_tracing_change(true);
-	world.get_storage<TestFixedSizeEvent>()->notify_changed(entity_2);
-
 	// Test `EntityID`, `With` `Maybe`, `Without + Changed`.
 	{
 		// Take this only if `TagC` DOESN'T changed.
 		Query<EntityID, TagA, Maybe<TagB>, Not<Changed<TagC>>> query(&world);
+		world.get_storage<TagC>()->notify_changed(entity_1);
+		world.get_storage<TestFixedSizeEvent>()->notify_changed(entity_2);
+		query.initiate_process(&world);
 
 		// The `TagC` on the `Entity1` is changed, so the query doesn't fetches it.
 		CHECK(query.has(entity_1) == false);
@@ -647,13 +646,13 @@ TEST_CASE("[Modules][ECS] Test static query deep nesting") {
 		CHECK(tag_c != nullptr); // It's not changed, but exist.
 	}
 
-	// Needed because the above fetches mutably.
-	world.get_storage<TagC>()->notify_updated(entity_2);
-
 	// Test `EntityID`, `With`, `Maybe + Changed`.
 	{
 		// Take this only if `TagC` DOESN'T changed.
 		Query<EntityID, TagA, Maybe<Changed<TagC>>> query(&world);
+		world.get_storage<TagC>()->notify_changed(entity_1);
+		world.get_storage<TestFixedSizeEvent>()->notify_changed(entity_2);
+		query.initiate_process(&world);
 
 		CHECK(query.has(entity_1));
 		CHECK(query.has(entity_2));
@@ -690,6 +689,9 @@ TEST_CASE("[Modules][ECS] Test static query deep nesting") {
 	// Test nested Batch
 	{
 		Query<EntityID, TransformComponent, Batch<Maybe<Changed<TestFixedSizeEvent>>>> query(&world);
+		world.get_storage<TagC>()->notify_changed(entity_1);
+		world.get_storage<TestFixedSizeEvent>()->notify_changed(entity_2);
+		query.initiate_process(&world);
 
 		CHECK(query.has(entity_1));
 		CHECK(query.has(entity_2));
@@ -731,6 +733,9 @@ TEST_CASE("[Modules][ECS] Test static query deep nesting") {
 	// Test deep nesting, Any fitler
 	{
 		Query<EntityID, Any<Changed<TransformComponent>, Batch<Changed<TestFixedSizeEvent>>>> query(&world);
+		world.get_storage<TagC>()->notify_changed(entity_1);
+		world.get_storage<TestFixedSizeEvent>()->notify_changed(entity_2);
+		query.initiate_process(&world);
 
 		// Make sure it has only the Entity2, which is taken because the `Event`
 		// is marked as changed.
@@ -751,6 +756,9 @@ TEST_CASE("[Modules][ECS] Test static query deep nesting") {
 	// Test deep nesting `Join`.
 	{
 		Query<EntityID, Join<Changed<const TagA>, Changed<const TagB>, Changed<const TagC>>> query(&world);
+		world.get_storage<TagC>()->notify_changed(entity_1);
+		world.get_storage<TestFixedSizeEvent>()->notify_changed(entity_2);
+		query.initiate_process(&world);
 
 		// Make sure it has only the Entity2, which is taken because the `Event`
 		// is marked as changed.
@@ -777,6 +785,9 @@ TEST_CASE("[Modules][ECS] Test static query deep nesting") {
 	// Test Any + Join
 	{
 		Query<EntityID, Any<TagA, Join<Changed<const TagA>, Changed<const TagB>, Changed<const TagC>>>> query(&world);
+		world.get_storage<TagC>()->notify_changed(entity_1);
+		world.get_storage<TestFixedSizeEvent>()->notify_changed(entity_2);
+		query.initiate_process(&world);
 
 		// Both Entity1 and Entity2 satisfy `Any` because of the `Any` filter.
 		CHECK(query.has(entity_1));
@@ -883,10 +894,10 @@ TEST_CASE("[Modules][ECS] Test query mutability.") {
 
 	World world;
 
-	world
-			.create_entity()
-			.with(TransformComponent())
-			.with(TestAccessMutabilityComponent1());
+	EntityID entity_1 = world
+								.create_entity()
+								.with(TransformComponent())
+								.with(TestAccessMutabilityComponent1());
 
 	world
 			.create_entity()
@@ -898,9 +909,6 @@ TEST_CASE("[Modules][ECS] Test query mutability.") {
 	AccessTracerStorage<TestAccessMutabilityComponent1> *storage1 = static_cast<AccessTracerStorage<TestAccessMutabilityComponent1> *>(world.get_storage<TestAccessMutabilityComponent1>());
 	AccessTracerStorage<TestAccessMutabilityComponent2> *storage2 = static_cast<AccessTracerStorage<TestAccessMutabilityComponent2> *>(world.get_storage<TestAccessMutabilityComponent2>());
 
-	storage1->set_tracing_change(true);
-	storage2->set_tracing_change(true);
-
 	// Just two insert.
 	CHECK(storage1->count_insert == 1);
 	CHECK(storage2->count_insert == 1);
@@ -909,23 +917,28 @@ TEST_CASE("[Modules][ECS] Test query mutability.") {
 	CHECK(storage1->count_get_mut == 0);
 
 	Query<TestAccessMutabilityComponent1> query_test_mut(&world);
+	query_test_mut.initiate_process(&world);
 	query_test_mut.begin().operator*(); // Fetch the data.
 
 	CHECK(storage1->count_get_mut == 1);
 	CHECK(storage2->count_get_mut == 0);
 
 	Query<Not<TestAccessMutabilityComponent1>, TestAccessMutabilityComponent2> query_test_without_mut(&world);
+	query_test_without_mut.initiate_process(&world);
 	query_test_without_mut.begin().operator*(); //Fetch the data.
 
 	CHECK(storage1->count_get_mut == 1);
 	CHECK(storage2->count_get_mut == 1);
 
 	Query<Maybe<TestAccessMutabilityComponent1>, TransformComponent> query_test_maybe_mut(&world);
+	query_test_maybe_mut.initiate_process(&world);
 	query_test_maybe_mut.begin().operator*(); //Fetch the data.
 
 	CHECK(storage1->count_get_mut == 2);
 
 	Query<Changed<TestAccessMutabilityComponent1>, TransformComponent> query_test_changed_mut(&world);
+	storage1->notify_changed(entity_1);
+	query_test_changed_mut.initiate_process(&world);
 	query_test_changed_mut.begin().operator*(); //Fetch the data.
 
 	CHECK(storage1->count_get_mut == 3);
@@ -935,6 +948,7 @@ TEST_CASE("[Modules][ECS] Test query mutability.") {
 	CHECK(storage1->count_get_immut == 0);
 
 	Query<const TestAccessMutabilityComponent1> query_test_immut(&world);
+	query_test_immut.initiate_process(&world);
 	query_test_immut.begin().operator*(); //Fetch the data.
 
 	CHECK(storage1->count_get_mut == 3);
@@ -942,6 +956,7 @@ TEST_CASE("[Modules][ECS] Test query mutability.") {
 	CHECK(storage2->count_get_immut == 0);
 
 	Query<Not<const TestAccessMutabilityComponent1>, const TestAccessMutabilityComponent2> query_test_without_immut(&world);
+	query_test_without_immut.initiate_process(&world);
 	query_test_without_immut.begin().operator*(); //Fetch the data.
 
 	CHECK(storage1->count_get_mut == 3);
@@ -949,12 +964,15 @@ TEST_CASE("[Modules][ECS] Test query mutability.") {
 	CHECK(storage2->count_get_immut == 1);
 
 	Query<Maybe<const TestAccessMutabilityComponent1>, const TransformComponent> query_test_maybe_immut(&world);
+	query_test_maybe_immut.initiate_process(&world);
 	query_test_maybe_immut.begin().operator*(); //Fetch the data.
 
 	CHECK(storage1->count_get_mut == 3);
 	CHECK(storage1->count_get_immut == 2);
 
 	Query<Changed<const TestAccessMutabilityComponent1>, TransformComponent> query_test_changed_immut(&world);
+	storage1->notify_changed(entity_1);
+	query_test_changed_immut.initiate_process(&world);
 	query_test_changed_immut.begin().operator*(); //Fetch the data.
 
 	CHECK(storage1->count_get_mut == 3);
@@ -986,7 +1004,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery fetch mutability.") {
 
 	godex::DynamicQuery query_test_mut;
 	query_test_mut.with_component(TestAccessMutabilityComponent1::get_component_id(), true);
-	query_test_mut.begin(&world);
+	query_test_mut.initiate_process(&world);
 	query_test_mut.next();
 
 	CHECK(storage1->count_get_mut == 1);
@@ -995,7 +1013,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery fetch mutability.") {
 	godex::DynamicQuery query_test_without_mut;
 	query_test_without_mut.not_component(TestAccessMutabilityComponent1::get_component_id());
 	query_test_without_mut.with_component(TestAccessMutabilityComponent2::get_component_id(), true);
-	query_test_without_mut.begin(&world);
+	query_test_without_mut.initiate_process(&world);
 	query_test_without_mut.next();
 
 	CHECK(storage1->count_get_mut == 1);
@@ -1004,7 +1022,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery fetch mutability.") {
 	// Make sure `maybe` alone doesn't fetch anything.
 	godex::DynamicQuery query_test_maybe_alone_mut;
 	query_test_maybe_alone_mut.maybe_component(TestAccessMutabilityComponent1::get_component_id(), true);
-	query_test_maybe_alone_mut.begin(&world);
+	query_test_maybe_alone_mut.initiate_process(&world);
 	query_test_maybe_alone_mut.next();
 
 	CHECK(storage1->count_get_mut == 1);
@@ -1015,7 +1033,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery fetch mutability.") {
 
 	godex::DynamicQuery query_test_immut;
 	query_test_immut.with_component(TestAccessMutabilityComponent1::get_component_id(), false);
-	query_test_immut.begin(&world);
+	query_test_immut.initiate_process(&world);
 	query_test_immut.next();
 	CHECK(storage1->count_get_mut == 1);
 	CHECK(storage1->count_get_immut == 1);
@@ -1024,7 +1042,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery fetch mutability.") {
 	godex::DynamicQuery query_test_without_immut;
 	query_test_without_immut.not_component(TestAccessMutabilityComponent1::get_component_id());
 	query_test_without_immut.with_component(TestAccessMutabilityComponent2::get_component_id(), false);
-	query_test_without_immut.begin(&world);
+	query_test_without_immut.initiate_process(&world);
 	query_test_without_immut.next();
 
 	CHECK(storage1->count_get_mut == 1);
@@ -1033,7 +1051,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery fetch mutability.") {
 
 	godex::DynamicQuery query_test_maybe_alone_immut;
 	query_test_maybe_alone_immut.maybe_component(TestAccessMutabilityComponent1::get_component_id(), false);
-	query_test_maybe_alone_immut.begin(&world);
+	query_test_maybe_alone_immut.initiate_process(&world);
 	query_test_maybe_alone_immut.next();
 
 	CHECK(storage1->count_get_mut == 1);
@@ -1061,7 +1079,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery try fetch combination.") {
 		godex::DynamicQuery query;
 		query.with_component(TestAccessMutabilityComponent1::get_component_id(), false);
 		query.with_component(TestAccessMutabilityComponent2::get_component_id(), false);
-		query.begin(&world);
+		query.initiate_process(&world);
 		CHECK(query.has(entity_3));
 	}
 
@@ -1070,7 +1088,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery try fetch combination.") {
 		godex::DynamicQuery query;
 		query.with_component(TestAccessMutabilityComponent1::get_component_id(), false);
 		query.not_component(TestAccessMutabilityComponent2::get_component_id());
-		query.begin(&world);
+		query.initiate_process(&world);
 		CHECK(query.has(entity_1));
 	}
 
@@ -1079,7 +1097,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery try fetch combination.") {
 		godex::DynamicQuery query;
 		query.with_component(TestAccessMutabilityComponent1::get_component_id(), false);
 		query.maybe_component(TestAccessMutabilityComponent2::get_component_id());
-		query.begin(&world);
+		query.initiate_process(&world);
 		CHECK(query.has(entity_1));
 		CHECK(query.has(entity_3));
 	}
@@ -1088,7 +1106,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery try fetch combination.") {
 		// Check `Maybe`.
 		godex::DynamicQuery query;
 		query.maybe_component(TestAccessMutabilityComponent2::get_component_id());
-		query.begin(&world);
+		query.initiate_process(&world);
 		// Nothing to fetch, because `Maybe` alone is meaningless.
 		CHECK(query.next() == false);
 	}
@@ -1097,7 +1115,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery try fetch combination.") {
 		// Check `Without`.
 		godex::DynamicQuery query;
 		query.not_component(TestAccessMutabilityComponent2::get_component_id());
-		query.begin(&world);
+		query.initiate_process(&world);
 		// Nothing to fetch, because `Without` alone is meaningless.
 		CHECK(query.next() == false);
 	}
@@ -1107,7 +1125,7 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery try fetch combination.") {
 		godex::DynamicQuery query;
 		query.maybe_component(TestAccessMutabilityComponent1::get_component_id());
 		query.not_component(TestAccessMutabilityComponent2::get_component_id());
-		query.begin(&world);
+		query.initiate_process(&world);
 		// Nothing to fetch, because `Maybe` and `Without` are meaningless alone.
 		CHECK(query.next() == false);
 		CHECK(query.count() == 0);
@@ -1121,43 +1139,41 @@ TEST_CASE("[Modules][ECS] Test DynamicQuery changed.") {
 								.create_entity()
 								.with(TestAccessMutabilityComponent1());
 
-	world.get_storage(TestAccessMutabilityComponent1::get_component_id())->set_tracing_change(true);
-
 	{
 		// Trigger changed.
 		godex::DynamicQuery query;
 		query.with_component(TestAccessMutabilityComponent1::get_component_id(), true);
-		query.begin(&world);
+		query.initiate_process(&world);
 		query.next(); // trigger
 		CHECK(query.has(entity_1));
 	}
 
 	{
 		// Check I can access changed.
-		godex::DynamicQuery query;
-		query.changed_component(TestAccessMutabilityComponent1::get_component_id(), false);
-		query.begin(&world);
-		CHECK(query.has(entity_1));
-	}
+		godex::DynamicQuery query_changed;
+		query_changed.changed_component(TestAccessMutabilityComponent1::get_component_id(), false);
+		query_changed.prepare_world(&world);
+		world.get_storage(TestAccessMutabilityComponent1::get_component_id())->notify_changed(entity_1);
+		query_changed.initiate_process(&world);
+		CHECK(query_changed.has(entity_1));
 
-	world.get_storage(TestAccessMutabilityComponent1::get_component_id())->flush_changed();
+		// Conclude the query processing, clears the internal changend list.
+		query_changed.conclude_process(&world);
 
-	{
-		// Take the component again, without triggering changed.
-		godex::DynamicQuery query;
-		query.with_component(TestAccessMutabilityComponent1::get_component_id(), false);
-		query.begin(&world);
-		query.next(); // trigger
-		CHECK(query.has(entity_1));
-	}
+		{
+			// Take the component again, without triggering changed.
+			godex::DynamicQuery query_sub;
+			query_sub.with_component(TestAccessMutabilityComponent1::get_component_id(), false);
+			query_sub.initiate_process(&world);
+			query_sub.next(); // trigger
+			CHECK(query_sub.has(entity_1));
+			query_sub.fetch(entity_1);
+		}
 
-	{
-		// Check changed is gone.
-		godex::DynamicQuery query;
-		query.changed_component(TestAccessMutabilityComponent1::get_component_id(), false);
-		query.begin(&world);
-		CHECK(query.next() == false);
-		CHECK(query.count() == 0);
+		// Make sure no changed is triggered.
+		query_changed.initiate_process(&world);
+		CHECK(query_changed.next() == false);
+		CHECK(query_changed.count() == 0);
 	}
 }
 
@@ -1166,6 +1182,7 @@ TEST_CASE("[Modules][ECS] Test static query check query type fetch.") {
 
 	{
 		Query<const TransformComponent, Maybe<TagQueryTestComponent>> query(&world);
+		query.initiate_process(&world);
 
 		SystemExeInfo info;
 		query.get_components(info);
@@ -1176,6 +1193,7 @@ TEST_CASE("[Modules][ECS] Test static query check query type fetch.") {
 
 	{
 		Query<TransformComponent, Maybe<const TagQueryTestComponent>> query(&world);
+		query.initiate_process(&world);
 
 		SystemExeInfo info;
 		query.get_components(info);
@@ -1187,6 +1205,7 @@ TEST_CASE("[Modules][ECS] Test static query check query type fetch.") {
 
 	{
 		Query<Not<TransformComponent>, Maybe<const TagQueryTestComponent>> query(&world);
+		query.initiate_process(&world);
 
 		SystemExeInfo info;
 		query.get_components(info);
@@ -1200,14 +1219,13 @@ TEST_CASE("[Modules][ECS] Test static query check query type fetch.") {
 
 	{
 		Query<Changed<TransformComponent>, Changed<const TagQueryTestComponent>> query(&world);
+		query.initiate_process(&world);
 
 		SystemExeInfo info;
 		query.get_components(info);
 
 		CHECK(info.mutable_components.find(TransformComponent::get_component_id()) != nullptr);
 		CHECK(info.immutable_components.find(TagQueryTestComponent::get_component_id()) != nullptr);
-		CHECK(info.need_changed.find(TransformComponent::get_component_id()) != nullptr);
-		CHECK(info.need_changed.find(TagQueryTestComponent::get_component_id()) != nullptr);
 	}
 }
 
@@ -1216,6 +1234,7 @@ TEST_CASE("[Modules][ECS] Test static query filter no storage.") {
 
 	{
 		Query<Not<TagQueryTestComponent>, TransformComponent> query(&world);
+		query.initiate_process(&world);
 
 		// No storage, make sure this returns immediately.
 		CHECK(query.count() == 0);
@@ -1223,6 +1242,7 @@ TEST_CASE("[Modules][ECS] Test static query filter no storage.") {
 
 	{
 		Query<Maybe<TagQueryTestComponent>, TransformComponent> query(&world);
+		query.initiate_process(&world);
 
 		// No storage, make sure this returns immediately.
 		CHECK(query.count() == 0);
@@ -1254,7 +1274,7 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 		CHECK(query.is_valid());
 
 		// Test process.
-		query.begin(&world);
+		query.initiate_process(&world);
 
 		// Entity 1
 		CHECK(query.has(entity_1));
@@ -1281,7 +1301,7 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 		}
 
 		// Nothing more to do at this point.
-		query.end();
+		query.conclude_process(&world);
 	}
 
 	{
@@ -1289,7 +1309,7 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 		query.with_component(ECS::get_component_id("TransformComponent"), false);
 
 		// Test process.
-		query.begin(&world);
+		query.initiate_process(&world);
 
 		// Entity 1
 		CHECK(query.next());
@@ -1327,7 +1347,7 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 
 		CHECK(query.next() == false);
 		CHECK(query.count() == 3);
-		query.end();
+		query.conclude_process(&world);
 	}
 
 	{
@@ -1336,7 +1356,7 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 		query.with_component(TransformComponent::get_component_id());
 		query.not_component(TagQueryTestComponent::get_component_id());
 
-		query.begin(&world);
+		query.initiate_process(&world);
 
 		// This query fetches the entity that have only the `TransformComponent`.
 		CHECK(query.next());
@@ -1345,7 +1365,7 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 		// Now it's done
 		CHECK(query.next() == false);
 		CHECK(query.count() == 1);
-		query.end();
+		query.conclude_process(&world);
 	}
 
 	{
@@ -1353,9 +1373,8 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 		godex::DynamicQuery query;
 		query.with_component(TransformComponent::get_component_id());
 		query.maybe_component(TagQueryTestComponent::get_component_id());
-		query.build();
 
-		query.begin(&world);
+		query.initiate_process(&world);
 
 		// This query fetches the entity that have only the `TransformComponent`.
 		CHECK(query.next());
@@ -1376,7 +1395,7 @@ TEST_CASE("[Modules][ECS] Test dynamic query") {
 		// Now it's done
 		CHECK(query.next() == false);
 		CHECK(query.count() == 3);
-		query.end();
+		query.conclude_process(&world);
 	}
 }
 
@@ -1408,7 +1427,7 @@ TEST_CASE("[Modules][ECS] Test dynamic query with dynamic storages.") {
 	CHECK(query.is_valid());
 
 	// Test process.
-	query.begin(&world);
+	query.initiate_process(&world);
 
 	// Entity 1
 	CHECK(query.next());
@@ -1435,14 +1454,14 @@ TEST_CASE("[Modules][ECS] Test dynamic query with dynamic storages.") {
 	}
 
 	CHECK(!query.next());
-	query.end();
+	query.conclude_process(&world);
 
 	// ~~ Make sure the data got written using another immutable query. ~~
 
 	query.reset();
 	query.with_component(test_dyn_component_id, false);
 
-	query.begin(&world);
+	query.initiate_process(&world);
 
 	// Entity 1
 	CHECK(query.next());
@@ -1474,7 +1493,7 @@ TEST_CASE("[Modules][ECS] Test dynamic query with dynamic storages.") {
 	}
 
 	CHECK(!query.next());
-	query.end();
+	query.conclude_process(&world);
 }
 
 TEST_CASE("[Modules][ECS] Test invalid dynamic query.") {
@@ -1517,11 +1536,12 @@ TEST_CASE("[Modules][ECS] Test query with event.") {
 								.with(TransformComponent())
 								.with(TestEvent());
 
-	world.get_storage<TestEvent>()->set_tracing_change(true);
+	Query<EntityID, Batch<Changed<const TestEvent>>> query_batch_changed(&world);
 
 	// Try the first query with dynamic sized batch storage.
 	{
 		Query<EntityID, TransformComponent, Batch<const TestEvent>> query(&world);
+		query.initiate_process(&world);
 
 		{
 			CHECK(query.has(entity_1));
@@ -1554,24 +1574,7 @@ TEST_CASE("[Modules][ECS] Test query with event.") {
 	// Try the second query with fixed sized batch storage.
 	{
 		Query<EntityID, TransformComponent, Batch<const TestFixedSizeEvent>> query(&world);
-
-		{
-			CHECK(query.has(entity_2));
-			auto [entity, transform, event] = query[entity_2];
-
-			CHECK(entity_2 == entity);
-
-			CHECK(transform != nullptr);
-
-			CHECK(event.get_size() == 2);
-			CHECK(event[0]->number == 645);
-			CHECK(event[1]->number == 33);
-		}
-	}
-
-	// Try the second query with fixed sized batch storage.
-	{
-		Query<EntityID, TransformComponent, Batch<const TestFixedSizeEvent>> query(&world);
+		query.initiate_process(&world);
 
 		{
 			CHECK(query.has(entity_2));
@@ -1591,13 +1594,15 @@ TEST_CASE("[Modules][ECS] Test query with event.") {
 	{
 		// We always fetched with `const`, make sure no changes got triggered.
 		{
-			Query<EntityID, Batch<Changed<const TestEvent>>> query(&world);
-			CHECK(query.count() == 0);
+			query_batch_changed.initiate_process(&world);
+			CHECK(query_batch_changed.count() == 0);
+			query_batch_changed.conclude_process(&world);
 		}
 
 		// Trigger the changed event now, by fetching MUTABLE.
 		{
 			Query<EntityID, Batch<TestEvent>> query(&world);
+			query.initiate_process(&world);
 			uint32_t c = 0;
 			// Using the for loop to trigger the changed event.
 			for (auto [e, te] : query) {
@@ -1608,10 +1613,11 @@ TEST_CASE("[Modules][ECS] Test query with event.") {
 			CHECK(c == 2);
 		}
 
-		// Try again with the changed now.
+		// Is the changed taken?
 		{
-			Query<EntityID, Batch<Changed<const TestEvent>>> query(&world);
-			CHECK(query.count() == 2); // Two entities.
+			query_batch_changed.initiate_process(&world);
+			CHECK(query_batch_changed.count() == 2);
+			query_batch_changed.conclude_process(&world);
 		}
 	}
 }
@@ -1634,6 +1640,7 @@ TEST_CASE("[Modules][ECS] Test query random Entity access.") {
 								.with(TestEvent());
 
 	Query<EntityID, TransformComponent, TestEvent> query(&world);
+	query.initiate_process(&world);
 
 	{
 		CHECK(query.has(entity_1));
@@ -1671,19 +1678,23 @@ TEST_CASE("[Modules][ECS] Test static query count.") {
 
 	{
 		Query<const TransformComponent, TagQueryTestComponent> query(&world);
+		query.initiate_process(&world);
 		CHECK(query.count() == 1);
 	}
 	{
 		Query<const TransformComponent, Not<TagQueryTestComponent>, Not<TestFixedSizeEvent>> query(&world);
+		query.initiate_process(&world);
 		CHECK(query.count() == 1);
 		CHECK(query.has(entity_2));
 	}
 	{
 		Query<TestFixedSizeEvent> query(&world);
+		query.initiate_process(&world);
 		CHECK(query.count() == 1);
 	}
 	{
 		Query<const TransformComponent> query(&world);
+		query.initiate_process(&world);
 		CHECK(query.count() == 3);
 	}
 }
@@ -1719,6 +1730,7 @@ TEST_CASE("[Modules][ECS] Test static query Any filter.") {
 
 	{
 		Query<Any<const TagA, const TagB, TagC>> query(&world);
+		query.initiate_process(&world);
 
 		CHECK(query.has(entity_1));
 		CHECK(query.has(entity_2) == false);
@@ -1755,23 +1767,18 @@ TEST_CASE("[Modules][ECS] Test static query Any filter.") {
 		}
 	}
 
-	world.get_storage<TransformComponent>()->set_tracing_change(true);
-	world.get_storage<TransformComponent>()->notify_changed(entity_1);
-	world.get_storage<TransformComponent>()->notify_changed(entity_2);
-	world.get_storage<TransformComponent>()->notify_changed(entity_3);
-	world.get_storage<TransformComponent>()->notify_changed(entity_4);
-	world.get_storage<TransformComponent>()->notify_changed(entity_5);
-
-	world.get_storage<TagB>()->set_tracing_change(true);
-	world.get_storage<TagB>()->notify_changed(entity_3);
-
-	world.get_storage<TagC>()->set_tracing_change(true);
-	world.get_storage<TagC>()->notify_changed(entity_4);
-	world.get_storage<TagC>()->notify_changed(entity_5);
-
 	// Test `Any` with `Changed` filter.
 	{
 		Query<Changed<TransformComponent>, Any<Changed<const TagA>, Changed<const TagB>, Changed<TagC>>> query(&world);
+		world.get_storage<TransformComponent>()->notify_changed(entity_1);
+		world.get_storage<TransformComponent>()->notify_changed(entity_2);
+		world.get_storage<TransformComponent>()->notify_changed(entity_3);
+		world.get_storage<TransformComponent>()->notify_changed(entity_4);
+		world.get_storage<TransformComponent>()->notify_changed(entity_5);
+		world.get_storage<TagB>()->notify_changed(entity_3);
+		world.get_storage<TagC>()->notify_changed(entity_4);
+		world.get_storage<TagC>()->notify_changed(entity_5);
+		query.initiate_process(&world);
 
 		CHECK(query.has(entity_1) == false); // TagA not changed
 		CHECK(query.has(entity_2) == false); // No tags
@@ -1807,6 +1814,15 @@ TEST_CASE("[Modules][ECS] Test static query Any filter.") {
 	// Test `Any` with and without `Changed` filter.
 	{
 		Query<Changed<TransformComponent>, Any<const TagA, Changed<const TagB>, Changed<TagC>>> query(&world);
+		world.get_storage<TransformComponent>()->notify_changed(entity_1);
+		world.get_storage<TransformComponent>()->notify_changed(entity_2);
+		world.get_storage<TransformComponent>()->notify_changed(entity_3);
+		world.get_storage<TransformComponent>()->notify_changed(entity_4);
+		world.get_storage<TransformComponent>()->notify_changed(entity_5);
+		world.get_storage<TagB>()->notify_changed(entity_3);
+		world.get_storage<TagC>()->notify_changed(entity_4);
+		world.get_storage<TagC>()->notify_changed(entity_5);
+		query.initiate_process(&world);
 
 		CHECK(query.has(entity_1));
 		CHECK(query.has(entity_2) == false);
@@ -1851,6 +1867,15 @@ TEST_CASE("[Modules][ECS] Test static query Any filter.") {
 	// Note: This test is here just for validation, but doesn't make much sense.
 	{
 		Query<EntityID, Changed<TransformComponent>, Any<Not<TagA>, Not<const TagB>, Not<TagC>>> query(&world);
+		world.get_storage<TransformComponent>()->notify_changed(entity_1);
+		world.get_storage<TransformComponent>()->notify_changed(entity_2);
+		world.get_storage<TransformComponent>()->notify_changed(entity_3);
+		world.get_storage<TransformComponent>()->notify_changed(entity_4);
+		world.get_storage<TransformComponent>()->notify_changed(entity_5);
+		world.get_storage<TagB>()->notify_changed(entity_3);
+		world.get_storage<TagC>()->notify_changed(entity_4);
+		world.get_storage<TagC>()->notify_changed(entity_5);
+		query.initiate_process(&world);
 
 		// Since `Any` needs just one filter to be satisfied, all are valid.
 		CHECK(query.has(entity_1));
@@ -1901,11 +1926,13 @@ TEST_CASE("[Modules][ECS] Test static query Any filter.") {
 	// Fetch using Any + Join.
 	// Any is not triggered by the `Join`
 	{
-		world.get_storage<TagB>()->notify_updated(entity_3);
-		world.get_storage<TagC>()->notify_updated(entity_4);
-		world.get_storage<TagC>()->notify_updated(entity_5);
-
 		Query<Any<Changed<TransformComponent>, Join<Changed<TagA>, Changed<TagB>, Changed<TagC>>>> query(&world);
+		world.get_storage<TransformComponent>()->notify_changed(entity_1);
+		world.get_storage<TransformComponent>()->notify_changed(entity_2);
+		world.get_storage<TransformComponent>()->notify_changed(entity_3);
+		world.get_storage<TransformComponent>()->notify_changed(entity_4);
+		world.get_storage<TransformComponent>()->notify_changed(entity_5);
+		query.initiate_process(&world);
 
 		// TransformComponent is always changed, so all are taken
 		CHECK(query.has(entity_1));
@@ -1943,17 +1970,12 @@ TEST_CASE("[Modules][ECS] Test static query Any filter.") {
 
 	// Now, Any is triggered by the `Join`, make sure we can retrieve the same data.
 	{
-		world.get_storage<TransformComponent>()->notify_updated(entity_1);
-		world.get_storage<TransformComponent>()->notify_updated(entity_2);
-		world.get_storage<TransformComponent>()->notify_updated(entity_3);
-		world.get_storage<TransformComponent>()->notify_updated(entity_4);
-		world.get_storage<TransformComponent>()->notify_updated(entity_5);
-
+		Query<Any<Changed<TransformComponent>, Join<Changed<TagA>, Changed<TagB>, Changed<TagC>>>> query(&world);
 		world.get_storage<TagB>()->notify_changed(entity_3);
 		world.get_storage<TagC>()->notify_changed(entity_4);
 		world.get_storage<TagC>()->notify_changed(entity_5);
 
-		Query<Any<Changed<TransformComponent>, Join<Changed<TagA>, Changed<TagB>, Changed<TagC>>>> query(&world);
+		query.initiate_process(&world);
 
 		CHECK(query.has(entity_1) == false);
 		CHECK(query.has(entity_2) == false);
@@ -2003,6 +2025,7 @@ TEST_CASE("[Modules][ECS] Test static query Join filter.") {
 
 	{
 		Query<TransformComponent, Join<const TagA, const TagB, TagC>> query(&world);
+		query.initiate_process(&world);
 
 		CHECK(query.has(entity_1));
 		CHECK(query.has(entity_2) == false);
@@ -2057,21 +2080,16 @@ TEST_CASE("[Modules][ECS] Test static query Join filter.") {
 		}
 	}
 
-	world.get_storage<TransformComponent>()->set_tracing_change(true);
-	world.get_storage<TransformComponent>()->notify_changed(entity_1);
-	world.get_storage<TransformComponent>()->notify_changed(entity_2);
-	world.get_storage<TransformComponent>()->notify_changed(entity_3);
-	world.get_storage<TransformComponent>()->notify_changed(entity_4);
-
-	world.get_storage<TagB>()->set_tracing_change(true);
-	world.get_storage<TagB>()->notify_changed(entity_3);
-
-	world.get_storage<TagC>()->set_tracing_change(true);
-	world.get_storage<TagC>()->notify_changed(entity_4);
-
 	// Test `Join` with `Changed` filter.
 	{
 		Query<Changed<TransformComponent>, Join<Changed<const TagA>, Changed<const TagB>, Changed<TagC>>> query(&world);
+		world.get_storage<TransformComponent>()->notify_changed(entity_1);
+		world.get_storage<TransformComponent>()->notify_changed(entity_2);
+		world.get_storage<TransformComponent>()->notify_changed(entity_3);
+		world.get_storage<TransformComponent>()->notify_changed(entity_4);
+		world.get_storage<TagB>()->notify_changed(entity_3);
+		world.get_storage<TagC>()->notify_changed(entity_4);
+		query.initiate_process(&world);
 
 		CHECK(query.has(entity_1) == false);
 		CHECK(query.has(entity_2) == false);
@@ -2092,6 +2110,13 @@ TEST_CASE("[Modules][ECS] Test static query Join filter.") {
 	// Test `Join` with and without `Changed` filter.
 	{
 		Query<Changed<TransformComponent>, Join<const TagA, Changed<const TagB>, Changed<TagC>>> query(&world);
+		world.get_storage<TransformComponent>()->notify_changed(entity_1);
+		world.get_storage<TransformComponent>()->notify_changed(entity_2);
+		world.get_storage<TransformComponent>()->notify_changed(entity_3);
+		world.get_storage<TransformComponent>()->notify_changed(entity_4);
+		world.get_storage<TagB>()->notify_changed(entity_3);
+		world.get_storage<TagC>()->notify_changed(entity_4);
+		query.initiate_process(&world);
 
 		CHECK(query.has(entity_1));
 		CHECK(query.has(entity_2) == false);
@@ -2118,6 +2143,13 @@ TEST_CASE("[Modules][ECS] Test static query Join filter.") {
 	// Note: This test is here just for validation, but doesn't make much sense.
 	{
 		Query<Changed<TransformComponent>, Join<Not<TagA>, Not<const TagB>, Not<TagC>>> query(&world);
+		world.get_storage<TransformComponent>()->notify_changed(entity_1);
+		world.get_storage<TransformComponent>()->notify_changed(entity_2);
+		world.get_storage<TransformComponent>()->notify_changed(entity_3);
+		world.get_storage<TransformComponent>()->notify_changed(entity_4);
+		world.get_storage<TagB>()->notify_changed(entity_3);
+		world.get_storage<TagC>()->notify_changed(entity_4);
+		query.initiate_process(&world);
 
 		// Since `Join` needs just one filter to be satisfied, all are valid.
 		CHECK(query.has(entity_1));

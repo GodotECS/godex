@@ -589,6 +589,7 @@ TEST_CASE("[Modules][ECS] Test create and remove Entity from Systems.") {
 		{
 			// Count the `Entities` at this point.
 			Query<const TransformComponent> query(&world);
+			query.initiate_process(&world);
 
 			// The `System` removes the `Entities` defferred, so at this point
 			// the `Entities` still exists.
@@ -601,6 +602,7 @@ TEST_CASE("[Modules][ECS] Test create and remove Entity from Systems.") {
 		{
 			// Count the `Entities` at this point.
 			Query<const TransformComponent> query(&world);
+			query.initiate_process(&world);
 
 			// Now the `Entities` are removed.
 			const uint32_t count = query.count();
@@ -907,12 +909,9 @@ TEST_CASE("[Modules][ECS] Test Add/remove from dynamic system.") {
 		code += "	with_storage(ECS.Test1Component)\n";
 		code += "\n";
 		code += "func _execute(world_commands, comp_storage):\n";
-		code += "	print(\"A1\")\n";
 		code += "	var entity_2 = world_commands.create_entity()\n";
-		code += "	print(\"A2\")\n";
 		code += "	comp_storage.insert(entity_2, {\"a\": 975})\n";
 		code += "	var entity_3 = world_commands.create_entity()\n";
-		code += "	print(\"A3\")\n";
 		code += "	comp_storage.insert(entity_3)\n";
 		code += "\n";
 
@@ -1022,10 +1021,6 @@ TEST_CASE("[Modules][ECS] Test fetch changed from dynamic system.") {
 
 	World world;
 
-	const EntityID entity_1 = world
-									  .create_entity()
-									  .with(TransformComponent());
-
 	PipelineBuilder pipeline_builder;
 	// Add the system to the pipeline.
 	pipeline_builder.add_system(ECS::get_system_id("TestChangedDynamicSystem.gd"));
@@ -1035,6 +1030,11 @@ TEST_CASE("[Modules][ECS] Test fetch changed from dynamic system.") {
 	pipeline_builder.build(pipeline);
 	Token token = pipeline.prepare_world(&world);
 	pipeline.set_active(token, true);
+
+	// Insert here, so the change is triggered.
+	const EntityID entity_1 = world
+									  .create_entity()
+									  .with(TransformComponent());
 
 	// Dispatch 1 time.
 	pipeline.dispatch(token);
@@ -1065,6 +1065,15 @@ TEST_CASE("[Modules][ECS] Test system changed query filter.") {
 
 	World world;
 
+	PipelineBuilder pipeline_builder;
+	pipeline_builder.add_system(system_id);
+
+	Pipeline pipeline;
+	pipeline_builder.build(pipeline);
+	Token token = pipeline.prepare_world(&world);
+	pipeline.set_active(token, true);
+
+	// Insert at this point, so we the `Changed` event is captured.
 	EntityID entity_1 = world
 								.create_entity()
 								.with(ChangeTracer())
@@ -1079,14 +1088,6 @@ TEST_CASE("[Modules][ECS] Test system changed query filter.") {
 								.create_entity()
 								.with(ChangeTracer())
 								.with(TransformComponent());
-
-	PipelineBuilder pipeline_builder;
-	pipeline_builder.add_system(system_id);
-
-	Pipeline pipeline;
-	pipeline_builder.build(pipeline);
-	Token token = pipeline.prepare_world(&world);
-	pipeline.set_active(token, true);
 
 	for (uint32_t i = 0; i < 3; i += 1) {
 		// Leave entity_1 untouched.

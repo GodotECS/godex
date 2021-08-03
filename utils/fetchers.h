@@ -51,8 +51,12 @@ public:
 	const void *get_target() const;
 
 	virtual void get_system_info(SystemExeInfo *r_info) const;
-	virtual void begin(World *p_world) override;
-	virtual void end() override;
+
+	virtual void prepare_world(World *p_world) override;
+	virtual void initiate_process(World *p_world) override;
+	virtual void conclude_process(World *p_world) override;
+	virtual void release_world(World *p_world) override;
+	virtual void set_active(bool p_active) override;
 
 	bool _set(const StringName &p_name, const Variant &p_value);
 	bool _get(const StringName &p_name, Variant &r_ret) const;
@@ -78,8 +82,12 @@ public:
 	const void *get_target() const;
 
 	virtual void get_system_info(SystemExeInfo *r_info) const;
-	virtual void begin(World *p_world) override;
-	virtual void end() override;
+
+	virtual void prepare_world(World *p_world) override;
+	virtual void initiate_process(World *p_world) override;
+	virtual void conclude_process(World *p_world) override;
+	virtual void release_world(World *p_world) override;
+	virtual void set_active(bool p_active) override;
 
 	bool _set(const StringName &p_name, const Variant &p_value);
 	bool _get(const StringName &p_name, Variant &r_ret) const;
@@ -105,8 +113,12 @@ public:
 	const void *get_target() const;
 
 	virtual void get_system_info(SystemExeInfo *r_info) const;
-	virtual void begin(World *p_world) override;
-	virtual void end() override;
+
+	virtual void prepare_world(World *p_world) override;
+	virtual void initiate_process(World *p_world) override;
+	virtual void conclude_process(World *p_world) override;
+	virtual void release_world(World *p_world) override;
+	virtual void set_active(bool p_active) override;
 
 	void emit(const String &p_emitter_name, const Variant &p_data = Variant());
 };
@@ -131,8 +143,12 @@ public:
 	const void *get_target() const;
 
 	virtual void get_system_info(SystemExeInfo *r_info) const;
-	virtual void begin(World *p_world) override;
-	virtual void end() override;
+
+	virtual void prepare_world(World *p_world) override;
+	virtual void initiate_process(World *p_world) override;
+	virtual void conclude_process(World *p_world) override;
+	virtual void release_world(World *p_world) override;
+	virtual void set_active(bool p_active) override;
 
 	Array fetch();
 };

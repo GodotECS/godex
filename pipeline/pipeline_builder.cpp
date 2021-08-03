@@ -775,37 +775,10 @@ struct GeneratedEventInfo {
 void internal_detect_warnings_lost_events(
 		Ref<ExecutionGraph::Dispatcher> dispatcher,
 		Set<GeneratedEventInfo> &changed_events) {
+	// In this moment there aren't warning to detect.
+	return;
+	/* Just the old code, it's here in case we need to detect some warnings.
 	for (const List<ExecutionGraph::SystemNode *>::Element *e = dispatcher->sorted_systems.front(); e; e = e->next()) {
-		if ((ECS::get_system_flags(e->get()->id) & BUILDER_IGNORE_WARNING_CHANGED_EVENTS) != 0) {
-			continue;
-		}
-
-		// Detect if this system is generating an event.
-		for (Set<godex::component_id>::Element *generated_component = e->get()->info.mutable_components_storage.front(); generated_component; generated_component = generated_component->next()) {
-			if (changed_events.has({ generated_component->get(), godex::SYSTEM_NONE })) {
-				// A system prior to this one is fetching the changes of this
-				// component. Notify it.
-				changed_events.erase({ generated_component->get(), godex::SYSTEM_NONE }); // TODO No way to update the existing one instead??
-				changed_events.insert({ generated_component->get(), e->get()->id });
-			}
-		}
-
-		// Detect if this system is fetching the event.
-		for (Set<godex::component_id>::Element *fetch_component = e->get()->info.mutable_components.front(); fetch_component; fetch_component = fetch_component->next()) {
-			if (changed_events.has({ fetch_component->get(), godex::SYSTEM_NONE })) {
-				// A system prior to this one is fetching the changes of this
-				// component. Notify it.
-				changed_events.erase({ fetch_component->get(), godex::SYSTEM_NONE }); // TODO No way to update the existing one instead??
-				changed_events.insert({ fetch_component->get(), e->get()->id });
-			}
-		}
-
-		for (Set<godex::component_id>::Element *changed = e->get()->info.need_changed.front(); changed; changed = changed->next()) {
-			// Notify each changed component this system is reading.
-			changed_events.erase({ changed->get(), godex::SYSTEM_NONE }); // TODO No way to update the existing one instead??
-			changed_events.insert({ changed->get(), godex::SYSTEM_NONE });
-		}
-
 		// This is a dispatcher, check this before continue.
 		if (e->get()->is_dispatcher()) {
 			internal_detect_warnings_lost_events(
@@ -813,6 +786,7 @@ void internal_detect_warnings_lost_events(
 					changed_events);
 		}
 	}
+	*/
 }
 
 void PipelineBuilder::detect_warnings_lost_events(ExecutionGraph *r_graph) {

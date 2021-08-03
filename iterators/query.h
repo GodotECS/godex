@@ -679,24 +679,50 @@ struct QueryStorage<I, Not<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 /// `QueryStorage` `Changed` filter specialization.
 template <std::size_t I, class C, class... Cs>
 struct QueryStorage<I, Changed<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
+	World *world = nullptr;
+	EntityList changed;
 	Storage<C> *storage = nullptr;
 
 	QueryStorage(World *p_world) :
-			QueryStorage<I + 1, Cs...>(p_world) {}
+			QueryStorage<I + 1, Cs...>(p_world),
+			world(p_world) {
+		Storage<C> *s = p_world->get_storage<C>();
+		if (s) {
+			s->add_change_listener(&changed);
+		}
+	}
+	~QueryStorage() {
+		Storage<C> *s = world->get_storage<C>();
+		if (s) {
+			s->remove_change_listener(&changed);
+		}
+	}
 
 	void initiate_process(World *p_world) {
 		QueryStorage<I + 1, Cs...>::initiate_process(p_world);
 		storage = p_world->get_storage<C>();
+		// Make sure this doesn't change at this point.
+		changed.freeze();
 	}
 
 	void conclude_process(World *p_world) {
 		QueryStorage<I + 1, Cs...>::conclude_process(p_world);
 		storage = nullptr;
+		// Unfreeze the list and clear it to listen on the new events.
+		changed.unfreeze();
+		changed.clear();
 	}
 
 	void set_world_notification_active(bool p_active) {
 		QueryStorage<I + 1, Cs...>::set_world_notification_active(p_active);
-		CRASH_NOW(); //TODO
+		Storage<C> *s = world->get_storage<C>();
+		if (s) {
+			if (p_active) {
+				s->add_change_listener(&changed);
+			} else {
+				s->remove_change_listener(&changed);
+			}
+		}
 	}
 
 	constexpr static bool is_filter_derminant() {
@@ -711,7 +737,7 @@ struct QueryStorage<I, Changed<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 		if (unlikely(storage == nullptr)) {
 			return o_entities;
 		}
-		const EntitiesBuffer entities = storage->get_changed_entities();
+		const EntitiesBuffer entities(changed.size(), changed.get_entities_ptr());
 		return entities.count < o_entities.count ? entities : o_entities;
 	}
 
@@ -721,7 +747,7 @@ struct QueryStorage<I, Changed<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 			// immediately.
 			return false;
 		}
-		return storage->is_changed(p_entity) && QueryStorage<I + 1, Cs...>::filter_satisfied(p_entity);
+		return changed.has(p_entity) && QueryStorage<I + 1, Cs...>::filter_satisfied(p_entity);
 	}
 
 	bool can_fetch(EntityID p_entity) const {
@@ -755,7 +781,6 @@ struct QueryStorage<I, Changed<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 		} else {
 			r_info.mutable_components.insert(C::get_component_id());
 		}
-		r_info.need_changed.insert(C::get_component_id());
 		QueryStorage<I + 1, Cs...>::get_components(r_info);
 	}
 };
@@ -778,8 +803,7 @@ struct QueryStorage<I, Batch<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 		query_storage.initiate_process(p_world);
 	}
 
-	void
-	conclude_process(World *p_world) {
+	void conclude_process(World *p_world) {
 		QueryStorage<I + 1, Cs...>::conclude_process(p_world);
 		query_storage.conclude_process(p_world);
 	}

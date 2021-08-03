@@ -18,12 +18,11 @@ class System : public Resource {
 
 	friend class ScriptEcs;
 
+	godex::system_id id;
 	// Used by the editor to know if the associated script exists.
 	bool verified = false;
 	String script_path;
 	godex::DynamicSystemInfo *info = nullptr;
-	godex::system_id id = UINT32_MAX;
-	bool prepare_in_progress = false;
 
 	static void _bind_methods();
 	const String &get_script_path() const;
@@ -42,7 +41,6 @@ public:
 	void execute_after(uint32_t p_system);
 	void execute_before(uint32_t p_system);
 
-	void set_space(Space p_space);
 	void with_query_gd(Object *p_query);
 	void with_query(godex::DynamicQuery *p_query);
 	void with_databag(uint32_t p_databag_id, Mutability p_mutability);
@@ -53,12 +51,17 @@ public:
 	godex::system_id get_system_id() const;
 
 	/// This function is only used by few tests. Never use this, use `prepare` instead.
-	// TODO remove this function.
-	void __force_set_system_info(godex::DynamicSystemInfo *p_info, godex::system_id p_id);
 	/// Prepare this System to be executed.
-	void prepare(godex::DynamicSystemInfo *p_info, godex::system_id p_id);
+	void prepare(godex::DynamicSystemInfo *p_info);
 
 	static String validate_script(Ref<Script> p_script);
+
+	static void get_system_exec_info(godex::system_id p_id, SystemExeInfo &r_info);
+
+	static uint64_t dynamic_system_data_get_size();
+	static void dynamic_system_data_new_placement(uint8_t *r_mem, Token p_token, World *p_world, Pipeline *p_pipline, godex::system_id p_id);
+	static void dynamic_system_data_delete_placement(uint8_t *p_mem);
+	static void dynamic_system_data_set_active(uint8_t *p_mem, bool p_active);
 };
 
 class SystemBundle : public Resource {

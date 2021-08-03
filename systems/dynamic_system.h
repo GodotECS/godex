@@ -10,21 +10,6 @@ class GDScriptFunction;
 
 namespace godex {
 
-uint64_t dynamic_system_data_get_size();
-void dynamic_system_data_new_placement(uint8_t *, Token, World *, Pipeline *, godex::system_id);
-void dynamic_system_data_delete_placement(uint8_t *);
-void dynamic_system_data_set_active(uint8_t *, bool);
-
-class DynamicSystemInfo;
-
-/// This function register the `DynamicSystemInfo` in a static array (generated
-/// at compile time) and returns a pointer to a function that is able to call
-/// `godex::DynamicSystemInfo::executor()` with the passed `DynamicSystemInfo`.
-uint32_t register_dynamic_system();
-func_get_system_exe_info get_func_dynamic_system_exec_info(uint32_t p_dynamic_system_id);
-DynamicSystemInfo *get_dynamic_system_info(uint32_t p_dynamic_system_id);
-void __dynamic_system_info_static_destructor();
-
 /// `DynamicSystemInfo` is a class used to compose a system at runtime.
 /// It's able to execute script systems.
 //
@@ -42,6 +27,7 @@ class DynamicSystemInfo {
 	ScriptInstance *target_script = nullptr;
 
 	bool compiled = false;
+	World *world = nullptr;
 
 	// Function direct access, for fast GDScript execution.
 	GDScriptFunction *gdscript_function = nullptr;
@@ -72,11 +58,12 @@ public:
 	void with_events_emitter(godex::event_id p_event_id);
 	void with_events_receiver(godex::event_id p_event_id, const String &p_emitter_name);
 
-	bool build();
+	void prepare_world(World *p_world);
+	void set_active(bool p_active);
 	void reset();
 
 public:
-	static void get_info(DynamicSystemInfo &p_info, func_system_execute p_exec, SystemExeInfo &r_out);
-	static void executor(World *p_world, DynamicSystemInfo &p_info);
+	static void get_info(DynamicSystemInfo &p_info, SystemExeInfo &r_out);
+	static void executor(uint8_t *p_mem, World *p_world);
 };
 } // namespace godex

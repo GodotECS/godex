@@ -109,13 +109,19 @@ void DatabagDynamicFetcher::get_system_info(SystemExeInfo *r_info) const {
 	}
 }
 
-void DatabagDynamicFetcher::begin(World *p_world) {
+void DatabagDynamicFetcher::prepare_world(World *p_world) {}
+
+void DatabagDynamicFetcher::initiate_process(World *p_world) {
 	databag_ptr = (void *)p_world->get_databag(databag_id);
 }
 
-void DatabagDynamicFetcher::end() {
+void DatabagDynamicFetcher::conclude_process(World *p_world) {
 	databag_ptr = nullptr;
 }
+
+void DatabagDynamicFetcher::release_world(World *p_world) {}
+
+void DatabagDynamicFetcher::set_active(bool p_active) {}
 
 bool DatabagDynamicFetcher::_set(const StringName &p_name, const Variant &p_value) {
 	if (mut) {
@@ -182,13 +188,19 @@ void StorageDynamicFetcher::get_system_info(SystemExeInfo *r_info) const {
 	r_info->mutable_components_storage.insert(storage_component_id);
 }
 
-void StorageDynamicFetcher::begin(World *p_world) {
+void StorageDynamicFetcher::prepare_world(World *p_world) {}
+
+void StorageDynamicFetcher::initiate_process(World *p_world) {
 	storage_ptr = p_world->get_storage(storage_component_id);
 }
 
-void StorageDynamicFetcher::end() {
+void StorageDynamicFetcher::conclude_process(World *p_world) {
 	storage_ptr = nullptr;
 }
+
+void StorageDynamicFetcher::release_world(World *p_world) {}
+
+void StorageDynamicFetcher::set_active(bool p_active) {}
 
 bool StorageDynamicFetcher::_set(const StringName &p_name, const Variant &p_value) {
 	return storage_ptr->set(p_name, p_value);
@@ -249,16 +261,22 @@ void EventsEmitterDynamicFetcher::get_system_info(SystemExeInfo *r_info) const {
 	r_info->events_emitters.insert(event_id);
 }
 
-void EventsEmitterDynamicFetcher::begin(World *p_world) {
+void EventsEmitterDynamicFetcher::prepare_world(World *p_world) {}
+
+void EventsEmitterDynamicFetcher::initiate_process(World *p_world) {
 	event_storage_ptr = p_world->get_events_storage(event_id);
 	if (event_storage_ptr) {
 		event_storage_ptr->flush_events();
 	}
 }
 
-void EventsEmitterDynamicFetcher::end() {
+void EventsEmitterDynamicFetcher::conclude_process(World *p_world) {
 	event_storage_ptr = nullptr;
 }
+
+void EventsEmitterDynamicFetcher::release_world(World *p_world) {}
+
+void EventsEmitterDynamicFetcher::set_active(bool p_active) {}
 
 void EventsEmitterDynamicFetcher::emit(const String &p_emitter_name, const Variant &p_data) {
 	ERR_FAIL_COND(event_storage_ptr == nullptr);
@@ -306,13 +324,19 @@ void EventsReceiverDynamicFetcher::get_system_info(SystemExeInfo *r_info) const 
 	emitters->insert(emitter_name);
 }
 
-void EventsReceiverDynamicFetcher::begin(World *p_world) {
+void EventsReceiverDynamicFetcher::prepare_world(World *p_world) {}
+
+void EventsReceiverDynamicFetcher::initiate_process(World *p_world) {
 	event_storage_ptr = p_world->get_events_storage(event_id);
 }
 
-void EventsReceiverDynamicFetcher::end() {
+void EventsReceiverDynamicFetcher::conclude_process(World *p_world) {
 	event_storage_ptr = nullptr;
 }
+
+void EventsReceiverDynamicFetcher::release_world(World *p_world) {}
+
+void EventsReceiverDynamicFetcher::set_active(bool p_active) {}
 
 Array EventsReceiverDynamicFetcher::fetch() {
 	ERR_FAIL_COND_V(event_storage_ptr == nullptr, Array());

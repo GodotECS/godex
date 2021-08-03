@@ -38,14 +38,10 @@ const String &System::get_script_path() const {
 System::System() {
 }
 
-System::~System() {
-	if (id != UINT32_MAX) {
-		ECS::set_dynamic_system_target(id, nullptr);
-	}
-}
+System::~System() {}
 
 void System::execute_in(Phase p_phase, uint32_t p_dispatcher_id) {
-	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
+	ERR_FAIL_COND_MSG(info == nullptr, "No info set. This function can be called only within the `_prepare`.");
 	if (p_dispatcher_id != godex::SYSTEM_NONE) {
 		const StringName name = ECS::get_system_name(p_dispatcher_id);
 		ERR_FAIL_COND(name == StringName());
@@ -56,14 +52,14 @@ void System::execute_in(Phase p_phase, uint32_t p_dispatcher_id) {
 }
 
 void System::execute_after(uint32_t p_system) {
-	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
+	ERR_FAIL_COND_MSG(info == nullptr, "No info set. This function can be called only within the `_prepare`.");
 	const StringName name = ECS::get_system_name(p_system);
 	ERR_FAIL_COND(name == StringName());
 	info->execute_after(name);
 }
 
 void System::execute_before(uint32_t p_system) {
-	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
+	ERR_FAIL_COND_MSG(info == nullptr, "No info set. This function can be called only within the `_prepare`.");
 	const StringName name = ECS::get_system_name(p_system);
 	ERR_FAIL_COND(name == StringName());
 	info->execute_before(name);
@@ -74,27 +70,27 @@ void System::with_query_gd(Object *p_query) {
 }
 
 void System::with_query(godex::DynamicQuery *p_query) {
-	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
+	ERR_FAIL_COND_MSG(info == nullptr, "No info set. This function can be called only within the `_prepare`.");
 	info->with_query(p_query);
 }
 
 void System::with_databag(uint32_t p_databag_id, Mutability p_mutability) {
-	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
+	ERR_FAIL_COND_MSG(info == nullptr, "No info set. This function can be called only within the `_prepare`.");
 	info->with_databag(p_databag_id, p_mutability == MUTABLE);
 }
 
 void System::with_storage(uint32_t p_component_id) {
-	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
+	ERR_FAIL_COND_MSG(info == nullptr, "No info set. This function can be called only within the `_prepare`.");
 	info->with_storage(p_component_id);
 }
 
 void System::with_events_emitter(godex::event_id p_event_id) {
-	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
+	ERR_FAIL_COND_MSG(info == nullptr, "No info set. This function can be called only within the `_prepare`.");
 	info->with_events_emitter(p_event_id);
 }
 
 void System::with_events_receiver(godex::event_id p_event_id, const String &p_emitter_name) {
-	ERR_FAIL_COND_MSG(prepare_in_progress == false, "No info set. This function can be called only within the `_prepare`.");
+	ERR_FAIL_COND_MSG(info == nullptr, "No info set. This function can be called only within the `_prepare`.");
 	info->with_events_receiver(p_event_id, p_emitter_name);
 }
 
@@ -102,26 +98,17 @@ godex::system_id System::get_system_id() const {
 	return id;
 }
 
-void System::__force_set_system_info(godex::DynamicSystemInfo *p_info, godex::system_id p_id) {
-	id = p_id;
-	info = p_info;
-}
-
-void System::prepare(godex::DynamicSystemInfo *p_info, godex::system_id p_id) {
+void System::prepare(godex::DynamicSystemInfo *p_info) {
 	ERR_FAIL_COND_MSG(p_info == nullptr, "[FATAL] This is not supposed to happen.");
 	ERR_FAIL_COND_MSG(get_script_instance() == nullptr, "[FATAL] This is not supposed to happen.");
 
-	// Set the components and databags
-	id = p_id;
 	info = p_info;
-	Callable::CallError err;
-	prepare_in_progress = true;
-	get_script_instance()->call("_prepare", nullptr, 0, err);
-	prepare_in_progress = false;
+	info->set_system_id(id);
 
-	// Set this object as target.
-	info->set_target(get_script_instance());
-	info->build();
+	Callable::CallError err;
+	get_script_instance()->call("_prepare", nullptr, 0, err);
+
+	info = nullptr;
 }
 
 String System::validate_script(Ref<Script> p_script) {
@@ -162,6 +149,44 @@ String System::validate_script(Ref<Script> p_script) {
 
 	// This script is safe to use.
 	return "";
+}
+
+void System::get_system_exec_info(godex::system_id p_id, SystemExeInfo &r_info) {
+	Ref<System> system = ScriptEcs::get_singleton()->get_script_system(ECS::get_system_name(p_id));
+	r_info.valid = false;
+	ERR_FAIL_COND_MSG(!system.is_valid(), "The `ScriptEcs` wasn't able to create the scripted system: `" + ECS::get_system_name(p_id) + "`");
+
+	godex::DynamicSystemInfo dynamic_system_data;
+	system->prepare(&dynamic_system_data);
+
+	godex::DynamicSystemInfo::get_info(dynamic_system_data, r_info);
+}
+
+uint64_t System::dynamic_system_data_get_size() {
+	return sizeof(godex::DynamicSystemInfo);
+}
+
+void System::dynamic_system_data_new_placement(uint8_t *r_mem, Token p_token, World *p_world, Pipeline *p_pipeline, godex::system_id p_id) {
+	godex::DynamicSystemInfo *dynamic_system_data = new (r_mem) godex::DynamicSystemInfo();
+	dynamic_system_data->set_system_id(p_id);
+
+	Ref<System> system = ScriptEcs::get_singleton()->get_script_system(ECS::get_system_name(p_id));
+	ERR_FAIL_COND_MSG(system.is_valid() == false, "The scripted system: `" + ECS::get_system_name(p_id) + "` is invalid, can't created the SystemExecutionData properly.");
+
+	system->prepare(dynamic_system_data);
+	// Set this object as target.
+	dynamic_system_data->set_target(system->get_script_instance());
+	// Build.
+	dynamic_system_data->prepare_world(p_world);
+}
+
+void System::dynamic_system_data_delete_placement(uint8_t *p_mem) {
+	((godex::DynamicSystemInfo *)p_mem)->~DynamicSystemInfo();
+}
+
+void System::dynamic_system_data_set_active(uint8_t *p_mem, bool p_active) {
+	godex::DynamicSystemInfo *system_exec_data = (godex::DynamicSystemInfo *)p_mem;
+	system_exec_data->set_active(p_active);
 }
 
 void SystemBundle::_bind_methods() {

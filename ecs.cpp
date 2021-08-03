@@ -4,6 +4,7 @@
 #include "components/dynamic_component.h"
 #include "core/object/message_queue.h"
 #include "modules/godot/databags/scene_tree_databag.h"
+#include "modules/godot/nodes/ecs_utilities.h"
 #include "modules/godot/nodes/ecs_world.h"
 #include "pipeline/pipeline.h"
 #include "scene/main/scene_tree.h"
@@ -619,11 +620,7 @@ SystemInfo &ECS::register_dynamic_system(StringName p_name) {
 		const uint32_t id = get_system_id(p_name);
 		if (id != godex::SYSTEM_NONE) {
 			// The system is already registered, if it's a dynamic system reset it.
-			CRASH_COND_MSG(systems_info[id].dynamic_system_id == UINT32_MAX, "You can't register a dynamic system with the same name of a static one. Name used: " + p_name);
 			clear_emitters_for_system(id);
-			godex::DynamicSystemInfo *si = godex::get_dynamic_system_info(systems_info[id].dynamic_system_id);
-			si->reset();
-			si->set_system_id(id);
 			systems_info[id].phase = PHASE_PROCESS;
 			systems_info[id].dependencies.reset();
 			systems_info[id].type = SystemInfo::TYPE_DYNAMIC;
@@ -634,24 +631,17 @@ SystemInfo &ECS::register_dynamic_system(StringName p_name) {
 
 	const godex::system_id id = systems.size();
 
-	// Used to assign a static function to this dynamic system, check the
-	// DynamicSystem doc to know more (../systems/dynamic_system.h).
-	const uint32_t dynamic_system_id = godex::register_dynamic_system();
-
 	systems.push_back(p_name);
 	systems_info.push_back(SystemInfo());
 
 	systems_info[id].id = id;
-	systems_info[id].dynamic_system_id = dynamic_system_id;
-	systems_info[id].exec_info = godex::get_func_dynamic_system_exec_info(dynamic_system_id);
+	systems_info[id].type = SystemInfo::TYPE_DYNAMIC;
+	systems_info[id].exec_info = System::get_system_exec_info;
 
-	systems_info[id].system_data_get_size = godex::dynamic_system_data_get_size;
-	systems_info[id].system_data_new_placement = godex::dynamic_system_data_new_placement;
-	systems_info[id].system_data_delete_placement = godex::dynamic_system_data_delete_placement;
-	systems_info[id].system_data_set_active = godex::dynamic_system_data_set_active;
-
-	godex::get_dynamic_system_info(dynamic_system_id)
-			->set_system_id(id);
+	systems_info[id].system_data_get_size = System::dynamic_system_data_get_size;
+	systems_info[id].system_data_new_placement = System::dynamic_system_data_new_placement;
+	systems_info[id].system_data_delete_placement = System::dynamic_system_data_delete_placement;
+	systems_info[id].system_data_set_active = System::dynamic_system_data_set_active;
 
 	ClassDB::bind_integer_constant(get_class_static(), StringName(), String(p_name).replace(".", "_"), id);
 	print_line("Dynamic system: " + p_name + " registered with ID: " + itos(id));
@@ -778,15 +768,10 @@ SystemInfo &ECS::get_system_info(godex::system_id p_id) {
 	return systems_info[p_id];
 }
 
-func_get_system_exe_info ECS::get_func_system_exe_info(godex::system_id p_id) {
-	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, nullptr, "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
-	return systems_info[p_id].exec_info;
-}
-
 void ECS::get_system_exe_info(godex::system_id p_id, SystemExeInfo &r_info) {
 	ERR_FAIL_COND_MSG(verify_system_id(p_id) == false, "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
 	ERR_FAIL_COND_MSG(systems_info[p_id].exec_info == nullptr, "The System " + systems[p_id] + " is not a standard `System`.");
-	systems_info[p_id].exec_info(r_info);
+	systems_info[p_id].exec_info(p_id, r_info);
 }
 
 StringName ECS::get_system_name(godex::system_id p_id) {
@@ -824,19 +809,6 @@ const LocalVector<Dependency> &ECS::get_system_dependencies(godex::system_id p_i
 int ECS::get_system_flags(godex::system_id p_id) {
 	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, Flags::NONE, "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
 	return systems_info[p_id].flags;
-}
-
-void ECS::set_dynamic_system_target(godex::system_id p_id, ScriptInstance *p_target) {
-	ERR_FAIL_COND_MSG(verify_system_id(p_id) == false, "This system " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
-	ERR_FAIL_COND_MSG(systems_info[p_id].dynamic_system_id == UINT32_MAX, "The system " + itos(p_id) + " is not a dynamic system.");
-	godex::DynamicSystemInfo *info = godex::get_dynamic_system_info(systems_info[p_id].dynamic_system_id);
-	info->set_target(p_target);
-}
-
-godex::DynamicSystemInfo *ECS::get_dynamic_system_info(godex::system_id p_id) {
-	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, nullptr, "This system " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
-	ERR_FAIL_COND_V_MSG(systems_info[p_id].dynamic_system_id == UINT32_MAX, nullptr, "The system " + itos(p_id) + " is not a dynamic system.");
-	return godex::get_dynamic_system_info(systems_info[p_id].dynamic_system_id);
 }
 
 bool ECS::is_system_dispatcher(godex::system_id p_id) {
