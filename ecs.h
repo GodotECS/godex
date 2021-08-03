@@ -121,6 +121,11 @@ class SystemInfo {
 	func_get_system_exe_info exec_info = nullptr;
 	func_temporary_system_execute temporary_exec = nullptr;
 
+	func_system_data_get_size system_data_get_size = nullptr;
+	func_system_data_new_placement system_data_new_placement = nullptr;
+	func_system_data_delete_placement system_data_delete_placement = nullptr;
+	func_system_data_set_active system_data_set_active = nullptr;
+
 public:
 	godex::system_id get_id() const;
 	SystemInfo &execute_in(Phase p_phase, const StringName &p_dispatcher_name = StringName());
@@ -304,48 +309,130 @@ public:
 	static SystemBundleInfo &get_system_bundle(godex::system_bundle_id p_id);
 
 	// ~~ Systems ~~
-	static SystemInfo &register_system(func_get_system_exe_info p_func_get_exe_info, StringName p_name);
+	static SystemInfo &register_system(
+			func_get_system_exe_info p_func_get_exe_info,
+			func_system_data_get_size p_system_data_get_size,
+			func_system_data_new_placement p_system_data_new_placement,
+			func_system_data_delete_placement p_system_data_delete_placement,
+			func_system_data_set_active p_system_data_set_active,
+			StringName p_name);
 
 // By defining the same name of the method, the IDE autocomplete shows the
 // method name `register_system`, properly + it's impossible use the function
 // directly by mistake.
-#define register_system(func, name)                                             \
-	register_system([](SystemExeInfo &r_info) {                                 \
-		SystemBuilder::get_system_info_from_function(r_info, func);             \
-		r_info.system_func = [](World *p_world, Pipeline *, godex::system_id) { \
-			SystemBuilder::system_exec_func(p_world, func);                     \
-		};                                                                      \
-	},                                                                          \
+#define register_system(func, name)                                                   \
+	register_system(                                                                  \
+			[](SystemExeInfo &r_info) {                                               \
+				/* Take System Exe info. */                                           \
+				SystemBuilder::get_system_info_from_function(r_info, func);           \
+				r_info.system_func = [](uint8_t *p_mem, World *p_world) {             \
+					SystemBuilder::system_exec_func(p_mem, p_world, func);            \
+				};                                                                    \
+			},                                                                        \
+			[]() -> uint64_t {                                                        \
+				/* Get size of SystemData */                                          \
+				return SystemBuilder::system_data_size_of(func);                      \
+			},                                                                        \
+			[](uint8_t *p_mem, Token, World *p_world, Pipeline *, godex::system_id) { \
+				/* SystemData New placement */                                        \
+				SystemBuilder::system_data_new_placement(p_mem, p_world, func);       \
+			},                                                                        \
+			[](uint8_t *p_mem) {                                                      \
+				/* SystemData Delete */                                               \
+				SystemBuilder::system_data_delete_placement(p_mem, func);             \
+			},                                                                        \
+			[](uint8_t *p_mem, bool p_active) {                                       \
+				/* SystemData set world notifications */                              \
+				SystemBuilder::system_data_set_active(p_mem, p_active, func);         \
+			},                                                                        \
 			name)
 
-	static SystemInfo &register_system_dispatcher(func_get_system_exe_info p_func_get_exe_info, StringName p_name);
+	static void __process_pipeline_dispatcher(uint32_t p_count, Token p_token, Pipeline *p_pipeline, int p_dispatcher_index);
 
-	static void __process_pipeline_dispatcher(uint32_t p_count, World *p_world, Pipeline *p_pipeline, godex::system_id p_system_id);
+	static SystemInfo &register_system_dispatcher(
+			func_get_system_exe_info p_func_get_exe_info,
+			func_system_data_get_size p_system_data_get_size,
+			func_system_data_new_placement p_system_data_new_placement,
+			func_system_data_delete_placement p_system_data_delete_placement,
+			func_system_data_set_active p_system_data_set_active,
+			StringName p_name);
 
-// By defining the same name of the method, the IDE autocomplete shows the
-// method name `register_system_dispatcher`, properly + it's impossible use the
-// function directly by mistake.
-#define register_system_dispatcher(func, name)                                                        \
-	register_system_dispatcher([](SystemExeInfo &r_info) {                                            \
-		SystemBuilder::get_system_info_from_function(r_info, func);                                   \
-		r_info.system_func = [](World *p_world, Pipeline *p_pipeline, godex::system_id p_system_id) { \
-			const uint32_t count = SystemBuilder::system_dispatcher_exec_func(p_world, func);         \
-			ECS::__process_pipeline_dispatcher(count, p_world, p_pipeline, p_system_id);              \
-		};                                                                                            \
-	},                                                                                                \
+	// This macro defines all the SystemDispatcher functions.
+#define register_system_dispatcher(func, name)                                                                        \
+	register_system_dispatcher(                                                                                       \
+			[](SystemExeInfo &r_info) {                                                                               \
+				SystemBuilder::get_system_info_from_function(r_info, func);                                           \
+				r_info.system_func = [](uint8_t *p_mem, World *p_world) {                                             \
+					auto d = ((DispatcherSystemExecutionData *)p_mem);                                                \
+					const uint32_t count = SystemBuilder::system_dispatcher_exec_func(                                \
+							p_mem + sizeof(DispatcherSystemExecutionData),                                            \
+							p_world,                                                                                  \
+							func);                                                                                    \
+					ECS::__process_pipeline_dispatcher(count, d->token, d->pipeline, d->dispatcher_index);            \
+				};                                                                                                    \
+			},                                                                                                        \
+			[]() -> uint64_t {                                                                                        \
+				/* Get size of SystemData */                                                                          \
+				return sizeof(DispatcherSystemExecutionData) + SystemBuilder::system_data_size_of(func);              \
+			},                                                                                                        \
+			[](uint8_t *p_mem, Token p_token, World *p_world, Pipeline *p_pipeline, godex::system_id p_system_id) {   \
+				/* SystemData New placement */                                                                        \
+				/* First create the dispatcher data. */                                                               \
+				DispatcherSystemExecutionData *d = new (p_mem) DispatcherSystemExecutionData;                         \
+				d->token = p_token;                                                                                   \
+				d->pipeline = p_pipeline;                                                                             \
+				d->dispatcher_index = ECS::get_dispatcher_index(p_system_id);                                         \
+				/* Now initialize the SystemExecutionData, like we do for a normal `System`.*/                        \
+				SystemBuilder::system_data_new_placement(                                                             \
+						p_mem + sizeof(DispatcherSystemExecutionData),                                                \
+						p_world,                                                                                      \
+						func);                                                                                        \
+			},                                                                                                        \
+			[](uint8_t *p_mem) {                                                                                      \
+				/* SystemData Delete */                                                                               \
+				((DispatcherSystemExecutionData *)p_mem)->~DispatcherSystemExecutionData();                           \
+				SystemBuilder::system_data_delete_placement(p_mem + sizeof(DispatcherSystemExecutionData), func);     \
+			},                                                                                                        \
+			[](uint8_t *p_mem, bool p_active) {                                                                       \
+				/* SystemData set world notifications */                                                              \
+				SystemBuilder::system_data_set_active(p_mem + sizeof(DispatcherSystemExecutionData), p_active, func); \
+			},                                                                                                        \
 			name)
 
 	/// Register the temporary system and returns the ID.
-	static SystemInfo &register_temporary_system(func_temporary_system_execute p_func_temporary_systems_exe, StringName p_name);
+	static SystemInfo &register_temporary_system(
+			func_temporary_system_execute p_func_temporary_systems_exe,
+			func_system_data_get_size p_system_data_get_size,
+			func_system_data_new_placement p_system_data_new_placement,
+			func_system_data_delete_placement p_system_data_delete_placement,
+			func_system_data_set_active p_system_data_set_active,
+			StringName p_name);
 
-// By defining the same name of the method, the IDE autocomplete shows the
-// method name `register_temporary_system`, properly + it's impossible use the function
-// directly by mistake.
-// TODO use the same technique used for the system_dispatcher and normal system so we can retrieve the fetched data?
-#define register_temporary_system(func, name)                            \
-	register_temporary_system([](World *p_world) -> bool {               \
-		return SystemBuilder::temporary_system_exec_func(p_world, func); \
-	},                                                                   \
+	// By defining the same name of the method, the IDE autocomplete shows the
+	// method name `register_temporary_system`, properly + it's impossible use the function
+	// directly by mistake.
+	// TODO use the same technique used for the system_dispatcher and normal system so we can retrieve the fetched data?
+#define register_temporary_system(func, name)                                           \
+	register_temporary_system(                                                          \
+			[](uint8_t *p_mem, World *p_world) -> bool {                                \
+				return SystemBuilder::temporary_system_exec_func(p_mem, p_world, func); \
+			},                                                                          \
+			[]() -> uint64_t {                                                          \
+				/* Get size of SystemData */                                            \
+				return SystemBuilder::system_data_size_of(func);                        \
+			},                                                                          \
+			[](uint8_t *p_mem, Token, World *p_world, Pipeline *, godex::system_id) {   \
+				/* SystemData New placement */                                          \
+				SystemBuilder::system_data_new_placement(p_mem, p_world, func);         \
+			},                                                                          \
+			[](uint8_t *p_mem) {                                                        \
+				/* SystemData Delete */                                                 \
+				SystemBuilder::system_data_delete_placement(p_mem, func);               \
+			},                                                                          \
+			[](uint8_t *p_mem, bool p_active) {                                         \
+				/* SystemData set world notifications */                                \
+				SystemBuilder::system_data_set_active(p_mem, p_active, func);           \
+			},                                                                          \
 			name)
 
 	// Register the system and returns the ID.
@@ -390,6 +477,24 @@ public:
 	static bool verify_system_id(godex::system_id p_id);
 
 	static int get_dispatchers_count();
+
+	/// Returns the size of `SystemExecutionData` used by this system.
+	static uint64_t system_get_size_system_data(godex::system_id p_id);
+
+	/// Used to create a `SystemExecutionData` in the givem pre-allocated memory address.
+	/// `p_mem` must point to a preallocated memory, of the size given by
+	/// `system_get_size_system_data`.
+	static void system_new_placement_system_data(godex::system_id p_id, uint8_t *p_mem, Token p_token, World *p_world, Pipeline *p_pipeline);
+
+	/// Delete the pointer allocated by `system_new_placement_system_data`.
+	static void system_delete_placement_system_data(godex::system_id p_id, uint8_t *p_mem);
+
+	/// Set this system Active or Unactive; the system is supposed to be processed
+	/// only if Active.
+	/// The Pipeline preparation and Pipeline activation are decoupled so it's
+	/// possible to prepare a `World` to dispatch several pipelines, during load
+	/// time, making the pipeline switch immediate.
+	static void system_set_active_system(godex::system_id p_id, uint8_t *p_mem, bool p_active);
 
 private:
 	static void clear_emitters_for_system(godex::system_id p_id);

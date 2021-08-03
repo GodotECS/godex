@@ -476,3 +476,20 @@ struct PropertyInfoWithDefault {
 	PropertyInfoWithDefault(PropertyInfo &p_info, const Variant &p_def) :
 			info(p_info), def(p_def) {}
 };
+
+struct Token {
+	uint32_t index : 24;
+	uint8_t generation;
+
+	bool is_valid() const {
+		return generation > 0;
+	}
+};
+
+/// This structure is used by the `SystemDispatcher` to hold some extra info
+/// useful during the Dispatcher execution.
+struct DispatcherSystemExecutionData {
+	Token token;
+	class Pipeline *pipeline;
+	int dispatcher_index;
+};

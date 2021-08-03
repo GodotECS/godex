@@ -7,43 +7,69 @@
 Pipeline::Pipeline() {
 }
 
-// Unset the macro defined into the `pipeline.h` so to properly point the method
-// definition.
-#undef add_temporary_system
-void Pipeline::add_temporary_system(func_temporary_system_execute p_func_get_exe_info) {
-	temporary_systems_exe.push_back(p_func_get_exe_info);
-}
-
-void Pipeline::add_registered_temporary_system(godex::system_id p_id) {
-	add_temporary_system(ECS::get_func_temporary_system_exe(p_id));
-}
-
 bool Pipeline::is_ready() const {
 	return ready;
 }
 
-void Pipeline::reset() {
-	ready = false;
-	temporary_systems_exe.clear();
-	dispatchers.clear();
+bool Pipeline::can_change() const {
+	for (uint32_t i = 0; i < worlds.size(); i += 1) {
+		if (worlds[i].world != nullptr) {
+			return false;
+		}
+	}
+	return true;
 }
 
-void Pipeline::prepare(World *p_world) {
-	// Make sure to reset the `need_changed` for the storages of this world.
-	for (uint32_t i = 0; i < p_world->storages.size(); i += 1) {
-		if (p_world->storages[i] != nullptr) {
-			p_world->storages[i]->reset_changed();
-			p_world->storages[i]->set_tracing_change(false);
+void Pipeline::reset() {
+	ready = false;
+	temporary_systems.clear();
+	dispatchers.clear();
+
+	// Deallocate any valid token.
+	for (uint32_t i = 0; i < worlds.size(); i += 1) {
+		Token t;
+		t.index = i;
+		t.generation = worlds[i].generation;
+		release_world(t);
+	}
+}
+
+Token Pipeline::prepare_world(World *p_world) {
+	// Phase 1: Verify if this pipeline has prepared this World already.
+	for (uint32_t i = 0; i < worlds.size(); i += 1) {
+		if (worlds[i].world == p_world) {
+			// This world is already initialized, nothing to do, just return the token.
+			Token token;
+			token.index = i;
+			token.generation = worlds[i].generation;
+			return token;
 		}
 	}
 
-	for (uint32_t i = 0; i < p_world->events_storages.size(); i += 1) {
-		if (p_world->events_storages[i] != nullptr) {
-			p_world->events_storages[i]->flush_events();
+	// Phase 2: Prepare the World.
+	Token token;
+	token.index = 0;
+	token.generation = 0;
+
+	ERR_FAIL_COND_V_MSG(!is_ready(), token, "The Pipeline is not ready, you can't prepare a world at this point.");
+
+	for (uint32_t i = 0; i < worlds.size(); i += 1) {
+		if (worlds[i].world == nullptr) {
+			// We have a free space, let's use it.
+			token.index = i;
+			token.generation = worlds[i].generation;
+			break;
 		}
 	}
 
-	// Crete components and databags storages.
+	if (token.index == UINT32_MAX) {
+		token.index = worlds.size();
+		worlds.push_back(WorldData());
+	}
+
+	worlds[token.index].world = p_world;
+
+	// Phase 3: Crete components and databags storages.
 	SystemExeInfo info;
 
 	for (uint32_t dispatcher_i = 0; dispatcher_i < dispatchers.size(); dispatcher_i += 1) {
@@ -53,64 +79,208 @@ void Pipeline::prepare(World *p_world) {
 			for (uint32_t i = 0; i < dispatcher.exec_stages[stage_i].systems.size(); i += 1) {
 				info.clear();
 				ECS::get_system_exe_info(dispatcher.exec_stages[stage_i].systems[i].id, info);
+				create_used_storage(info, p_world);
+			}
+		}
+	}
 
-				// Create components.
-				for (const Set<uint32_t>::Element *e = info.immutable_components.front(); e; e = e->next()) {
-					p_world->create_storage(e->get());
+	// Make sure to init the storage also for temporary systems.
+	for (uint32_t i = 0; i < temporary_systems.size(); i += 1) {
+		info.clear();
+		ECS::get_system_exe_info(temporary_systems[i], info);
+		create_used_storage(info, p_world);
+	}
+
+	// Phase 4: Allocate SystemExecutionData memory.
+	// At this point we need to allocate the SystemData, which is a struct where
+	// the system can store some information about the execution.
+	// For example, the `Query` will cache some vectors, to speedup the executions.
+
+	{
+		worlds[token.index].system_data_buffer_size = 0;
+		for (uint32_t dispatcher_i = 0; dispatcher_i < dispatchers.size(); dispatcher_i += 1) {
+			DispatcherData &dispatcher = dispatchers[dispatcher_i];
+
+			for (uint32_t stage_i = 0; stage_i < dispatcher.exec_stages.size(); stage_i += 1) {
+				for (uint32_t i = 0; i < dispatcher.exec_stages[stage_i].systems.size(); i += 1) {
+					const godex::system_id id = dispatcher.exec_stages[stage_i].systems[i].id;
+					worlds[token.index].system_data_buffer_size += ECS::system_get_size_system_data(id);
 				}
+			}
+		}
 
-				for (const Set<uint32_t>::Element *e = info.mutable_components.front(); e; e = e->next()) {
-					p_world->create_storage(e->get());
-				}
+		worlds[token.index].system_data_buffer = static_cast<uint8_t *>(memalloc(worlds[token.index].system_data_buffer_size));
+	}
 
-				for (const Set<uint32_t>::Element *e = info.mutable_components_storage.front(); e; e = e->next()) {
-					p_world->create_storage(e->get());
-				}
+	// Phase 5: Initialize the SystemExecutionData pointers.
+	{
+		uint64_t offset = 0;
+		for (uint32_t dispatcher_i = 0; dispatcher_i < dispatchers.size(); dispatcher_i += 1) {
+			DispatcherData &dispatcher = dispatchers[dispatcher_i];
 
-				// Create databags.
-				for (const Set<uint32_t>::Element *e = info.immutable_databags.front(); e; e = e->next()) {
-					p_world->create_databag(e->get());
-				}
+			for (uint32_t stage_i = 0; stage_i < dispatcher.exec_stages.size(); stage_i += 1) {
+				for (uint32_t i = 0; i < dispatcher.exec_stages[stage_i].systems.size(); i += 1) {
+					// This is impossible to be triggered, since the `PipelineBuilder`
+					// uses this exact algorithm to define the `System` index.
+					// By checking this, I'm double checking that the system `index`
+					// points to the correct memory location.
+					CRASH_COND(worlds[token.index].system_data.size() != dispatcher.exec_stages[stage_i].systems[i].index);
 
-				for (const Set<uint32_t>::Element *e = info.mutable_databags.front(); e; e = e->next()) {
-					p_world->create_databag(e->get());
-				}
+					const godex::system_id id = dispatcher.exec_stages[stage_i].systems[i].id;
 
-				for (const Set<uint32_t>::Element *e = info.need_changed.front(); e; e = e->next()) {
-					// Mark as `need_changed` this storage.
-					StorageBase *storage = p_world->get_storage(e->get());
-					ERR_CONTINUE_MSG(storage == nullptr, "The storage is not supposed to be nullptr at this point. Storage: " + ECS::get_component_name(e->get()) + "#" + itos(e->get()));
-					storage->set_tracing_change(true);
-				}
+					// Take the SystemExecutionData pointer allocated for this system.
+					uint8_t *system_data_ptr = worlds[token.index].system_data_buffer + offset;
+					// Store it for fast access.
+					worlds[token.index].system_data.push_back(system_data_ptr);
+					// Initialize.
+					ECS::system_new_placement_system_data(id, system_data_ptr, token, p_world, this);
 
-				for (const Set<uint32_t>::Element *e = info.events_emitters.front(); e; e = e->next()) {
-					p_world->create_events_storage(e->get());
-				}
+					// Set the system as deactivated.
+					ECS::system_set_active_system(id, system_data_ptr, false);
 
-				for (
-						OAHashMap<uint32_t, Set<String>>::Iterator it = info.events_receivers.iter();
-						it.valid;
-						it = info.events_receivers.next_iter(it)) {
-					p_world->create_events_storage(*it.key);
-					EventStorageBase *s = p_world->get_events_storage(*it.key);
-					for (const Set<String>::Element *e = it.value->front(); e; e = e->next()) {
-						s->add_event_emitter(e->get());
-					}
+					// Advance the offset by the used size.
+					const uint64_t system_data_size = ECS::system_get_size_system_data(id);
+					offset += system_data_size;
 				}
 			}
 		}
 	}
 
-	// Set the current `Components` as changed.
-	for (uint32_t i = 0; i < p_world->storages.size(); i += 1) {
-		if (p_world->storages[i] != nullptr) {
-			if (p_world->storages[i]->is_tracing_change()) {
-				const EntitiesBuffer entities = p_world->storages[i]->get_stored_entities();
-				for (uint32_t e = 0; e < entities.count; e += 1) {
-					p_world->storages[i]->notify_changed(entities.entities[e]);
+	// Initialize the temporary systems.
+	for (uint32_t i = 0; i < temporary_systems.size(); i += 1) {
+		const uint64_t size = ECS::system_get_size_system_data(temporary_systems[i]);
+		uint8_t *mem = (uint8_t *)memalloc(size);
+		ECS::system_new_placement_system_data(temporary_systems[i], mem, token, p_world, this);
+
+		TemporaryExecutionSystemData d;
+		d.id = temporary_systems[i];
+		d.exec_func = ECS::get_func_temporary_system_exe(temporary_systems[i]);
+		d.system_data = mem;
+		worlds[token.index].temporary_systems.push_back(d);
+
+		// Set the system as deactivated.
+		ECS::system_set_active_system(d.id, mem, false);
+	}
+
+	return token;
+}
+
+void Pipeline::create_used_storage(const SystemExeInfo &p_info, World *p_world) {
+	// Create components.
+	for (const Set<uint32_t>::Element *e = p_info.immutable_components.front(); e; e = e->next()) {
+		p_world->create_storage(e->get());
+	}
+
+	for (const Set<uint32_t>::Element *e = p_info.mutable_components.front(); e; e = e->next()) {
+		p_world->create_storage(e->get());
+	}
+
+	for (const Set<uint32_t>::Element *e = p_info.mutable_components_storage.front(); e; e = e->next()) {
+		p_world->create_storage(e->get());
+	}
+
+	// Create databags.
+	for (const Set<uint32_t>::Element *e = p_info.immutable_databags.front(); e; e = e->next()) {
+		p_world->create_databag(e->get());
+	}
+
+	for (const Set<uint32_t>::Element *e = p_info.mutable_databags.front(); e; e = e->next()) {
+		p_world->create_databag(e->get());
+	}
+
+	for (const Set<uint32_t>::Element *e = p_info.need_changed.front(); e; e = e->next()) {
+		// Mark as `need_changed` this storage.
+		StorageBase *storage = p_world->get_storage(e->get());
+		ERR_CONTINUE_MSG(storage == nullptr, "The storage is not supposed to be nullptr at this point. Storage: " + ECS::get_component_name(e->get()) + "#" + itos(e->get()));
+		storage->set_tracing_change(true);
+	}
+
+	for (const Set<uint32_t>::Element *e = p_info.events_emitters.front(); e; e = e->next()) {
+		p_world->create_events_storage(e->get());
+	}
+
+	for (
+			OAHashMap<uint32_t, Set<String>>::Iterator it = p_info.events_receivers.iter();
+			it.valid;
+			it = p_info.events_receivers.next_iter(it)) {
+		p_world->create_events_storage(*it.key);
+		EventStorageBase *s = p_world->get_events_storage(*it.key);
+		for (const Set<String>::Element *e = it.value->front(); e; e = e->next()) {
+			s->add_event_emitter(e->get());
+		}
+	}
+}
+
+void Pipeline::release_world(Token p_token) {
+	ERR_FAIL_UNSIGNED_INDEX_MSG(p_token.index, worlds.size(), "The token: " + itos(p_token.index) + " is not used.");
+	ERR_FAIL_COND_MSG(worlds[p_token.index].world == nullptr, "The token index: `" + itos(p_token.index) + "` is not used.");
+	ERR_FAIL_COND_MSG(p_token.generation != worlds[p_token.index].generation, "The token generation: `" + itos(p_token.generation) + "` is different from the world generation `" + itos(p_token.generation) + "`. Maybe it's an old Token?");
+
+	{
+		const LocalVector<uint8_t *> &system_data_ptrs = worlds[p_token.index].system_data;
+
+		for (uint32_t dispatcher_i = 0; dispatcher_i < dispatchers.size(); dispatcher_i += 1) {
+			DispatcherData &dispatcher = dispatchers[dispatcher_i];
+
+			for (uint32_t stage_i = 0; stage_i < dispatcher.exec_stages.size(); stage_i += 1) {
+				for (uint32_t i = 0; i < dispatcher.exec_stages[stage_i].systems.size(); i += 1) {
+					const godex::system_id id = dispatcher.exec_stages[stage_i].systems[i].id;
+					const uint32_t index = dispatcher.exec_stages[stage_i].systems[i].index;
+					ECS::system_delete_placement_system_data(id, system_data_ptrs[index]);
 				}
 			}
 		}
+
+		memfree(worlds[p_token.index].system_data_buffer);
+	}
+
+	// Clear temporary system data
+	{
+		const LocalVector<TemporaryExecutionSystemData> &temp_systems = worlds[p_token.index].temporary_systems;
+		for (uint32_t i = 0; i < temp_systems.size(); i += 1) {
+			ECS::system_delete_placement_system_data(temp_systems[i].id, temp_systems[i].system_data);
+			memfree(temp_systems[i].system_data);
+		}
+	}
+
+	// Just reset this, we will reuse this memory eventually.
+	worlds[p_token.index].system_data_buffer = nullptr;
+	worlds[p_token.index].system_data_buffer_size = 0;
+	worlds[p_token.index].system_data.reset();
+	worlds[p_token.index].temporary_systems.reset();
+	worlds[p_token.index].world = nullptr;
+
+	// Increase the generation by 1, so any eventual old token still saved
+	// somewhere is invalidated.
+	worlds[p_token.index].generation += 1;
+}
+
+void Pipeline::set_active(Token p_token, bool p_active) {
+	ERR_FAIL_UNSIGNED_INDEX_MSG(p_token.index, worlds.size(), "The token: " + itos(p_token.index) + " is not used.");
+	ERR_FAIL_COND_MSG(worlds[p_token.index].world == nullptr, "The token index: `" + itos(p_token.index) + "` is not used.");
+	ERR_FAIL_COND_MSG(p_token.generation != worlds[p_token.index].generation, "The token generation: `" + itos(p_token.generation) + "` is different from the world generation `" + itos(p_token.generation) + "`. Maybe it's an old Token?");
+
+	const LocalVector<uint8_t *> &system_data_ptrs = worlds[p_token.index].system_data;
+
+	for (uint32_t dispatcher_i = 0; dispatcher_i < dispatchers.size(); dispatcher_i += 1) {
+		DispatcherData &dispatcher = dispatchers[dispatcher_i];
+
+		for (uint32_t stage_i = 0; stage_i < dispatcher.exec_stages.size(); stage_i += 1) {
+			for (uint32_t i = 0; i < dispatcher.exec_stages[stage_i].systems.size(); i += 1) {
+				const godex::system_id id = dispatcher.exec_stages[stage_i].systems[i].id;
+				const uint32_t index = dispatcher.exec_stages[stage_i].systems[i].index;
+				ECS::system_set_active_system(id, system_data_ptrs[index], p_active);
+			}
+		}
+	}
+
+	// Set the system as deactivated.
+	const LocalVector<TemporaryExecutionSystemData> &temp_system_data = worlds[p_token.index].temporary_systems;
+	for (uint32_t i = 0; i < temp_system_data.size(); i += 1) {
+		ECS::system_set_active_system(
+				temp_system_data[i].id,
+				temp_system_data[i].system_data,
+				p_active);
 	}
 }
 
@@ -119,24 +289,41 @@ void Pipeline::dispatch(World *p_world) {
 	CRASH_COND_MSG(ready == false, "You can't dispatch a pipeline which is not yet builded. Please call `build`.");
 #endif
 
-	p_world->is_dispatching_in_progress = true;
+	// TODO this is just for test. Use the token to dispatch!
+	ERR_PRINT("Important TODO!");
+	Token p_token = prepare_world(p_world);
 
-	Hierarchy *hierarchy = static_cast<Hierarchy *>(p_world->get_storage<Child>());
+	ERR_FAIL_UNSIGNED_INDEX_MSG(p_token.index, worlds.size(), "The token: " + itos(p_token.index) + " is not used.");
+	ERR_FAIL_COND_MSG(worlds[p_token.index].world == nullptr, "The token index: `" + itos(p_token.index) + "` is not used.");
+	ERR_FAIL_COND_MSG(p_token.generation != worlds[p_token.index].generation, "The token generation: `" + itos(p_token.generation) + "` is different from the world generation `" + itos(p_token.generation) + "`. Maybe it's an old Token?");
+
+	World *world = worlds[p_token.index].world;
+
+	world->is_dispatching_in_progress = true;
+
+	Hierarchy *hierarchy = static_cast<Hierarchy *>(world->get_storage<Child>());
 	if (hierarchy) {
 		// Flush the hierarchy.
 		hierarchy->flush_hierarchy_changes();
 	}
 
 	// Process the `TemporarySystem`, if any.
-	for (int i = 0; i < int(temporary_systems_exe.size()); i += 1) {
-		if (temporary_systems_exe[i](p_world)) {
-			temporary_systems_exe.remove(i);
+	for (int i = 0; i < int(worlds[p_token.index].temporary_systems.size()); i += 1) {
+		if (worlds[p_token.index].temporary_systems[i].exec_func(
+					worlds[p_token.index].temporary_systems[i].system_data,
+					world)) {
+			// This system is done, deallocate.
+			uint8_t *mem = worlds[p_token.index].temporary_systems[i].system_data;
+			ECS::system_delete_placement_system_data(worlds[p_token.index].temporary_systems[i].id, mem);
+			memfree(mem);
+			worlds[p_token.index].temporary_systems.remove(i);
 			i -= 1;
 		}
 	}
 
-	dispatch_sub_dispatcher(p_world, 0);
+	dispatch_sub_dispatcher(p_token, 0);
 
+	// TODO remove this, in favour of the new mechanism
 	// Flush changed.
 	for (uint32_t c = 0; c < p_world->storages.size(); c += 1) {
 		if (p_world->storages[c] != nullptr) {
@@ -147,24 +334,27 @@ void Pipeline::dispatch(World *p_world) {
 	p_world->is_dispatching_in_progress = false;
 }
 
-void Pipeline::dispatch_sub_dispatcher(World *p_world, int p_dispatcher_index) {
+void Pipeline::dispatch_sub_dispatcher(Token p_token, int p_dispatcher_index) {
 	ERR_FAIL_INDEX_MSG(p_dispatcher_index, int(dispatchers.size()), "The dispatcher " + itos(p_dispatcher_index) + " doesn't exists in this pipeline. This is a bug, please report it.");
 
+	World *world = worlds[p_token.index].world;
+	const LocalVector<uint8_t *> &system_data_ptrs = worlds[p_token.index].system_data;
 	const DispatcherData &dispatcher = dispatchers[p_dispatcher_index];
 
 	// Dispatch the `Stage`s.
 	for (uint32_t stage_i = 0; stage_i < dispatcher.exec_stages.size(); stage_i += 1) {
 		// TODO execute in multuple thread.
 		for (uint32_t i = 0; i < dispatcher.exec_stages[stage_i].systems.size(); i += 1) {
+			const uint32_t index = dispatcher.exec_stages[stage_i].systems[i].index;
 			dispatcher.exec_stages[stage_i].systems[i].exe(
-					p_world,
-					this,
-					dispatcher.exec_stages[stage_i].systems[i].id);
+					system_data_ptrs[index],
+					world);
 		}
 
+		// TODO move this inside the DataFetcher instead?
 		// Notify the `System` released the storage for this stage.
 		for (uint32_t f = 0; f < dispatcher.exec_stages[stage_i].notify_list_release_write.size(); f += 1) {
-			p_world->get_storage(dispatcher.exec_stages[stage_i].notify_list_release_write[f])->on_system_release();
+			world->get_storage(dispatcher.exec_stages[stage_i].notify_list_release_write[f])->on_system_release();
 		}
 	}
 }

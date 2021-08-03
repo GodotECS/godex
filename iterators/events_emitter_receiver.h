@@ -17,10 +17,14 @@ class EventsEmitter {
 	EventStorage<E> *storage = nullptr;
 
 public:
-	EventsEmitter(World *p_world) {
+	void initiate_process(World *p_world) {
 		storage = p_world->get_events_storage<E>();
 		// Flush the old events.
 		storage->flush_events();
+	}
+
+	void release_world() {
+		storage = nullptr;
 	}
 
 	void emit(const String &p_emitter_name, const E &p_event) {
@@ -80,11 +84,15 @@ public:
 	};
 
 public:
-	EventsReceiver(World *p_world) {
+	void initiate_process(World *p_world) {
 		EventStorage<E> *storage = p_world->get_events_storage<E>();
 		if (storage != nullptr) {
 			emitter_storage = storage->get_events(get_emitter_name());
 		}
+	}
+
+	void release_world() {
+		emitter_storage = nullptr;
 	}
 
 	static String get_emitter_name() {

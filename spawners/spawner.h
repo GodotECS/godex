@@ -55,11 +55,15 @@ void spawner_get_components(spawner_id p_spawner, SystemExeInfo &r_info);
 /// ```
 template <class I>
 class Spawner {
-	World *world;
+	World *world = nullptr;
 
 public:
-	Spawner(World *p_world) :
-			world(p_world) {}
+	void initiate_process(World *p_world) {
+		world = p_world;
+	}
+	void release_world() {
+		world = nullptr;
+	}
 
 	template <class C>
 	bool has(EntityID p_entity) {

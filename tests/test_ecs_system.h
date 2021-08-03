@@ -161,7 +161,7 @@ TEST_CASE("[Modules][ECS] Test system and query") {
 	pipeline_builder.add_system(system_id);
 	Pipeline pipeline;
 	pipeline_builder.build(pipeline);
-	pipeline.prepare(&world);
+	pipeline.prepare_world(&world);
 
 	for (uint32_t i = 0; i < 3; i += 1) {
 		pipeline.dispatch(&world);
@@ -248,7 +248,7 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 	// Create the pipeline.
 	Pipeline pipeline;
 	pipeline_builder.build(pipeline);
-	pipeline.prepare(&world);
+	pipeline.prepare_world(&world);
 
 	// Dispatch
 	for (uint32_t i = 0; i < 3; i += 1) {
@@ -356,7 +356,7 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 	PipelineBuilder::build_pipeline(system_bundles, systems, &main_pipeline);
 
 	World world;
-	main_pipeline.prepare(&world);
+	main_pipeline.prepare_world(&world);
 
 	// ~~ Create world ~~
 	world.create_databag<TestSystemSubPipeDatabag>();
@@ -422,7 +422,7 @@ TEST_CASE("[Modules][ECS] Test system and databag") {
 		// Create the pipeline.
 		Pipeline pipeline;
 		pipeline_builder.build(pipeline);
-		pipeline.prepare(&world);
+		pipeline.prepare_world(&world);
 
 		// Dispatch
 		for (uint32_t i = 0; i < 3; i += 1) {
@@ -448,7 +448,7 @@ TEST_CASE("[Modules][ECS] Test system and databag") {
 		pipeline_builder.build(pipeline);
 
 		// This make sure to create the `Databag`
-		pipeline.prepare(&world);
+		pipeline.prepare_world(&world);
 
 		// Dispatch
 		for (uint32_t i = 0; i < 3; i += 1) {
@@ -497,7 +497,7 @@ TEST_CASE("[Modules][ECS] Test system databag fetch with dynamic query.") {
 	Pipeline pipeline;
 	// Create the pipeline.
 	pipeline_builder.build(pipeline);
-	pipeline.prepare(&world);
+	pipeline.prepare_world(&world);
 
 	// Dispatch 1 time.
 	pipeline.dispatch(&world);
@@ -548,7 +548,7 @@ TEST_CASE("[Modules][ECS] Test event mechanism.") {
 
 	Pipeline pipeline;
 	pipeline_builder.build(pipeline);
-	pipeline.prepare(&world);
+	pipeline.prepare_world(&world);
 
 	// Make sure no component event is left at the end of each cycle.
 	for (uint32_t i = 0; i < 5; i += 1) {
@@ -573,7 +573,7 @@ TEST_CASE("[Modules][ECS] Test create and remove Entity from Systems.") {
 
 	Pipeline pipeline;
 	pipeline_builder.build(pipeline);
-	pipeline.prepare(&world);
+	pipeline.prepare_world(&world);
 
 	for (uint32_t i = 0; i < 5; i += 1) {
 		pipeline.dispatch(&world);
@@ -631,7 +631,7 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 		pipeline_builder.add_system(system_id);
 		Pipeline pipeline;
 		pipeline_builder.build(pipeline);
-		pipeline.prepare(&world);
+		pipeline.prepare_world(&world);
 
 		// Check local transform.
 		{
@@ -669,7 +669,7 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 		pipeline_builder.add_system(system_id);
 		Pipeline pipeline;
 		pipeline_builder.build(pipeline);
-		pipeline.prepare(&world);
+		pipeline.prepare_world(&world);
 
 		// Hierarchy is:
 		// Entity 0           2 Local | 2 Global
@@ -724,7 +724,7 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 		pipeline_builder.add_system(system_id);
 		Pipeline pipeline;
 		pipeline_builder.build(pipeline);
-		pipeline.prepare(&world);
+		pipeline.prepare_world(&world);
 
 		// Dispatch the pipeline, so to move the `Entity_1` globally.
 		pipeline.dispatch(&world);
@@ -772,7 +772,7 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 		pipeline_builder.add_system(system_id);
 		Pipeline pipeline;
 		pipeline_builder.build(pipeline);
-		pipeline.prepare(&world);
+		pipeline.prepare_world(&world);
 
 		// Check `Entity 0` transform.
 		{
@@ -841,7 +841,7 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 		pipeline_builder.add_system(ECS::get_system_id("TestMoveHierarchySystem.gd"));
 		Pipeline pipeline;
 		pipeline_builder.build(pipeline);
-		pipeline.prepare(&world);
+		pipeline.prepare_world(&world);
 
 		// Hierarchy is:
 		// Entity 1       4 Local | 4 Global
@@ -942,7 +942,7 @@ TEST_CASE("[Modules][ECS] Test Add/remove from dynamic system.") {
 		// Create the pipeline.
 		Pipeline pipeline;
 		pipeline_builder.build(pipeline);
-		pipeline.prepare(&world);
+		pipeline.prepare_world(&world);
 
 		// Dispatch 1 time.
 		pipeline.dispatch(&world);
@@ -970,7 +970,7 @@ TEST_CASE("[Modules][ECS] Test Add/remove from dynamic system.") {
 		// Create the pipeline.
 		Pipeline pipeline;
 		pipeline_builder.build(pipeline);
-		pipeline.prepare(&world);
+		pipeline.prepare_world(&world);
 
 		// Dispatch 1 time.
 		pipeline.dispatch(&world);
@@ -1018,7 +1018,7 @@ TEST_CASE("[Modules][ECS] Test fetch changed from dynamic system.") {
 	// Create the pipeline.
 	Pipeline pipeline;
 	pipeline_builder.build(pipeline);
-	pipeline.prepare(&world);
+	pipeline.prepare_world(&world);
 
 	// Dispatch 1 time.
 	pipeline.dispatch(&world);
@@ -1069,7 +1069,7 @@ TEST_CASE("[Modules][ECS] Test system changed query filter.") {
 
 	Pipeline pipeline;
 	pipeline_builder.build(pipeline);
-	pipeline.prepare(&world);
+	pipeline.prepare_world(&world);
 
 	for (uint32_t i = 0; i < 3; i += 1) {
 		// Leave entity_1 untouched.
@@ -1148,7 +1148,7 @@ TEST_CASE("[Modules][ECS] Test fetch entity from nodepath, using a dynamic syste
 		Pipeline pipeline;
 		pipeline_builder.build(pipeline);
 
-		pipeline.prepare(&world);
+		pipeline.prepare_world(&world);
 
 		// Dispatch 1 time.
 		pipeline.dispatch(&world);
@@ -1195,8 +1195,7 @@ TEST_CASE("[Modules][ECS] Test `Events` class is able to fetch the emitter name.
 	{
 		// Make sure the Events is correctly reporting the EmitterName set at compile
 		// time.
-		World world;
-		EventsReceiver<MyEvent1Test, EMITTER(Test11)> events(&world);
+		EventsReceiver<MyEvent1Test, EMITTER(Test11)> events;
 		CHECK(events.get_emitter_name() == String("Test11"));
 	}
 }
@@ -1219,7 +1218,7 @@ TEST_CASE("[Modules][ECS] Make sure the events storages are automatically create
 		}
 
 		World world;
-		pipeline.prepare(&world);
+		pipeline.prepare_world(&world);
 
 		EventStorage<MyEvent1Test> *storage = world.get_events_storage<MyEvent1Test>();
 		// Make sure the storage is been created at this point, since `prepare` does it.
@@ -1239,7 +1238,7 @@ TEST_CASE("[Modules][ECS] Make sure the events storages are automatically create
 		}
 
 		World world;
-		pipeline.prepare(&world);
+		pipeline.prepare_world(&world);
 
 		EventStorage<MyEvent1Test> *storage = world.get_events_storage<MyEvent1Test>();
 		// Make sure the storage is been created at this point, since `prepare` does it.
@@ -1292,7 +1291,7 @@ TEST_CASE("[Modules][ECS] Make sure the events storages are automatically create
 		}
 
 		World world;
-		pipeline.prepare(&world);
+		pipeline.prepare_world(&world);
 
 		EventStorage<MyEvent1Test> *storage = world.get_events_storage<MyEvent1Test>();
 		// Make sure the storage is been created at this point, since `prepare` does it.
@@ -1310,7 +1309,7 @@ TEST_CASE("[Modules][ECS] Make sure the events storages are automatically create
 		}
 
 		World world;
-		pipeline.prepare(&world);
+		pipeline.prepare_world(&world);
 
 		EventStorage<MyEvent1Test> *storage = world.get_events_storage<MyEvent1Test>();
 		// Make sure the storage is been created at this point, since `prepare` does it.
@@ -1335,7 +1334,7 @@ TEST_CASE("[Modules][ECS] Test EventEmitter and EventReceiver") {
 		}
 
 		World world;
-		pipeline.prepare(&world);
+		pipeline.prepare_world(&world);
 
 		const EventStorage<MyEvent1Test> *storage = world.get_events_storage<MyEvent1Test>();
 
@@ -1399,7 +1398,7 @@ TEST_CASE("[Modules][ECS] Test EventEmitter and EventReceiver") {
 		}
 
 		World world;
-		pipeline.prepare(&world);
+		pipeline.prepare_world(&world);
 
 		const EventStorage<MyEvent1Test> *storage = world.get_events_storage<MyEvent1Test>();
 

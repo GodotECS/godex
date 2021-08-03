@@ -136,7 +136,7 @@ TEST_CASE("[Modules][ECS] Test spawner Script registration.") {
 
 	Pipeline pipeline;
 	pipeline_builder.build(pipeline);
-	pipeline.prepare(&world);
+	pipeline.prepare_world(&world);
 
 	// Dispatch 1 time the pipeline.
 	pipeline.dispatch(&world);

@@ -36,7 +36,7 @@ TEST_CASE("[Modules][ECS] Test temporary system.") {
 
 	Pipeline pipeline;
 	pipeline_builder.build(pipeline);
-	pipeline.prepare(&world);
+	pipeline.prepare_world(&world);
 
 	for (uint32_t i = 0; i < 10; i += 1) {
 		pipeline.dispatch(&world);
@@ -58,7 +58,7 @@ TEST_CASE("[Modules][ECS] Test registered temporary system.") {
 
 	Pipeline pipeline;
 	pipeline_builder.build(pipeline);
-	pipeline.prepare(&world);
+	pipeline.prepare_world(&world);
 
 	for (uint32_t i = 0; i < 10; i += 1) {
 		pipeline.dispatch(&world);
@@ -117,7 +117,7 @@ TEST_CASE("[Modules][ECS] Test temporary system order on removal.") {
 
 	Pipeline pipeline;
 	pipeline_builder.build(pipeline);
-	pipeline.prepare(&world);
+	pipeline.prepare_world(&world);
 
 	for (uint32_t i = 0; i < 10; i += 1) {
 		pipeline.dispatch(&world);

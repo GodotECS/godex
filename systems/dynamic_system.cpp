@@ -8,6 +8,13 @@
 // compile time system.
 #include "dynamic_system.gen.h"
 
+uint64_t godex::dynamic_system_data_get_size() {
+	return 0;
+}
+void godex::dynamic_system_data_new_placement(uint8_t *, Token, World *, Pipeline *, godex::system_id) {}
+void godex::dynamic_system_data_delete_placement(uint8_t *) {}
+void godex::dynamic_system_data_set_active(uint8_t *, bool) {}
+
 void godex::__dynamic_system_info_static_destructor() {
 	for (uint32_t i = 0; i < DYNAMIC_SYSTEMS_MAX; i += 1) {
 		dynamic_info[i].reset();

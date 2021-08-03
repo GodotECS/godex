@@ -120,10 +120,17 @@ struct DataFetcher {};
 /// Storage
 template <class C>
 struct DataFetcher<Storage<C> *> {
-	Storage<C> *inner;
+	Storage<C> *inner = nullptr;
 
-	DataFetcher(World *p_world) :
-			inner(p_world->get_storage<C>()) {}
+	DataFetcher(World *p_world) {}
+
+	void initiate_process(World *p_world) {
+		inner = p_world->get_storage<C>();
+	}
+
+	void conclude_process(World *p_world) {}
+
+	void set_active(bool p_active) {}
 };
 
 /// Spawner
@@ -131,8 +138,15 @@ template <class I>
 struct DataFetcher<Spawner<I> &> {
 	Spawner<I> inner;
 
-	DataFetcher(World *p_world) :
-			inner(p_world) {}
+	DataFetcher(World *p_world) {}
+
+	void initiate_process(World *p_world) {
+		inner.initiate_process(p_world);
+	}
+
+	void conclude_process(World *p_world) {}
+
+	void set_active(bool p_active) {}
 };
 
 /// EventsEmitter
@@ -140,8 +154,15 @@ template <class E>
 struct DataFetcher<EventsEmitter<E> &> {
 	EventsEmitter<E> inner;
 
-	DataFetcher(World *p_world) :
-			inner(p_world) {}
+	DataFetcher(World *p_world) {}
+
+	void initiate_process(World *p_world) {
+		inner.initiate_process(p_world);
+	}
+
+	void conclude_process(World *p_world) {}
+
+	void set_active(bool p_active) {}
 };
 
 /// Events
@@ -149,8 +170,15 @@ template <class E, typename EmitterName>
 struct DataFetcher<EventsReceiver<E, EmitterName> &> {
 	EventsReceiver<E, EmitterName> inner;
 
-	DataFetcher(World *p_world) :
-			inner(p_world) {}
+	DataFetcher(World *p_world) {}
+
+	void initiate_process(World *p_world) {
+		inner.initiate_process(p_world);
+	}
+
+	void conclude_process(World *p_world) {}
+
+	void set_active(bool p_active) {}
 };
 
 /// Query
@@ -160,19 +188,59 @@ struct DataFetcher<Query<Cs...> &> {
 
 	DataFetcher(World *p_world) :
 			inner(p_world) {}
+
+	void initiate_process(World *p_world) {
+		inner.initiate_process(p_world);
+	}
+
+	void conclude_process(World *p_world) {
+		inner.conclude_process(p_world);
+	}
+
+	void set_active(bool p_active) {
+		inner.set_world_notification_active(p_active);
+	}
 };
 
 /// Databag
 template <class D>
 struct DataFetcher<D *> {
-	D *inner;
+	D *inner = nullptr;
 
-	DataFetcher(World *p_world) {
+	DataFetcher(World *p_world) {}
+
+	void initiate_process(World *p_world) {
 		inner = p_world->get_databag<D>();
 	}
+
+	void conclude_process(World *p_world) {}
+
+	void set_active(bool p_active) {}
 };
 
-#define OBTAIN(name, T, world) auto name = DataFetcher<T>(world);
+// ~~~~ system_execution_data definition ~~~~ //
+#include "system_structs.gen.h"
+
+// ~~~~ system_execution_data creation ~~~~ //
+template <class R, class... Args>
+uint64_t system_data_size_of(R (*func)(Args...)) {
+	return system_data_size_of<Args...>();
+}
+
+template <class R, class... Args>
+void system_data_new_placement(uint8_t *p_mem, World *p_world, R (*func)(Args...)) {
+	system_data_new_placement<Args...>(p_mem, p_world);
+}
+
+template <class R, class... Args>
+void system_data_delete_placement(uint8_t *p_mem, R (*func)(Args...)) {
+	system_data_delete_placement<Args...>(p_mem);
+}
+
+template <class R, class... Args>
+void system_data_set_active(uint8_t *p_mem, bool p_active, R (*func)(Args...)) {
+	system_data_set_world_notificatin_active<Args...>(p_mem, p_active);
+}
 
 // ~~~~ system_exec_func definition ~~~~ //
 #include "system_exe_funcs.gen.h"
@@ -183,5 +251,4 @@ struct DataFetcher<D *> {
 // ~~~~ temporary_system_exec_func definition ~~~~ //
 #include "temporary_system_exe_funcs.gen.h"
 
-#undef OBTAIN
 } // namespace SystemBuilder

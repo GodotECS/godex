@@ -273,18 +273,19 @@ void PipelineBuilder::build_pipeline(
 void PipelineBuilder::build_pipeline(
 		const ExecutionGraph &p_graph,
 		Pipeline *r_pipeline) {
-	CRASH_COND_MSG(r_pipeline == nullptr, "The pipeline pointer must be valid.");
+	ERR_FAIL_COND_MSG(r_pipeline == nullptr, "The pipeline pointer must be valid.");
+	ERR_FAIL_COND_MSG(r_pipeline->can_change() == false, "This pipeline has still some world bind. It's necessary to release those worlds before reusing this pipeline.");
 
 	r_pipeline->reset();
 
 	// Add the temporary systems.
 	{
-		r_pipeline->temporary_systems_exe.resize(p_graph.temporary_systems.size());
+		r_pipeline->temporary_systems.resize(p_graph.temporary_systems.size());
 		uint32_t index = 0;
 		for (const List<ExecutionGraph::SystemNode *>::Element *system = p_graph.temporary_systems.front();
 				system;
 				system = system->next(), index += 1) {
-			r_pipeline->temporary_systems_exe[index] = ECS::get_func_temporary_system_exe(system->get()->id);
+			r_pipeline->temporary_systems[index] = system->get()->id;
 		}
 	}
 
@@ -324,6 +325,7 @@ void PipelineBuilder::build_pipeline(
 
 				// Add the exec function to the stage.
 				r_pipeline->dispatchers[dispatcher_index].exec_stages[stage_index].systems[i].id = stage->get().systems[i]->id;
+				r_pipeline->dispatchers[dispatcher_index].exec_stages[stage_index].systems[i].index = UINT32_MAX; // Init just below
 				r_pipeline->dispatchers[dispatcher_index].exec_stages[stage_index].systems[i].exe = stage->get().systems[i]->info.system_func;
 
 				// Setup the phase.
@@ -353,6 +355,22 @@ void PipelineBuilder::build_pipeline(
 						r_pipeline->dispatchers[dispatcher_index].exec_stages[stage_index].notify_list_release_write[child_index],
 						r_pipeline->dispatchers[dispatcher_index].exec_stages[stage_index].notify_list_release_write[0]);
 				CRASH_COND(r_pipeline->dispatchers[dispatcher_index].exec_stages[stage_index].notify_list_release_write[0] != Child::get_component_id());
+			}
+		}
+	}
+
+	// Now all the stages for each dispatcher is ready, it's the perfect moment to
+	// define the index of each System, in this pipeline.
+	{
+		uint32_t index = 0;
+		for (uint32_t dispatcher_i = 0; dispatcher_i < r_pipeline->dispatchers.size(); dispatcher_i += 1) {
+			DispatcherData &dispatcher = r_pipeline->dispatchers[dispatcher_i];
+
+			for (uint32_t stage_i = 0; stage_i < dispatcher.exec_stages.size(); stage_i += 1) {
+				for (uint32_t i = 0; i < dispatcher.exec_stages[stage_i].systems.size(); i += 1) {
+					dispatcher.exec_stages[stage_i].systems[i].index = index;
+					index += 1;
+				}
 			}
 		}
 	}

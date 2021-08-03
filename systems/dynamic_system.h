@@ -10,6 +10,11 @@ class GDScriptFunction;
 
 namespace godex {
 
+uint64_t dynamic_system_data_get_size();
+void dynamic_system_data_new_placement(uint8_t *, Token, World *, Pipeline *, godex::system_id);
+void dynamic_system_data_delete_placement(uint8_t *);
+void dynamic_system_data_set_active(uint8_t *, bool);
+
 class DynamicSystemInfo;
 
 /// This function register the `DynamicSystemInfo` in a static array (generated
