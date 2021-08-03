@@ -204,6 +204,7 @@ private:
 	World *active_world = nullptr;
 	bool ready = false;
 	Pipeline *active_world_pipeline = nullptr;
+	Token world_token;
 	bool dispatching = false;
 
 public:

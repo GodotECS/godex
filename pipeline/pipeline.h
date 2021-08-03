@@ -39,8 +39,9 @@ struct WorldData {
 	friend class Pipeline;
 
 private:
-	uint8_t generation = 0;
+	uint8_t generation = 1;
 	World *world;
+	bool active;
 
 	uint64_t system_data_buffer_size;
 	uint8_t *system_data_buffer;
@@ -77,6 +78,8 @@ public:
 	/// Reset the pipeline.
 	void reset();
 
+	Token get_token(World *p_world);
+
 	/// Prepare the world to be safely dispatched, returns a token to use to
 	/// dispatch the World.
 	Token prepare_world(World *p_world);
@@ -88,12 +91,12 @@ public:
 	/// Releases the token created by `prepare`.
 	void release_world(Token p_token);
 
-	/// Set the world notifications (insert/changed/removed) for this pipeline on
-	/// and off.
+	/// Activate or Deactivate this pipeline for the given token.
+	/// Activate the pipeline just before dispatching.
 	void set_active(Token p_token, bool p_active);
 
 	/// Dispatch the pipeline on the following world.
-	void dispatch(World *p_world); // TODO use token here.
+	void dispatch(Token p_token);
 
 private:
 	void dispatch_sub_dispatcher(Token p_token, int p_dispatcher_idex);

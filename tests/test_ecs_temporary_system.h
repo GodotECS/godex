@@ -36,10 +36,11 @@ TEST_CASE("[Modules][ECS] Test temporary system.") {
 
 	Pipeline pipeline;
 	pipeline_builder.build(pipeline);
-	pipeline.prepare_world(&world);
+	Token token = pipeline.prepare_world(&world);
+	pipeline.set_active(token, true);
 
 	for (uint32_t i = 0; i < 10; i += 1) {
-		pipeline.dispatch(&world);
+		pipeline.dispatch(token);
 	}
 
 	const ExecutionCounter *counter = world.get_databag<ExecutionCounter>();
@@ -58,10 +59,11 @@ TEST_CASE("[Modules][ECS] Test registered temporary system.") {
 
 	Pipeline pipeline;
 	pipeline_builder.build(pipeline);
-	pipeline.prepare_world(&world);
+	Token token = pipeline.prepare_world(&world);
+	pipeline.set_active(token, true);
 
 	for (uint32_t i = 0; i < 10; i += 1) {
-		pipeline.dispatch(&world);
+		pipeline.dispatch(token);
 	}
 
 	const ExecutionCounter *counter = world.get_databag<ExecutionCounter>();
@@ -117,10 +119,11 @@ TEST_CASE("[Modules][ECS] Test temporary system order on removal.") {
 
 	Pipeline pipeline;
 	pipeline_builder.build(pipeline);
-	pipeline.prepare_world(&world);
+	Token token = pipeline.prepare_world(&world);
+	pipeline.set_active(token, true);
 
 	for (uint32_t i = 0; i < 10; i += 1) {
-		pipeline.dispatch(&world);
+		pipeline.dispatch(token);
 	}
 
 	const ExecutionCounter *counter = world.get_databag<ExecutionCounter>();

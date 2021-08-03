@@ -60,35 +60,6 @@ void call_physics_process(
 	}
 }
 
-// TODO remove this!
-// TODO remove this!
-// TODO remove this!
-// TODO remove this!
-void physics_pipeline_dispatcher_old(World *p_world, Pipeline *p_pipeline) {
-	ERR_FAIL_COND_MSG(p_pipeline == nullptr, "The `PhysicsPipelineDispatcher` doesn't have a pipeline assigned, so it's doing nothing. Assign it please.");
-
-	const FrameTime *godot_iterator = p_world->get_databag<FrameTime>();
-	ERR_FAIL_COND_MSG(godot_iterator == nullptr, "The Databag `FrameTimeDatabag` is not supposed to be null when using the `PhysicsPipelineDispatcher` `System`.");
-
-	EngineDatabag *engine = p_world->get_databag<EngineDatabag>();
-	ERR_FAIL_COND_MSG(engine == nullptr, "The Databag `EngineDatabag` is not supposed to be null when using the `PhysicsPipelineDispatcher` `System`.");
-
-	engine->get_engine()->set_in_physics_frame(true);
-
-	for (int i = 0; i < godot_iterator->get_main_frame_time().physics_steps; i += 1) {
-		// Dispatches the sub pipeline.
-		p_pipeline->dispatch(p_world);
-
-		if (unlikely(godot_iterator->get_exit())) {
-			// If at this point the exit is true just end the processing, to
-			// shut down the engine as soon as possible.
-			return;
-		}
-	}
-
-	engine->get_engine()->set_in_physics_frame(false);
-}
-
 void step_physics_server_3d(
 		const FrameTime *p_iterator_info,
 		Physics3D *p_physics,

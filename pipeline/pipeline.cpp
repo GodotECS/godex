@@ -34,20 +34,32 @@ void Pipeline::reset() {
 	}
 }
 
-Token Pipeline::prepare_world(World *p_world) {
+Token Pipeline::get_token(World *p_world) {
+	Token token;
+
 	// Phase 1: Verify if this pipeline has prepared this World already.
 	for (uint32_t i = 0; i < worlds.size(); i += 1) {
 		if (worlds[i].world == p_world) {
 			// This world is already initialized, nothing to do, just return the token.
-			Token token;
 			token.index = i;
 			token.generation = worlds[i].generation;
-			return token;
+			break;
 		}
 	}
 
+	return token;
+}
+
+Token Pipeline::prepare_world(World *p_world) {
+	// Phase 1: Verify if this pipeline has prepared this World already.
+	Token token = get_token(p_world);
+	if (token.is_valid()) {
+		// This token already exists, so the world was already prepared.
+		// Just return it.
+		return token;
+	}
+
 	// Phase 2: Prepare the World.
-	Token token;
 	token.index = 0;
 	token.generation = 0;
 
@@ -68,6 +80,7 @@ Token Pipeline::prepare_world(World *p_world) {
 	}
 
 	worlds[token.index].world = p_world;
+	worlds[token.index].active = false;
 
 	// Phase 3: Crete components and databags storages.
 	SystemExeInfo info;
@@ -162,6 +175,8 @@ Token Pipeline::prepare_world(World *p_world) {
 		ECS::system_set_active_system(d.id, mem, false);
 	}
 
+	p_world->associated_pipelines.push_back(this);
+
 	return token;
 }
 
@@ -212,6 +227,7 @@ void Pipeline::create_used_storage(const SystemExeInfo &p_info, World *p_world) 
 }
 
 void Pipeline::release_world(Token p_token) {
+	ERR_FAIL_COND_MSG(p_token.is_valid() == false, "The passed token is invalid.");
 	ERR_FAIL_UNSIGNED_INDEX_MSG(p_token.index, worlds.size(), "The token: " + itos(p_token.index) + " is not used.");
 	ERR_FAIL_COND_MSG(worlds[p_token.index].world == nullptr, "The token index: `" + itos(p_token.index) + "` is not used.");
 	ERR_FAIL_COND_MSG(p_token.generation != worlds[p_token.index].generation, "The token generation: `" + itos(p_token.generation) + "` is different from the world generation `" + itos(p_token.generation) + "`. Maybe it's an old Token?");
@@ -256,9 +272,15 @@ void Pipeline::release_world(Token p_token) {
 }
 
 void Pipeline::set_active(Token p_token, bool p_active) {
+	ERR_FAIL_COND_MSG(p_token.is_valid() == false, "The passed token is invalid.");
 	ERR_FAIL_UNSIGNED_INDEX_MSG(p_token.index, worlds.size(), "The token: " + itos(p_token.index) + " is not used.");
 	ERR_FAIL_COND_MSG(worlds[p_token.index].world == nullptr, "The token index: `" + itos(p_token.index) + "` is not used.");
 	ERR_FAIL_COND_MSG(p_token.generation != worlds[p_token.index].generation, "The token generation: `" + itos(p_token.generation) + "` is different from the world generation `" + itos(p_token.generation) + "`. Maybe it's an old Token?");
+
+	if (worlds[p_token.index].active == p_active) {
+		// Nothing to do.
+		return;
+	}
 
 	const LocalVector<uint8_t *> &system_data_ptrs = worlds[p_token.index].system_data;
 
@@ -282,20 +304,20 @@ void Pipeline::set_active(Token p_token, bool p_active) {
 				temp_system_data[i].system_data,
 				p_active);
 	}
+
+	worlds[p_token.index].active = p_active;
 }
 
-void Pipeline::dispatch(World *p_world) {
+void Pipeline::dispatch(Token p_token) {
 #ifdef DEBUG_ENABLED
 	CRASH_COND_MSG(ready == false, "You can't dispatch a pipeline which is not yet builded. Please call `build`.");
 #endif
 
-	// TODO this is just for test. Use the token to dispatch!
-	ERR_PRINT("Important TODO!");
-	Token p_token = prepare_world(p_world);
-
+	ERR_FAIL_COND_MSG(p_token.is_valid() == false, "The passed token is invalid.");
 	ERR_FAIL_UNSIGNED_INDEX_MSG(p_token.index, worlds.size(), "The token: " + itos(p_token.index) + " is not used.");
 	ERR_FAIL_COND_MSG(worlds[p_token.index].world == nullptr, "The token index: `" + itos(p_token.index) + "` is not used.");
 	ERR_FAIL_COND_MSG(p_token.generation != worlds[p_token.index].generation, "The token generation: `" + itos(p_token.generation) + "` is different from the world generation `" + itos(p_token.generation) + "`. Maybe it's an old Token?");
+	ERR_FAIL_COND_MSG(worlds[p_token.index].active == false, "The world pointed by the token index: `" + itos(p_token.index) + "` is not active. You need to activate the world so process it.");
 
 	World *world = worlds[p_token.index].world;
 
@@ -325,13 +347,13 @@ void Pipeline::dispatch(World *p_world) {
 
 	// TODO remove this, in favour of the new mechanism
 	// Flush changed.
-	for (uint32_t c = 0; c < p_world->storages.size(); c += 1) {
-		if (p_world->storages[c] != nullptr) {
-			p_world->storages[c]->flush_changed();
+	for (uint32_t c = 0; c < world->storages.size(); c += 1) {
+		if (world->storages[c] != nullptr) {
+			world->storages[c]->flush_changed();
 		}
 	}
 
-	p_world->is_dispatching_in_progress = false;
+	world->is_dispatching_in_progress = false;
 }
 
 void Pipeline::dispatch_sub_dispatcher(Token p_token, int p_dispatcher_index) {

@@ -10,6 +10,7 @@
 class StorageBase;
 class World;
 class WorldECS;
+class Pipeline;
 
 namespace godex {
 class Databag;
@@ -95,6 +96,7 @@ class World : public godex::Databag {
 
 	friend class Pipeline;
 
+	LocalVector<Pipeline *> associated_pipelines;
 	WorldCommands commands;
 	LocalVector<StorageBase *> storages;
 	LocalVector<godex::Databag *> databags;
@@ -257,6 +259,8 @@ public:
 
 	/// Retuns the events storage constant pointer.
 	const EventStorageBase *get_events_storage(godex::event_id p_id) const;
+
+	void release_pipelines();
 
 private:
 	/// Creates a new component storage into the world, if the storage

@@ -934,12 +934,18 @@ void ECS::set_active_world(World *p_world, WorldECS *p_active_world_ecs) {
 		}
 	}
 
+	if (active_world) {
+		// Deallocate the associated pipelines.
+		active_world->release_pipelines();
+	}
+
 	WorldECS *prev_node = active_world_node;
 
 	active_world = p_world;
 	active_world_node = p_active_world_ecs;
 	ready = false;
 	active_world_pipeline = nullptr;
+	world_token = Token();
 
 	if (active_world != nullptr) {
 		// The world is just loaded.
@@ -983,14 +989,23 @@ bool ECS::is_world_ready() const {
 void ECS::set_active_world_pipeline(Pipeline *p_pipeline) {
 #ifdef DEBUG_ENABLED
 	if (p_pipeline) {
-		// Using crash cond because the user doesn't never use this API directly.
+		// Using crash cond because the user doesn't never use this API directly and
+		// at this point the pipeline is always ready.
 		CRASH_COND_MSG(p_pipeline->is_ready() == false, "The submitted pipeline is not fully build, you must submit a valid pipeline?.");
 	}
 #endif
+	if (active_world_pipeline) {
+		// Deactivate the current pipeline.
+		active_world_pipeline->set_active(world_token, false);
+	}
+
 	active_world_pipeline = p_pipeline;
+	world_token = Token();
 
 	if (active_world_pipeline && active_world) {
-		active_world_pipeline->prepare_world(active_world);
+		world_token = active_world_pipeline->prepare_world(active_world);
+		// Activate this pipeline.
+		active_world_pipeline->set_active(world_token, true);
 	}
 }
 
@@ -1003,7 +1018,7 @@ bool ECS::has_active_world_pipeline() const {
 }
 
 void ECS::dispatch_active_world() {
-	if (likely(active_world && active_world_pipeline)) {
+	if (likely(world_token.is_valid() && active_world_pipeline)) {
 		if (unlikely(ready == false)) {
 			// Ready.
 			active_world_node->get_tree()->get_root()->propagate_notification(NOTIFICATION_ECS_WORLD_READY);
@@ -1013,7 +1028,7 @@ void ECS::dispatch_active_world() {
 		active_world_node->pre_process();
 
 		dispatching = true;
-		active_world_pipeline->dispatch(active_world);
+		active_world_pipeline->dispatch(world_token);
 		active_world->flush();
 		dispatching = false;
 

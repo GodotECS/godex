@@ -479,7 +479,7 @@ struct PropertyInfoWithDefault {
 
 struct Token {
 	uint32_t index : 24;
-	uint8_t generation;
+	uint8_t generation = 0;
 
 	bool is_valid() const {
 		return generation > 0;
