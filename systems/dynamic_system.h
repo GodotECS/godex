@@ -10,14 +10,14 @@ class GDScriptFunction;
 
 namespace godex {
 
-/// `DynamicSystemInfo` is a class used to compose a system at runtime.
+/// `DynamicSystemExecutionData` is a class used to compose a system at runtime.
 /// It's able to execute script systems.
 //
 // Notice:
 // This class is used by the `System` resource. Everything was implemented here
 // instead to implement it directly in the `System` resource so godex can deal
 // with non complex Godot pointer logic.
-class DynamicSystemInfo {
+class DynamicSystemExecutionData {
 	// ~~ Script system ~~
 	struct DDatabag {
 		uint32_t databag_id;
@@ -42,8 +42,8 @@ class DynamicSystemInfo {
 	LocalVector<Variant *> access_ptr;
 
 public:
-	DynamicSystemInfo();
-	~DynamicSystemInfo();
+	DynamicSystemExecutionData();
+	~DynamicSystemExecutionData();
 
 	void set_system_id(uint32_t p_id);
 	void set_target(ScriptInstance *p_target);
@@ -63,7 +63,7 @@ public:
 	void reset();
 
 public:
-	static void get_info(DynamicSystemInfo &p_info, SystemExeInfo &r_out);
+	static void get_info(DynamicSystemExecutionData &p_info, SystemExeInfo &r_out);
 	static void executor(uint8_t *p_mem, World *p_world);
 };
 } // namespace godex

@@ -15,7 +15,7 @@ class EventStorageBase;
 
 namespace godex {
 class Databag;
-class DynamicSystemInfo;
+class DynamicSystemExecutionData;
 } // namespace godex
 
 enum Phase : int {
@@ -156,7 +156,7 @@ class ECS : public Object {
 	GDCLASS(ECS, Object)
 
 	friend class Main;
-	friend class godex::DynamicSystemInfo;
+	friend class godex::DynamicSystemExecutionData;
 
 public:
 	enum {

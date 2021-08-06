@@ -9,7 +9,7 @@ class Script;
 class SharedComponentResource;
 
 namespace godex {
-class DynamicSystemInfo;
+class DynamicSystemExecutionData;
 class DynamicQuery;
 } // namespace godex
 
@@ -22,7 +22,7 @@ class System : public Resource {
 	// Used by the editor to know if the associated script exists.
 	bool verified = false;
 	String script_path;
-	godex::DynamicSystemInfo *info = nullptr;
+	godex::DynamicSystemExecutionData *info = nullptr;
 
 	static void _bind_methods();
 	const String &get_script_path() const;
@@ -52,7 +52,7 @@ public:
 
 	/// This function is only used by few tests. Never use this, use `prepare` instead.
 	/// Prepare this System to be executed.
-	void prepare(godex::DynamicSystemInfo *p_info);
+	void prepare(godex::DynamicSystemExecutionData *p_info);
 
 	static String validate_script(Ref<Script> p_script);
 

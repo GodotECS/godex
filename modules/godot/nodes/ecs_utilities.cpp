@@ -98,7 +98,7 @@ godex::system_id System::get_system_id() const {
 	return id;
 }
 
-void System::prepare(godex::DynamicSystemInfo *p_info) {
+void System::prepare(godex::DynamicSystemExecutionData *p_info) {
 	ERR_FAIL_COND_MSG(p_info == nullptr, "[FATAL] This is not supposed to happen.");
 	ERR_FAIL_COND_MSG(get_script_instance() == nullptr, "[FATAL] This is not supposed to happen.");
 
@@ -156,18 +156,18 @@ void System::get_system_exec_info(godex::system_id p_id, SystemExeInfo &r_info) 
 	r_info.valid = false;
 	ERR_FAIL_COND_MSG(!system.is_valid(), "The `ScriptEcs` wasn't able to create the scripted system: `" + ECS::get_system_name(p_id) + "`");
 
-	godex::DynamicSystemInfo dynamic_system_data;
+	godex::DynamicSystemExecutionData dynamic_system_data;
 	system->prepare(&dynamic_system_data);
 
-	godex::DynamicSystemInfo::get_info(dynamic_system_data, r_info);
+	godex::DynamicSystemExecutionData::get_info(dynamic_system_data, r_info);
 }
 
 uint64_t System::dynamic_system_data_get_size() {
-	return sizeof(godex::DynamicSystemInfo);
+	return sizeof(godex::DynamicSystemExecutionData);
 }
 
 void System::dynamic_system_data_new_placement(uint8_t *r_mem, Token p_token, World *p_world, Pipeline *p_pipeline, godex::system_id p_id) {
-	godex::DynamicSystemInfo *dynamic_system_data = new (r_mem) godex::DynamicSystemInfo();
+	godex::DynamicSystemExecutionData *dynamic_system_data = new (r_mem) godex::DynamicSystemExecutionData();
 	dynamic_system_data->set_system_id(p_id);
 
 	Ref<System> system = ScriptEcs::get_singleton()->get_script_system(ECS::get_system_name(p_id));
@@ -181,11 +181,11 @@ void System::dynamic_system_data_new_placement(uint8_t *r_mem, Token p_token, Wo
 }
 
 void System::dynamic_system_data_delete_placement(uint8_t *p_mem) {
-	((godex::DynamicSystemInfo *)p_mem)->~DynamicSystemInfo();
+	((godex::DynamicSystemExecutionData *)p_mem)->~DynamicSystemExecutionData();
 }
 
 void System::dynamic_system_data_set_active(uint8_t *p_mem, bool p_active) {
-	godex::DynamicSystemInfo *system_exec_data = (godex::DynamicSystemInfo *)p_mem;
+	godex::DynamicSystemExecutionData *system_exec_data = (godex::DynamicSystemExecutionData *)p_mem;
 	system_exec_data->set_active(p_active);
 }
 

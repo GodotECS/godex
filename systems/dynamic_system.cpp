@@ -4,46 +4,46 @@
 #include "../utils/fetchers.h"
 #include "modules/gdscript/gdscript.cpp"
 
-godex::DynamicSystemInfo::DynamicSystemInfo() {}
+godex::DynamicSystemExecutionData::DynamicSystemExecutionData() {}
 
-godex::DynamicSystemInfo::~DynamicSystemInfo() {
+godex::DynamicSystemExecutionData::~DynamicSystemExecutionData() {
 	reset();
 }
 
-void godex::DynamicSystemInfo::set_system_id(uint32_t p_id) {
+void godex::DynamicSystemExecutionData::set_system_id(uint32_t p_id) {
 	system_id = p_id;
 }
 
-void godex::DynamicSystemInfo::set_target(ScriptInstance *p_target) {
+void godex::DynamicSystemExecutionData::set_target(ScriptInstance *p_target) {
 	target_script = p_target;
 	gdscript_function = nullptr;
 }
 
-void godex::DynamicSystemInfo::execute_in(Phase p_phase, const StringName &p_dispatcher_name) {
+void godex::DynamicSystemExecutionData::execute_in(Phase p_phase, const StringName &p_dispatcher_name) {
 	ECS::get_system_info(system_id).execute_in(p_phase, p_dispatcher_name);
 }
 
-void godex::DynamicSystemInfo::execute_after(const StringName &p_system_name) {
+void godex::DynamicSystemExecutionData::execute_after(const StringName &p_system_name) {
 	ECS::get_system_info(system_id).after(p_system_name);
 }
 
-void godex::DynamicSystemInfo::execute_before(const StringName &p_system_name) {
+void godex::DynamicSystemExecutionData::execute_before(const StringName &p_system_name) {
 	ECS::get_system_info(system_id).before(p_system_name);
 }
 
-void godex::DynamicSystemInfo::with_query(DynamicQuery *p_query) {
+void godex::DynamicSystemExecutionData::with_query(DynamicQuery *p_query) {
 	CRASH_COND_MSG(compiled, "The system is already build, this function can't be called now.");
 	fetchers.push_back(p_query);
 }
 
-void godex::DynamicSystemInfo::with_databag(uint32_t p_databag_id, bool p_mutable) {
+void godex::DynamicSystemExecutionData::with_databag(uint32_t p_databag_id, bool p_mutable) {
 	CRASH_COND_MSG(compiled, "The system is already build, this function can't be called now.");
 	DatabagDynamicFetcher *fetcher = memnew(DatabagDynamicFetcher);
 	fetcher->init(p_databag_id, p_mutable);
 	fetchers.push_back(fetcher);
 }
 
-void godex::DynamicSystemInfo::with_storage(godex::component_id p_component_id) {
+void godex::DynamicSystemExecutionData::with_storage(godex::component_id p_component_id) {
 	CRASH_COND_MSG(compiled, "The system is already build, this function can't be called now.");
 
 	StorageDynamicFetcher *fetcher = memnew(StorageDynamicFetcher);
@@ -51,21 +51,21 @@ void godex::DynamicSystemInfo::with_storage(godex::component_id p_component_id) 
 	fetchers.push_back(fetcher);
 }
 
-void godex::DynamicSystemInfo::with_events_emitter(godex::event_id p_event_id) {
+void godex::DynamicSystemExecutionData::with_events_emitter(godex::event_id p_event_id) {
 	CRASH_COND_MSG(compiled, "This function can be called only within the prepare function.");
 	EventsEmitterDynamicFetcher *fetcher = memnew(EventsEmitterDynamicFetcher);
 	fetcher->init(p_event_id);
 	fetchers.push_back(fetcher);
 }
 
-void godex::DynamicSystemInfo::with_events_receiver(godex::event_id p_event_id, const String &p_emitter_name) {
+void godex::DynamicSystemExecutionData::with_events_receiver(godex::event_id p_event_id, const String &p_emitter_name) {
 	CRASH_COND_MSG(compiled, "This function can be called only within the prepare function.");
 	EventsReceiverDynamicFetcher *fetcher = memnew(EventsReceiverDynamicFetcher);
 	fetcher->init(p_event_id, p_emitter_name);
 	fetchers.push_back(fetcher);
 }
 
-void godex::DynamicSystemInfo::prepare_world(World *p_world) {
+void godex::DynamicSystemExecutionData::prepare_world(World *p_world) {
 	CRASH_COND_MSG(compiled, "The DynamicSystem is not supposed to be compiled twice.");
 	compiled = true;
 	world = p_world;
@@ -88,13 +88,13 @@ void godex::DynamicSystemInfo::prepare_world(World *p_world) {
 	}
 }
 
-void godex::DynamicSystemInfo::set_active(bool p_active) {
+void godex::DynamicSystemExecutionData::set_active(bool p_active) {
 	for (uint32_t i = 0; i < fetchers.size(); i += 1) {
 		fetchers[i]->set_active(p_active);
 	}
 }
 
-void godex::DynamicSystemInfo::reset() {
+void godex::DynamicSystemExecutionData::reset() {
 	for (uint32_t i = 0; i < fetchers.size(); i += 1) {
 		fetchers[i]->release_world(world);
 	}
@@ -114,19 +114,19 @@ void godex::DynamicSystemInfo::reset() {
 	fetchers.reset();
 }
 
-void godex::DynamicSystemInfo::get_info(DynamicSystemInfo &p_info, SystemExeInfo &r_out) {
+void godex::DynamicSystemExecutionData::get_info(DynamicSystemExecutionData &p_info, SystemExeInfo &r_out) {
 	for (uint32_t i = 0; i < p_info.fetchers.size(); i += 1) {
 		p_info.fetchers[i]->get_system_info(&r_out);
 	}
 
-	r_out.system_func = godex::DynamicSystemInfo::executor;
+	r_out.system_func = godex::DynamicSystemExecutionData::executor;
 
 	// Arrived here, we can assume the system is valid.
 	r_out.valid = true;
 }
 
-void godex::DynamicSystemInfo::executor(uint8_t *p_mem, World *p_world) {
-	godex::DynamicSystemInfo *p_info = (godex::DynamicSystemInfo *)p_mem;
+void godex::DynamicSystemExecutionData::executor(uint8_t *p_mem, World *p_world) {
+	godex::DynamicSystemExecutionData *p_info = (godex::DynamicSystemExecutionData *)p_mem;
 	ERR_FAIL_COND_MSG(p_info->compiled == false, "The System is not supposed to be executed without being compiled. Maybe this System is invalid? System: " + ECS::get_system_name(p_info->system_id));
 
 	// Script function.
