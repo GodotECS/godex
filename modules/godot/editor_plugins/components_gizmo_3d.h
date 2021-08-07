@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../nodes/entity.h"
-#include "editor/node_3d_editor_gizmos.h"
+#include "editor/plugins/node_3d_editor_gizmos.h"
 
 class ComponentGizmo;
 
@@ -36,9 +36,9 @@ public:
 
 	virtual void redraw(EditorNode3DGizmo *p_gizmo) override;
 	virtual String get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_idx) const override;
-	virtual Variant get_handle_value(EditorNode3DGizmo *p_gizmo, int p_idx) const override;
-	virtual void set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) override;
-	virtual void commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel = false) override;
+	virtual Variant get_handle_value(const EditorNode3DGizmo *p_gizmo, int p_idx) const override;
+	virtual void set_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) const override;
+	virtual void commit_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel = false) const override;
 
 	RelativeHandle find_gizmo_by_handle(const EditorNode3DGizmo *p_gizmo, int p_idx) const;
 };
@@ -55,9 +55,9 @@ public:
 	virtual void redraw(EditorNode3DGizmo *p_gizmo) = 0;
 	virtual int get_handle_count(const EditorNode3DGizmo *p_gizmo) const = 0;
 	virtual String get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_idx) const = 0;
-	virtual Variant get_handle_value(EditorNode3DGizmo *p_gizmo, int p_idx) const = 0;
-	virtual void set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) = 0;
-	virtual void commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel = false) = 0;
+	virtual Variant get_handle_value(const EditorNode3DGizmo *p_gizmo, int p_idx) const = 0;
+	virtual void set_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) = 0;
+	virtual void commit_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel = false) = 0;
 
 	void create_material(const String &p_name, const Color &p_color, bool p_billboard = false, bool p_on_top = false, bool p_use_vertex_color = false) {
 		owner->create_material(p_name, p_color, p_billboard, p_on_top, p_use_vertex_color);

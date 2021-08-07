@@ -368,8 +368,8 @@ public:
 		return entity;
 	}
 
-	void update_gizmo() {
-		// TODO no update gizmo for 2D?
+	void update_gizmos() {
+		// TODO no update gizmos for 2D?
 	}
 
 	void set_transform(const Transform2D &p_value) {}
@@ -484,7 +484,7 @@ void EntityInternal<C>::_notification(int p_what) {
 			break;
 		case Node::NOTIFICATION_READY:
 			if (Engine::get_singleton()->is_editor_hint()) {
-				owner->update_gizmo();
+				owner->update_gizmos();
 			} else {
 				if (ECS::get_singleton()->is_world_ready()) {
 					// There is already an active world, just call `ready`.
@@ -507,7 +507,7 @@ void EntityInternal<C>::_notification(int p_what) {
 #endif
 			break;
 		case Node3D::NOTIFICATION_VISIBILITY_CHANGED: {
-			owner->update_gizmo();
+			owner->update_gizmos();
 		} break;
 	}
 }
@@ -552,7 +552,7 @@ void EntityInternal<C>::add_component(const StringName &p_component_name, const 
 			depot->set(*key, *p_values.getptr(*key));
 		}
 
-		owner->update_gizmo();
+		owner->update_gizmos();
 	} else {
 		// At runtime during game.
 		const godex::component_id id = ECS::get_component_id(p_component_name);
@@ -566,7 +566,7 @@ template <class C>
 void EntityInternal<C>::remove_component(const StringName &p_component_name) {
 	if (entity_id.is_null()) {
 		components_data.remove(p_component_name);
-		owner->update_gizmo();
+		owner->update_gizmos();
 	} else {
 		const godex::component_id id = ECS::get_component_id(p_component_name);
 		ERR_FAIL_COND_MSG(id == UINT32_MAX, "The component " + p_component_name + " doesn't exists.");
@@ -645,7 +645,7 @@ bool EntityInternal<C>::set_component_value(const StringName &p_component_name, 
 			(*val)->set(p_property_name, p_value, &success);
 		}
 
-		owner->update_gizmo();
+		owner->update_gizmos();
 
 		return success;
 	} else {
