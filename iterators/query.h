@@ -482,6 +482,9 @@ constexpr fetch_element_type<S, 0, Cs...> get(const QueryResultTuple<Cs...> &tup
 template <std::size_t I, class... Cs>
 struct QueryStorage {
 	QueryStorage(World *p_world) {}
+	void set_world_notification_active(bool p_active) {}
+	void initiate_process(World *p_world) {}
+	void conclude_process(World *p_world) {}
 
 	constexpr static bool is_filter_derminant() {
 		// False by default.
@@ -510,6 +513,15 @@ template <std::size_t I, class... Cs>
 struct QueryStorage<I, EntityID, Cs...> : public QueryStorage<I + 1, Cs...> {
 	QueryStorage(World *p_world) :
 			QueryStorage<I + 1, Cs...>(p_world) {}
+	void initiate_process(World *p_world) {
+		QueryStorage<I + 1, Cs...>::initiate_process(p_world);
+	}
+	void conclude_process(World *p_world) {
+		QueryStorage<I + 1, Cs...>::conclude_process(p_world);
+	}
+	void set_world_notification_active(bool p_active) {
+		QueryStorage<I + 1, Cs...>::set_world_notification_active(p_active);
+	}
 
 	EntitiesBuffer get_entities() const {
 		return QueryStorage<I + 1, Cs...>::get_entities();
@@ -545,7 +557,21 @@ struct QueryStorage<I, Maybe<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 
 	QueryStorage(World *p_world) :
 			QueryStorage<I + 1, Cs...>(p_world),
-			query_storage(p_world) {
+			query_storage(p_world) {}
+
+	void initiate_process(World *p_world) {
+		QueryStorage<I + 1, Cs...>::initiate_process(p_world);
+		query_storage.initiate_process(p_world);
+	}
+
+	void conclude_process(World *p_world) {
+		QueryStorage<I + 1, Cs...>::conclude_process(p_world);
+		query_storage.conclude_process(p_world);
+	}
+
+	void set_world_notification_active(bool p_active) {
+		QueryStorage<I + 1, Cs...>::set_world_notification_active(p_active);
+		query_storage.set_world_notification_active(p_active);
 	}
 
 	EntitiesBuffer get_entities() const {
@@ -592,7 +618,21 @@ struct QueryStorage<I, Not<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 
 	QueryStorage(World *p_world) :
 			QueryStorage<I + 1, Cs...>(p_world),
-			query_storage(p_world) {
+			query_storage(p_world) {}
+
+	void initiate_process(World *p_world) {
+		QueryStorage<I + 1, Cs...>::initiate_process(p_world);
+		query_storage.initiate_process(p_world);
+	}
+
+	void conclude_process(World *p_world) {
+		QueryStorage<I + 1, Cs...>::conclude_process(p_world);
+		query_storage.conclude_process(p_world);
+	}
+
+	void set_world_notification_active(bool p_active) {
+		QueryStorage<I + 1, Cs...>::set_world_notification_active(p_active);
+		query_storage.set_world_notification_active(p_active);
 	}
 
 	EntitiesBuffer get_entities() const {
@@ -639,11 +679,50 @@ struct QueryStorage<I, Not<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 /// `QueryStorage` `Changed` filter specialization.
 template <std::size_t I, class C, class... Cs>
 struct QueryStorage<I, Changed<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
+	World *world = nullptr;
+	EntityList changed;
 	Storage<C> *storage = nullptr;
 
 	QueryStorage(World *p_world) :
 			QueryStorage<I + 1, Cs...>(p_world),
-			storage(p_world->get_storage<C>()) {
+			world(p_world) {
+		Storage<C> *s = p_world->get_storage<C>();
+		if (s) {
+			s->add_change_listener(&changed);
+		}
+	}
+	~QueryStorage() {
+		Storage<C> *s = world->get_storage<C>();
+		if (s) {
+			s->remove_change_listener(&changed);
+		}
+	}
+
+	void initiate_process(World *p_world) {
+		QueryStorage<I + 1, Cs...>::initiate_process(p_world);
+		storage = p_world->get_storage<C>();
+		// Make sure this doesn't change at this point.
+		changed.freeze();
+	}
+
+	void conclude_process(World *p_world) {
+		QueryStorage<I + 1, Cs...>::conclude_process(p_world);
+		storage = nullptr;
+		// Unfreeze the list and clear it to listen on the new events.
+		changed.unfreeze();
+		changed.clear();
+	}
+
+	void set_world_notification_active(bool p_active) {
+		QueryStorage<I + 1, Cs...>::set_world_notification_active(p_active);
+		Storage<C> *s = world->get_storage<C>();
+		if (s) {
+			if (p_active) {
+				s->add_change_listener(&changed);
+			} else {
+				s->remove_change_listener(&changed);
+			}
+		}
 	}
 
 	constexpr static bool is_filter_derminant() {
@@ -658,7 +737,7 @@ struct QueryStorage<I, Changed<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 		if (unlikely(storage == nullptr)) {
 			return o_entities;
 		}
-		const EntitiesBuffer entities = storage->get_changed_entities();
+		const EntitiesBuffer entities(changed.size(), changed.get_entities_ptr());
 		return entities.count < o_entities.count ? entities : o_entities;
 	}
 
@@ -668,7 +747,7 @@ struct QueryStorage<I, Changed<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 			// immediately.
 			return false;
 		}
-		return storage->is_changed(p_entity) && QueryStorage<I + 1, Cs...>::filter_satisfied(p_entity);
+		return changed.has(p_entity) && QueryStorage<I + 1, Cs...>::filter_satisfied(p_entity);
 	}
 
 	bool can_fetch(EntityID p_entity) const {
@@ -702,7 +781,6 @@ struct QueryStorage<I, Changed<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 		} else {
 			r_info.mutable_components.insert(C::get_component_id());
 		}
-		r_info.need_changed.insert(C::get_component_id());
 		QueryStorage<I + 1, Cs...>::get_components(r_info);
 	}
 };
@@ -718,7 +796,21 @@ struct QueryStorage<I, Batch<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 
 	QueryStorage(World *p_world) :
 			QueryStorage<I + 1, Cs...>(p_world),
-			query_storage(p_world) {
+			query_storage(p_world) {}
+
+	void initiate_process(World *p_world) {
+		QueryStorage<I + 1, Cs...>::initiate_process(p_world);
+		query_storage.initiate_process(p_world);
+	}
+
+	void conclude_process(World *p_world) {
+		QueryStorage<I + 1, Cs...>::conclude_process(p_world);
+		query_storage.conclude_process(p_world);
+	}
+
+	void set_world_notification_active(bool p_active) {
+		QueryStorage<I + 1, Cs...>::set_world_notification_active(p_active);
+		query_storage.set_world_notification_active(p_active);
 	}
 
 	EntitiesBuffer get_entities() const {
@@ -788,6 +880,11 @@ struct AJUtility {
 
 	AJUtility(World *p_world) {}
 
+	void initiate_process(World *p_world) {}
+	void conclude_process(World *p_world) {}
+
+	void set_world_notification_active(bool p_active) {}
+
 	/// At this point, it's sure all filters are determinant.
 	constexpr static bool all_determinant() {
 		return true;
@@ -823,7 +920,21 @@ struct AJUtility<I, INCREMENT, C, Cs...> : AJUtility<I + INCREMENT, INCREMENT, C
 
 	AJUtility(World *p_world) :
 			AJUtility<I + INCREMENT, INCREMENT, Cs...>(p_world),
-			storage(p_world) {
+			storage(p_world) {}
+
+	void initiate_process(World *p_world) {
+		AJUtility<I + INCREMENT, INCREMENT, Cs...>::initiate_process(p_world);
+		storage.initiate_process(p_world);
+	}
+
+	void conclude_process(World *p_world) {
+		AJUtility<I + INCREMENT, INCREMENT, Cs...>::conclude_process(p_world);
+		storage.conclude_process(p_world);
+	}
+
+	void set_world_notification_active(bool p_active) {
+		AJUtility<I + INCREMENT, INCREMENT, Cs...>::set_world_notification_active(p_active);
+		storage.set_world_notification_active(p_active);
 	}
 
 	/// Return `true` when all subfilters are terminant.
@@ -921,14 +1032,28 @@ struct QueryStorage<I, Any<C...>, Cs...> : QueryStorage<AJUtility<I, 1, C...>::L
 
 	QueryStorage(World *p_world) :
 			QueryStorage<AJUtility<I, 1, C...>::LAST_INDEX, Cs...>(p_world),
-			sub_storages(p_world) {
-		// TODO Exist a way to cache this?
-		// TODO Exist a way to at least keep the memory to avoid reallocations each frame?
-		// TODO An idea could be add a mechanism on the `EntityList` that keeps
+			sub_storages(p_world) {}
+
+	void initiate_process(World *p_world) {
+		QueryStorage<AJUtility<I, 1, C...>::LAST_INDEX, Cs...>::initiate_process(p_world);
+		sub_storages.initiate_process(p_world);
+
+		entities.clear();
+		// TODO Can we cache this somehow?
 		// 	track of the biggest `EntityID` it has.
 		// 	So the `entities` list we have here could be prepared, and a lot of
 		// 	reallocation can be avoided.
 		sub_storages.get_entities(entities);
+	}
+
+	void conclude_process(World *p_world) {
+		QueryStorage<AJUtility<I, 1, C...>::LAST_INDEX, Cs...>::conclude_process(p_world);
+		sub_storages.conclude_process(p_world);
+	}
+
+	void set_world_notification_active(bool p_active) {
+		QueryStorage<AJUtility<I, 1, C...>::LAST_INDEX, Cs...>::set_world_notification_active(p_active);
+		sub_storages.set_world_notification_active(p_active);
 	}
 
 	constexpr static bool is_filter_derminant() {
@@ -997,14 +1122,28 @@ struct QueryStorage<I, Join<C...>, Cs...> : QueryStorage<I + 1, Cs...> {
 
 	QueryStorage(World *p_world) :
 			QueryStorage<I + 1, Cs...>(p_world),
-			sub_storages(p_world) {
+			sub_storages(p_world) {}
+
+	void initiate_process(World *p_world) {
+		QueryStorage<I + 1, Cs...>::initiate_process(p_world);
+		sub_storages.initiate_process(p_world);
+
+		entities.clear();
 		// TODO Exist a way to cache this?
-		// TODO Exist a way to at least keep the memory to avoid reallocations each frame?
-		// TODO An idea could be add a mechanism on the `EntityList` that keeps
 		// 	track of the biggest `EntityID` it has.
 		// 	So the `entities` list we have here could be prepared, and a lot of
 		// 	reallocation can be avoided.
 		sub_storages.get_entities(entities);
+	}
+
+	void conclude_process(World *p_world) {
+		QueryStorage<I + 1, Cs...>::conclude_process(p_world);
+		sub_storages.conclude_process(p_world);
+	}
+
+	void set_world_notification_active(bool p_active) {
+		QueryStorage<I + 1, Cs...>::set_world_notification_active(p_active);
+		sub_storages.set_world_notification_active(p_active);
 	}
 
 	constexpr static bool is_filter_derminant() {
@@ -1066,8 +1205,20 @@ struct QueryStorage<I, C, Cs...> : QueryStorage<I + 1, Cs...> {
 	Storage<C> *storage = nullptr;
 
 	QueryStorage(World *p_world) :
-			QueryStorage<I + 1, Cs...>(p_world),
-			storage(p_world->get_storage<C>()) {
+			QueryStorage<I + 1, Cs...>(p_world) {}
+
+	void initiate_process(World *p_world) {
+		QueryStorage<I + 1, Cs...>::initiate_process(p_world);
+		storage = p_world->get_storage<C>();
+	}
+
+	void conclude_process(World *p_world) {
+		QueryStorage<I + 1, Cs...>::conclude_process(p_world);
+		storage = nullptr;
+	}
+
+	void set_world_notification_active(bool p_active) {
+		QueryStorage<I + 1, Cs...>::set_world_notification_active(p_active);
 	}
 
 	constexpr static bool is_filter_derminant() {
@@ -1149,6 +1300,12 @@ class Query {
 public:
 	Query(World *p_world) :
 			q(p_world) {
+	}
+
+	void initiate_process(World *p_world) {
+		m_space = LOCAL;
+		q.initiate_process(p_world);
+
 		// Prepare the query:
 		// Ask all the pointed storage to return a list of entities to iterate;
 		// the query, takes the smallest one, and iterates over it.
@@ -1157,6 +1314,14 @@ public:
 			entities.count = 0;
 			ERR_PRINT("This query is not valid, you are using only non determinant fileters (like `Not` and `Maybe`).");
 		}
+	}
+
+	void conclude_process(World *p_world) {
+		q.conclude_process(p_world);
+	}
+
+	void set_world_notification_active(bool p_active) {
+		q.set_world_notification_active(p_active);
 	}
 
 	struct Iterator {

@@ -223,8 +223,9 @@ TEST_CASE("[Modules][ECS] Test Hierarchy.") {
 TEST_CASE("[Modules][ECS] Test HierarchicalStorage.") {
 	Hierarchy hierarchy;
 
+	EntityList changed_transforms;
 	HierarchicalStorage<TransformComponent> transform_storage;
-	transform_storage.set_tracing_change(true);
+	transform_storage.add_change_listener(&changed_transforms);
 
 	hierarchy.add_sub_storage(&transform_storage);
 
@@ -281,12 +282,13 @@ TEST_CASE("[Modules][ECS] Test HierarchicalStorage.") {
 		CHECK(ABS(tc_entity_1->origin[0] - 4.) <= CMP_EPSILON);
 		CHECK(ABS(tc_entity_2->origin[0] - 5.) <= CMP_EPSILON);
 
-		CHECK(transform_storage.is_changed(0));
-		CHECK(transform_storage.is_changed(1));
-		CHECK(transform_storage.is_changed(2));
+		CHECK(changed_transforms.has(0));
+		CHECK(changed_transforms.has(1));
+		CHECK(changed_transforms.has(2));
 	}
 
-	transform_storage.flush_changed();
+	transform_storage.flush_changes();
+	changed_transforms.clear();
 
 	// Test update global transform bia `get`.
 	{
@@ -309,12 +311,13 @@ TEST_CASE("[Modules][ECS] Test HierarchicalStorage.") {
 		CHECK(ABS(tc_entity_2->origin[0] - 7.) <= CMP_EPSILON);
 		CHECK(ABS(tc_entity_2_local->origin[0] - 3.) <= CMP_EPSILON);
 
-		CHECK(transform_storage.is_changed(0) == false);
-		CHECK(transform_storage.is_changed(1) == false);
-		CHECK(transform_storage.is_changed(2));
+		CHECK(changed_transforms.has(0) == false);
+		CHECK(changed_transforms.has(1) == false);
+		CHECK(changed_transforms.has(2));
 	}
 
-	transform_storage.flush_changed();
+	transform_storage.flush_changes();
+	changed_transforms.clear();
 
 	// Test change hierarchy
 	{
@@ -335,13 +338,14 @@ TEST_CASE("[Modules][ECS] Test HierarchicalStorage.") {
 		CHECK(ABS(tc_entity_2->origin[0] - 6.) <= CMP_EPSILON); // Child of `Entity0`.
 		CHECK(ABS(tc_entity_1->origin[0] - 1.) <= CMP_EPSILON); // Root
 
-		CHECK(transform_storage.is_changed(0) == false);
-		CHECK(transform_storage.is_changed(1));
-		CHECK(transform_storage.is_changed(2));
+		CHECK(changed_transforms.has(0) == false);
+		CHECK(changed_transforms.has(1));
+		CHECK(changed_transforms.has(2));
 	}
 
-	// Check`Entities` fetch.
+	// Check `get_stored_entities` fetch.
 	transform_storage.clear();
+
 	{
 		EntitiesBuffer entities = transform_storage.get_stored_entities();
 		CHECK(entities.count == 0);

@@ -13,12 +13,12 @@ void DynamicQuery::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("not_component", "component_id"), &DynamicQuery::not_component);
 
 	ClassDB::bind_method(D_METHOD("is_valid"), &DynamicQuery::is_valid);
-	ClassDB::bind_method(D_METHOD("build"), &DynamicQuery::build);
+	ClassDB::bind_method(D_METHOD("prepare_world"), &DynamicQuery::prepare_world_script);
 	ClassDB::bind_method(D_METHOD("reset"), &DynamicQuery::reset);
 	ClassDB::bind_method(D_METHOD("get_component", "index"), &DynamicQuery::get_access_by_index_gd);
 
 	ClassDB::bind_method(D_METHOD("begin", "world"), &DynamicQuery::begin_script);
-	ClassDB::bind_method(D_METHOD("end"), &DynamicQuery::end);
+	ClassDB::bind_method(D_METHOD("end"), &DynamicQuery::end_script);
 
 	ClassDB::bind_method(D_METHOD("next"), &DynamicQuery::next);
 
@@ -61,51 +61,30 @@ void DynamicQuery::_with_component(uint32_t p_component_id, bool p_mutable, Fetc
 		ERR_FAIL_MSG("The component_id " + itos(p_component_id) + " is invalid.");
 	}
 
-	ERR_FAIL_COND_MSG(component_ids.find(p_component_id) != -1, "The component " + itos(p_component_id) + " is already part of this query.");
+	ERR_FAIL_COND_MSG(find_element_by_name(ECS::get_component_name(p_component_id)) != -1, "The component " + itos(p_component_id) + " is already part of this query.");
 
-	component_ids.push_back(p_component_id);
-	components_name.push_back(ECS::get_component_name(p_component_id));
-	mutability.push_back(p_mutable);
-	mode.push_back(p_mode);
+	DynamicQueryElement data;
+	data.id = p_component_id;
+	data.name = ECS::get_component_name(p_component_id);
+	data.mutability = p_mutable;
+	data.mode = p_mode;
+	data.entity_list_index = UINT32_MAX;
+	elements.push_back(data);
 }
 
 bool DynamicQuery::is_valid() const {
 	return valid;
 }
 
-bool DynamicQuery::build() {
-	if (likely(can_change == false)) {
-		return false;
-	}
-	ERR_FAIL_COND_V(is_valid() == false, false);
-
-	can_change = false;
-
-	// Build the access_component in this way the `ObjectDB` doesn't
-	// complain for some reason, otherwise it needs to use pointers
-	// (AccessComponent is a parent of Object).
-	accessors.resize(component_ids.size());
-	for (uint32_t i = 0; i < component_ids.size(); i += 1) {
-		accessors[i].init(
-				component_ids[i],
-				mutability[i]);
-	}
-
-	return true;
-}
-
 void DynamicQuery::reset() {
 	valid = true;
 	can_change = true;
-	component_ids.reset();
-	components_name.reset();
-	mutability.reset();
-	accessors.reset();
+	elements.reset();
 	world = nullptr;
 }
 
 uint32_t DynamicQuery::access_count() const {
-	return component_ids.size();
+	return elements.size();
 }
 
 Object *DynamicQuery::get_access_by_index_gd(uint32_t p_index) const {
@@ -121,49 +100,92 @@ ComponentDynamicExposer *DynamicQuery::get_access_by_index(uint32_t p_index) con
 
 void DynamicQuery::get_system_info(SystemExeInfo *p_info) const {
 	ERR_FAIL_COND(is_valid() == false);
-	for (uint32_t i = 0; i < component_ids.size(); i += 1) {
-		if (mutability[i]) {
-			p_info->mutable_components.insert(component_ids[i]);
+	for (uint32_t i = 0; i < elements.size(); i += 1) {
+		if (elements[i].mutability) {
+			p_info->mutable_components.insert(elements[i].id);
 		} else {
-			p_info->immutable_components.insert(component_ids[i]);
-		}
-
-		if (mode[i] == CHANGED_MODE) {
-			p_info->need_changed.insert(component_ids[i]);
+			p_info->immutable_components.insert(elements[i].id);
 		}
 	}
+}
+
+void DynamicQuery::prepare_world_script(Object *p_world) {
+	WorldECS *world = Object::cast_to<WorldECS>(p_world);
+	ERR_FAIL_COND_MSG(world == nullptr, "The given object is not a `WorldECS`.");
+	prepare_world(world->get_world());
 }
 
 void DynamicQuery::begin_script(Object *p_world) {
 	WorldECS *world = Object::cast_to<WorldECS>(p_world);
 	ERR_FAIL_COND_MSG(world == nullptr, "The given object is not a `WorldECS`.");
-	begin(world->get_world());
+	initiate_process(world->get_world());
 }
 
-void DynamicQuery::begin(World *p_world) {
-	// Can't change anymore.
-	build();
+void DynamicQuery::end_script() {
+	conclude_process(nullptr);
+}
+
+void DynamicQuery::prepare_world(World *p_world) {
+	if (likely(can_change == false)) {
+		// Already done.
+		return;
+	}
+	ERR_FAIL_COND(is_valid() == false);
+
+	can_change = false;
+	world = p_world;
+
+	// Build the access_component in this way the `ObjectDB` doesn't
+	// complain, otherwise it needs to use pointers	(AccessComponent is a parent
+	// of Object).
+	accessors.resize(elements.size());
+	uint32_t entity_lists_count = 0;
+	for (uint32_t i = 0; i < elements.size(); i += 1) {
+		accessors[i].init(
+				elements[i].id,
+				elements[i].mutability);
+
+		if (elements[i].mode == CHANGED_MODE) {
+			entity_lists_count += 1;
+		}
+	}
+
+	// Resize once, so we can set valid pointers to the `World`.
+	entity_lists.resize(entity_lists_count);
+
+	uint32_t entity_list_i = 0;
+	for (uint32_t i = 0; i < elements.size(); i += 1) {
+		if (elements[i].mode == CHANGED_MODE) {
+			elements[i].entity_list_index = entity_list_i;
+			p_world->get_storage(elements[i].id)->add_change_listener(entity_lists.ptr() + entity_list_i);
+			entity_list_i += 1;
+		}
+	}
+}
+
+void DynamicQuery::initiate_process(World *p_world) {
+	// Make sure the Query is build at this point.
+	prepare_world(p_world);
+
 	current_entity = EntityID();
 	iterator_index = 0;
 	entities.count = 0;
 
 	ERR_FAIL_COND(is_valid() == false);
 
-	// Using a crash cond so the dev knows immediately if it's using the query
-	// in the wrong way.
-	// The user doesn't never use this query directly. So it's fine put the
-	// crash cond here.
-	CRASH_COND_MSG(world != nullptr, "Make sure to call `DynamicQuery::end()` when you finish using the query!");
-	world = p_world;
-
-	storages.resize(component_ids.size());
+	storages.resize(elements.size());
 	entities.count = UINT32_MAX;
 
-	for (uint32_t i = 0; i < component_ids.size(); i += 1) {
-		storages[i] = world->get_storage(component_ids[i]);
+	// Freeze the EntityLists to avoid any changes.
+	for (uint32_t i = 0; i < entity_lists.size(); i += 1) {
+		entity_lists[i].freeze();
+	}
+
+	for (uint32_t i = 0; i < elements.size(); i += 1) {
+		storages[i] = world->get_storage(elements[i].id);
 		if (storages[i] != nullptr) {
 			EntitiesBuffer eb(UINT32_MAX, nullptr);
-			switch (mode[i]) {
+			switch (elements[i].mode) {
 				case WITH_MODE: {
 					eb = storages[i]->get_stored_entities();
 				} break;
@@ -174,7 +196,8 @@ void DynamicQuery::begin(World *p_world) {
 					// Not determinant, nothing to do.
 				} break;
 				case CHANGED_MODE: {
-					eb = storages[i]->get_changed_entities();
+					const EntityList &list = entity_lists[elements[i].entity_list_index];
+					eb = EntitiesBuffer(list.size(), list.get_entities_ptr());
 				} break;
 			}
 			if (eb.count < entities.count) {
@@ -192,13 +215,31 @@ void DynamicQuery::begin(World *p_world) {
 	// The Query is ready to fetch, let's rock!
 }
 
-void DynamicQuery::end() {
+void DynamicQuery::conclude_process(World *p_world) {
+	// Unfreeze the EntityLists.
+	for (uint32_t i = 0; i < entity_lists.size(); i += 1) {
+		entity_lists[i].unfreeze();
+	}
+
+	// Clear the changed entity_list at this point, so to start collecting the new
+	// changes.
+	for (uint32_t i = 0; i < elements.size(); i += 1) {
+		if (elements[i].mode == CHANGED_MODE) {
+			entity_lists[elements[i].entity_list_index].clear();
+		}
+	}
+
 	// Clear any component reference.
-	world = nullptr;
 	storages.clear();
 	iterator_index = 0;
 	entities.count = 0;
 }
+
+void DynamicQuery::release_world(World *p_world) {
+	world = nullptr;
+}
+
+void DynamicQuery::set_active(bool p_active) {}
 
 bool DynamicQuery::next() {
 	// Search the next Entity to fetch.
@@ -224,7 +265,7 @@ bool DynamicQuery::has(EntityID p_id) const {
 	// Make sure this entity has all the following components.
 	uint32_t non_determinant_count = 0;
 	for (uint32_t i = 0; i < storages.size(); i += 1) {
-		switch (mode[i]) {
+		switch (elements[i].mode) {
 			case WITH_MODE: {
 				if (unlikely(storages[i] == nullptr) || storages[i]->has(p_id) == false) {
 					// Nothing.
@@ -243,7 +284,7 @@ bool DynamicQuery::has(EntityID p_id) const {
 				non_determinant_count += 1;
 			} break;
 			case CHANGED_MODE: {
-				if (unlikely(storages[i] == nullptr) || storages[i]->is_changed(p_id) == false) {
+				if (unlikely(storages[i] == nullptr) || entity_lists[elements[i].entity_list_index].has(p_id) == false) {
 					// Returns false if the storage doesn't exists or is not
 					// changed.
 					return false;
@@ -328,7 +369,7 @@ Variant DynamicQuery::getvar(const Variant &p_key, bool *r_valid) const {
 			return obj;
 		}
 	} else if (p_key.get_type() == Variant::STRING_NAME) {
-		const int64_t index = components_name.find(p_key);
+		const int64_t index = find_element_by_name(p_key);
 		if (index >= 0) {
 			*r_valid = true;
 			return get_access_by_index_gd(index);
@@ -337,7 +378,7 @@ Variant DynamicQuery::getvar(const Variant &p_key, bool *r_valid) const {
 			return Variant();
 		}
 	} else if (p_key.get_type() == Variant::STRING) {
-		const int64_t index = components_name.find(StringName(p_key.operator String()));
+		const int64_t index = find_element_by_name(StringName(p_key.operator String()));
 		if (index >= 0) {
 			*r_valid = true;
 			return get_access_by_index_gd(index);
@@ -350,4 +391,13 @@ Variant DynamicQuery::getvar(const Variant &p_key, bool *r_valid) const {
 		ERR_PRINT("The proper syntax is: `query[0].my_component_variable`.");
 		return Variant();
 	}
+}
+
+int64_t DynamicQuery::find_element_by_name(const StringName &p_name) const {
+	for (uint32_t i = 0; i < elements.size(); i += 1) {
+		if (elements[i].name == p_name) {
+			return i;
+		}
+	}
+	return -1;
 }

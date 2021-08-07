@@ -9,6 +9,7 @@
 #include "modules/gdscript/gdscript.h"
 
 struct SystemExeInfo;
+class World;
 
 template <typename T, typename = void>
 struct godex_has_get_spawners : std::false_type {};
@@ -465,8 +466,12 @@ class GodexWorldFetcher : public Object {
 
 public:
 	virtual void get_system_info(SystemExeInfo *r_info) const = 0;
-	virtual void begin(class World *p_world) = 0;
-	virtual void end() = 0;
+
+	virtual void prepare_world(World *p_world) = 0;
+	virtual void initiate_process(World *p_world) = 0;
+	virtual void conclude_process(World *p_world) = 0;
+	virtual void release_world(World *p_world) = 0;
+	virtual void set_active(bool p_active) = 0;
 };
 
 struct PropertyInfoWithDefault {
@@ -475,4 +480,21 @@ struct PropertyInfoWithDefault {
 
 	PropertyInfoWithDefault(PropertyInfo &p_info, const Variant &p_def) :
 			info(p_info), def(p_def) {}
+};
+
+struct Token {
+	uint32_t index : 24;
+	uint8_t generation = 0;
+
+	bool is_valid() const {
+		return generation > 0;
+	}
+};
+
+/// This structure is used by the `SystemDispatcher` to hold some extra info
+/// useful during the Dispatcher execution.
+struct DispatcherSystemExecutionData {
+	Token token;
+	class Pipeline *pipeline;
+	int dispatcher_index;
 };

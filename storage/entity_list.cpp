@@ -1,6 +1,18 @@
 #include "entity_list.h"
 
+void EntityList::freeze() {
+	frozen = true;
+}
+
+void EntityList::unfreeze() {
+	frozen = false;
+}
+
 void EntityList::insert(EntityID p_entity) {
+	if (frozen) {
+		return;
+	}
+
 	if (entity_to_data.size() <= p_entity) {
 		const uint32_t initial_size = entity_to_data.size();
 		entity_to_data.resize(p_entity + 1);
@@ -16,6 +28,10 @@ void EntityList::insert(EntityID p_entity) {
 }
 
 void EntityList::remove(EntityID p_entity) {
+	if (frozen) {
+		return;
+	}
+
 	if (entity_to_data.size() <= p_entity) {
 		// Was not changed, Nothing to do.
 		return;
@@ -92,11 +108,13 @@ void EntityList::clear() {
 		entity_to_data[i] = UINT32_MAX;
 	}
 	dense_list.clear();
+	frozen = false;
 }
 
 void EntityList::reset() {
 	entity_to_data.reset();
 	dense_list.reset();
+	frozen = false;
 }
 
 const EntityID *EntityList::get_entities_ptr() const {

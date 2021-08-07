@@ -273,18 +273,19 @@ void PipelineBuilder::build_pipeline(
 void PipelineBuilder::build_pipeline(
 		const ExecutionGraph &p_graph,
 		Pipeline *r_pipeline) {
-	CRASH_COND_MSG(r_pipeline == nullptr, "The pipeline pointer must be valid.");
+	ERR_FAIL_COND_MSG(r_pipeline == nullptr, "The pipeline pointer must be valid.");
+	ERR_FAIL_COND_MSG(r_pipeline->can_change() == false, "This pipeline has still some world bind. It's necessary to release those worlds before reusing this pipeline.");
 
 	r_pipeline->reset();
 
 	// Add the temporary systems.
 	{
-		r_pipeline->temporary_systems_exe.resize(p_graph.temporary_systems.size());
+		r_pipeline->temporary_systems.resize(p_graph.temporary_systems.size());
 		uint32_t index = 0;
 		for (const List<ExecutionGraph::SystemNode *>::Element *system = p_graph.temporary_systems.front();
 				system;
 				system = system->next(), index += 1) {
-			r_pipeline->temporary_systems_exe[index] = ECS::get_func_temporary_system_exe(system->get()->id);
+			r_pipeline->temporary_systems[index] = system->get()->id;
 		}
 	}
 
@@ -324,6 +325,7 @@ void PipelineBuilder::build_pipeline(
 
 				// Add the exec function to the stage.
 				r_pipeline->dispatchers[dispatcher_index].exec_stages[stage_index].systems[i].id = stage->get().systems[i]->id;
+				r_pipeline->dispatchers[dispatcher_index].exec_stages[stage_index].systems[i].index = UINT32_MAX; // Init just below
 				r_pipeline->dispatchers[dispatcher_index].exec_stages[stage_index].systems[i].exe = stage->get().systems[i]->info.system_func;
 
 				// Setup the phase.
@@ -353,6 +355,22 @@ void PipelineBuilder::build_pipeline(
 						r_pipeline->dispatchers[dispatcher_index].exec_stages[stage_index].notify_list_release_write[child_index],
 						r_pipeline->dispatchers[dispatcher_index].exec_stages[stage_index].notify_list_release_write[0]);
 				CRASH_COND(r_pipeline->dispatchers[dispatcher_index].exec_stages[stage_index].notify_list_release_write[0] != Child::get_component_id());
+			}
+		}
+	}
+
+	// Now all the stages for each dispatcher is ready, it's the perfect moment to
+	// define the index of each System, in this pipeline.
+	{
+		uint32_t index = 0;
+		for (uint32_t dispatcher_i = 0; dispatcher_i < r_pipeline->dispatchers.size(); dispatcher_i += 1) {
+			DispatcherData &dispatcher = r_pipeline->dispatchers[dispatcher_i];
+
+			for (uint32_t stage_i = 0; stage_i < dispatcher.exec_stages.size(); stage_i += 1) {
+				for (uint32_t i = 0; i < dispatcher.exec_stages[stage_i].systems.size(); i += 1) {
+					dispatcher.exec_stages[stage_i].systems[i].index = index;
+					index += 1;
+				}
 			}
 		}
 	}
@@ -757,37 +775,10 @@ struct GeneratedEventInfo {
 void internal_detect_warnings_lost_events(
 		Ref<ExecutionGraph::Dispatcher> dispatcher,
 		Set<GeneratedEventInfo> &changed_events) {
+	// In this moment there aren't warning to detect.
+	return;
+	/* Just the old code, it's here in case we need to detect some warnings.
 	for (const List<ExecutionGraph::SystemNode *>::Element *e = dispatcher->sorted_systems.front(); e; e = e->next()) {
-		if ((ECS::get_system_flags(e->get()->id) & BUILDER_IGNORE_WARNING_CHANGED_EVENTS) != 0) {
-			continue;
-		}
-
-		// Detect if this system is generating an event.
-		for (Set<godex::component_id>::Element *generated_component = e->get()->info.mutable_components_storage.front(); generated_component; generated_component = generated_component->next()) {
-			if (changed_events.has({ generated_component->get(), godex::SYSTEM_NONE })) {
-				// A system prior to this one is fetching the changes of this
-				// component. Notify it.
-				changed_events.erase({ generated_component->get(), godex::SYSTEM_NONE }); // TODO No way to update the existing one instead??
-				changed_events.insert({ generated_component->get(), e->get()->id });
-			}
-		}
-
-		// Detect if this system is fetching the event.
-		for (Set<godex::component_id>::Element *fetch_component = e->get()->info.mutable_components.front(); fetch_component; fetch_component = fetch_component->next()) {
-			if (changed_events.has({ fetch_component->get(), godex::SYSTEM_NONE })) {
-				// A system prior to this one is fetching the changes of this
-				// component. Notify it.
-				changed_events.erase({ fetch_component->get(), godex::SYSTEM_NONE }); // TODO No way to update the existing one instead??
-				changed_events.insert({ fetch_component->get(), e->get()->id });
-			}
-		}
-
-		for (Set<godex::component_id>::Element *changed = e->get()->info.need_changed.front(); changed; changed = changed->next()) {
-			// Notify each changed component this system is reading.
-			changed_events.erase({ changed->get(), godex::SYSTEM_NONE }); // TODO No way to update the existing one instead??
-			changed_events.insert({ changed->get(), godex::SYSTEM_NONE });
-		}
-
 		// This is a dispatcher, check this before continue.
 		if (e->get()->is_dispatcher()) {
 			internal_detect_warnings_lost_events(
@@ -795,6 +786,7 @@ void internal_detect_warnings_lost_events(
 					changed_events);
 		}
 	}
+	*/
 }
 
 void PipelineBuilder::detect_warnings_lost_events(ExecutionGraph *r_graph) {

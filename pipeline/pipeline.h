@@ -6,8 +6,20 @@
 
 class World;
 
-struct ExecutionSystemData {
+struct TemporaryExecutionSystemData {
+	// The SystemID
 	godex::system_id id;
+	func_temporary_system_execute exec_func;
+	uint8_t *system_data;
+};
+
+struct ExecutionSystemData {
+	// The SystemID
+	godex::system_id id;
+	// The System index within this pipeline. This is used to fetch the
+	// SystemExecutionData, created by the `prepare_world` function.
+	uint32_t index;
+	// The Execution function.
 	func_system_execute exe;
 };
 
@@ -23,23 +35,42 @@ struct DispatcherData {
 	LocalVector<ExecutionStageData> exec_stages;
 };
 
+struct WorldData {
+	friend class Pipeline;
+
+private:
+	uint8_t generation = 1;
+	World *world;
+	bool active;
+
+	uint64_t system_data_buffer_size;
+	uint8_t *system_data_buffer;
+
+	// Pointers to the system data.
+	LocalVector<uint8_t *> system_data;
+
+	LocalVector<TemporaryExecutionSystemData> temporary_systems;
+};
+
 class Pipeline {
 	friend class PipelineBuilder;
 	friend class ECS;
 
+private:
 	bool ready = false;
-	LocalVector<func_temporary_system_execute> temporary_systems_exe;
+	LocalVector<godex::system_id> temporary_systems;
 
 	LocalVector<DispatcherData> dispatchers;
+
+	/// List of worlds ready to be dispatched by this pipeline.
+	LocalVector<WorldData> worlds;
 
 public:
 	Pipeline();
 
-	/// Add a `TemporarySystem` which is executed untill `true` is returned.
-	/// The `TemporarySystems` are always executed in single thread and before
-	/// any other `System`.
-	void add_temporary_system(func_temporary_system_execute p_func_get_exe_info);
-	void add_registered_temporary_system(uint32_t p_id);
+	/// Returns false if this pipeline has some bind world, that it's necessary to
+	/// release before altering this pipeline.
+	bool can_change() const;
 
 	/// Returns `true` if the pipeline is ready.
 	bool is_ready() const;
@@ -47,14 +78,28 @@ public:
 	/// Reset the pipeline.
 	void reset();
 
-	/// Prepare the world to be safely dispatched.
-	void prepare(World *p_world);
+	Token get_token(World *p_world);
 
-	/// Dispatch the pipeline on the following world.
-	void dispatch(World *p_world);
+	/// Prepare the world to be safely dispatched, returns a token to use to
+	/// dispatch the World.
+	Token prepare_world(World *p_world);
 
 private:
-	void dispatch_sub_dispatcher(World *p_world, int p_dispatcher_idex);
+	void create_used_storage(const SystemExeInfo &p_info, World *p_world);
+
+public:
+	/// Releases the token created by `prepare`.
+	void release_world(Token p_token);
+
+	/// Activate or Deactivate this pipeline for the given token.
+	/// Activate the pipeline just before dispatching.
+	void set_active(Token p_token, bool p_active);
+
+	/// Dispatch the pipeline on the following world.
+	void dispatch(Token p_token);
+
+private:
+	void dispatch_sub_dispatcher(Token p_token, int p_dispatcher_idex);
 
 public:
 	/// Returns the stage index, or -1 if the system is not in pipeline.
@@ -63,13 +108,3 @@ public:
 	/// Returns the dispatcher id for this system.
 	int get_system_dispatcher(godex::system_id p_system) const;
 };
-
-// This macro save the user the need to pass a `SystemExeInfo`, indeed it wraps
-// the passed function with a labda function that creates a `SystemExeInfo`.
-// By defining the same name of the method, the IDE autocomplete shows the method
-// name `add_system`, properly + it's impossible use the function directly
-// by mistake.
-#define add_temporary_system(func)                                       \
-	add_temporary_system([](World *p_world) -> bool {                    \
-		return SystemBuilder::temporary_system_exec_func(p_world, func); \
-	})

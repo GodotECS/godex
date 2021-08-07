@@ -136,10 +136,11 @@ TEST_CASE("[Modules][ECS] Test spawner Script registration.") {
 
 	Pipeline pipeline;
 	pipeline_builder.build(pipeline);
-	pipeline.prepare(&world);
+	Token token = pipeline.prepare_world(&world);
+	pipeline.set_active(token, true);
 
 	// Dispatch 1 time the pipeline.
-	pipeline.dispatch(&world);
+	pipeline.dispatch(token);
 
 	// Make sure the MySpawnableComponent is added
 	{

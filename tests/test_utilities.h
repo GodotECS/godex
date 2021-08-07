@@ -50,5 +50,5 @@ bool build_and_register_ecs_script(const StringName &p_script_name, const String
 }
 
 void flush_ecs_script_preparation() {
-	ScriptEcs::get_singleton()->flush_scripts_preparation();
+	return ScriptEcs::get_singleton()->flush_scripts_preparation();
 }

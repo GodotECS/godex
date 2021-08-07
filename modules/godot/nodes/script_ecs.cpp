@@ -377,7 +377,6 @@ Ref<System> ScriptEcs::__reload_system(Ref<Script> p_script, const String &p_pat
 	// Create and assign the script instance, so we can use in editor.
 	system->set_script_instance(p_script->instance_create(system.ptr()));
 	system->id = ECS::register_dynamic_system(name).get_id();
-	scripts_with_pending_prepare.push_back(system);
 
 	return system;
 }
@@ -434,14 +433,6 @@ Ref<Component> ScriptEcs::__reload_component(Ref<Script> p_script, const String 
 
 void ScriptEcs::flush_scripts_preparation() {
 	for (uint32_t i = 0; i < scripts_with_pending_prepare.size(); i += 1) {
-		Ref<System> system = scripts_with_pending_prepare[i];
-		if (system.is_valid()) {
-			system->prepare(
-					ECS::get_dynamic_system_info(system->id),
-					system->id);
-			continue;
-		}
-
 		Ref<SystemBundle> system_bundle = scripts_with_pending_prepare[i];
 		if (system_bundle.is_valid()) {
 			system_bundle->__prepare();

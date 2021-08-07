@@ -161,10 +161,11 @@ TEST_CASE("[Modules][ECS] Test system and query") {
 	pipeline_builder.add_system(system_id);
 	Pipeline pipeline;
 	pipeline_builder.build(pipeline);
-	pipeline.prepare(&world);
+	Token token = pipeline.prepare_world(&world);
+	pipeline.set_active(token, true);
 
 	for (uint32_t i = 0; i < 3; i += 1) {
-		pipeline.dispatch(&world);
+		pipeline.dispatch(token);
 	}
 
 	const Storage<const TransformComponent> *storage = world.get_storage<const TransformComponent>();
@@ -248,11 +249,12 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 	// Create the pipeline.
 	Pipeline pipeline;
 	pipeline_builder.build(pipeline);
-	pipeline.prepare(&world);
+	Token token = pipeline.prepare_world(&world);
+	pipeline.set_active(token, true);
 
 	// Dispatch
 	for (uint32_t i = 0; i < 3; i += 1) {
-		pipeline.dispatch(&world);
+		pipeline.dispatch(token);
 	}
 
 	// Validate the C++ component.
@@ -356,7 +358,8 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 	PipelineBuilder::build_pipeline(system_bundles, systems, &main_pipeline);
 
 	World world;
-	main_pipeline.prepare(&world);
+	Token token = main_pipeline.prepare_world(&world);
+	main_pipeline.set_active(token, true);
 
 	// ~~ Create world ~~
 	world.create_databag<TestSystemSubPipeDatabag>();
@@ -368,8 +371,8 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 
 	// ~~ Test ~~
 	{
-		main_pipeline.dispatch(&world);
-		main_pipeline.dispatch(&world);
+		main_pipeline.dispatch(token);
+		main_pipeline.dispatch(token);
 
 		// The subsystem is dispatched 2 times per main pipeline dispatch,
 		// since we are dispatching the main pipeline 2 times the
@@ -387,7 +390,7 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 		world.get_databag<TestSystemSubPipeDatabag>()->exe_count = 6;
 
 		// Dispatch the main pipeline
-		main_pipeline.dispatch(&world);
+		main_pipeline.dispatch(token);
 
 		// Verify the execution is properly done by making sure the value is 1000.
 		const TransformComponent *comp = world.get_storage<TransformComponent>()->get(entity_1);
@@ -422,11 +425,12 @@ TEST_CASE("[Modules][ECS] Test system and databag") {
 		// Create the pipeline.
 		Pipeline pipeline;
 		pipeline_builder.build(pipeline);
-		pipeline.prepare(&world);
+		Token token = pipeline.prepare_world(&world);
+		pipeline.set_active(token, true);
 
 		// Dispatch
 		for (uint32_t i = 0; i < 3; i += 1) {
-			pipeline.dispatch(&world);
+			pipeline.dispatch(token);
 		}
 
 		CHECK(world.get_databag<TestSystem1Databag>()->a == 40);
@@ -448,11 +452,12 @@ TEST_CASE("[Modules][ECS] Test system and databag") {
 		pipeline_builder.build(pipeline);
 
 		// This make sure to create the `Databag`
-		pipeline.prepare(&world);
+		Token token = pipeline.prepare_world(&world);
+		pipeline.set_active(token, true);
 
 		// Dispatch
 		for (uint32_t i = 0; i < 3; i += 1) {
-			pipeline.dispatch(&world);
+			pipeline.dispatch(token);
 		}
 
 		// Make sure the databag is not nullptr.
@@ -497,10 +502,11 @@ TEST_CASE("[Modules][ECS] Test system databag fetch with dynamic query.") {
 	Pipeline pipeline;
 	// Create the pipeline.
 	pipeline_builder.build(pipeline);
-	pipeline.prepare(&world);
+	Token token = pipeline.prepare_world(&world);
+	pipeline.set_active(token, true);
 
 	// Dispatch 1 time.
-	pipeline.dispatch(&world);
+	pipeline.dispatch(token);
 
 	// Make sure the `exe_count` is changed to 10 by the script.
 	CHECK(world.get_databag<TestSystemSubPipeDatabag>()->exe_count == 10);
@@ -548,11 +554,12 @@ TEST_CASE("[Modules][ECS] Test event mechanism.") {
 
 	Pipeline pipeline;
 	pipeline_builder.build(pipeline);
-	pipeline.prepare(&world);
+	Token token = pipeline.prepare_world(&world);
+	pipeline.set_active(token, true);
 
 	// Make sure no component event is left at the end of each cycle.
 	for (uint32_t i = 0; i < 5; i += 1) {
-		pipeline.dispatch(&world);
+		pipeline.dispatch(token);
 
 		// Make sure we don't add more than 2 components.
 		CHECK(world.get_storage<BatchableComponent1>()->get_batch_size(entity) == 2);
@@ -573,14 +580,16 @@ TEST_CASE("[Modules][ECS] Test create and remove Entity from Systems.") {
 
 	Pipeline pipeline;
 	pipeline_builder.build(pipeline);
-	pipeline.prepare(&world);
+	Token token = pipeline.prepare_world(&world);
+	pipeline.set_active(token, true);
 
 	for (uint32_t i = 0; i < 5; i += 1) {
-		pipeline.dispatch(&world);
+		pipeline.dispatch(token);
 
 		{
 			// Count the `Entities` at this point.
 			Query<const TransformComponent> query(&world);
+			query.initiate_process(&world);
 
 			// The `System` removes the `Entities` defferred, so at this point
 			// the `Entities` still exists.
@@ -593,6 +602,7 @@ TEST_CASE("[Modules][ECS] Test create and remove Entity from Systems.") {
 		{
 			// Count the `Entities` at this point.
 			Query<const TransformComponent> query(&world);
+			query.initiate_process(&world);
 
 			// Now the `Entities` are removed.
 			const uint32_t count = query.count();
@@ -631,7 +641,8 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 		pipeline_builder.add_system(system_id);
 		Pipeline pipeline;
 		pipeline_builder.build(pipeline);
-		pipeline.prepare(&world);
+		Token token = pipeline.prepare_world(&world);
+		pipeline.set_active(token, true);
 
 		// Check local transform.
 		{
@@ -645,7 +656,7 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 			CHECK(ABS(entity_2_transform->origin.x - 3.0) <= CMP_EPSILON);
 		}
 
-		pipeline.dispatch(&world);
+		pipeline.dispatch(token);
 
 		// Check local transform after root motion.
 		{
@@ -669,7 +680,8 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 		pipeline_builder.add_system(system_id);
 		Pipeline pipeline;
 		pipeline_builder.build(pipeline);
-		pipeline.prepare(&world);
+		Token token = pipeline.prepare_world(&world);
+		pipeline.set_active(token, true);
 
 		// Hierarchy is:
 		// Entity 0           2 Local | 2 Global
@@ -683,7 +695,7 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 		}
 
 		// Dispatch the pipeline, so to move the `Entity_1` globally.
-		pipeline.dispatch(&world);
+		pipeline.dispatch(token);
 
 		// Hierarchy is:
 		// Entity 0           2 Local | 2 Global
@@ -724,10 +736,11 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 		pipeline_builder.add_system(system_id);
 		Pipeline pipeline;
 		pipeline_builder.build(pipeline);
-		pipeline.prepare(&world);
+		Token token = pipeline.prepare_world(&world);
+		pipeline.set_active(token, true);
 
 		// Dispatch the pipeline, so to move the `Entity_1` globally.
-		pipeline.dispatch(&world);
+		pipeline.dispatch(token);
 
 		// Hierarchy is:
 		// Entity 1       4 Local | 4 Global
@@ -772,7 +785,8 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 		pipeline_builder.add_system(system_id);
 		Pipeline pipeline;
 		pipeline_builder.build(pipeline);
-		pipeline.prepare(&world);
+		Token token = pipeline.prepare_world(&world);
+		pipeline.set_active(token, true);
 
 		// Check `Entity 0` transform.
 		{
@@ -789,7 +803,7 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 			CHECK(ABS(entity_1_transform->origin.x - 4.0) <= CMP_EPSILON);
 		}
 
-		pipeline.dispatch(&world);
+		pipeline.dispatch(token);
 
 		// Hierarchy is:
 		// Entity 1       4 Local | 4 Global
@@ -841,7 +855,8 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 		pipeline_builder.add_system(ECS::get_system_id("TestMoveHierarchySystem.gd"));
 		Pipeline pipeline;
 		pipeline_builder.build(pipeline);
-		pipeline.prepare(&world);
+		Token token = pipeline.prepare_world(&world);
+		pipeline.set_active(token, true);
 
 		// Hierarchy is:
 		// Entity 1       4 Local | 4 Global
@@ -856,7 +871,7 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 			CHECK(ABS(entity_2_transform_g->origin.x - 5.0) <= CMP_EPSILON);
 		}
 
-		pipeline.dispatch(&world);
+		pipeline.dispatch(token);
 
 		// Hierarchy is:
 		// Entity 1       4 Local | 4 Global
@@ -894,12 +909,9 @@ TEST_CASE("[Modules][ECS] Test Add/remove from dynamic system.") {
 		code += "	with_storage(ECS.Test1Component)\n";
 		code += "\n";
 		code += "func _execute(world_commands, comp_storage):\n";
-		code += "	print(\"A1\")\n";
 		code += "	var entity_2 = world_commands.create_entity()\n";
-		code += "	print(\"A2\")\n";
 		code += "	comp_storage.insert(entity_2, {\"a\": 975})\n";
 		code += "	var entity_3 = world_commands.create_entity()\n";
-		code += "	print(\"A3\")\n";
 		code += "	comp_storage.insert(entity_3)\n";
 		code += "\n";
 
@@ -942,10 +954,11 @@ TEST_CASE("[Modules][ECS] Test Add/remove from dynamic system.") {
 		// Create the pipeline.
 		Pipeline pipeline;
 		pipeline_builder.build(pipeline);
-		pipeline.prepare(&world);
+		Token token = pipeline.prepare_world(&world);
+		pipeline.set_active(token, true);
 
 		// Dispatch 1 time.
-		pipeline.dispatch(&world);
+		pipeline.dispatch(token);
 
 		// Make sure the entity 0 has the `TransformComponent`
 		CHECK(world.get_storage<TransformComponent>()->has(entity_1));
@@ -970,10 +983,11 @@ TEST_CASE("[Modules][ECS] Test Add/remove from dynamic system.") {
 		// Create the pipeline.
 		Pipeline pipeline;
 		pipeline_builder.build(pipeline);
-		pipeline.prepare(&world);
+		Token token = pipeline.prepare_world(&world);
+		pipeline.set_active(token, true);
 
 		// Dispatch 1 time.
-		pipeline.dispatch(&world);
+		pipeline.dispatch(token);
 
 		// Make sure the Test1Component is correctly removed
 		CHECK(world.get_storage<Test1Component>()->has(entity_2) == false);
@@ -1007,10 +1021,6 @@ TEST_CASE("[Modules][ECS] Test fetch changed from dynamic system.") {
 
 	World world;
 
-	const EntityID entity_1 = world
-									  .create_entity()
-									  .with(TransformComponent());
-
 	PipelineBuilder pipeline_builder;
 	// Add the system to the pipeline.
 	pipeline_builder.add_system(ECS::get_system_id("TestChangedDynamicSystem.gd"));
@@ -1018,10 +1028,16 @@ TEST_CASE("[Modules][ECS] Test fetch changed from dynamic system.") {
 	// Create the pipeline.
 	Pipeline pipeline;
 	pipeline_builder.build(pipeline);
-	pipeline.prepare(&world);
+	Token token = pipeline.prepare_world(&world);
+	pipeline.set_active(token, true);
+
+	// Insert here, so the change is triggered.
+	const EntityID entity_1 = world
+									  .create_entity()
+									  .with(TransformComponent());
 
 	// Dispatch 1 time.
-	pipeline.dispatch(&world);
+	pipeline.dispatch(token);
 
 	CHECK(ABS(world.get_storage<TransformComponent>()->get(entity_1)->origin.x - 100.0) <= CMP_EPSILON);
 
@@ -1049,6 +1065,15 @@ TEST_CASE("[Modules][ECS] Test system changed query filter.") {
 
 	World world;
 
+	PipelineBuilder pipeline_builder;
+	pipeline_builder.add_system(system_id);
+
+	Pipeline pipeline;
+	pipeline_builder.build(pipeline);
+	Token token = pipeline.prepare_world(&world);
+	pipeline.set_active(token, true);
+
+	// Insert at this point, so we the `Changed` event is captured.
 	EntityID entity_1 = world
 								.create_entity()
 								.with(ChangeTracer())
@@ -1063,13 +1088,6 @@ TEST_CASE("[Modules][ECS] Test system changed query filter.") {
 								.create_entity()
 								.with(ChangeTracer())
 								.with(TransformComponent());
-
-	PipelineBuilder pipeline_builder;
-	pipeline_builder.add_system(system_id);
-
-	Pipeline pipeline;
-	pipeline_builder.build(pipeline);
-	pipeline.prepare(&world);
 
 	for (uint32_t i = 0; i < 3; i += 1) {
 		// Leave entity_1 untouched.
@@ -1087,7 +1105,7 @@ TEST_CASE("[Modules][ECS] Test system changed query filter.") {
 			storage->get(entity_3);
 		}
 
-		pipeline.dispatch(&world);
+		pipeline.dispatch(token);
 	}
 
 	const Storage<const ChangeTracer> *storage = world.get_storage<const ChangeTracer>();
@@ -1148,10 +1166,11 @@ TEST_CASE("[Modules][ECS] Test fetch entity from nodepath, using a dynamic syste
 		Pipeline pipeline;
 		pipeline_builder.build(pipeline);
 
-		pipeline.prepare(&world);
+		Token token = pipeline.prepare_world(&world);
+		pipeline.set_active(token, true);
 
 		// Dispatch 1 time.
-		pipeline.dispatch(&world);
+		pipeline.dispatch(token);
 
 		// Make sure the entity 0 has the `TransformComponent`
 		CHECK(world.get_storage<Test1Component>()->has(entity_1));
@@ -1195,8 +1214,7 @@ TEST_CASE("[Modules][ECS] Test `Events` class is able to fetch the emitter name.
 	{
 		// Make sure the Events is correctly reporting the EmitterName set at compile
 		// time.
-		World world;
-		EventsReceiver<MyEvent1Test, EMITTER(Test11)> events(&world);
+		EventsReceiver<MyEvent1Test, EMITTER(Test11)> events;
 		CHECK(events.get_emitter_name() == String("Test11"));
 	}
 }
@@ -1219,7 +1237,7 @@ TEST_CASE("[Modules][ECS] Make sure the events storages are automatically create
 		}
 
 		World world;
-		pipeline.prepare(&world);
+		pipeline.prepare_world(&world);
 
 		EventStorage<MyEvent1Test> *storage = world.get_events_storage<MyEvent1Test>();
 		// Make sure the storage is been created at this point, since `prepare` does it.
@@ -1239,7 +1257,7 @@ TEST_CASE("[Modules][ECS] Make sure the events storages are automatically create
 		}
 
 		World world;
-		pipeline.prepare(&world);
+		pipeline.prepare_world(&world);
 
 		EventStorage<MyEvent1Test> *storage = world.get_events_storage<MyEvent1Test>();
 		// Make sure the storage is been created at this point, since `prepare` does it.
@@ -1292,7 +1310,7 @@ TEST_CASE("[Modules][ECS] Make sure the events storages are automatically create
 		}
 
 		World world;
-		pipeline.prepare(&world);
+		pipeline.prepare_world(&world);
 
 		EventStorage<MyEvent1Test> *storage = world.get_events_storage<MyEvent1Test>();
 		// Make sure the storage is been created at this point, since `prepare` does it.
@@ -1310,7 +1328,7 @@ TEST_CASE("[Modules][ECS] Make sure the events storages are automatically create
 		}
 
 		World world;
-		pipeline.prepare(&world);
+		pipeline.prepare_world(&world);
 
 		EventStorage<MyEvent1Test> *storage = world.get_events_storage<MyEvent1Test>();
 		// Make sure the storage is been created at this point, since `prepare` does it.
@@ -1335,17 +1353,18 @@ TEST_CASE("[Modules][ECS] Test EventEmitter and EventReceiver") {
 		}
 
 		World world;
-		pipeline.prepare(&world);
+		Token token = pipeline.prepare_world(&world);
+		pipeline.set_active(token, true);
 
 		const EventStorage<MyEvent1Test> *storage = world.get_events_storage<MyEvent1Test>();
 
-		pipeline.dispatch(&world);
+		pipeline.dispatch(token);
 		CHECK(storage->get_events("Test1")->size() == 1);
 
-		pipeline.dispatch(&world);
+		pipeline.dispatch(token);
 		CHECK(storage->get_events("Test1")->size() == 1);
 
-		pipeline.dispatch(&world);
+		pipeline.dispatch(token);
 		CHECK(storage->get_events("Test1")->size() == 1);
 	}
 
@@ -1399,17 +1418,18 @@ TEST_CASE("[Modules][ECS] Test EventEmitter and EventReceiver") {
 		}
 
 		World world;
-		pipeline.prepare(&world);
+		Token token = pipeline.prepare_world(&world);
+		pipeline.set_active(token, true);
 
 		const EventStorage<MyEvent1Test> *storage = world.get_events_storage<MyEvent1Test>();
 
-		pipeline.dispatch(&world);
+		pipeline.dispatch(token);
 		CHECK(storage->get_events("Test1")->size() == 1);
 
-		pipeline.dispatch(&world);
+		pipeline.dispatch(token);
 		CHECK(storage->get_events("Test1")->size() == 1);
 
-		pipeline.dispatch(&world);
+		pipeline.dispatch(token);
 		CHECK(storage->get_events("Test1")->size() == 1);
 	}
 	finalize_script_ecs();

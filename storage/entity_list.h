@@ -9,6 +9,8 @@
 /// the change list; while iterating it's safe and fast mark the `Entity`
 /// as updated (using `notify_updated`).
 class EntityList {
+	/// Set this to true, disable any kind of modification.
+	bool frozen = false;
 	/// Sparse vector, used to easily know if an entity changed.
 	/// points to the dense_list element.
 	LocalVector<uint32_t> entity_to_data;
@@ -21,6 +23,9 @@ class EntityList {
 	int64_t iteration_index = -1;
 
 public:
+	void freeze();
+	void unfreeze();
+
 	void insert(EntityID p_entity);
 
 	void remove(EntityID p_entity);

@@ -2,6 +2,7 @@
 #include "world.h"
 
 #include "../ecs.h"
+#include "../pipeline/pipeline.h"
 #include "../storage/hierarchical_storage.h"
 
 EntityBuilder::EntityBuilder(World *p_world) :
@@ -379,4 +380,12 @@ const EventStorageBase *World::get_events_storage(godex::event_id p_id) const {
 	}
 
 	return events_storages[p_id];
+}
+
+void World::release_pipelines() {
+	for (uint32_t i = 0; i < associated_pipelines.size(); i += 1) {
+		Token token = associated_pipelines[i]->get_token(this);
+		associated_pipelines[i]->release_world(token);
+	}
+	associated_pipelines.clear();
 }

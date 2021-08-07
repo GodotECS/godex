@@ -4,6 +4,7 @@
 #include "components/dynamic_component.h"
 #include "core/object/message_queue.h"
 #include "modules/godot/databags/scene_tree_databag.h"
+#include "modules/godot/nodes/ecs_utilities.h"
 #include "modules/godot/nodes/ecs_world.h"
 #include "pipeline/pipeline.h"
 #include "scene/main/scene_tree.h"
@@ -504,7 +505,13 @@ SystemBundleInfo &ECS::get_system_bundle(godex::system_bundle_id p_id) {
 
 // Undefine the macro defined into `ecs.h` so we can define the method properly.
 #undef register_system
-SystemInfo &ECS::register_system(func_get_system_exe_info p_func_get_exe_info, StringName p_name) {
+SystemInfo &ECS::register_system(
+		func_get_system_exe_info p_func_get_exe_info,
+		func_system_data_get_size p_system_data_get_size,
+		func_system_data_new_placement p_system_data_new_placement,
+		func_system_data_delete_placement p_system_data_delete_placement,
+		func_system_data_set_active p_system_data_set_active,
+		StringName p_name) {
 	{
 		const uint32_t id = get_system_id(p_name);
 		CRASH_COND_MSG(id != UINT32_MAX, "The system is already registered.");
@@ -518,13 +525,24 @@ SystemInfo &ECS::register_system(func_get_system_exe_info p_func_get_exe_info, S
 	systems_info[id].id = id;
 	systems_info[id].exec_info = p_func_get_exe_info;
 
+	systems_info[id].system_data_get_size = p_system_data_get_size;
+	systems_info[id].system_data_new_placement = p_system_data_new_placement;
+	systems_info[id].system_data_delete_placement = p_system_data_delete_placement;
+	systems_info[id].system_data_set_active = p_system_data_set_active;
+
 	ClassDB::bind_integer_constant(get_class_static(), StringName(), p_name, id);
 	print_line("System: " + p_name + " registered with ID: " + itos(id));
 	return systems_info[id];
 }
 
 #undef register_system_dispatcher
-SystemInfo &ECS::register_system_dispatcher(func_get_system_exe_info p_func_get_exe_info, StringName p_name) {
+SystemInfo &ECS::register_system_dispatcher(
+		func_get_system_exe_info p_func_get_exe_info,
+		func_system_data_get_size p_system_data_get_size,
+		func_system_data_new_placement p_system_data_new_placement,
+		func_system_data_delete_placement p_system_data_delete_placement,
+		func_system_data_set_active p_system_data_set_active,
+		StringName p_name) {
 	{
 		const uint32_t id = get_system_id(p_name);
 		CRASH_COND_MSG(id != UINT32_MAX, "The system is already registered.");
@@ -540,6 +558,11 @@ SystemInfo &ECS::register_system_dispatcher(func_get_system_exe_info p_func_get_
 	systems_info[id].type = SystemInfo::TYPE_DISPATCHER;
 	systems_info[id].dispatcher_index = dispatcher_count;
 
+	systems_info[id].system_data_get_size = p_system_data_get_size;
+	systems_info[id].system_data_new_placement = p_system_data_new_placement;
+	systems_info[id].system_data_delete_placement = p_system_data_delete_placement;
+	systems_info[id].system_data_set_active = p_system_data_set_active;
+
 	dispatcher_count += 1;
 
 	ClassDB::bind_integer_constant(get_class_static(), StringName(), p_name, id);
@@ -551,19 +574,25 @@ SystemInfo &ECS::register_system_dispatcher(func_get_system_exe_info p_func_get_
 // dispatchers.
 void ECS::__process_pipeline_dispatcher(
 		uint32_t p_count,
-		World *p_world,
+		Token p_token,
 		Pipeline *p_pipeline,
-		godex::system_id p_system_id) {
+		int p_dispatcher_index) {
 	for (uint32_t i = 0; i < p_count; i += 1) {
 		p_pipeline->dispatch_sub_dispatcher(
-				p_world,
-				systems_info[p_system_id].dispatcher_index);
+				p_token,
+				p_dispatcher_index);
 	}
 }
 
 // Undefine the macro defined into `ecs.h` so we can define the method properly.
 #undef register_temporary_system
-SystemInfo &ECS::register_temporary_system(func_temporary_system_execute p_func_temporary_systems_exe, StringName p_name) {
+SystemInfo &ECS::register_temporary_system(
+		func_temporary_system_execute p_func_temporary_systems_exe,
+		func_system_data_get_size p_system_data_get_size,
+		func_system_data_new_placement p_system_data_new_placement,
+		func_system_data_delete_placement p_system_data_delete_placement,
+		func_system_data_set_active p_system_data_set_active,
+		StringName p_name) {
 	{
 		const uint32_t id = get_system_id(p_name);
 		CRASH_COND_MSG(id != UINT32_MAX, "The system is already registered.");
@@ -576,6 +605,11 @@ SystemInfo &ECS::register_temporary_system(func_temporary_system_execute p_func_
 	systems_info[id].temporary_exec = p_func_temporary_systems_exe;
 	systems_info[id].type = SystemInfo::TYPE_TEMPORARY;
 
+	systems_info[id].system_data_get_size = p_system_data_get_size;
+	systems_info[id].system_data_new_placement = p_system_data_new_placement;
+	systems_info[id].system_data_delete_placement = p_system_data_delete_placement;
+	systems_info[id].system_data_set_active = p_system_data_set_active;
+
 	print_line("TemporarySystem: " + p_name + " registered with ID: " + itos(id));
 
 	return systems_info[id];
@@ -586,11 +620,7 @@ SystemInfo &ECS::register_dynamic_system(StringName p_name) {
 		const uint32_t id = get_system_id(p_name);
 		if (id != godex::SYSTEM_NONE) {
 			// The system is already registered, if it's a dynamic system reset it.
-			CRASH_COND_MSG(systems_info[id].dynamic_system_id == UINT32_MAX, "You can't register a dynamic system with the same name of a static one. Name used: " + p_name);
 			clear_emitters_for_system(id);
-			godex::DynamicSystemInfo *si = godex::get_dynamic_system_info(systems_info[id].dynamic_system_id);
-			si->reset();
-			si->set_system_id(id);
 			systems_info[id].phase = PHASE_PROCESS;
 			systems_info[id].dependencies.reset();
 			systems_info[id].type = SystemInfo::TYPE_DYNAMIC;
@@ -601,18 +631,17 @@ SystemInfo &ECS::register_dynamic_system(StringName p_name) {
 
 	const godex::system_id id = systems.size();
 
-	// Used to assign a static function to this dynamic system, check the
-	// DynamicSystem doc to know more (../systems/dynamic_system.h).
-	const uint32_t dynamic_system_id = godex::register_dynamic_system();
-
 	systems.push_back(p_name);
 	systems_info.push_back(SystemInfo());
 
 	systems_info[id].id = id;
-	systems_info[id].dynamic_system_id = dynamic_system_id;
-	systems_info[id].exec_info = godex::get_func_dynamic_system_exec_info(dynamic_system_id);
+	systems_info[id].type = SystemInfo::TYPE_DYNAMIC;
+	systems_info[id].exec_info = System::get_system_exec_info;
 
-	godex::get_dynamic_system_info(dynamic_system_id)->set_system_id(id);
+	systems_info[id].system_data_get_size = System::dynamic_system_data_get_size;
+	systems_info[id].system_data_new_placement = System::dynamic_system_data_new_placement;
+	systems_info[id].system_data_delete_placement = System::dynamic_system_data_delete_placement;
+	systems_info[id].system_data_set_active = System::dynamic_system_data_set_active;
 
 	ClassDB::bind_integer_constant(get_class_static(), StringName(), String(p_name).replace(".", "_"), id);
 	print_line("Dynamic system: " + p_name + " registered with ID: " + itos(id));
@@ -739,15 +768,10 @@ SystemInfo &ECS::get_system_info(godex::system_id p_id) {
 	return systems_info[p_id];
 }
 
-func_get_system_exe_info ECS::get_func_system_exe_info(godex::system_id p_id) {
-	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, nullptr, "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
-	return systems_info[p_id].exec_info;
-}
-
 void ECS::get_system_exe_info(godex::system_id p_id, SystemExeInfo &r_info) {
 	ERR_FAIL_COND_MSG(verify_system_id(p_id) == false, "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
 	ERR_FAIL_COND_MSG(systems_info[p_id].exec_info == nullptr, "The System " + systems[p_id] + " is not a standard `System`.");
-	systems_info[p_id].exec_info(r_info);
+	systems_info[p_id].exec_info(p_id, r_info);
 }
 
 StringName ECS::get_system_name(godex::system_id p_id) {
@@ -787,19 +811,6 @@ int ECS::get_system_flags(godex::system_id p_id) {
 	return systems_info[p_id].flags;
 }
 
-void ECS::set_dynamic_system_target(godex::system_id p_id, ScriptInstance *p_target) {
-	ERR_FAIL_COND_MSG(verify_system_id(p_id) == false, "This system " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
-	ERR_FAIL_COND_MSG(systems_info[p_id].dynamic_system_id == UINT32_MAX, "The system " + itos(p_id) + " is not a dynamic system.");
-	godex::DynamicSystemInfo *info = godex::get_dynamic_system_info(systems_info[p_id].dynamic_system_id);
-	info->set_target(p_target);
-}
-
-godex::DynamicSystemInfo *ECS::get_dynamic_system_info(godex::system_id p_id) {
-	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, nullptr, "This system " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
-	ERR_FAIL_COND_V_MSG(systems_info[p_id].dynamic_system_id == UINT32_MAX, nullptr, "The system " + itos(p_id) + " is not a dynamic system.");
-	return godex::get_dynamic_system_info(systems_info[p_id].dynamic_system_id);
-}
-
 bool ECS::is_system_dispatcher(godex::system_id p_id) {
 	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, false, "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
 	return systems_info[p_id].type == SystemInfo::TYPE_DISPATCHER;
@@ -827,6 +838,26 @@ bool ECS::verify_system_id(godex::system_id p_id) {
 
 int ECS::get_dispatchers_count() {
 	return dispatcher_count;
+}
+
+uint64_t ECS::system_get_size_system_data(godex::system_id p_id) {
+	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, 0, "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
+	return systems_info[p_id].system_data_get_size();
+}
+
+void ECS::system_new_placement_system_data(godex::system_id p_id, uint8_t *p_mem, Token p_token, World *p_world, Pipeline *p_pipeline) {
+	ERR_FAIL_COND_MSG(verify_system_id(p_id) == false, "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
+	return systems_info[p_id].system_data_new_placement(p_mem, p_token, p_world, p_pipeline, p_id);
+}
+
+void ECS::system_delete_placement_system_data(godex::system_id p_id, uint8_t *p_mem) {
+	ERR_FAIL_COND_MSG(verify_system_id(p_id) == false, "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
+	return systems_info[p_id].system_data_delete_placement(p_mem);
+}
+
+void ECS::system_set_active_system(godex::system_id p_id, uint8_t *p_mem, bool p_active) {
+	ERR_FAIL_COND_MSG(verify_system_id(p_id) == false, "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
+	return systems_info[p_id].system_data_set_active(p_mem, p_active);
 }
 
 void ECS::clear_emitters_for_system(godex::system_id p_id) {
@@ -875,12 +906,18 @@ void ECS::set_active_world(World *p_world, WorldECS *p_active_world_ecs) {
 		}
 	}
 
+	if (active_world) {
+		// Deallocate the associated pipelines.
+		active_world->release_pipelines();
+	}
+
 	WorldECS *prev_node = active_world_node;
 
 	active_world = p_world;
 	active_world_node = p_active_world_ecs;
 	ready = false;
 	active_world_pipeline = nullptr;
+	world_token = Token();
 
 	if (active_world != nullptr) {
 		// The world is just loaded.
@@ -924,14 +961,23 @@ bool ECS::is_world_ready() const {
 void ECS::set_active_world_pipeline(Pipeline *p_pipeline) {
 #ifdef DEBUG_ENABLED
 	if (p_pipeline) {
-		// Using crash cond because the user doesn't never use this API directly.
+		// Using crash cond because the user doesn't never use this API directly and
+		// at this point the pipeline is always ready.
 		CRASH_COND_MSG(p_pipeline->is_ready() == false, "The submitted pipeline is not fully build, you must submit a valid pipeline?.");
 	}
 #endif
+	if (active_world_pipeline) {
+		// Deactivate the current pipeline.
+		active_world_pipeline->set_active(world_token, false);
+	}
+
 	active_world_pipeline = p_pipeline;
+	world_token = Token();
 
 	if (active_world_pipeline && active_world) {
-		active_world_pipeline->prepare(active_world);
+		world_token = active_world_pipeline->prepare_world(active_world);
+		// Activate this pipeline.
+		active_world_pipeline->set_active(world_token, true);
 	}
 }
 
@@ -944,7 +990,7 @@ bool ECS::has_active_world_pipeline() const {
 }
 
 void ECS::dispatch_active_world() {
-	if (likely(active_world && active_world_pipeline)) {
+	if (likely(world_token.is_valid() && active_world_pipeline)) {
 		if (unlikely(ready == false)) {
 			// Ready.
 			active_world_node->get_tree()->get_root()->propagate_notification(NOTIFICATION_ECS_WORLD_READY);
@@ -954,7 +1000,7 @@ void ECS::dispatch_active_world() {
 		active_world_node->pre_process();
 
 		dispatching = true;
-		active_world_pipeline->dispatch(active_world);
+		active_world_pipeline->dispatch(world_token);
 		active_world->flush();
 		dispatching = false;
 

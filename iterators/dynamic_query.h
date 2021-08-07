@@ -24,16 +24,24 @@ class DynamicQuery : public GodexWorldFetcher {
 		WITHOUT_MODE,
 	};
 
+	struct DynamicQueryElement {
+		godex::component_id id;
+		/// Used to get by component name.
+		StringName name;
+		bool mutability;
+		FetchMode mode;
+		/// Points to the entity list when the mode is sert to `Inserted`,
+		/// `Changed`, `Removed`
+		uint32_t entity_list_index;
+	};
+
 	bool valid = true;
 	bool can_change = true;
 	Space space = Space::LOCAL;
-	LocalVector<godex::component_id> component_ids;
-	LocalVector<StringName> components_name; // Used to get by component name
-	LocalVector<bool> mutability;
-	LocalVector<FetchMode> mode;
+	LocalVector<DynamicQueryElement> elements;
 	LocalVector<ComponentDynamicExposer> accessors;
 	LocalVector<StorageBase *> storages;
-	LocalVector<StorageBase *> reject_storages;
+	LocalVector<EntityList> entity_lists;
 
 	World *world = nullptr;
 	uint32_t iterator_index = 0;
@@ -61,10 +69,6 @@ public:
 	/// Returns true if this query is valid.
 	bool is_valid() const;
 
-	/// Build the query, it's not need call this explicitely.
-	bool build();
-	void unbuild();
-
 	/// Clear the query so this memory can be reused.
 	void reset();
 
@@ -75,11 +79,16 @@ public:
 	ComponentDynamicExposer *get_access_by_index(uint32_t p_index) const;
 
 	virtual void get_system_info(SystemExeInfo *p_info) const override;
-	/// Start the execution of this query.
+
+	void prepare_world_script(Object *p_world);
 	void begin_script(Object *p_world);
-	virtual void begin(World *p_world) override;
-	/// Ends the query execution.
-	virtual void end() override;
+	void end_script();
+
+	virtual void prepare_world(World *p_world) override;
+	virtual void initiate_process(World *p_world) override;
+	virtual void conclude_process(World *p_world) override;
+	virtual void release_world(World *p_world) override;
+	virtual void set_active(bool p_active) override;
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Iterator
 
@@ -102,5 +111,7 @@ public:
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Set / Get / Call
 	virtual void setvar(const Variant &p_key, const Variant &p_value, bool *r_valid = nullptr) override;
 	virtual Variant getvar(const Variant &p_key, bool *r_valid = nullptr) const override;
+
+	int64_t find_element_by_name(const StringName &p_name) const;
 };
 } // namespace godex
