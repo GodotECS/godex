@@ -85,14 +85,14 @@ String MeshComponentGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, int
 	return "";
 }
 
-Variant MeshComponentGizmo::get_handle_value(EditorNode3DGizmo *p_gizmo, int p_idx) const {
+Variant MeshComponentGizmo::get_handle_value(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
 	return Variant();
 }
 
-void MeshComponentGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
+void MeshComponentGizmo::set_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
 	return;
 }
 
-void MeshComponentGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
+void MeshComponentGizmo::commit_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
 	return;
 }

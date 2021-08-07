@@ -23,6 +23,7 @@
 #include "systems/timer_updater_system.h"
 
 // TODO improve this workflow once the new pipeline is integrated.
+#include "editor/plugins/node_3d_editor_plugin.h"
 class REP : public Object {
 public:
 	// TODO this should go in a better place, like at the end of the

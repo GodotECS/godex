@@ -1,6 +1,7 @@
 #include "components_transform_gizmo_3d.h"
 
 #include "../nodes/entity.h"
+#include "editor/plugins/node_3d_editor_plugin.h"
 
 void TransformComponentGizmo::init() {
 	const Color gizmo_color_x = EDITOR_DEF("editors/3d_gizmos/gizmo_colors/x", Color(0.98, 0.1, 0.1));
@@ -95,14 +96,14 @@ String TransformComponentGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo
 	return "";
 }
 
-Variant TransformComponentGizmo::get_handle_value(EditorNode3DGizmo *p_gizmo, int p_idx) const {
+Variant TransformComponentGizmo::get_handle_value(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
 	return Variant();
 }
 
-void TransformComponentGizmo::set_handle(EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
+void TransformComponentGizmo::set_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
 	return;
 }
 
-void TransformComponentGizmo::commit_handle(EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
+void TransformComponentGizmo::commit_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
 	return;
 }
