@@ -37,8 +37,8 @@ public:
 	virtual void redraw(EditorNode3DGizmo *p_gizmo) override;
 	virtual String get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_idx) const override;
 	virtual Variant get_handle_value(const EditorNode3DGizmo *p_gizmo, int p_idx) const override;
-	virtual void set_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) const override;
-	virtual void commit_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel = false) const override;
+	virtual void set_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) override;
+	virtual void commit_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel = false) override;
 
 	RelativeHandle find_gizmo_by_handle(const EditorNode3DGizmo *p_gizmo, int p_idx) const;
 };

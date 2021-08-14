@@ -6,6 +6,8 @@ Import("env")
 Import("env_modules")
 
 env_ecs = env_modules.Clone()
+if env_ecs["float"] == "64":
+    env_ecs.Append(CPPDEFINES=["BT_USE_DOUBLE_PRECISION=1"])
 
 methods_ecs.generate_system_structs()
 methods_ecs.generate_system_exe_funcs()

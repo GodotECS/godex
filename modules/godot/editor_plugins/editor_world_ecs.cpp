@@ -629,12 +629,12 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		add_sys_desc->set_custom_minimum_size(Size2i(0, 50));
 		add_sys_desc->set_h_scroll(false);
 		add_sys_desc->set_v_scroll(true);
-		add_sys_desc->set_wrap_enabled(true);
+		add_sys_desc->set_line_wrapping_mode(TextEdit::LineWrappingMode::LINE_WRAPPING_BOUNDARY);
 		add_sys_desc->set_context_menu_enabled(false);
 		add_sys_desc->set_shortcut_keys_enabled(false);
 		add_sys_desc->set_virtual_keyboard_enabled(false);
 		add_sys_desc->set_focus_mode(FOCUS_NONE);
-		add_sys_desc->set_readonly(true);
+		add_sys_desc->set_editable(true);
 		add_sys_desc->add_theme_color_override(SNAME("font_color_readonly"), Color(1.0, 1.0, 1.0));
 		vert_container->add_child(add_sys_desc);
 	}
