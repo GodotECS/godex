@@ -68,7 +68,7 @@ Variant Components3DGizmoPlugin::get_handle_value(const EditorNode3DGizmo *p_giz
 	return Variant();
 }
 
-void Components3DGizmoPlugin::set_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) const {
+void Components3DGizmoPlugin::set_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
 	// Find the gizmo ID.
 	RelativeHandle relative_handle = find_gizmo_by_handle(p_gizmo, p_idx);
 
@@ -78,7 +78,7 @@ void Components3DGizmoPlugin::set_handle(const EditorNode3DGizmo *p_gizmo, int p
 	}
 }
 
-void Components3DGizmoPlugin::commit_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) const {
+void Components3DGizmoPlugin::commit_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
 	RelativeHandle relative_handle = find_gizmo_by_handle(p_gizmo, p_idx);
 
 	if (relative_handle.gizmo.is_valid()) {
