@@ -1,8 +1,8 @@
 diff --git a/SConstruct b/SConstruct
-index 2281b8a77f..576f6c1ccc 100644
+index 1ab42b6b90..6090b24c19 100644
 --- a/SConstruct
 +++ b/SConstruct
-@@ -543,6 +543,15 @@ if selected_platform in platform_list:
+@@ -636,6 +636,15 @@ if selected_platform in platform_list:
                  env.module_icons_paths.append(path + "/" + "icons")
              modules_enabled[name] = path
  
@@ -19,10 +19,10 @@ index 2281b8a77f..576f6c1ccc 100644
          sys.modules.pop("config")
  
 diff --git a/core/config/engine.h b/core/config/engine.h
-index c0fd64fcc4..eb45805550 100644
+index e6b5df2d5a..6b4126cfe3 100644
 --- a/core/config/engine.h
 +++ b/core/config/engine.h
-@@ -88,8 +88,10 @@ public:
+@@ -91,8 +91,10 @@ public:
  
  	uint64_t get_frames_drawn();
  
@@ -32,12 +32,23 @@ index c0fd64fcc4..eb45805550 100644
 +	void set_in_physics_frame(bool p_in_physics) { _in_physics = p_in_physics; }
  	bool is_in_physics_frame() const { return _in_physics; }
  	uint64_t get_frame_ticks() const { return _frame_ticks; }
- 	float get_process_step() const { return _process_step; }
+ 	double get_process_step() const { return _process_step; }
 diff --git a/main/main.cpp b/main/main.cpp
-index c9911464bb..a513a13954 100644
+index 6764332f16..dc30322255 100644
 --- a/main/main.cpp
 +++ b/main/main.cpp
-@@ -2464,6 +2464,11 @@ bool Main::iteration() {
+@@ -1281,8 +1281,8 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
+ 	}
+ 
+ 	/* todo restore
+-    OS::get_singleton()->_allow_layered = GLOBAL_DEF("display/window/per_pixel_transparency/allowed", false);
+-    video_mode.layered = GLOBAL_DEF("display/window/per_pixel_transparency/enabled", false);
++	OS::get_singleton()->_allow_layered = GLOBAL_DEF("display/window/per_pixel_transparency/allowed", false);
++	video_mode.layered = GLOBAL_DEF("display/window/per_pixel_transparency/enabled", false);
+ */
+ 	if (editor || project_manager) {
+ 		// The editor and project manager always detect and use hiDPI if needed
+@@ -2494,6 +2494,13 @@ bool Main::iteration() {
  
  	bool exit = false;
  
@@ -46,18 +57,21 @@ index c9911464bb..a513a13954 100644
 +#endif
 +
 +#ifndef CUSTOM_PHYSICS_ITERATOR
- 	Engine::get_singleton()->_in_physics = true;
- 
++	Engine::get_singleton()->_in_physics = true;
++
  	for (int iters = 0; iters < advance.physics_steps; ++iters) {
-@@ -2496,6 +2501,7 @@ bool Main::iteration() {
+ 		if (Input::get_singleton()->is_using_input_buffering() && agile_input_event_flushing) {
+ 			Input::get_singleton()->flush_buffered_events();
+@@ -2536,6 +2543,8 @@ bool Main::iteration() {
+ 	if (Input::get_singleton()->is_using_input_buffering() && agile_input_event_flushing) {
+ 		Input::get_singleton()->flush_buffered_events();
  	}
- 
- 	Engine::get_singleton()->_in_physics = false;
++	Engine::get_singleton()->_in_physics = false;
 +#endif
  
  	uint64_t process_begin = OS::get_singleton()->get_ticks_usec();
  
-@@ -2528,7 +2534,9 @@ bool Main::iteration() {
+@@ -2568,7 +2577,9 @@ bool Main::iteration() {
  		ScriptServer::get_language(i)->frame();
  	}
  
@@ -68,10 +82,10 @@ index c9911464bb..a513a13954 100644
  	if (EngineDebugger::is_active()) {
  		EngineDebugger::get_singleton()->iteration(frame_time, process_ticks, physics_process_ticks, physics_step);
 diff --git a/main/main.h b/main/main.h
-index 168b2e5e86..0a49471814 100644
+index 4911ff42b4..9441d7fc85 100644
 --- a/main/main.h
 +++ b/main/main.h
-@@ -54,6 +54,9 @@ public:
+@@ -56,6 +56,9 @@ public:
  #endif
  	static bool start();
  
