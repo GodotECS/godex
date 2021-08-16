@@ -7,10 +7,16 @@
 #include "components_gizmos.h"
 #include "components_pawn.h"
 #include "components_rigid_body.h"
-#include "components_rigid_shape.h"
 #include "databag_space.h"
 #include "events_generic.h"
 #include "overlap_check.h"
+#include "shape_base.h"
+#include "shape_box.h"
+#include "shape_capsule.h"
+#include "shape_convex.h"
+#include "shape_cylinder.h"
+#include "shape_sphere.h"
+#include "shape_trimesh.h"
 #include "systems_base.h"
 #include "systems_walk.h"
 
@@ -28,13 +34,26 @@ void register_bullet_physics_types() {
 
 	// Shapes
 	ECS::register_component<BtBox>();
+	ECS::register_databag<BtShapeStorageBox>();
+
 	ECS::register_component<BtSphere>();
+	ECS::register_databag<BtShapeStorageSphere>();
+
 	ECS::register_component<BtCapsule>();
+	ECS::register_databag<BtShapeStorageCapsule>();
+
 	ECS::register_component<BtCone>();
+	ECS::register_databag<BtShapeStorageCone>();
+
 	ECS::register_component<BtCylinder>();
-	//ECS::register_component<BtWorldMargin>();
+	ECS::register_databag<BtShapeStorageCylinder>();
+
 	ECS::register_component<BtConvex>();
+	ECS::register_databag<BtShapeStorageConvex>();
+
 	ECS::register_component<BtTrimesh>();
+	ECS::register_databag<BtShapeStorageTrimesh>();
+
 	ECS::register_component<BtStreamedShape>();
 
 	ECS::register_event<OverlapStart>();
@@ -50,13 +69,45 @@ void register_bullet_physics_types() {
 	// Register Base `System`s
 	ECS::register_system_bundle("Bullet Physics Base Only")
 			.set_description("System that allow to use the Bullet physics components.")
-			.add(ECS::register_system(bt_body_config, "BtBodyConfig")
+			.add(ECS::register_system(bt_config_body, "BtConfigBody")
 							.execute_in(PHASE_CONFIG, "Physics")
 							.set_description("Bullet Physics - Manage the lifetime of the Bodies."))
 
-			.add(ECS::register_system(bt_area_config, "BtAreaConfig")
+			.add(ECS::register_system(bt_config_area, "BtConfigArea")
 							.execute_in(PHASE_CONFIG, "Physics")
 							.set_description("Bullet Physics - Manage the lifetime of the Area."))
+
+			.add(ECS::register_system(bt_config_transform, "BtConfigTransform")
+							.execute_in(PHASE_CONFIG, "Physics")
+							.set_description("Bullet Physics - Teleports the body on transform change, Updates the transforms for the moved bodies, Handles the shape scaling."))
+
+			.add(ECS::register_system(bt_config_box_shape, "BtConfigBoxShape")
+							.execute_in(PHASE_CONFIG, "Physics")
+							.set_description("Bullet Physics - Initialize and Updates the Box Shapes."))
+
+			.add(ECS::register_system(bt_config_sphere_shape, "BtConfigSphereShape")
+							.execute_in(PHASE_CONFIG, "Physics")
+							.set_description("Bullet Physics - Initialize and Updates the Sphere Shapes."))
+
+			.add(ECS::register_system(bt_config_capsule_shape, "BtConfigCapsuleShape")
+							.execute_in(PHASE_CONFIG, "Physics")
+							.set_description("Bullet Physics - Initialize and Updates the Capsule Shapes."))
+
+			.add(ECS::register_system(bt_config_cone_shape, "BtConfigConeShape")
+							.execute_in(PHASE_CONFIG, "Physics")
+							.set_description("Bullet Physics - Initialize and Updates the Cone Shapes."))
+
+			.add(ECS::register_system(bt_config_cylinder_shape, "BtConfigCylinderShape")
+							.execute_in(PHASE_CONFIG, "Physics")
+							.set_description("Bullet Physics - Initialize and Updates the Cylinder Shapes."))
+
+			.add(ECS::register_system(bt_config_convex_shape, "BtConfigConvexShape")
+							.execute_in(PHASE_CONFIG, "Physics")
+							.set_description("Bullet Physics - Initialize and Updates the Convex Shapes."))
+
+			.add(ECS::register_system(bt_config_trimesh_shape, "BtConfigTrimeshShape")
+							.execute_in(PHASE_CONFIG, "Physics")
+							.set_description("Bullet Physics - Initialize and Updates the Trimesh Shapes."))
 
 			.add(ECS::register_system(bt_apply_forces, "BtApplyForces")
 							.execute_in(PHASE_PROCESS, "Physics")
@@ -70,16 +121,7 @@ void register_bullet_physics_types() {
 
 			.add(ECS::register_system(bt_overlap_check, "BtOverlapCheck")
 							.execute_in(PHASE_POST_PROCESS, "Physics")
-							.set_description("Bullet Physics - Allow the areas to detect ovelapped bodies."))
-
-			.add(ECS::register_system(bt_body_sync, "BtBodySync")
-							.execute_in(PHASE_POST_PROCESS, "Physics")
-							.set_description("Bullet Physics - Read the Physics Engine and update the Bodies."))
-
-			.add(ECS::register_system(bt_suppress_changed_warning, "bt_suppress_changed_warning")
-							.execute_in(PHASE_MAX, "Physics")
-							.set_description("Bullet Physics - Warning suppressor, does nothing and it's not included in the processing.")
-							.with_flags(EXCLUDE_PIPELINE_COMPOSITION));
+							.set_description("Bullet Physics - Allow the areas to detect ovelapped bodies."));
 
 	// Register Walk `System`s
 	ECS::register_system(bt_pawn_walk, "BtPawnWalk")
@@ -89,14 +131,20 @@ void register_bullet_physics_types() {
 			.before("BtSpacesStep");
 
 	ECS::register_system_bundle("Bullet Physics All Features")
-			.add("BtBodyConfig")
-			.add("BtAreaConfig")
+			.add("BtConfigBody")
+			.add("BtConfigArea")
+			.add("BtConfigTransform")
+			.add("BtConfigBoxShape")
+			.add("BtConfigSphereShape")
+			.add("BtConfigCapsuleShape")
+			.add("BtConfigConeShape")
+			.add("BtConfigCylinderShape")
+			.add("BtConfigConvexShape")
+			.add("BtConfigTrimeshShape")
 			.add("BtApplyForces")
 			.add("BtPawnWalk")
 			.add("BtSpacesStep")
-			.add("BtOverlapCheck")
-			.add("BtBodySync")
-			.add("bt_suppress_changed_warning");
+			.add("BtOverlapCheck");
 
 	// Register gizmos
 	Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtBoxGizmo));

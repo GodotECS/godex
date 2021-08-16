@@ -6,58 +6,100 @@
 #include "components_generic.h"
 #include "components_pawn.h"
 #include "components_rigid_body.h"
-#include "components_rigid_shape.h"
 #include "databag_space.h"
 #include "events_generic.h"
+#include "shape_base.h"
+#include "shape_box.h"
+#include "shape_capsule.h"
+#include "shape_cone.h"
+#include "shape_convex.h"
+#include "shape_cylinder.h"
+#include "shape_sphere.h"
+#include "shape_trimesh.h"
 
 /// Configures the body.
 /// This `System` is responsible for the body lifetime.
-/// - Build the shape.
 /// - Build the body.
-/// - Assign the shape to the body.
 /// - Assigne the Body to the world.
 /// - Re-fresh the body if something changed.
-void bt_body_config(
+void bt_config_body(
 		BtPhysicsSpaces *p_spaces,
 		Query<
 				EntityID,
 				Any<Changed<BtRigidBody>,
-						Changed<BtSpaceMarker>,
-						Join<
-								Changed<BtBox>,
-								Changed<BtSphere>,
-								Changed<BtCapsule>,
-								Changed<BtCone>,
-								Changed<BtCylinder>,
-								Changed<BtWorldMargin>,
-								Changed<BtConvex>,
-								Changed<BtTrimesh>,
-								Changed<BtStreamedShape>>>,
-				Maybe<TransformComponent>> &p_query);
+						Changed<const BtSpaceMarker>>> &p_query);
 
 /// Configures the Area
 /// This `System` is responsible for the area lifetime.
-/// - Build the shape.
 /// - Build the area.
-/// - Assign the shape to the area.
 /// - Assigne the area to the world.
 /// - Re-fresh the area if something changed.
-void bt_area_config(
+void bt_config_area(
 		BtPhysicsSpaces *p_spaces,
 		Query<
 				EntityID,
 				Any<Changed<BtArea>,
-						Changed<BtSpaceMarker>,
-						Join<
-								Changed<BtBox>,
-								Changed<BtSphere>,
-								Changed<BtCapsule>,
-								Changed<BtCone>,
-								Changed<BtCylinder>,
-								Changed<BtWorldMargin>,
-								Changed<BtConvex>,
-								Changed<BtTrimesh>>>,
-				Maybe<TransformComponent>> &p_query);
+						Changed<const BtSpaceMarker>>> &
+				p_query);
+
+void bt_config_transform(
+		BtPhysicsSpaces *p_spaces,
+		Storage<BtBox> *p_shape_storage_box,
+		Storage<BtSphere> *p_shape_storage_sphere,
+		Query<
+				EntityID,
+				Changed<const TransformComponent>,
+				Any<BtRigidBody, BtArea>> &p_changed_transforms_query,
+		Query<const BtRigidBody, TransformComponent> &p_query);
+
+void bt_config_box_shape(
+		BtShapeStorageBox *p_shape_storage,
+		Query<
+				Changed<BtBox>,
+				Maybe<BtRigidBody>,
+				Maybe<BtArea>> &p_query);
+
+void bt_config_sphere_shape(
+		BtShapeStorageSphere *p_shape_storage,
+		Query<
+				Changed<BtSphere>,
+				Maybe<BtRigidBody>,
+				Maybe<BtArea>> &p_query);
+
+void bt_config_capsule_shape(
+		BtShapeStorageCapsule *p_shape_storage,
+		Query<
+				Changed<BtCapsule>,
+				Maybe<BtRigidBody>,
+				Maybe<BtArea>> &p_query);
+
+void bt_config_cone_shape(
+		BtShapeStorageCone *p_shape_storage,
+		Query<
+				Changed<BtCone>,
+				Maybe<BtRigidBody>,
+				Maybe<BtArea>> &p_query);
+
+void bt_config_cylinder_shape(
+		BtShapeStorageCylinder *p_shape_storage,
+		Query<
+				Changed<BtCylinder>,
+				Maybe<BtRigidBody>,
+				Maybe<BtArea>> &p_query);
+
+void bt_config_convex_shape(
+		BtShapeStorageConvex *p_shape_storage,
+		Query<
+				Changed<BtConvex>,
+				Maybe<BtRigidBody>,
+				Maybe<BtArea>> &p_query);
+
+void bt_config_trimesh_shape(
+		BtShapeStorageTrimesh *p_shape_storage,
+		Query<
+				Changed<BtTrimesh>,
+				Maybe<BtRigidBody>,
+				Maybe<BtArea>> &p_query);
 
 void bt_apply_forces(
 		Query<BtRigidBody, Batch<Force>, Maybe<BtPawn>> &p_query_forces,
@@ -76,7 +118,16 @@ void bt_spaces_step(
 		const FrameTime *p_iterator_info,
 		// TODO this is not used, though we need it just to be sure they are not
 		// touched by anything else.
-		Query<BtRigidBody, BtArea, BtBox, BtSphere, BtCapsule, BtCone, BtCylinder, BtWorldMargin, BtConvex, BtTrimesh> &p_query);
+		Storage<BtRigidBody> *,
+		Storage<BtArea> *,
+		Storage<BtBox> *,
+		Storage<BtSphere> *,
+		Storage<BtCapsule> *,
+		Storage<BtCone> *,
+		Storage<BtCylinder> *,
+		//Storage<BtWorldMargin> *, // Not used.
+		Storage<BtConvex> *,
+		Storage<BtTrimesh> *);
 
 /// Perform the Areas overlap check.
 void bt_overlap_check(
@@ -85,26 +136,3 @@ void bt_overlap_check(
 		EventsEmitter<OverlapStart> &p_enter_event_emitter,
 		EventsEmitter<OverlapEnd> &p_exit_event_emitter,
 		Query<EntityID, BtArea> &p_query);
-
-void bt_body_sync(
-		BtPhysicsSpaces *p_spaces,
-		Query<const BtRigidBody, TransformComponent> &p_query);
-
-/// This system is here only to suppress the PipelineBuilder false positive
-/// uncatched changed events. The vaiour above systems need to take the various
-/// components mutably and they take care to sync it, so there is no need to
-/// fetch the changed event again: However, the PipelineBuilder doesn't know that
-/// so it raise a warning. This system that is not included afterwards fix it.
-void bt_suppress_changed_warning(
-		Query<
-				Changed<BtRigidBody>,
-				Changed<BtArea>,
-				Changed<BtBox>,
-				Changed<BtSphere>,
-				Changed<BtCapsule>,
-				Changed<BtCone>,
-				Changed<BtCylinder>,
-				Changed<BtWorldMargin>,
-				Changed<BtConvex>,
-				Changed<BtStreamedShape>,
-				Changed<BtTrimesh>> &p_query);

@@ -5,8 +5,8 @@
 #include "components_generic.h"
 #include "components_pawn.h"
 #include "components_rigid_body.h"
-#include "components_rigid_shape.h"
 #include "databag_space.h"
+#include "shape_base.h"
 
 void bt_pawn_walk(
 		const FrameTime *frame_time,

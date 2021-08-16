@@ -78,6 +78,7 @@ public:
 	BtSpaceIndex __current_space = BT_SPACE_NONE;
 	/// The current mode this body has. Do not modify this.
 	RigidMode __current_mode = RIGID_MODE_STATIC;
+	Vector3 body_scale = Vector3(1, 1, 1);
 
 private:
 	real_t mass = 1.0;
@@ -110,7 +111,7 @@ public:
 
 	bool need_mass_reload() const;
 	/// Reload the mass.
-	void reload_mass(const btCollisionShape *p_shape);
+	void reload_mass();
 
 	void set_layer(uint32_t p_layer);
 	uint32_t get_layer() const;

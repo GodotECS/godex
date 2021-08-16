@@ -12,57 +12,33 @@
 #include <BulletSoftBody/btSoftRigidDynamicsWorld.h>
 #include <btBulletDynamicsCommon.h>
 
-void bt_body_config(
+void bt_config_body(
 		BtPhysicsSpaces *p_spaces,
 		Query<
 				EntityID,
 				Any<Changed<BtRigidBody>,
-						Changed<BtSpaceMarker>,
-						Join<
-								Changed<BtBox>,
-								Changed<BtSphere>,
-								Changed<BtCapsule>,
-								Changed<BtCone>,
-								Changed<BtCylinder>,
-								Changed<BtWorldMargin>,
-								Changed<BtConvex>,
-								Changed<BtTrimesh>,
-								Changed<BtStreamedShape>>>,
-				Maybe<TransformComponent>> &p_query) {
-	for (auto [entity, body, space_marker, shape_container, transform] : p_query.space(GLOBAL)) {
+						Changed<const BtSpaceMarker>>> &p_query) {
+	for (auto [entity, body, space_marker] : p_query) {
 		if (body == nullptr) {
 			// Body not yet assigned to this Entity, skip.
 			continue;
 		}
 
-		// Config shape.
-		{
-			BtRigidShape *shape = shape_container.as<BtRigidShape>();
-			if (shape) {
-				if (shape->get_shape()) {
-					body->set_shape(shape->get_shape());
-				} else if (shape->fallback_empty()) {
-					body->set_shape(&p_spaces->empty_shape);
-				} else {
-					body->set_shape(nullptr);
-				}
-			} else {
-				body->set_shape(nullptr);
-			}
-		}
-
 		// Reload mass
-		if (body->need_mass_reload() && body->get_shape() != nullptr) {
-			body->reload_mass(body->get_shape());
+		if (body->need_mass_reload()) {
+			body->reload_mass();
 		}
 
 		// Take the space this body should be on.
-		const BtSpaceIndex space_index = body->get_shape() == nullptr ? BT_SPACE_NONE : (space_marker != nullptr ? static_cast<BtSpaceIndex>(space_marker->space_index) : BT_SPACE_0);
+		const BtSpaceIndex space_index = space_marker != nullptr ? static_cast<BtSpaceIndex>(space_marker->space_index) : BT_SPACE_0;
+
+		// Make sure the body has a shape.
+		if (body->get_shape() == nullptr) {
+			body->set_shape(&p_spaces->empty_shape);
+		}
 
 		// Reload space
-		if ((body->need_body_reload() ||
-					body->__current_space != space_index) &&
-				p_spaces != nullptr) {
+		if ((body->need_body_reload() || body->__current_space != space_index)) {
 			// This body needs a realod.
 
 			if (body->__current_space != BtSpaceIndex::BT_SPACE_NONE) {
@@ -75,8 +51,7 @@ void bt_body_config(
 
 			// Now let's add it inside the space again.
 
-			// TODO support space initialization when the body want to stay in
-			// another space?
+			// TODO support space initialization when the body want to stay in another space?
 			if (space_index != BtSpaceIndex::BT_SPACE_NONE) {
 				BtSpace *space = p_spaces->get_space(space_index);
 				space->get_dynamics_world()->addRigidBody(
@@ -100,53 +75,21 @@ void bt_body_config(
 
 			body->reload_body(space_index);
 			body->__current_mode = body->get_body_mode();
-
-			// Set transfrorm
-			btTransform t;
-			if (transform != nullptr) {
-				G_TO_B(*transform, t);
-			} else {
-				t.setIdentity();
-			}
-			body->set_transform(t, false);
 		}
 	}
 }
 
-void bt_area_config(
+void bt_config_area(
 		BtPhysicsSpaces *p_spaces,
 		Query<
 				EntityID,
 				Any<Changed<BtArea>,
-						Changed<BtSpaceMarker>,
-						Join<
-								Changed<BtBox>,
-								Changed<BtSphere>,
-								Changed<BtCapsule>,
-								Changed<BtCone>,
-								Changed<BtCylinder>,
-								Changed<BtWorldMargin>,
-								Changed<BtConvex>,
-								Changed<BtTrimesh>>>,
-				Maybe<TransformComponent>> &p_query) {
-	for (auto [entity, area, space_marker, shape_container, transform] : p_query.space(GLOBAL)) {
+						Changed<const BtSpaceMarker>>>
+				&p_query) {
+	for (auto [entity, area, space_marker] : p_query.space(GLOBAL)) {
 		if (area == nullptr) {
 			// Body not yet assigned to this Entity, skip.
 			continue;
-		}
-
-		// Config shape.
-		BtRigidShape *shape = shape_container.as<BtRigidShape>();
-		if (shape != nullptr) {
-			if (area->get_shape() != shape->get_shape()) {
-				// Area shape is different (or nullptr) form the shape, assign it.
-				area->set_shape(shape->get_shape());
-			}
-		} else {
-			if (area->get_shape() != nullptr) {
-				// Area has something, but the shape is null, so unassign it.
-				area->set_shape(nullptr);
-			}
 		}
 
 		// Take the space this area should be on.
@@ -185,17 +128,196 @@ void bt_area_config(
 				space->moved_bodies.insert(entity);
 			}
 
-			// Set transfrorm
-			btTransform t;
-			if (transform != nullptr) {
-				G_TO_B(*transform, t);
-			} else {
-				t.setIdentity();
-			}
-			area->get_ghost()->setWorldTransform(t);
-
 			area->reload_body(space_index);
 		}
+	}
+}
+
+bool equal(const Vector3 &p_vec_1, const Vector3 &p_vec_2) {
+	for (int i = 0; i < 3; i += 1) {
+		if (Math::abs(p_vec_1[i] - p_vec_2[i]) >= 0.001) {
+			return false;
+		}
+	}
+	return true;
+}
+
+void bt_config_transform(
+		BtPhysicsSpaces *p_spaces,
+		Storage<BtBox> *p_shape_storage_box,
+		Storage<BtSphere> *p_shape_storage_sphere,
+		Query<
+				EntityID,
+				Changed<const TransformComponent>,
+				Any<BtRigidBody, BtArea>> &p_changed_transforms_query,
+		Query<const BtRigidBody, TransformComponent> &p_query) {
+	// Update the RigidBody transforms.
+	for (auto [entity, transform, body, area] : p_changed_transforms_query) {
+		bool is_scale_changed = false;
+		// Extract the new scale.
+		const Vector3 new_scale = transform->basis.get_scale_abs();
+
+		// Convert the Transform to the bullet transform (which need to be unscaled).
+		btTransform t;
+		G_TO_B(*transform, t);
+		UNSCALE_BT_BASIS(t);
+
+		if (body) {
+			is_scale_changed = !equal(body->body_scale, new_scale);
+			body->body_scale = new_scale;
+			body->set_transform(t, /*Notify changed*/ false);
+
+			// Make sure to remove this entity from the moved bodies.
+			if (body->get_motion_state()->space) {
+				body->get_motion_state()->space->moved_bodies.remove(entity);
+			}
+
+		} else {
+			is_scale_changed = !equal(area->area_scale, new_scale);
+			area->area_scale = new_scale;
+			area->get_ghost()->setWorldTransform(t);
+		}
+
+		if (is_scale_changed) {
+			// The scale changed, make sure to mark the shape as changed, so it's reloaded.
+			if (p_shape_storage_box->has(entity)) {
+				p_shape_storage_box->notify_changed(entity);
+			} else if (p_shape_storage_sphere->has(entity)) {
+				p_shape_storage_sphere->notify_changed(entity);
+			}
+		}
+	}
+
+	// Update the Transforms of RigidBodies moved by the PhysicsEngine.
+	for (uint32_t i = 0; i < BtSpaceIndex::BT_SPACE_MAX; i += 1) {
+		const BtSpaceIndex w_i = (BtSpaceIndex)i;
+
+		if (p_spaces->get_space(w_i)->get_dispatcher() == nullptr) {
+			// This space is disabled.
+			continue;
+		}
+
+		p_spaces->get_space(w_i)->moved_bodies.for_each([&](EntityID p_entity_id) {
+			if (p_query.has(p_entity_id)) {
+				auto [body, transform] = p_query.space(GLOBAL)[p_entity_id];
+				B_TO_G(body->get_motion_state()->transf, *transform);
+				transform->basis.scale(body->body_scale);
+			}
+		});
+
+		p_spaces->get_space(w_i)->moved_bodies.clear();
+	}
+}
+
+template <class StorageType, class ShapeComponentType>
+void bt_config_shape(
+		StorageType *p_shape_storage,
+		ShapeComponentType *p_shape,
+		BtRigidBody *p_body,
+		BtArea *p_area) {
+	const Vector3 &scale = p_body ? p_body->body_scale : p_area->area_scale;
+
+	// Construct the shape.
+	btCollisionShape *shape_ptr = nullptr;
+	{
+		BtRigidShape::ShapeInfo *shape_info = p_shape->get_shape(scale);
+		if (shape_info == nullptr) {
+			shape_ptr = p_shape_storage->construct_shape(p_shape, scale);
+		} else {
+			shape_ptr = shape_info->shape_ptr;
+		}
+	}
+
+	if (p_body) {
+		// Make sure the shape is set.
+		p_body->set_shape(shape_ptr);
+		// Always reload the mass, so to apply any eventual shape change.
+		p_body->reload_mass();
+#ifdef DEBUG_ENABLED
+		CRASH_COND_MSG(p_body->need_body_reload(), "At this point the body is not supposed to need body realoading, since the shape change doesn't trigger the body reaload and the body is already reloaded by the system bt_config_body.");
+#endif
+	} else if (p_area) {
+		// Make sure the shape is set.
+		p_area->set_shape(shape_ptr);
+	} else {
+		// In this case, nothing to do.
+	}
+}
+
+void bt_config_box_shape(
+		BtShapeStorageBox *p_shape_storage,
+		Query<
+				Changed<BtBox>,
+				Maybe<BtRigidBody>,
+				Maybe<BtArea>> &p_query) {
+	for (auto [shape, body, area] : p_query) {
+		bt_config_shape(p_shape_storage, shape, body, area);
+	}
+}
+
+void bt_config_sphere_shape(
+		BtShapeStorageSphere *p_shape_storage,
+		Query<
+				Changed<BtSphere>,
+				Maybe<BtRigidBody>,
+				Maybe<BtArea>> &p_query) {
+	for (auto [shape, body, area] : p_query) {
+		bt_config_shape(p_shape_storage, shape, body, area);
+	}
+}
+
+void bt_config_capsule_shape(
+		BtShapeStorageCapsule *p_shape_storage,
+		Query<
+				Changed<BtCapsule>,
+				Maybe<BtRigidBody>,
+				Maybe<BtArea>> &p_query) {
+	for (auto [shape, body, area] : p_query) {
+		bt_config_shape(p_shape_storage, shape, body, area);
+	}
+}
+
+void bt_config_cone_shape(
+		BtShapeStorageCone *p_shape_storage,
+		Query<
+				Changed<BtCone>,
+				Maybe<BtRigidBody>,
+				Maybe<BtArea>> &p_query) {
+	for (auto [shape, body, area] : p_query) {
+		bt_config_shape(p_shape_storage, shape, body, area);
+	}
+}
+
+void bt_config_cylinder_shape(
+		BtShapeStorageCylinder *p_shape_storage,
+		Query<
+				Changed<BtCylinder>,
+				Maybe<BtRigidBody>,
+				Maybe<BtArea>> &p_query) {
+	for (auto [shape, body, area] : p_query) {
+		bt_config_shape(p_shape_storage, shape, body, area);
+	}
+}
+
+void bt_config_convex_shape(
+		BtShapeStorageConvex *p_shape_storage,
+		Query<
+				Changed<BtConvex>,
+				Maybe<BtRigidBody>,
+				Maybe<BtArea>> &p_query) {
+	for (auto [shape, body, area] : p_query) {
+		bt_config_shape(p_shape_storage, shape, body, area);
+	}
+}
+
+void bt_config_trimesh_shape(
+		BtShapeStorageTrimesh *p_shape_storage,
+		Query<
+				Changed<BtTrimesh>,
+				Maybe<BtRigidBody>,
+				Maybe<BtArea>> &p_query) {
+	for (auto [shape, body, area] : p_query) {
+		bt_config_shape(p_shape_storage, shape, body, area);
 	}
 }
 
@@ -261,17 +383,16 @@ void bt_spaces_step(
 		const FrameTime *p_iterator_info,
 		// TODO this is not used, though we need it just to be sure they are not
 		// touched by anything else.
-		Query<
-				BtRigidBody,
-				BtArea,
-				BtBox,
-				BtSphere,
-				BtCapsule,
-				BtCone,
-				BtCylinder,
-				BtWorldMargin,
-				BtConvex,
-				BtTrimesh> &p_query) {
+		Storage<BtRigidBody> *,
+		Storage<BtArea> *,
+		Storage<BtBox> *,
+		Storage<BtSphere> *,
+		Storage<BtCapsule> *,
+		Storage<BtCone> *,
+		Storage<BtCylinder> *,
+		// Storage<BtWorldMargin> *, Not used.
+		Storage<BtConvex> *,
+		Storage<BtTrimesh> *) {
 	const real_t physics_delta = p_iterator_info->get_physics_delta();
 
 	// TODO consider to create a system for each space? So it has much more control.
@@ -420,39 +541,3 @@ void bt_overlap_check(
 		new_overlaps.clear();
 	}
 }
-
-void bt_body_sync(
-		BtPhysicsSpaces *p_spaces,
-		Query<const BtRigidBody, TransformComponent> &p_query) {
-	for (uint32_t i = 0; i < BtSpaceIndex::BT_SPACE_MAX; i += 1) {
-		const BtSpaceIndex w_i = (BtSpaceIndex)i;
-
-		if (p_spaces->get_space(w_i)->get_dispatcher() == nullptr) {
-			// This space is disabled.
-			continue;
-		}
-
-		p_spaces->get_space(w_i)->moved_bodies.for_each([&](EntityID p_entity_id) {
-			if (p_query.has(p_entity_id)) {
-				auto [body, transform] = p_query.space(GLOBAL)[p_entity_id];
-				B_TO_G(body->get_motion_state()->transf, *transform);
-			}
-		});
-
-		p_spaces->get_space(w_i)->moved_bodies.clear();
-	}
-}
-
-void bt_suppress_changed_warning(
-		Query<
-				Changed<BtRigidBody>,
-				Changed<BtArea>,
-				Changed<BtBox>,
-				Changed<BtSphere>,
-				Changed<BtCapsule>,
-				Changed<BtCone>,
-				Changed<BtCylinder>,
-				Changed<BtWorldMargin>,
-				Changed<BtConvex>,
-				Changed<BtStreamedShape>,
-				Changed<BtTrimesh>> &p_query) {}

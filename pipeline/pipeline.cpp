@@ -92,7 +92,8 @@ Token Pipeline::prepare_world(World *p_world) {
 		for (uint32_t stage_i = 0; stage_i < dispatcher.exec_stages.size(); stage_i += 1) {
 			for (uint32_t i = 0; i < dispatcher.exec_stages[stage_i].systems.size(); i += 1) {
 				info.clear();
-				ECS::get_system_exe_info(dispatcher.exec_stages[stage_i].systems[i].id, info);
+				const godex::system_id id = dispatcher.exec_stages[stage_i].systems[i].id;
+				ECS::get_system_exe_info(id, info);
 				create_used_storage(info, p_world);
 			}
 		}
