@@ -396,33 +396,30 @@ public:
 	}
 };
 
-// TODO this file is full of `get_component_id`. Would be nice cache it.
-
 template <class C>
 void EntityInternal<C>::_get_property_list(List<PropertyInfo> *p_list) const {
 	for (OAHashMap<StringName, Ref<ComponentDepot>>::Iterator it = components_data.iter();
 			it.valid;
 			it = components_data.next_iter(it)) {
+		const godex::component_id id = ECS::get_component_id(*it.key);
+		ERR_CONTINUE(id == godex::COMPONENT_NONE);
+
 		p_list->push_back(PropertyInfo(Variant::BOOL, *it.key, PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
 
-		if (ECS::is_component_sharable(ECS::get_component_id(*it.key))) {
-			// This is a shared component
-			p_list->push_back(PropertyInfo(Variant::OBJECT, String(*it.key) + "/resource", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
-		} else {
-			// This is a common component.
-			const godex::component_id id = ECS::get_component_id(*it.key);
-			ERR_FAIL_COND(id == godex::COMPONENT_NONE);
-			const LocalVector<PropertyInfo> *properties = ECS::get_component_properties(id);
+		List<PropertyInfo> properties;
+		(*it.value)->_get_property_list(&properties);
 
-			for (uint32_t i = 0; i < properties->size(); i += 1) {
-				const PropertyInfo &e = (*properties)[i];
-				if (ECS::is_component_dynamic(id) == false && (e.usage & PROPERTY_USAGE_STORAGE) == 0) {
-					// No store.
-					continue;
-				}
-				const StringName prop_name = String(*it.key) + "/" + e.name;
-				p_list->push_back(PropertyInfo(e.type, prop_name, PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
+		for (PropertyInfo &prop : properties) {
+			if (
+					// Save all the dynamic component no matter what: This is necessary
+					// because we can't set this flag in GDScript.
+					!ECS::is_component_dynamic(id) &&
+					(prop.usage & PROPERTY_USAGE_STORAGE) == 0) {
+				// No store.
+				continue;
 			}
+			const StringName prop_name = String(*it.key) + "/" + prop.name;
+			p_list->push_back(PropertyInfo(prop.type, prop_name, PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
 		}
 	}
 }
@@ -440,7 +437,10 @@ bool EntityInternal<C>::_set(const StringName &p_name, const Variant &p_value) {
 	} else {
 		ERR_FAIL_COND_V(names.size() < 2, false);
 		const String component_name = names[0];
-		const String property_name = names[1];
+		String property_name = names[1];
+		for (int i = 2; i < names.size(); i += 1) {
+			property_name += "/" + names[i];
+		}
 
 		return set_component_value(component_name, property_name, p_value);
 	}
@@ -456,7 +456,10 @@ bool EntityInternal<C>::_get(const StringName &p_name, Variant &r_ret) const {
 	} else {
 		ERR_FAIL_COND_V(names.size() < 2, false);
 		const String component_name = names[0];
-		const String property_name = names[1];
+		String property_name = names[1];
+		for (int i = 2; i < names.size(); i += 1) {
+			property_name += "/" + names[i];
+		}
 
 		return _get_component_value(component_name, property_name, r_ret);
 	}

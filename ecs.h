@@ -36,14 +36,14 @@ struct Dependency {
 };
 
 struct DataAccessorFuncs {
-	const LocalVector<PropertyInfo> *(*get_properties)() = nullptr;
+	const LocalVector<PropertyInfo> *(*get_static_properties)() = nullptr;
+	void (*get_property_list)(void *p_self, List<PropertyInfo> *r_list) = nullptr;
 	Variant (*get_property_default)(const StringName &p_property_name) = nullptr;
 	bool (*set_by_name)(void *p_self, const StringName &p_name, const Variant &p_data) = nullptr;
 	bool (*get_by_name)(const void *p_self, const StringName &p_name, Variant &r_data) = nullptr;
 	bool (*set_by_index)(void *p_self, const uint32_t p_parameter_index, const Variant &p_data) = nullptr;
 	bool (*get_by_index)(const void *p_self, const uint32_t p_parameter_index, Variant &r_data) = nullptr;
 	void (*call)(void *p_self, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error) = nullptr;
-	void (*dynamic_get_property_list)(void *p_self, List<PropertyInfo> *r_list) = nullptr;
 };
 
 struct SpawnerInfo {
@@ -240,7 +240,7 @@ public:
 	static bool is_component_sharable(godex::component_id p_component_id);
 	static bool storage_notify_release_write(godex::component_id p_component_id);
 
-	static const LocalVector<PropertyInfo> *get_component_properties(godex::component_id p_component_id);
+	static const LocalVector<PropertyInfo> *component_get_static_properties(godex::component_id p_component_id);
 	static Variant get_component_property_default(godex::component_id p_component_id, StringName p_property_name);
 
 	static const LocalVector<godex::spawner_id> &get_spawners(godex::component_id p_component_id);
@@ -251,7 +251,8 @@ public:
 	static bool unsafe_component_set_by_index(godex::component_id p_component_id, void *p_component, uint32_t p_index, const Variant &p_data);
 	static bool unsafe_component_get_by_index(godex::component_id p_component_id, const void *p_component, uint32_t p_index, Variant &r_data);
 	static void unsafe_component_call(godex::component_id p_component_id, void *p_component, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error);
-	static void unsafe_component_dynamic_get_property_list(godex::component_id p_component_id, void *p_component, List<PropertyInfo> *r_list);
+	/// `p_component` can be `nullptr`, in that case only the static properties are returned.
+	static void unsafe_component_get_property_list(godex::component_id p_component_id, void *p_component, List<PropertyInfo> *r_list);
 
 	// ~~ Databags ~~
 	template <class C>
@@ -270,7 +271,8 @@ public:
 	static bool unsafe_databag_set_by_index(godex::databag_id p_databag_id, void *p_databag, uint32_t p_index, const Variant &p_data);
 	static bool unsafe_databag_get_by_index(godex::databag_id p_databag_id, const void *p_databag, uint32_t p_index, Variant &r_data);
 	static void unsafe_databag_call(godex::databag_id p_databag_id, void *p_databag, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error);
-	static void unsafe_databag_dynamic_get_property_list(godex::databag_id p_databag_id, void *p_databag, List<PropertyInfo> *r_list);
+	/// `p_databag` can be `nullptr`, in that case only the static properties are returned.
+	static void unsafe_databag_get_property_list(godex::databag_id p_databag_id, void *p_databag, List<PropertyInfo> *r_list);
 
 	// ~~ Events ~~
 	template <class E>
@@ -291,7 +293,8 @@ public:
 	static bool unsafe_event_set_by_index(godex::event_id p_event_id, void *p_event, uint32_t p_index, const Variant &p_data);
 	static bool unsafe_event_get_by_index(godex::event_id p_event_id, const void *p_event, uint32_t p_index, Variant &r_data);
 	static void unsafe_event_call(godex::event_id p_event_id, void *p_event, const StringName &p_method, const Variant **p_args, int p_argcount, Variant *r_ret, Callable::CallError &r_error);
-	static void unsafe_event_dynamic_get_property_list(godex::event_id p_event_id, void *p_event, List<PropertyInfo> *r_list);
+	/// `p_event` can be `nullptr`, in that case only the static properties are returned.
+	static void unsafe_event_get_property_list(godex::event_id p_event_id, void *p_event, List<PropertyInfo> *r_list);
 
 	// ~~ SystemBundle ~~
 	static SystemBundleInfo &register_system_bundle(const StringName &p_name);
@@ -647,14 +650,14 @@ void ECS::register_component(StorageBase *(*create_storage)()) {
 					shared_component_storage,
 					spawners,
 					DataAccessorFuncs{
-							C::get_properties,
+							C::get_static_properties,
+							C::get_property_list,
 							C::get_property_default,
 							C::set_by_name,
 							C::get_by_name,
 							C::set_by_index,
 							C::get_by_index,
-							C::static_call,
-							C::dynamic_get_property_list } });
+							C::static_call } });
 
 	// Store the function pointer that clear the static memory.
 	notify_static_destructor.push_back(&C::__static_destructor);
@@ -678,14 +681,14 @@ void ECS::register_databag() {
 	databags_info.push_back(DatabagInfo{
 			R::create_databag_no_type,
 			DataAccessorFuncs{
-					R::get_properties,
+					R::get_static_properties,
+					R::get_property_list,
 					R::get_property_default,
 					R::set_by_name,
 					R::get_by_name,
 					R::set_by_index,
 					R::get_by_index,
-					R::static_call,
-					R::dynamic_get_property_list } });
+					R::static_call } });
 
 	// Store the function pointer that clear the static memory.
 	notify_static_destructor.push_back(&R::__static_destructor);
@@ -710,14 +713,14 @@ void ECS::register_event() {
 			Set<String>(),
 			true,
 			DataAccessorFuncs{
-					E::get_properties,
+					E::get_static_properties,
+					E::get_property_list,
 					E::get_property_default,
 					E::set_by_name,
 					E::get_by_name,
 					E::set_by_index,
 					E::get_by_index,
-					E::static_call,
-					E::dynamic_get_property_list } });
+					E::static_call } });
 
 	// Store the function pointer that clear the static memory.
 	notify_static_destructor.push_back(&E::__static_destructor);

@@ -15,8 +15,8 @@ public:                                                                         
 	ECS_PROPERTY_MAPPER(m_class)                                                      \
 	ECS_METHOD_MAPPER(m_class)                                                        \
 	static void __static_destructor() {                                               \
-		property_map.reset();                                                         \
-		properties.reset();                                                           \
+		static_property_map.reset();                                                  \
+		static_properties.reset();                                                    \
 		setters.reset();                                                              \
 		getters.reset();                                                              \
 		methods_map.reset();                                                          \

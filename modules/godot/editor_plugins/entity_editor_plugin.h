@@ -32,7 +32,7 @@ public:
 
 	void create_editors();
 	void update_editors();
-	void create_component_inspector(StringName p_component_name, VBoxContainer *p_container);
+	void create_component_inspector(StringName p_component_name, const Ref<ComponentDepot> &p_depot, VBoxContainer *p_container);
 	void update_component_inspector(StringName p_component_name);
 	void _add_component_pressed(uint32_t p_index);
 	void _remove_component_pressed(StringName p_component_name);

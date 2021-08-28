@@ -28,15 +28,12 @@ bool SharedComponentResource::_get(const StringName &p_name, Variant &r_property
 	return success;
 }
 
-void SharedComponentResource::_get_property_list(List<PropertyInfo> *p_list) const {
+void SharedComponentResource::_get_property_list(List<PropertyInfo> *r_list) const {
 	ERR_FAIL_COND_MSG(is_init() == false, "This shared component is not init. So you can't use it.");
 	ERR_FAIL_COND_MSG(ECS::is_component_sharable(ECS::get_component_id(component_name)) == false, "This component is not shared, this is not supposed to happen.");
 
-	const godex::component_id id = ECS::get_component_id(component_name);
-	ERR_FAIL_COND(id == godex::COMPONENT_NONE);
-	const LocalVector<PropertyInfo> *properties = ECS::get_component_properties(id);
-	for (uint32_t i = 0; i < properties->size(); i += 1) {
-		p_list->push_back((*properties)[i]);
+	if (depot.is_valid()) {
+		depot->_get_property_list(r_list);
 	}
 }
 

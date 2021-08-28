@@ -190,12 +190,20 @@ bool ECS::storage_notify_release_write(godex::component_id p_component_id) {
 	return components_info[p_component_id].notify_release_write;
 }
 
-const LocalVector<PropertyInfo> *ECS::get_component_properties(uint32_t p_component_id) {
+const LocalVector<PropertyInfo> *ECS::component_get_static_properties(uint32_t p_component_id) {
 	ERR_FAIL_COND_V_MSG(verify_component_id(p_component_id) == false, nullptr, "The `component_id` is invalid: " + itos(p_component_id));
 	if (components_info[p_component_id].dynamic_component_info != nullptr) {
-		return components_info[p_component_id].dynamic_component_info->get_properties();
+		return components_info[p_component_id].dynamic_component_info->get_static_properties();
 	} else {
-		return components_info[p_component_id].accessor_funcs.get_properties();
+		return components_info[p_component_id].accessor_funcs.get_static_properties();
+	}
+}
+
+void ECS::unsafe_component_get_property_list(godex::component_id p_component_id, void *p_component, List<PropertyInfo> *r_list) {
+	if (components_info[p_component_id].dynamic_component_info != nullptr) {
+		return DynamicComponentInfo::get_property_list(p_component, components_info[p_component_id].dynamic_component_info, r_list);
+	} else {
+		return components_info[p_component_id].accessor_funcs.get_property_list(p_component, r_list);
 	}
 }
 
@@ -272,14 +280,6 @@ void ECS::unsafe_component_call(godex::component_id p_component_id, void *p_comp
 	}
 }
 
-void ECS::unsafe_component_dynamic_get_property_list(godex::component_id p_component_id, void *p_component, List<PropertyInfo> *r_list) {
-	if (components_info[p_component_id].dynamic_component_info != nullptr) {
-		return DynamicComponentInfo::static_get_property_list(p_component, components_info[p_component_id].dynamic_component_info, r_list);
-	} else {
-		return components_info[p_component_id].accessor_funcs.dynamic_get_property_list(p_component, r_list);
-	}
-}
-
 bool ECS::verify_databag_id(godex::databag_id p_id) {
 	return p_id < databags.size();
 }
@@ -345,8 +345,8 @@ void ECS::unsafe_databag_call(
 			r_error);
 }
 
-void ECS::unsafe_databag_dynamic_get_property_list(godex::databag_id p_databag_id, void *p_databag, List<PropertyInfo> *r_list) {
-	databags_info[p_databag_id].accessor_funcs.dynamic_get_property_list(p_databag, r_list);
+void ECS::unsafe_databag_get_property_list(godex::databag_id p_databag_id, void *p_databag, List<PropertyInfo> *r_list) {
+	databags_info[p_databag_id].accessor_funcs.get_property_list(p_databag, r_list);
 }
 
 bool ECS::verify_event_id(godex::event_id p_id) {
@@ -451,8 +451,8 @@ void ECS::unsafe_event_call(godex::event_id p_event_id, void *p_event, const Str
 	events_info[p_event_id].accessor_funcs.call(p_event, p_method, p_args, p_argcount, r_ret, r_error);
 }
 
-void ECS::unsafe_event_dynamic_get_property_list(godex::event_id p_event_id, void *p_event, List<PropertyInfo> *r_list) {
-	events_info[p_event_id].accessor_funcs.dynamic_get_property_list(p_event, r_list);
+void ECS::unsafe_event_get_property_list(godex::event_id p_event_id, void *p_event, List<PropertyInfo> *r_list) {
+	events_info[p_event_id].accessor_funcs.get_property_list(p_event, r_list);
 }
 
 SystemBundleInfo &ECS::register_system_bundle(const StringName &p_name) {

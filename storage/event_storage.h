@@ -67,7 +67,7 @@ public:
 	}
 
 	virtual Array get_events_array(const String &p_emitter) const override {
-		const LocalVector<PropertyInfo> *props = E::get_properties();
+		const LocalVector<PropertyInfo> *props = E::get_static_properties();
 
 		Array ret;
 		const LocalVector<E> *events = get_events(p_emitter);

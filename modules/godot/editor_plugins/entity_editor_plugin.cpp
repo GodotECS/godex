@@ -86,7 +86,7 @@ void EntityEditor::update_editors() {
 			del_btn->connect(SNAME("pressed"), callable_mp(this, &EntityEditor::_remove_component_pressed), varray(*it.key));
 			component_section->get_vbox()->add_child(del_btn);
 
-			create_component_inspector(*it.key, component_section->get_vbox());
+			create_component_inspector(*it.key, *it.value, component_section->get_vbox());
 
 			components_section->get_vbox()->add_child(component_section);
 			update_component_inspector(*it.key);
@@ -94,7 +94,8 @@ void EntityEditor::update_editors() {
 	}
 }
 
-void EntityEditor::create_component_inspector(StringName p_component_name, VBoxContainer *p_container) {
+void EntityEditor::create_component_inspector(StringName p_component_name, const Ref<ComponentDepot> &p_depot, VBoxContainer *p_container) {
+	ERR_FAIL_COND(!p_depot.is_valid());
 	if (ECS::is_component_sharable(ECS::get_component_id(p_component_name))) {
 		// The sharable components just have a field that accepts a
 		// `SharableComponentResource`.
@@ -112,16 +113,17 @@ void EntityEditor::create_component_inspector(StringName p_component_name, VBoxC
 		components_properties.insert(p_component_name, editor_properties);
 
 	} else {
+		const float default_float_step = EDITOR_GET("interface/inspector/default_float_step");
+
 		const godex::component_id id = ECS::get_component_id(p_component_name);
 		ERR_FAIL_COND(id == godex::COMPONENT_NONE);
 		const bool is_scripted_component = ECS::is_component_dynamic(id);
-		const LocalVector<PropertyInfo> *properties = ECS::get_component_properties(id);
 
-		const float default_float_step = EDITOR_GET("interface/inspector/default_float_step");
+		List<PropertyInfo> properties;
+		p_depot->_get_property_list(&properties);
 
 		OAHashMap<StringName, EditorProperty *> editor_properties;
-		for (uint32_t prop_i = 0; prop_i < properties->size(); prop_i += 1) {
-			const PropertyInfo &e = (*properties)[prop_i];
+		for (PropertyInfo &e : properties) {
 			EditorProperty *prop = nullptr;
 
 			if (is_scripted_component == false && (e.usage & PROPERTY_USAGE_EDITOR) == 0) {
@@ -682,6 +684,7 @@ void EntityEditor::_property_changed(const String &p_path, const Variant &p_valu
 
 	editor->get_undo_redo()->create_action(TTR("Set component value"));
 	editor->get_undo_redo()->add_do_method(entity, SNAME("set"), p_path, p_value);
+	editor->get_undo_redo()->add_do_method(this, SNAME("update_editors"));
 	editor->get_undo_redo()->add_undo_method(entity, SNAME("set"), p_path, entity->get(p_path));
 	editor->get_undo_redo()->add_undo_method(this, SNAME("update_editors"));
 	editor->get_undo_redo()->commit_action();
