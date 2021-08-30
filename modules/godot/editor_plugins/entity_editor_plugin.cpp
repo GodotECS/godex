@@ -174,6 +174,7 @@ void EntityEditor::create_component_inspector(StringName p_component_name, const
 						}
 						EditorPropertyLayers *editor = memnew(EditorPropertyLayers);
 						editor->setup(lt);
+						prop = editor;
 
 					} else if (e.hint == PROPERTY_HINT_OBJECT_ID) {
 						EditorPropertyObjectID *editor = memnew(EditorPropertyObjectID);
