@@ -685,10 +685,17 @@ void EntityEditor::_property_changed(const String &p_path, const Variant &p_valu
 
 	editor->get_undo_redo()->create_action(TTR("Set component value"));
 	editor->get_undo_redo()->add_do_method(entity, SNAME("set"), p_path, p_value);
-	editor->get_undo_redo()->add_do_method(this, SNAME("update_editors"));
 	editor->get_undo_redo()->add_undo_method(entity, SNAME("set"), p_path, entity->get(p_path));
 	editor->get_undo_redo()->add_undo_method(this, SNAME("update_editors"));
 	editor->get_undo_redo()->commit_action();
+
+	if (p_value.get_type() != Variant::STRING) {
+		// This is needed because string update is special: If string is updated
+		// never reload the editor to avoid losing focus.
+		if (!p_changing) {
+			update_editors();
+		}
+	}
 }
 
 void EntityEditor::_changed_callback() {
