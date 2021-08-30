@@ -20,7 +20,7 @@ public:
 
 	// TODO move all this to CPP
 
-	const LocalVector<PropertyInfo> *get_properties() const {
+	const LocalVector<PropertyInfo> *get_static_properties() const {
 		return &properties;
 	}
 
@@ -45,7 +45,7 @@ public:
 	}
 
 public:
-	static void static_get_property_list(void *p_self, const DynamicComponentInfo *p_info, List<PropertyInfo> *r_list);
+	static void get_property_list(void *p_self, const DynamicComponentInfo *p_info, List<PropertyInfo> *r_list);
 
 	static bool static_set(void *p_self, const DynamicComponentInfo *p_info, const StringName &p_name, const Variant &p_data);
 	static bool static_get(const void *p_self, const DynamicComponentInfo *p_info, const StringName &p_name, Variant &r_data);
@@ -72,7 +72,7 @@ public:
 	void __initialize(DynamicComponentInfo *p_info) {
 #ifdef DEBUG_ENABLED
 		CRASH_COND_MSG(p_info == nullptr, "The component info can't be nullptr.");
-		CRASH_COND_MSG(p_info->get_properties()->size() != 0, "The ZeroVariantComponent can't be initiazlized with `DanamicComponentInfo` that has data for more paramenters.");
+		CRASH_COND_MSG(p_info->get_static_properties()->size() != 0, "The ZeroVariantComponent can't be initiazlized with `DanamicComponentInfo` that has data for more paramenters.");
 #endif
 		info = p_info;
 	}
@@ -141,7 +141,7 @@ template <int SIZE>
 void VariantComponent<SIZE>::__initialize(DynamicComponentInfo *p_info) {
 #ifdef DEBUG_ENABLED
 	CRASH_COND_MSG(p_info == nullptr, "The component info can't be nullptr.");
-	CRASH_COND_MSG(p_info->get_properties()->size() != SIZE, "The VariantComponent(size: " + itos(SIZE) + ") got created with a ScriptComponentInfo that has " + itos(p_info->get_properties()->size()) + " parameters, this is not supposed to happen.");
+	CRASH_COND_MSG(p_info->get_static_properties()->size() != SIZE, "The VariantComponent(size: " + itos(SIZE) + ") got created with a ScriptComponentInfo that has " + itos(p_info->get_static_properties()->size()) + " parameters, this is not supposed to happen.");
 #endif
 
 	info = p_info;

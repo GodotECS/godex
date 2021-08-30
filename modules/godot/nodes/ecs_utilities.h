@@ -134,9 +134,12 @@ public:
 
 	virtual void init(const StringName &p_name) = 0;
 	virtual Dictionary get_properties_data() const = 0;
+
+	virtual void _get_property_list(List<PropertyInfo> *r_list) const = 0;
 };
 
 class StaticComponentDepot : public ComponentDepot {
+	friend class SharedComponentResource;
 	void *component = nullptr;
 	godex::component_id component_id = godex::COMPONENT_NONE;
 
@@ -151,6 +154,7 @@ public:
 	virtual bool _getv(const StringName &p_name, Variant &r_ret) const override;
 
 	virtual Dictionary get_properties_data() const override;
+	virtual void _get_property_list(List<PropertyInfo> *r_list) const;
 };
 
 class ScriptComponentDepot : public ComponentDepot {
@@ -163,6 +167,7 @@ public:
 	virtual bool _getv(const StringName &p_name, Variant &r_ret) const override;
 
 	virtual Dictionary get_properties_data() const override;
+	virtual void _get_property_list(List<PropertyInfo> *r_list) const;
 };
 
 class SharedComponentDepot : public ComponentDepot {
@@ -175,4 +180,5 @@ public:
 	virtual bool _getv(const StringName &p_name, Variant &r_ret) const override;
 
 	virtual Dictionary get_properties_data() const override;
+	virtual void _get_property_list(List<PropertyInfo> *r_list) const;
 };

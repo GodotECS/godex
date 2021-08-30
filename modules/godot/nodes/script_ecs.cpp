@@ -171,7 +171,7 @@ void ScriptEcs::define_editor_default_component_properties() {
 	const StringName entity_2d_name = Entity2D::get_class_static();
 
 	for (godex::component_id id = 0; id < ECS::get_components_count(); id += 1) {
-		const LocalVector<PropertyInfo> *props = ECS::get_component_properties(id);
+		const LocalVector<PropertyInfo> *props = ECS::component_get_static_properties(id);
 		for (uint32_t p = 0; p < props->size(); p += 1) {
 			Variant def = ECS::get_component_property_default(id, (*props)[p].name);
 			ClassDB::set_property_default_value(entity_3d_name, StringName(String(ECS::get_component_name(id)) + "/" + (*props)[p].name), def);

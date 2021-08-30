@@ -398,14 +398,24 @@ Dictionary StaticComponentDepot::get_properties_data() const {
 
 	ERR_FAIL_COND_V_MSG(component == nullptr, d, "This depot is not initialized.");
 
-	const LocalVector<PropertyInfo> *props = ECS::get_component_properties(component_id);
-	for (uint32_t i = 0; i < props->size(); i += 1) {
+	List<PropertyInfo> props;
+	ECS::unsafe_component_get_property_list(component_id, component, &props);
+	for (PropertyInfo &prop : props) {
 		Variant v;
-		ECS::unsafe_component_get_by_index(component_id, component, i, v);
-		d[StringName((*props)[i].name)] = v;
+		const StringName prop_name = prop.name;
+		ECS::unsafe_component_get_by_name(component_id, component, prop_name, v);
+		d[prop_name] = v;
 	}
 
 	return d;
+}
+
+void StaticComponentDepot::_get_property_list(List<PropertyInfo> *r_list) const {
+	ERR_FAIL_COND_MSG(component_id == godex::COMPONENT_NONE, "The component is not initialized.");
+	ECS::unsafe_component_get_property_list(
+			component_id,
+			component,
+			r_list);
 }
 
 void ScriptComponentDepot::init(const StringName &p_name) {
@@ -437,6 +447,15 @@ bool ScriptComponentDepot::_getv(const StringName &p_name, Variant &r_ret) const
 
 Dictionary ScriptComponentDepot::get_properties_data() const {
 	return data;
+}
+
+void ScriptComponentDepot::_get_property_list(List<PropertyInfo> *r_list) const {
+	ERR_FAIL_COND_MSG(component_name == StringName(), "The component is not initialized.");
+	ECS::unsafe_component_get_property_list(
+			ECS::get_component_id(component_name),
+			// ScriptedComponents doesn't support dynamic set/get yet.
+			nullptr,
+			r_list);
 }
 
 void SharedComponentDepot::init(const StringName &p_name) {
@@ -499,4 +518,8 @@ Dictionary SharedComponentDepot::get_properties_data() const {
 	Dictionary d;
 	d[SNAME("resource")] = data;
 	return d;
+}
+
+void SharedComponentDepot::_get_property_list(List<PropertyInfo> *r_list) const {
+	r_list->push_back(PropertyInfo(Variant::OBJECT, "resource", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE));
 }
