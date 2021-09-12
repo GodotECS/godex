@@ -57,14 +57,14 @@ btVector3 unstuck(
 				continue;
 			}
 
-			const real_t dot = result.results[i].normal.dot(p_up_dir);
+			const real_t dot = result.results[i].hit_normal.dot(p_up_dir);
 			if (dot >= HALF_DEG_TOLERANCE * 4.0) {
 				// Any bottom collision produces a depenetration toward up.
 				// This allows to no slide downhil.
 				norm += p_up_dir;
 			} else {
 				// All others, produces depenetration toward the normal.
-				norm += result.results[i].normal;
+				norm += result.results[i].hit_normal;
 			}
 		}
 
@@ -80,7 +80,7 @@ btVector3 unstuck(
 				continue;
 			}
 
-			const real_t equality = norm.dot(result.results[i].normal);
+			const real_t equality = norm.dot(result.results[i].hit_normal);
 			const real_t new_depth = ((-result.results[i].distance) * equality) * UNSTUCK_FACTOR;
 			if (new_depth > depth) {
 				depth = new_depth;
@@ -217,7 +217,7 @@ StrafingResult move(
 						// Adjust the strafing_motion and try again:
 						// Spread the strafing along the perpendicular of the normal.
 						const btVector3 nxt_strafing_motion = (strafing_done / strafing_done_length) * remaining_strafing;
-						const btVector3 perp = vec_project_perpendicular(nxt_strafing_motion, result.m_hitNormalWorld);
+						const btVector3 perp = vec_project_perpendicular(nxt_strafing_motion, result.hit_normal);
 						const real_t perp_mag = perp.length();
 
 						r_position = hit;
@@ -357,9 +357,8 @@ void bt_pawn_walk(
 		Query<
 				BtRigidBody,
 				BtStreamedShape,
-				BtPawn,
-				const TransformComponent> &p_query) {
-	for (auto [body, shape, pawn, transform] : p_query.space(GLOBAL)) {
+				BtPawn> &p_query) {
+	for (auto [body, shape, pawn] : p_query.space(GLOBAL)) {
 		if (pawn->disabled) {
 			continue;
 		}
@@ -378,17 +377,14 @@ void bt_pawn_walk(
 
 		// Compute the forces
 		pawn->velocity += pawn->external_forces * frame_time->physics_delta /* x inverse_mass */;
-		pawn->external_forces = Vector3();
+		pawn->external_forces.setZero();
 
 		// Calculate the motion on this frame.
-		btVector3 velocity;
-		G_TO_B(pawn->velocity, velocity);
-		btVector3 motion = velocity * frame_time->physics_delta;
+		btVector3 motion = pawn->velocity * frame_time->physics_delta;
 
 		btVector3 offset;
 		G_TO_B(pawn_shape.offset, offset);
-		btVector3 position;
-		G_TO_B(transform->origin, position);
+		btVector3 position = body->get_transform().getOrigin();
 
 		position += offset;
 
@@ -406,11 +402,10 @@ void bt_pawn_walk(
 		// Adjust the speed depending on the motion done,
 		btVector3 motion_velocity = strafing_res.motion / frame_time->physics_delta;
 		// This algorithm make sure to never speed up a particular axis.
-		motion_velocity[0] = velocity[0] > 0.0 ? MIN(velocity[0], motion_velocity[0]) : MAX(velocity[0], motion_velocity[0]);
-		motion_velocity[1] = velocity[1] > 0.0 ? MIN(velocity[1], motion_velocity[1]) : MAX(velocity[1], motion_velocity[1]);
-		motion_velocity[2] = velocity[2] > 0.0 ? MIN(velocity[2], motion_velocity[2]) : MAX(velocity[2], motion_velocity[2]);
-		velocity = velocity.lerp(motion_velocity, pawn->on_impact_speed_change_factor); // TODO make this frame independent.
-		B_TO_G(velocity, pawn->velocity);
+		motion_velocity[0] = pawn->velocity[0] > 0.0 ? MIN(pawn->velocity[0], motion_velocity[0]) : MAX(pawn->velocity[0], motion_velocity[0]);
+		motion_velocity[1] = pawn->velocity[1] > 0.0 ? MIN(pawn->velocity[1], motion_velocity[1]) : MAX(pawn->velocity[1], motion_velocity[1]);
+		motion_velocity[2] = pawn->velocity[2] > 0.0 ? MIN(pawn->velocity[2], motion_velocity[2]) : MAX(pawn->velocity[2], motion_velocity[2]);
+		pawn->velocity = pawn->velocity.lerp(motion_velocity, pawn->on_impact_speed_change_factor); // TODO make this frame independent.
 
 		position -= offset;
 

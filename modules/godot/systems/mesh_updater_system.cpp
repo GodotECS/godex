@@ -21,6 +21,51 @@ void scenario_manager_system(
 	}
 }
 
+// TODO use `const &`
+/// Interpolates two positions using the hermite interpolation.
+/// Returns the interpolated position.
+Vector3 hermite_interpolate(
+		const real_t t, // Interpolation parameter, goes from 0 to 1.
+		const Vector3 &p_position_1,
+		const Vector3 &p_position_2,
+		const Vector3 &p_velocity_1,
+		const Vector3 &p_velocity_2,
+		const real_t p_interpolation_delta_time) {
+	const real_t t2 = Math::pow(t, real_t(2.0));
+	const real_t t3 = Math::pow(t, real_t(3.0));
+	const real_t a = 1.0 - 3.0 * t2 + 2.0 * t3;
+	const real_t b = t2 * (3.0 - 2.0 * t);
+	const real_t c = p_interpolation_delta_time * t * Math::pow(t - real_t(1.0), real_t(2.0));
+	const real_t d = p_interpolation_delta_time * t2 * (t - 1.0);
+	return (a * p_position_1) + (b * p_position_2) + (c * p_velocity_1) + (d * p_velocity_2);
+}
+
+void interpolates_transform(
+		const FrameTime *p_frame_time,
+		Query<TransformComponent, InterpolatedTransformComponent> &p_query,
+		PipelineCommands *p_pipeline_commands) {
+	// Make sure this system is disabled so it doesn't receive the changed
+	// notifications, otherwise triggered by this system.
+	p_pipeline_commands->set_active_system(SNAME("BtTeleportBodies"), false);
+
+	for (auto [transform, interpolated_transform] : p_query) {
+		transform->origin = hermite_interpolate(
+				p_frame_time->get_physics_interpolation_fraction(),
+				interpolated_transform->previous_transform.origin,
+				interpolated_transform->current_transform.origin,
+				interpolated_transform->previous_linear_velocity,
+				interpolated_transform->current_linear_velocity,
+				p_frame_time->get_physics_delta());
+
+		transform->basis = interpolated_transform->previous_transform.basis.slerp(
+				interpolated_transform->current_transform.basis,
+				p_frame_time->get_physics_interpolation_fraction());
+	}
+
+	// Enable the system again, so it can receive notifications.
+	p_pipeline_commands->set_active_system(SNAME("BtTeleportBodies"), true);
+}
+
 void mesh_updater_system(
 		const RenderingScenarioDatabag *p_scenario,
 		RenderingServerDatabag *rs,

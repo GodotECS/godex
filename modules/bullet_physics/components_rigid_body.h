@@ -9,6 +9,7 @@
 #include <LinearMath/btMotionState.h>
 
 class btCollisionShape;
+class InterpolatedTransformComponent;
 
 /// This is an optional component, that allow to specify a specific physics
 /// `Space` where the `Entity` is put.
@@ -47,6 +48,8 @@ public:
 	/// The given Transform is already interpolated by bullet, is substepping
 	/// is active.
 	virtual void setWorldTransform(const btTransform &worldTrans) override;
+
+	void notify_transform_changed();
 };
 
 /// This Component represent a Bullet Physics RigidBody.
@@ -101,6 +104,12 @@ public:
 
 	const btTransform &get_transform() const;
 	void set_transform(const btTransform &p_transform, bool p_notify_changed);
+
+	/// Teleports the body to the given transform location.
+	/// It's possible to optionally pass the InterpolatedTransformComponent to
+	/// update it right away, and avoid glitches.
+	/// Notice: It's adviced to pass that component.
+	void teleport(const btTransform &p_transform, InterpolatedTransformComponent *p_interpolation_component);
 
 	void script_set_body_mode(uint32_t p_mode);
 	void set_body_mode(RigidMode p_mode);

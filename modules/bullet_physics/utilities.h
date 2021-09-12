@@ -49,9 +49,9 @@ struct BtKinematicConvexQResult : public btCollisionWorld::ConvexResultCallback 
 	const btCollisionObject *m_self_object;
 	const btVector3 motion_direction;
 	const bool skip_if_moving_away;
-	btVector3 m_hitNormalWorld;
+	btVector3 hit_normal;
 	btVector3 m_hitPointWorld;
-	const btCollisionObject *m_hitCollisionObject = nullptr;
+	const btCollisionObject *hit_collision_object = nullptr;
 
 	BtKinematicConvexQResult(const btCollisionObject *p_self_object, const btVector3 &p_motion_direction, bool p_skip_if_moving_away) :
 			m_self_object(p_self_object),
@@ -84,7 +84,7 @@ struct BtKinematicContactQResult : public btCollisionWorld::ContactResultCallbac
 		/// Negative, mean penetration.
 		real_t distance = 100.0;
 		btVector3 position;
-		btVector3 normal;
+		btVector3 hit_normal;
 		const btCollisionObject *object = nullptr;
 	};
 

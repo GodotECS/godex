@@ -77,9 +77,13 @@ void register_bullet_physics_types() {
 							.execute_in(PHASE_CONFIG, "Physics")
 							.set_description("Bullet Physics - Manage the lifetime of the Area."))
 
-			.add(ECS::register_system(bt_config_transform, "BtConfigTransform")
+			.add(ECS::register_system(bt_teleport_bodies, "BtTeleportBodies")
 							.execute_in(PHASE_CONFIG, "Physics")
-							.set_description("Bullet Physics - Teleports the body on transform change, Updates the transforms for the moved bodies, Handles the shape scaling."))
+							.set_description("Bullet Physics - Teleports the body on transform change, Handles the shape scaling."))
+
+			.add(ECS::register_system(bt_update_rigidbody_transforms, "BtUpdateRigidBodyTransform")
+							.execute_in(PHASE_CONFIG, "Physics")
+							.set_description("Bullet Physics - Updates the transforms for the moved bodies."))
 
 			.add(ECS::register_system(bt_config_box_shape, "BtConfigBoxShape")
 							.execute_in(PHASE_CONFIG, "Physics")
@@ -133,7 +137,8 @@ void register_bullet_physics_types() {
 	ECS::register_system_bundle("Bullet Physics All Features")
 			.add("BtConfigBody")
 			.add("BtConfigArea")
-			.add("BtConfigTransform")
+			.add("BtTeleportBodies")
+			.add("BtUpdateRigidBodyTransform")
 			.add("BtConfigBoxShape")
 			.add("BtConfigSphereShape")
 			.add("BtConfigCapsuleShape")

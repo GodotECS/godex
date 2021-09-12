@@ -1,6 +1,7 @@
 
 #include "components_rigid_body.h"
 
+#include "../../modules/godot/components/interpolated_transform_component.h"
 #include "databag_space.h"
 #include "modules/bullet/bullet_types_converter.h"
 #include "modules/bullet/collision_object_bullet.h"
@@ -12,6 +13,10 @@ void GodexBtMotionState::getWorldTransform(btTransform &r_world_trans) const {
 
 void GodexBtMotionState::setWorldTransform(const btTransform &worldTrans) {
 	transf = worldTrans;
+	notify_transform_changed();
+}
+
+void GodexBtMotionState::notify_transform_changed() {
 	ERR_FAIL_COND_MSG(space == nullptr, "Body moved while no space is set, this is a bug!");
 	space->moved_bodies.insert(entity);
 }
@@ -63,10 +68,22 @@ const btTransform &BtRigidBody::get_transform() const {
 
 void BtRigidBody::set_transform(const btTransform &p_transform, bool p_notify_changed) {
 	body.setWorldTransform(p_transform);
+	motion_state.transf = p_transform;
 	if (p_notify_changed) {
-		motion_state.setWorldTransform(p_transform);
+		motion_state.notify_transform_changed();
+	}
+}
+
+void BtRigidBody::teleport(const btTransform &p_transform, InterpolatedTransformComponent *p_interpolation_component) {
+	if (p_interpolation_component) {
+		set_transform(p_transform, false);
+		B_TO_G(p_transform, p_interpolation_component->current_transform);
+		p_interpolation_component->current_transform.scale(body_scale);
+		B_TO_G(get_body()->getLinearVelocity(), p_interpolation_component->current_linear_velocity);
+		p_interpolation_component->previous_transform = p_interpolation_component->current_transform;
+		p_interpolation_component->previous_linear_velocity = p_interpolation_component->current_linear_velocity;
 	} else {
-		motion_state.transf = p_transform;
+		set_transform(p_transform, true);
 	}
 }
 

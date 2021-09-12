@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../databags/frame_time.h"
+#include "../godot/components/interpolated_transform_component.h"
 #include "../godot/components/transform_component.h"
 #include "components_area.h"
 #include "components_generic.h"
@@ -42,15 +43,18 @@ void bt_config_area(
 						Changed<const BtSpaceMarker>>> &
 				p_query);
 
-void bt_config_transform(
+void bt_teleport_bodies(
 		BtPhysicsSpaces *p_spaces,
 		Storage<BtBox> *p_shape_storage_box,
 		Storage<BtSphere> *p_shape_storage_sphere,
 		Query<
 				EntityID,
 				Changed<const TransformComponent>,
-				Any<BtRigidBody, BtArea>> &p_changed_transforms_query,
-		Query<const BtRigidBody, TransformComponent> &p_query);
+				Any<BtRigidBody, BtArea>> &p_changed_transforms_query);
+
+void bt_update_rigidbody_transforms(
+		BtPhysicsSpaces *p_spaces,
+		Query<const BtRigidBody, Create<InterpolatedTransformComponent>> &p_query);
 
 void bt_config_box_shape(
 		BtShapeStorageBox *p_shape_storage,

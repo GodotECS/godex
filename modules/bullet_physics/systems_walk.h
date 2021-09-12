@@ -11,4 +11,4 @@
 void bt_pawn_walk(
 		const FrameTime *frame_time,
 		BtPhysicsSpaces *p_spaces, // TODO can this be const?
-		Query<BtRigidBody, BtStreamedShape, BtPawn, const TransformComponent> &p_query);
+		Query<BtRigidBody, BtStreamedShape, BtPawn> &p_query);
