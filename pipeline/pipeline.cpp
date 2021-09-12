@@ -3,9 +3,9 @@
 #include "../ecs.h"
 #include "../storage/hierarchical_storage.h"
 #include "../world/world.h"
+#include "pipeline_commands.h"
 
-Pipeline::Pipeline() {
-}
+Pipeline::Pipeline() {}
 
 bool Pipeline::is_ready() const {
 	return ready;
@@ -60,6 +60,7 @@ Token Pipeline::prepare_world(World *p_world) {
 	}
 
 	// Phase 2: Prepare the World.
+	p_world->create_databag<PipelineCommands>();
 	token.index = 0;
 	token.generation = 0;
 
@@ -315,8 +316,16 @@ void Pipeline::dispatch(Token p_token) {
 	ERR_FAIL_COND_MSG(worlds[p_token.index].active == false, "The world pointed by the token index: `" + itos(p_token.index) + "` is not active. You need to activate the world so process it.");
 
 	World *world = worlds[p_token.index].world;
+	ERR_FAIL_COND_MSG(world->is_dispatching_in_progress, "Dispatching is already in progress for this world. Only one pipeline is allowed to be dispatched on a world.");
 
+	// Prepare the world for dispatching.
 	world->is_dispatching_in_progress = true;
+	PipelineCommands *pipeline_commands = world->get_databag<PipelineCommands>();
+#ifdef DEBUG_ENABLED
+	CRASH_COND_MSG(pipeline_commands == nullptr, "The PipelineCommands is never expected to be nullptr, since this class make sure to add it on this world.");
+#endif
+	pipeline_commands->world_data = worlds.ptr() + p_token.index;
+	pipeline_commands->pipeline = this;
 
 	Hierarchy *hierarchy = static_cast<Hierarchy *>(world->get_storage<Child>());
 	if (hierarchy) {
@@ -348,6 +357,9 @@ void Pipeline::dispatch(Token p_token) {
 		}
 	}
 
+	// Release the world dispatching.
+	pipeline_commands->world_data = nullptr;
+	pipeline_commands->pipeline = nullptr;
 	world->is_dispatching_in_progress = false;
 }
 
