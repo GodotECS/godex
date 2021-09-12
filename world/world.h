@@ -262,7 +262,6 @@ public:
 
 	void release_pipelines();
 
-private:
 	/// Creates a new component storage into the world, if the storage
 	/// already exists, does nothing.
 	template <class C>

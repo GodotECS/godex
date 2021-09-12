@@ -65,7 +65,7 @@ TEST_CASE("[Modules][ECS] Test fetch element type using fetch_element_type.") {
 		int xx = 30;
 		int jj = 10;
 		float gg = 20;
-		bool bb = 30;
+		bool bb = true;
 		fetch_element_type<0, 0, int, Any<int, float>, bool> ptr_xx = &xx;
 		fetch_element_type<1, 0, int, Any<int, float>, bool> ptr_jj = &jj;
 		fetch_element_type<2, 0, int, Any<int, float>, bool> ptr_gg = &gg;
@@ -81,17 +81,20 @@ TEST_CASE("[Modules][ECS] Test fetch element type using fetch_element_type.") {
 		int xx = 30;
 		int jj = 10;
 		float gg = 20;
-		bool bb = 30;
+		bool bb = true;
+		float ff = 66;
 		EntityID ee;
-		fetch_element_type<0, 0, Not<int>, Any<int, Changed<float>>, Maybe<bool>, EntityID> ptr_xx = &xx;
-		fetch_element_type<1, 0, Not<int>, Any<int, Changed<float>>, Maybe<bool>, EntityID> ptr_jj = &jj;
-		fetch_element_type<2, 0, Not<int>, Any<int, Changed<float>>, Maybe<bool>, EntityID> ptr_gg = &gg;
-		fetch_element_type<3, 0, Not<int>, Any<int, Changed<float>>, Maybe<bool>, EntityID> ptr_bb = &bb;
-		fetch_element_type<4, 0, Not<int>, Any<int, Changed<float>>, Maybe<bool>, EntityID> entity = ee;
+		fetch_element_type<0, 0, Not<int>, Any<int, Changed<float>>, Maybe<bool>, Create<float>, EntityID> ptr_xx = &xx;
+		fetch_element_type<1, 0, Not<int>, Any<int, Changed<float>>, Maybe<bool>, Create<float>, EntityID> ptr_jj = &jj;
+		fetch_element_type<2, 0, Not<int>, Any<int, Changed<float>>, Maybe<bool>, Create<float>, EntityID> ptr_gg = &gg;
+		fetch_element_type<3, 0, Not<int>, Any<int, Changed<float>>, Maybe<bool>, Create<float>, EntityID> ptr_bb = &bb;
+		fetch_element_type<4, 0, Not<int>, Any<int, Changed<float>>, Maybe<bool>, Create<float>, EntityID> ptr_ff = &ff;
+		fetch_element_type<5, 0, Not<int>, Any<int, Changed<float>>, Maybe<bool>, Create<float>, EntityID> entity = ee;
 		CHECK(ptr_xx == &xx);
 		CHECK(ptr_jj == &jj);
 		CHECK(ptr_gg == &gg);
 		CHECK(ptr_bb == &bb);
+		CHECK(ptr_ff == &ff);
 		CHECK(entity == ee);
 	}
 
@@ -278,27 +281,33 @@ TEST_CASE("[Modules][ECS] Test QueryResultTuple: packing and unpaking following 
 
 	// Test other filters
 	{
-		QueryResultTuple<Not<TagA>, Maybe<TagB>, Changed<TagC>> tuple;
+		TagC c0;
 
-		set<0>(tuple, &a);
-		set<1>(tuple, &b);
-		set<2>(tuple, &c);
+		QueryResultTuple<Create<TagC>, Not<TagA>, Maybe<TagB>, Changed<TagC>> tuple;
 
-		static_assert(tuple.SIZE == 3);
+		set<0>(tuple, &c0);
+		set<1>(tuple, &a);
+		set<2>(tuple, &b);
+		set<3>(tuple, &c);
+
+		static_assert(tuple.SIZE == 4);
 
 		{
-			TagA *ptr_a = get<0>(tuple);
-			TagB *ptr_b = get<1>(tuple);
-			TagC *ptr_c = get<2>(tuple);
+			TagC *ptr_c0 = get<0>(tuple);
+			TagA *ptr_a = get<1>(tuple);
+			TagB *ptr_b = get<2>(tuple);
+			TagC *ptr_c = get<3>(tuple);
 
+			CHECK(ptr_c0 == &c0);
 			CHECK(ptr_a == &a);
 			CHECK(ptr_b == &b);
 			CHECK(ptr_c == &c);
 		}
 
 		{
-			auto [ptr_a, ptr_b, ptr_c] = tuple;
+			auto [ptr_c0, ptr_a, ptr_b, ptr_c] = tuple;
 
+			CHECK(ptr_c0 == &c0);
 			CHECK(ptr_a == &a);
 			CHECK(ptr_b == &b);
 			CHECK(ptr_c == &c);
@@ -431,36 +440,52 @@ TEST_CASE("[Modules][ECS] Test QueryResultTuple: packing and unpaking following 
 
 	// Test deep all filters.
 	{
-		QueryResultTuple<EntityID, Any<Maybe<Changed<TagC>>, Batch<Maybe<Changed<TagB>>>>, Join<Any<Not<TagA>, Changed<TagB>>>> tuple;
+		TagC another_tag_c;
 
-		static_assert(tuple.SIZE == 4);
+		QueryResultTuple<
+				EntityID,
+				Any<
+						Maybe<Changed<TagC>>,
+						Batch<Maybe<Changed<TagB>>>,
+						Create<TagC>>,
+				Join<
+						Any<
+								Not<TagA>,
+								Changed<TagB>>>>
+				tuple;
+
+		static_assert(tuple.SIZE == 5);
 
 		set<0>(tuple, EntityID(10));
 		set<1>(tuple, &c);
 		set<2>(tuple, Batch(&b, 1));
-		set<3>(tuple, JoinData(&b, TagB::get_component_id(), false));
+		set<3>(tuple, &another_tag_c);
+		set<4>(tuple, JoinData(&b, TagB::get_component_id(), false));
 
 		{
 			EntityID entity = get<0>(tuple);
 			TagC *ptr_c = get<1>(tuple);
 			Batch<TagB *> batch_b = get<2>(tuple);
-			JoinData join = get<3>(tuple);
+			TagC *ptr_another_c = get<3>(tuple);
+			JoinData join = get<4>(tuple);
 
 			CHECK(entity == EntityID(10));
 			CHECK(ptr_c == &c);
 			CHECK(batch_b.is_empty() == false);
 			CHECK(batch_b[0] == &b);
+			CHECK(ptr_another_c == &another_tag_c);
 			CHECK(join.is<TagB>());
 			CHECK(join.as<TagB>() == &b);
 		}
 
 		{
-			auto [entity, ptr_c, batch_b, join] = tuple;
+			auto [entity, ptr_c, batch_b, ptr_another_c, join] = tuple;
 
 			CHECK(entity == EntityID(10));
 			CHECK(ptr_c == &c);
 			CHECK(batch_b.is_empty() == false);
 			CHECK(batch_b[0] == &b);
+			CHECK(ptr_another_c == &another_tag_c);
 			CHECK(join.is<TagB>());
 			CHECK(join.as<TagB>() == &b);
 		}
@@ -568,6 +593,32 @@ TEST_CASE("[Modules][ECS] Test static query") {
 		auto [transform, tag] = query[entity_2];
 		CHECK(ABS(transform->origin.z - 23.0) <= CMP_EPSILON);
 		CHECK(tag == nullptr);
+	}
+
+	// Test `Maybe` filter.
+	{
+		Query<const TransformComponent, Create<TagA>> query(&world);
+		query.initiate_process(&world);
+
+		{
+			Storage<TagA> *storage = world.get_storage<TagA>();
+			CHECK((storage == nullptr || !storage->has(0)));
+			CHECK((storage == nullptr || !storage->has(1)));
+			CHECK((storage == nullptr || !storage->has(2)));
+		}
+
+		for (auto [transform, tag_a] : query) {
+			// The `Create` filter, always creates the TagA.
+			CHECK(tag_a != nullptr);
+		}
+
+		{
+			Storage<TagA> *storage = world.get_storage<TagA>();
+			CHECK(storage != nullptr);
+			CHECK(storage->has(0));
+			CHECK(storage->has(1));
+			CHECK(storage->has(2));
+		}
 	}
 
 	// Test `Maybe` filter.

@@ -10,6 +10,9 @@ template <class C>
 struct Not {};
 
 template <class C>
+struct Create {};
+
+template <class C>
 struct Maybe {};
 
 template <class C>
@@ -165,7 +168,7 @@ public:
 	}
 };
 
-// ---------------------------------------------------------- Fetch Elements Type
+// --------------------------------------------------------- Fetch Elements Type
 
 /// This is an utility that is used by the `QueryResultTuple` to fetch the
 /// variable type for a specific element of the query.
@@ -218,6 +221,13 @@ struct fetch_element<S, S, Not<C>, Cs...> : fetch_element<S, S + 1, Cs...> {
 	using type = fetch_element_type<0, 0, C>;
 };
 
+/// We found the `Create` filter, fetch the type now.
+template <std::size_t S, class C, class... Cs>
+struct fetch_element<S, S, Create<C>, Cs...> : fetch_element<S, S + 1, Cs...> {
+	// Just C *;
+	using type = C *;
+};
+
 /// We found the `Maybe` filter, fetch the type now.
 template <std::size_t S, class C, class... Cs>
 struct fetch_element<S, S, Maybe<C>, Cs...> : fetch_element<S, S + 1, Cs...> {
@@ -259,7 +269,7 @@ struct fetch_element<S, I, Any<C...>, Cs...> : fetch_element<S, I, C..., Cs...> 
 template <std::size_t S, std::size_t I, class C, class... Cs>
 struct fetch_element<S, I, C, Cs...> : fetch_element<S, I + 1, Cs...> {};
 
-// ----------------------------------------------------------- Query Result Tuple
+// ---------------------------------------------------------- Query Result Tuple
 
 /// This class is the base query result tuple.
 ///
@@ -378,28 +388,34 @@ constexpr void set_impl(T p_val, QueryResultTuple_Impl<S, Join<C...>, Cs...> &tu
  * level. So I've separated these.
  */
 
-/// Skip the filter `Changed`.
+/// Remove the filter `Changed` and set the value.
 template <std::size_t S, class T, class C, class... Cs>
 constexpr void set_impl(T p_val, QueryResultTuple_Impl<S, Changed<C>, Cs...> &tuple) noexcept {
 	// Forward to subfilters.
 	set_impl<S>(p_val, static_cast<QueryResultTuple_Impl<S, C, Cs...> &>(tuple));
 }
 
-/// Skip the filter `Not`.
+/// Ignore the filter `Not` and set the value.
 template <std::size_t S, class T, class C, class... Cs>
 constexpr void set_impl(T p_val, QueryResultTuple_Impl<S, Not<C>, Cs...> &tuple) noexcept {
 	// Forward to subfilters.
 	set_impl<S>(p_val, static_cast<QueryResultTuple_Impl<S, C, Cs...> &>(tuple));
 }
 
-/// Skip the filter `Maybe`.
+/// Ignore the filter `Create` and set the value.
+template <std::size_t S, class T, class C, class... Cs>
+constexpr void set_impl(T p_val, QueryResultTuple_Impl<S, Create<C>, Cs...> &tuple) noexcept {
+	set_impl<S>(p_val, static_cast<QueryResultTuple_Impl<S, C, Cs...> &>(tuple));
+}
+
+/// Ignore the filter `Maybe` and set the value.
 template <std::size_t S, class T, class C, class... Cs>
 constexpr void set_impl(T p_val, QueryResultTuple_Impl<S, Maybe<C>, Cs...> &tuple) noexcept {
 	// Forward to subfilters.
 	set_impl<S>(p_val, static_cast<QueryResultTuple_Impl<S, C, Cs...> &>(tuple));
 }
 
-/// Skip the filter `Any`.
+/// Ignore the filter `Any` and set the value.
 template <std::size_t S, class T, class... C, class... Cs>
 constexpr void set_impl(T p_val, QueryResultTuple_Impl<S, Any<C...>, Cs...> &tuple) noexcept {
 	// Forward to subfilters.
@@ -429,6 +445,12 @@ constexpr auto get_impl(const QueryResultTuple_Impl<S, Batch<C>, Cs...> &tuple) 
 /// Fetches the joined data from the tuple.
 template <std::size_t S, class... C, class... Cs>
 constexpr auto get_impl(const QueryResultTuple_Impl<S, Join<C...>, Cs...> &tuple) noexcept {
+	return tuple.value;
+}
+
+/// Fetches the Created data from the tuple.
+template <std::size_t S, class C, class... Cs>
+constexpr auto get_impl(const QueryResultTuple_Impl<S, Create<C>, Cs...> &tuple) noexcept {
 	return tuple.value;
 }
 
@@ -544,6 +566,72 @@ struct QueryStorage<I, EntityID, Cs...> : public QueryStorage<I + 1, Cs...> {
 	}
 
 	static void get_components(SystemExeInfo &r_info, const bool p_force_immutable = false) {
+		QueryStorage<I + 1, Cs...>::get_components(r_info);
+	}
+};
+
+// ---------------------------------------------------------------------- Create
+
+/// `QueryStorage` `Create` filter specialization.
+template <std::size_t I, class C, class... Cs>
+struct QueryStorage<I, Create<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
+	Storage<C> *storage = nullptr;
+
+	QueryStorage(World *p_world) :
+			QueryStorage<I + 1, Cs...>(p_world) {
+		// Make sure this storage exist.
+		p_world->create_storage<C>();
+	}
+
+	void initiate_process(World *p_world) {
+		QueryStorage<I + 1, Cs...>::initiate_process(p_world);
+		storage = p_world->get_storage<C>();
+	}
+
+	void conclude_process(World *p_world) {
+		QueryStorage<I + 1, Cs...>::conclude_process(p_world);
+		storage = nullptr;
+	}
+
+	void set_world_notification_active(bool p_active) {
+		QueryStorage<I + 1, Cs...>::set_world_notification_active(p_active);
+	}
+
+	EntitiesBuffer get_entities() const {
+		// This is a NON determinant filter, so just return the other filter.
+		return QueryStorage<I + 1, Cs...>::get_entities();
+	}
+
+	bool filter_satisfied(EntityID p_entity) const {
+		// The `Create` filter never stops the execution.
+		return QueryStorage<I + 1, Cs...>::filter_satisfied(p_entity);
+	}
+
+	bool can_fetch(EntityID p_entity) const {
+		// The `Create` filter allows always to fetch.
+		return true;
+	}
+
+	template <class... Qs>
+	void fetch(EntityID p_id, Space p_mode, QueryResultTuple<Qs...> &r_result) const {
+		if (!storage->has(p_id)) {
+			storage->insert(p_id, C());
+		}
+		set<I>(r_result, storage->get(p_id, p_mode));
+
+		// Keep going.
+		QueryStorage<I + 1, Cs...>::fetch(p_id, p_mode, r_result);
+	}
+
+	auto get_inner_storage() const {
+		return storage;
+	}
+
+	static void get_components(SystemExeInfo &r_info, const bool p_force_immutable = false) {
+		// Always add as mutable, since the `Crate` filter always require mutability.
+		r_info.mutable_components.insert(C::get_component_id());
+		// This filter, also use the storage, signal it too.
+		r_info.mutable_components_storage.insert(C::get_component_id());
 		QueryStorage<I + 1, Cs...>::get_components(r_info);
 	}
 };
