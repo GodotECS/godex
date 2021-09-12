@@ -7,6 +7,7 @@
 #include "modules/godot/nodes/ecs_utilities.h"
 #include "modules/godot/nodes/ecs_world.h"
 #include "pipeline/pipeline.h"
+#include "pipeline/pipeline_commands.h"
 #include "scene/main/scene_tree.h"
 #include "scene/main/window.h"
 #include "systems/dynamic_system.h"
@@ -659,10 +660,15 @@ uint32_t ECS::get_systems_count() {
 }
 
 bool has_single_thread_only_databags(const SystemExeInfo &p_info) {
-	return p_info.immutable_databags.has(World::get_databag_id()) ||
-		   p_info.mutable_databags.has(World::get_databag_id()) ||
-		   p_info.immutable_databags.has(SceneTreeDatabag::get_databag_id()) ||
-		   p_info.mutable_databags.has(SceneTreeDatabag::get_databag_id());
+	return
+			// `PipelneCommands` is unsafe to execute only if mutable.
+			p_info.mutable_databags.has(PipelineCommands::get_databag_id()) ||
+			// `World` is always unsafe to execute in MT.
+			p_info.immutable_databags.has(World::get_databag_id()) ||
+			p_info.mutable_databags.has(World::get_databag_id()) ||
+			// `SceneTreeDatabag` is always unsafe to execute in MT.
+			p_info.immutable_databags.has(SceneTreeDatabag::get_databag_id()) ||
+			p_info.mutable_databags.has(SceneTreeDatabag::get_databag_id());
 }
 
 /// Returns true if these two `Set`s have at least 1 ID in common.

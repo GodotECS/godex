@@ -37,6 +37,7 @@ struct DispatcherData {
 
 struct WorldData {
 	friend class Pipeline;
+	friend class PipelineCommands;
 
 private:
 	uint8_t generation = 1;
@@ -55,6 +56,7 @@ private:
 class Pipeline {
 	friend class PipelineBuilder;
 	friend class ECS;
+	friend class PipelineCommands;
 
 private:
 	bool ready = false;
