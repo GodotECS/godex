@@ -32,6 +32,8 @@ void BtRigidBody::_bind_methods() {
 	ECS_BIND_PROPERTY_FUNC(BtRigidBody, PropertyInfo(Variant::INT, "mask", PROPERTY_HINT_LAYERS_3D_PHYSICS), set_mask, get_mask);
 	ECS_BIND_PROPERTY_FUNC(BtRigidBody, PropertyInfo(Variant::VECTOR3, "linear_factor"), set_linear_factor, get_linear_factor);
 	ECS_BIND_PROPERTY_FUNC(BtRigidBody, PropertyInfo(Variant::VECTOR3, "angular_factor"), set_angular_factor, get_angular_factor);
+	ECS_BIND_PROPERTY_FUNC(BtRigidBody, PropertyInfo(Variant::FLOAT, "friction", PROPERTY_HINT_RANGE, "0,1,0.01"), set_friction, get_friction);
+	ECS_BIND_PROPERTY_FUNC(BtRigidBody, PropertyInfo(Variant::FLOAT, "bounciness", PROPERTY_HINT_RANGE, "0,1,0.01"), set_bounciness, get_bounciness);
 }
 
 void BtRigidBody::_get_storage_config(Dictionary &r_config) {
@@ -216,6 +218,22 @@ Vector3 BtRigidBody::get_angular_factor() const {
 	Vector3 f;
 	B_TO_G(body.getAngularFactor(), f);
 	return f;
+}
+
+void BtRigidBody::set_friction(real_t p_friction) {
+	body.setFriction(p_friction);
+}
+
+real_t BtRigidBody::get_friction() const {
+	return body.getFriction();
+}
+
+void BtRigidBody::set_bounciness(real_t p_bounciness) {
+	body.setRestitution(p_bounciness);
+}
+
+real_t BtRigidBody::get_bounciness() const {
+	return body.getRestitution();
 }
 
 bool BtRigidBody::need_body_reload() const {
