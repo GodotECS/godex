@@ -69,8 +69,8 @@ struct BtPawn {
 	Stance current_stance = STANCE_0;
 
 	/// Current pawn linear velocity and direction.
-	Vector3 velocity;
-	Vector3 external_forces;
+	btVector3 velocity = btVector3(0., 0., 0.);
+	btVector3 external_forces = btVector3(0., 0., 0.);
 
 	/// The step height the Pawn will be able to step up.
 	real_t step_height = 0.2;
@@ -88,6 +88,9 @@ struct BtPawn {
 
 public:
 	BtPawn();
+
+	void set_velocity(const Vector3 &p_velocity);
+	Vector3 get_velocity() const;
 
 	void stance0_set_pawn_height(real_t p_pawn_height);
 	real_t stance0_get_pawn_height() const;

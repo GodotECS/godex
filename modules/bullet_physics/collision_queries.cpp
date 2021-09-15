@@ -31,9 +31,9 @@ KinematicConvexQResult test_motion(
 
 	KinematicConvexQResult res;
 	res.closest_hit_fraction = bt_res.m_closestHitFraction;
-	B_TO_G(bt_res.m_hitNormalWorld, res.hit_normal);
+	B_TO_G(bt_res.hit_normal, res.hit_normal);
 	B_TO_G(bt_res.m_hitPointWorld, res.hit_point);
-	res.hit_collision_object = bt_res.m_hitCollisionObject;
+	res.hit_collision_object = bt_res.hit_collision_object;
 	return res;
 }
 
@@ -92,9 +92,9 @@ KinematicConvexQResult test_motion_target(
 
 	KinematicConvexQResult res;
 	res.closest_hit_fraction = bt_res.m_closestHitFraction;
-	B_TO_G(bt_res.m_hitNormalWorld, res.hit_normal);
+	B_TO_G(bt_res.hit_normal, res.hit_normal);
 	B_TO_G(bt_res.m_hitPointWorld, res.hit_point);
-	res.hit_collision_object = bt_res.m_hitCollisionObject;
+	res.hit_collision_object = bt_res.hit_collision_object;
 	return res;
 }
 
@@ -142,7 +142,7 @@ KinematicContactQResult test_contact(
 	KinematicContactQResult res;
 	for (uint32_t i = 0; i < KINEMATIC_CONTACT_MAX_RESULTS; i += 1) {
 		res.results[i].distance = bt_res.results[i].distance;
-		B_TO_G(bt_res.results[i].normal, res.results[i].hit_normal);
+		B_TO_G(bt_res.results[i].hit_normal, res.results[i].hit_normal);
 		B_TO_G(bt_res.results[i].position, res.results[i].hit_point);
 		res.results[i].hit_collision_object = bt_res.results[i].object;
 	}

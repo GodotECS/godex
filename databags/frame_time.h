@@ -35,4 +35,6 @@ public:
 
 	void set_physics_delta(real_t p_delta);
 	real_t get_physics_delta() const;
+
+	real_t get_physics_interpolation_fraction() const;
 };

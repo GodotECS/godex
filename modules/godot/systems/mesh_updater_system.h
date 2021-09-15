@@ -1,6 +1,9 @@
 #pragma once
 
+#include "../../../databags/frame_time.h"
 #include "../../../iterators/query.h"
+#include "../../../pipeline/pipeline_commands.h"
+#include "../../godot/components/interpolated_transform_component.h"
 #include "../components/mesh_component.h"
 #include "../components/transform_component.h"
 
@@ -21,6 +24,11 @@ void scenario_manager_system(
 		World *p_world,
 		RenderingServerDatabag *rs,
 		Query<const MeshComponent> &p_query);
+
+void interpolates_transform(
+		const FrameTime *p_frame_time,
+		Query<TransformComponent, InterpolatedTransformComponent> &p_query,
+		PipelineCommands *p_pipeline_commands);
 
 /// Handles the mesh lifetime. Initializes the mesh, usually this is called
 /// before `MeshTransformUpdaterSystem`.

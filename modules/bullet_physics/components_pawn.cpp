@@ -1,5 +1,6 @@
-
 #include "components_pawn.h"
+
+#include "modules/bullet/bullet_types_converter.h"
 
 PawnShape::PawnShape() {
 	update_shapes_dimention();
@@ -54,7 +55,7 @@ real_t PawnShape::get_enclosing_radius() const {
 }
 
 void BtPawn::_bind_methods() {
-	ECS_BIND_PROPERTY(BtPawn, PropertyInfo(Variant::VECTOR3, "velocity"), velocity);
+	ECS_BIND_PROPERTY_FUNC(BtPawn, PropertyInfo(Variant::VECTOR3, "velocity"), set_velocity, get_velocity);
 	ECS_BIND_PROPERTY(BtPawn, PropertyInfo(Variant::FLOAT, "step_height"), step_height);
 	ECS_BIND_PROPERTY(BtPawn, PropertyInfo(Variant::BASIS, "ground_direction"), ground_direction);
 	ECS_BIND_PROPERTY(BtPawn, PropertyInfo(Variant::BOOL, "snap_to_ground"), snap_to_ground);
@@ -75,6 +76,16 @@ void BtPawn::_get_storage_config(Dictionary &r_config) {
 }
 
 BtPawn::BtPawn() {
+}
+
+void BtPawn::set_velocity(const Vector3 &p_velocity) {
+	G_TO_B(p_velocity, velocity);
+}
+
+Vector3 BtPawn::get_velocity() const {
+	Vector3 v;
+	B_TO_G(velocity, v);
+	return v;
 }
 
 void BtPawn::stance0_set_pawn_height(real_t p_pawn_height) {

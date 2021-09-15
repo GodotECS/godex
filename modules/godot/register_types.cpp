@@ -1,6 +1,7 @@
 #include "register_types.h"
 
 #include "components/disabled.h"
+#include "components/interpolated_transform_component.h"
 #include "components/mesh_component.h"
 #include "components/physics/shape_3d_component.h"
 #include "components/transform_component.h"
@@ -75,6 +76,7 @@ void register_godot_types() {
 	ECS::register_component<Disabled>();
 	ECS::register_component<MeshComponent>();
 	ECS::register_component<TransformComponent>();
+	ECS::register_component<InterpolatedTransformComponent>();
 	ECS::register_component<Shape3DComponent>();
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Register engine databags
@@ -106,6 +108,10 @@ void register_godot_types() {
 			.add(ECS::register_system(scenario_manager_system, "ScenarioManagerSystem")
 							.execute_in(PHASE_CONFIG)
 							.set_description("Compatibility layer that allow to read the main window scenario and put in the ECS lifecycle; so that `MeshComponent` can properly show the mesh."))
+
+			.add(ECS::register_system(interpolates_transform, "InterpolatesTransform")
+							.execute_in(PHASE_PRE_RENDER)
+							.set_description("Interpolates the transform."))
 
 			.add(ECS::register_system(mesh_updater_system, "MeshUpdaterSystem")
 							.execute_in(PHASE_PRE_RENDER)

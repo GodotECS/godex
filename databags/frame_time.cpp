@@ -39,3 +39,7 @@ void FrameTime::set_physics_delta(real_t p_delta) {
 real_t FrameTime::get_physics_delta() const {
 	return physics_delta;
 }
+
+real_t FrameTime::get_physics_interpolation_fraction() const {
+	return frame_time.interpolation_fraction;
+}

@@ -94,7 +94,7 @@ btScalar BtKinematicConvexQResult::addSingleResult(
 		norm = convexResult.m_hitNormalLocal;
 	} else {
 		// Transform normal into worldspace.
-		norm = m_hitCollisionObject->getWorldTransform().getBasis() * convexResult.m_hitNormalLocal;
+		norm = hit_collision_object->getWorldTransform().getBasis() * convexResult.m_hitNormalLocal;
 	}
 
 	if (skip_if_moving_away &&
@@ -104,8 +104,8 @@ btScalar BtKinematicConvexQResult::addSingleResult(
 	}
 
 	m_closestHitFraction = convexResult.m_hitFraction;
-	m_hitCollisionObject = convexResult.m_hitCollisionObject;
-	m_hitNormalWorld = norm;
+	hit_collision_object = convexResult.m_hitCollisionObject;
+	hit_normal = norm;
 	m_hitPointWorld = convexResult.m_hitPointLocal;
 	return convexResult.m_hitFraction;
 }
@@ -148,7 +148,7 @@ btScalar BtKinematicContactQResult::addSingleResult(
 		// TODO this was for debug.
 		BtKinematicContactQResult::Result debug_res;
 		debug_res.distance = distance;
-		debug_res.normal = norm;
+		debug_res.hit_normal = norm;
 		debug_res.position = position;
 		debug_res.object = m_query_object == colObj0Wrap->getCollisionObject() ? colObj1Wrap->getCollisionObject() : colObj0Wrap->getCollisionObject();
 		debug_results.push_back(debug_res);
@@ -168,7 +168,7 @@ btScalar BtKinematicContactQResult::addSingleResult(
 					// Checks if the new contact is complanar with this other contact.
 					new_contact_plane.distance_to(results[i].position) <= SMOOTH_RESULTS_DISTANCE_TOLERANCE ||
 					// Checks if this other contact is complanar with the new contact.
-					GodexBtPlane(results[i].position, results[i].normal).distance_to(position) <= SMOOTH_RESULTS_DISTANCE_TOLERANCE) {
+					GodexBtPlane(results[i].position, results[i].hit_normal).distance_to(position) <= SMOOTH_RESULTS_DISTANCE_TOLERANCE) {
 				// Check if this new contact is more penetrated.
 				if (distance < results[i].distance) {
 					// Yes it's more penetrated, so discard.
@@ -214,7 +214,7 @@ btScalar BtKinematicContactQResult::addSingleResult(
 	}
 
 	results[least_penetrated].distance = distance;
-	results[least_penetrated].normal = norm;
+	results[least_penetrated].hit_normal = norm;
 	results[least_penetrated].position = position;
 	results[least_penetrated].object = m_query_object == colObj0Wrap->getCollisionObject() ? colObj1Wrap->getCollisionObject() : colObj0Wrap->getCollisionObject();
 

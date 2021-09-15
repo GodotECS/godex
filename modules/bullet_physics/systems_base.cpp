@@ -2,6 +2,7 @@
 
 #include "modules/bullet/bullet_types_converter.h"
 #include "overlap_check.h"
+#include "utilities.h"
 #include <BulletCollision/BroadphaseCollision/btBroadphaseProxy.h>
 #include <BulletCollision/CollisionDispatch/btCollisionObject.h>
 #include <BulletCollision/CollisionDispatch/btGhostObject.h>
@@ -142,15 +143,14 @@ bool equal(const Vector3 &p_vec_1, const Vector3 &p_vec_2) {
 	return true;
 }
 
-void bt_config_transform(
+void bt_teleport_bodies(
 		BtPhysicsSpaces *p_spaces,
 		Storage<BtBox> *p_shape_storage_box,
 		Storage<BtSphere> *p_shape_storage_sphere,
 		Query<
 				EntityID,
 				Changed<const TransformComponent>,
-				Any<BtRigidBody, BtArea>> &p_changed_transforms_query,
-		Query<const BtRigidBody, TransformComponent> &p_query) {
+				Any<BtRigidBody, BtArea>> &p_changed_transforms_query) {
 	// Update the RigidBody transforms.
 	for (auto [entity, transform, body, area] : p_changed_transforms_query) {
 		bool is_scale_changed = false;
@@ -187,7 +187,11 @@ void bt_config_transform(
 			}
 		}
 	}
+}
 
+void bt_update_rigidbody_transforms(
+		BtPhysicsSpaces *p_spaces,
+		Query<const BtRigidBody, Create<InterpolatedTransformComponent>> &p_query) {
 	// Update the Transforms of RigidBodies moved by the PhysicsEngine.
 	for (uint32_t i = 0; i < BtSpaceIndex::BT_SPACE_MAX; i += 1) {
 		const BtSpaceIndex w_i = (BtSpaceIndex)i;
@@ -199,9 +203,14 @@ void bt_config_transform(
 
 		p_spaces->get_space(w_i)->moved_bodies.for_each([&](EntityID p_entity_id) {
 			if (p_query.has(p_entity_id)) {
-				auto [body, transform] = p_query.space(GLOBAL)[p_entity_id];
-				B_TO_G(body->get_motion_state()->transf, *transform);
-				transform->basis.scale(body->body_scale);
+				auto [body, interpolated_transform] = p_query.space(GLOBAL)[p_entity_id];
+
+				interpolated_transform->previous_linear_velocity = interpolated_transform->current_linear_velocity;
+				B_TO_G(body->get_body()->getLinearVelocity(), interpolated_transform->current_linear_velocity);
+
+				interpolated_transform->previous_transform = interpolated_transform->current_transform;
+				B_TO_G(body->get_motion_state()->transf, interpolated_transform->current_transform);
+				interpolated_transform->current_transform.scale(body->body_scale);
 			}
 		});
 
@@ -331,7 +340,9 @@ void bt_apply_forces(
 	for (auto [body, forces, pawn] : p_query_forces) {
 		for (uint32_t i = 0; i < forces.get_size(); i += 1) {
 			if (pawn) {
-				pawn->external_forces += forces[i]->force;
+				btVector3 force;
+				G_TO_B(forces[i]->force, force);
+				pawn->external_forces += force;
 			} else {
 				btVector3 l;
 				btVector3 f;
@@ -354,7 +365,9 @@ void bt_apply_forces(
 		for (uint32_t i = 0; i < impulses.get_size(); i += 1) {
 			if (pawn) {
 				// The impulse is add directly to velocity.
-				pawn->velocity += impulses[i]->impulse;
+				btVector3 impulse;
+				G_TO_B(impulses[i]->impulse, impulse);
+				pawn->velocity += impulse;
 			} else {
 				btVector3 l;
 				btVector3 imp;
