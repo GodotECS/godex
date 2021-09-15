@@ -134,6 +134,12 @@ public:
 	void set_angular_factor(const Vector3 &p_factor);
 	Vector3 get_angular_factor() const;
 
+	void set_friction(real_t p_friction);
+	real_t get_friction() const;
+
+	void set_bounciness(real_t p_bounciness);
+	real_t get_bounciness() const;
+
 	bool need_body_reload() const;
 	void reload_body(BtSpaceIndex p_index);
 
