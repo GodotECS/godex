@@ -186,6 +186,11 @@ void global_dynamic_get_property_list([[maybe_unused]] X *p_self, List<PropertyI
 typedef bool (*func_setter)(void *, const Variant &p_data);
 typedef bool (*func_getter)(const void *, Variant &r_data);
 
+template <class C>
+C init_class() {
+	return C();
+}
+
 #define ECS_PROPERTY_MAPPER(m_class)                                                                                                     \
 private:                                                                                                                                 \
 	/* Properties */                                                                                                                     \
@@ -212,7 +217,7 @@ public:                                                                         
 		godex::global_dynamic_get_property_list(self, r_list);                                                                           \
 	}                                                                                                                                    \
 	static Variant get_property_default(const StringName &p_name) {                                                                      \
-		const m_class c;                                                                                                                 \
+		const m_class c = godex::init_class<m_class>();                                                                                  \
 		Variant ret;                                                                                                                     \
 		get_by_name(&c, p_name, ret);                                                                                                    \
 		return ret;                                                                                                                      \
