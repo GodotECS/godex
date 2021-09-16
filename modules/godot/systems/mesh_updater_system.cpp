@@ -57,9 +57,20 @@ void interpolates_transform(
 				interpolated_transform->current_linear_velocity,
 				p_frame_time->get_physics_delta());
 
-		transform->basis = interpolated_transform->previous_transform.basis.slerp(
-				interpolated_transform->current_transform.basis,
-				p_frame_time->get_physics_interpolation_fraction());
+		// TODO Exist a better way of interpolate two Matrix?
+		const Vector3 start_scale = interpolated_transform->previous_transform.basis.get_scale();
+		const Quaternion start_rotation = interpolated_transform->previous_transform.basis.get_rotation_quaternion();
+
+		const Vector3 end_scale = interpolated_transform->current_transform.basis.get_scale();
+		const Quaternion end_rotation = interpolated_transform->current_transform.basis.get_rotation_quaternion();
+
+		transform->basis.set_quaternion_scale(
+				start_rotation.slerp(
+						end_rotation,
+						p_frame_time->get_physics_interpolation_fraction()),
+				start_scale.lerp(
+						end_scale,
+						p_frame_time->get_physics_interpolation_fraction()));
 	}
 
 	// Enable the system again, so it can receive notifications.
