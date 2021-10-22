@@ -1,0 +1,144 @@
+name: 🐺️ Fuzzer
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '0 0 * * *'
+
+# Global Cache Settings
+env:
+  GODOT_BASE_BRANCH: master
+  SCONS_CACHE_LIMIT: 4096
+
+jobs:
+  test-project:
+    runs-on: "ubuntu-20.04"
+    name: Editor
+
+    steps:
+      - name: Make godot dir
+        run: |
+         mkdir godot
+         mkdir modules
+         mkdir modules/godex
+
+      - name: Clone godex
+        uses: actions/checkout@v2
+        with:
+         path: modules/godex
+
+      - name: Clone godot for godex
+        uses: actions/checkout@v2
+        with:
+         repository: GodotECS/godot
+         ref: refs/heads/godex_version
+         path: godot
+
+      # Clone fuzzer
+      - name: Clone fuzzer
+        uses: actions/checkout@v2
+        with:
+          repository: qarmin/Qarminer
+          ref: "4.0"
+          path: fuzzer
+
+      # Currently configuration is done by modifing source code
+      - name: Configure fuzzer
+        run: |
+          mv modules/godex/misc/fuzzer_config.txt fuzzer/settings.txt
+
+      # Azure repositories are not reliable, we need to prevent azure giving us packages.
+      - name: Make apt sources.list use the default Ubuntu repositories
+        run: |
+         sudo rm -f /etc/apt/sources.list.d/*
+         sudo cp -f modules/godex/misc/ci/sources.list /etc/apt/sources.list
+         sudo apt-get update
+
+      # Install all packages (except scons)
+      - name: Configure dependencies
+        run: |
+          sudo apt-get install build-essential pkg-config libx11-dev libxcursor-dev \
+            libxinerama-dev libgl1-mesa-dev libglu-dev libasound2-dev libpulse-dev libudev-dev libxi-dev libxrandr-dev yasm \
+            xvfb wget unzip
+
+      # Upload cache on completion and check it out now
+      - name: Load .scons_cache directory
+        id: fuzzer-cache
+        uses: actions/cache@v2
+        with:
+          path: ${{github.workspace}}/.scons_cache/
+          key: ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+          restore-keys: |
+            ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+            ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}
+            ${{github.job}}-${{env.GODOT_BASE_BRANCH}}
+
+      # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v2
+        with:
+          # Semantic version range syntax or exact version of a Python version
+          python-version: '3.x'
+          # Optional - x64 or x86 architecture, defaults to x64
+          architecture: 'x64'
+
+      # Setup scons, print python version and scons version info, so if anything is broken it won't run the build.
+      - name: Configuring Python packages
+        run: |
+          python -c "import sys; print(sys.version)"
+          python -m pip install scons
+          python --version
+          scons --version
+
+    # Download, unzip and setup SwiftShader library [4466040]
+      - name: Download SwiftShader
+        run: |
+          wget https://github.com/qarmin/gtk_library_store/releases/download/3.24.0/swiftshader3.zip
+          unzip swiftshader3.zip
+          rm swiftshader3.zip
+          curr="$(pwd)/libvk_swiftshader.so"
+          sed -i "s|PATH_TO_CHANGE|$curr|" vk_swiftshader_icd.json
+
+      # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
+      - name: Compilation
+        env:
+          SCONS_CACHE: ${{github.workspace}}/.scons_cache/
+        run: |
+         cd godot
+         scons tools=yes tests=yes custom_modules="../modules" -j2 use_ubsan=yes use_asan=yes
+         ls -l bin/
+         cd ..
+
+      - name: Run fuzzer
+        run: |
+          VK_ICD_FILENAMES=$(pwd)/vk_swiftshader_icd.json DRI_PRIME=0 xvfb-run ./godot/bin/godot.linuxbsd.tools.64s 300 --audio-driver Dummy --path fuzzer 2>&1 | tee sanitizers_log.txt || true
+          tail -n 300 sanitizers_log.txt > project_results.txt
+
+      - name: Store project results
+        uses: actions/upload-artifact@v2
+        with:
+          name: project-results
+          path: project_results.txt
+
+      - name: Store test results
+        uses: actions/upload-artifact@v2
+        with:
+          name: last-run-results
+          path: fuzzer/results.txt
+
+      - name: Store time results
+        uses: actions/upload-artifact@v2
+        with:
+          name: timer
+          path: fuzzer/timer.txt
+
+      - name: Store memory usage results
+        uses: actions/upload-artifact@v2
+        with:
+          name: memory_usage
+          path: fuzzer/memory_usage.txt
+
+      - name: Check fuzzer output
+        run: |
+          modules/godex/misc/check_ci_log.py sanitizers_log.txt
+

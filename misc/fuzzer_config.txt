@@ -1,0 +1,26 @@
+use_parent_methods: true
+add_to_tree: true
+test_one_class_multiple_times: true
+
+function_exceptions_append:
+get # Uses ECS::unsafe_databag_get_by_name which crash
+
+custom_classes:
+Component
+ComponentDynamicExposer
+Components3DGizmoPlugin
+DatabagDynamicFetcher
+DynamicQuery
+ECS
+Entity2D
+Entity3D
+EventsEmitterDynamicFetcher
+EventsReceiverDynamicFetcher
+GodexWorldFetcher
+PipelineECS
+ScriptEcs
+SharedComponentResource
+StorageDynamicFetcher
+System
+SystemBundle
+WorldECS
