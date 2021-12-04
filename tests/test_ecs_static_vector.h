@@ -94,7 +94,7 @@ TEST_CASE("[StaticVector] Remove Unordered.") {
 
 	CHECK(vector.size() == 5);
 
-	vector.remove_unordered(0);
+	vector.remove_at_unordered(0);
 
 	CHECK(vector.size() == 4);
 
@@ -105,7 +105,7 @@ TEST_CASE("[StaticVector] Remove Unordered.") {
 	CHECK(vector.find(4) != -1);
 
 	// Now the vector is no more ordered.
-	vector.remove_unordered(vector.find(3));
+	vector.remove_at_unordered(vector.find(3));
 
 	CHECK(vector.size() == 3);
 
@@ -114,7 +114,7 @@ TEST_CASE("[StaticVector] Remove Unordered.") {
 	CHECK(vector.find(2) != -1);
 	CHECK(vector.find(4) != -1);
 
-	vector.remove_unordered(vector.find(2));
+	vector.remove_at_unordered(vector.find(2));
 
 	CHECK(vector.size() == 2);
 
@@ -122,7 +122,7 @@ TEST_CASE("[StaticVector] Remove Unordered.") {
 	CHECK(vector.find(1) != -1);
 	CHECK(vector.find(4) != -1);
 
-	vector.remove_unordered(vector.find(4));
+	vector.remove_at_unordered(vector.find(4));
 
 	CHECK(vector.size() == 1);
 
@@ -130,7 +130,7 @@ TEST_CASE("[StaticVector] Remove Unordered.") {
 	CHECK(vector.find(1) != -1);
 
 	// Remove the last one.
-	vector.remove_unordered(0);
+	vector.remove_at_unordered(0);
 
 	CHECK(vector.is_empty());
 	CHECK(vector.size() == 0);

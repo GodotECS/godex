@@ -92,7 +92,7 @@ public:
 	void remove_change_listener(EntityList *p_changed_listener) {
 		const int64_t index = changed_listeners.find(p_changed_listener);
 		if (index != -1) {
-			changed_listeners.remove_unordered(index);
+			changed_listeners.remove_at_unordered(index);
 		}
 	}
 

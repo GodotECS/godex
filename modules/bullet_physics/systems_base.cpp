@@ -537,7 +537,7 @@ void bt_overlap_check(
 				}
 
 				// Remove the object.
-				area->overlaps.remove_unordered(i);
+				area->overlaps.remove_at_unordered(i);
 			}
 		}
 

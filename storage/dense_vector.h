@@ -59,8 +59,8 @@ public:
 			data_to_entity[entity_to_data[p_entity]] = data_to_entity[last];
 		}
 
-		data.remove(last);
-		data_to_entity.remove(last);
+		data.remove_at(last);
+		data_to_entity.remove_at(last);
 		entity_to_data[p_entity] = UINT32_MAX;
 	}
 
