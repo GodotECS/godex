@@ -110,8 +110,8 @@ void ScriptEcs::reload_scripts() {
 			remove_script("ECS/Autoload/scripts", systems[i]->get_script_path());
 			// The script for this system doesn't exist anymore.
 			// Remove it.
-			system_names.remove_unordered(i);
-			systems.remove_unordered(i);
+			system_names.remove_at_unordered(i);
+			systems.remove_at_unordered(i);
 		}
 	}
 	for (int i = int(components.size()) - 1; i >= 0; i -= 1) {
@@ -120,8 +120,8 @@ void ScriptEcs::reload_scripts() {
 			remove_script("ECS/Autoload/scripts", components[i]->get_script_path());
 			// The script for this system doesn't exist anymore.
 			// Remove it.
-			component_names.remove_unordered(i);
-			components.remove_unordered(i);
+			component_names.remove_at_unordered(i);
+			components.remove_at_unordered(i);
 		}
 	}
 	for (int i = int(system_bundles.size()) - 1; i >= 0; i -= 1) {
@@ -130,8 +130,8 @@ void ScriptEcs::reload_scripts() {
 			remove_script("ECS/Autoload/scripts", system_bundles[i]->get_script_path());
 			// The script for this system doesn't exist anymore.
 			// Remove it.
-			system_bundle_names.remove_unordered(i);
-			system_bundles.remove_unordered(i);
+			system_bundle_names.remove_at_unordered(i);
+			system_bundles.remove_at_unordered(i);
 		}
 	}
 
@@ -149,7 +149,7 @@ uint64_t ScriptEcs::load_scripts(EditorFileSystemDirectory *p_dir) {
 						file_type == "VisualScript" ||
 						file_type == "NativeScript" ||
 						file_type == "C#" ||
-						file_type == "Rust")) { //TODO add more?
+						file_type == "Rust")) { // TODO add more?
 
 			const bool changed =
 					p_dir->get_file_modified_time(i) > recent_modification_detected_time;
@@ -331,8 +331,8 @@ Ref<SystemBundle> ScriptEcs::__reload_system_bundle(Ref<Script> p_script, const 
 			// This script is no more valid, unlaod it.
 			// Allignement between the vector is kept, since both use the same
 			// removal logic.
-			system_bundle_names.remove_unordered(index);
-			system_bundles.remove_unordered(index);
+			system_bundle_names.remove_at_unordered(index);
+			system_bundles.remove_at_unordered(index);
 
 			ERR_FAIL_V_MSG(Ref<SystemBundle>(), "This script [" + p_path + "] is not a valid System: " + res);
 		}
@@ -367,8 +367,8 @@ Ref<System> ScriptEcs::__reload_system(Ref<Script> p_script, const String &p_pat
 			// This script is no more valid, unlaod it.
 			// Allignement between the vector is kept, since both use the same
 			// removal logic.
-			system_names.remove_unordered(index);
-			systems.remove_unordered(index);
+			system_names.remove_at_unordered(index);
+			systems.remove_at_unordered(index);
 
 			ERR_FAIL_V_MSG(Ref<System>(), "This script [" + p_path + "] is not a valid System: " + res);
 		}
@@ -401,8 +401,8 @@ Ref<Component> ScriptEcs::__reload_component(Ref<Script> p_script, const String 
 			// This script is no more valid, unlaod it.
 			// Allignement between the vector is kept, since both use the same
 			// removal logic.
-			component_names.remove_unordered(index);
-			components.remove_unordered(index);
+			component_names.remove_at_unordered(index);
+			components.remove_at_unordered(index);
 
 			ERR_FAIL_V_MSG(Ref<Component>(), "This script [" + p_path + "] is not a valid Component: " + res);
 		}
@@ -472,7 +472,7 @@ void ScriptEcs::remove_script(const String &p_setting_list_name, const String &p
 	const int index = scripts.find(p_script_path);
 
 	if (index >= 0) {
-		scripts.remove(index);
+		scripts.remove_at(index);
 		ProjectSettings::get_singleton()->set_setting(p_setting_list_name, scripts);
 		ProjectSettings::get_singleton()->save();
 	}

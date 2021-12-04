@@ -33,7 +33,7 @@ godex::TimerHandle TimersDatabag::new_precise_timer(const uint64_t p_end_in_micr
 	if (destroyed_timers.size() > 0) {
 		godex::TimerHandle finalHandle = destroyed_timers[destroyed_timers.size() - 1];
 		internal_restart_precise_timer(finalHandle, internal_get_now() + p_end_in_microseconds);
-		destroyed_timers.remove_unordered(destroyed_timers.size() - 1);
+		destroyed_timers.remove_at_unordered(destroyed_timers.size() - 1);
 		return finalHandle;
 	} else {
 		timers.push_back(godex::Timer(internal_get_now() + p_end_in_microseconds, 1));

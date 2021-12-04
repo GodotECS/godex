@@ -342,7 +342,7 @@ void Pipeline::dispatch(Token p_token) {
 			uint8_t *mem = worlds[p_token.index].temporary_systems[i].system_data;
 			ECS::system_delete_placement_system_data(worlds[p_token.index].temporary_systems[i].id, mem);
 			memfree(mem);
-			worlds[p_token.index].temporary_systems.remove(i);
+			worlds[p_token.index].temporary_systems.remove_at(i);
 			i -= 1;
 		}
 	}
