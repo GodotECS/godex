@@ -3,7 +3,7 @@
 #include "core/math/math_funcs.h"
 
 void TransformComponent::_bind_methods() {
-	ECS_BIND_PROPERTY_FUNC(TransformComponent, PropertyInfo(Variant::TRANSFORM3D, "transform", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NOEDITOR), set_self_script, get_self_script);
+	ECS_BIND_PROPERTY_FUNC(TransformComponent, PropertyInfo(Variant::TRANSFORM3D, "transform", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NO_EDITOR), set_self_script, get_self_script);
 	ECS_BIND_PROPERTY(TransformComponent, PropertyInfo(Variant::VECTOR3, "origin", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), origin);
 	ECS_BIND_PROPERTY_FUNC(TransformComponent, PropertyInfo(Variant::VECTOR3, "rotation_deg", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), set_rotation_deg, get_rotation_deg);
 	ECS_BIND_PROPERTY_FUNC(TransformComponent, PropertyInfo(Variant::VECTOR3, "scale", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR), set_scale, get_scale);
