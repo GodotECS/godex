@@ -1,8 +1,8 @@
 diff --git a/SConstruct b/SConstruct
-index 1ab42b6b90..6090b24c19 100644
+index 1922e904d0..cc9f07d862 100644
 --- a/SConstruct
 +++ b/SConstruct
-@@ -636,6 +636,15 @@ if selected_platform in platform_list:
+@@ -646,6 +646,15 @@ if selected_platform in platform_list:
                  env.module_icons_paths.append(path + "/" + "icons")
              modules_enabled[name] = path
  
@@ -19,10 +19,10 @@ index 1ab42b6b90..6090b24c19 100644
          sys.modules.pop("config")
  
 diff --git a/core/config/engine.h b/core/config/engine.h
-index e6b5df2d5a..6b4126cfe3 100644
+index ae33acede2..045a5215b6 100644
 --- a/core/config/engine.h
 +++ b/core/config/engine.h
-@@ -91,8 +91,10 @@ public:
+@@ -92,8 +92,10 @@ public:
  
  	uint64_t get_frames_drawn();
  
@@ -34,23 +34,12 @@ index e6b5df2d5a..6b4126cfe3 100644
  	uint64_t get_frame_ticks() const { return _frame_ticks; }
  	double get_process_step() const { return _process_step; }
 diff --git a/main/main.cpp b/main/main.cpp
-index 6764332f16..dc30322255 100644
+index c7b33f3f1b..050ba0153f 100644
 --- a/main/main.cpp
 +++ b/main/main.cpp
-@@ -1281,8 +1281,8 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
- 	}
- 
- 	/* todo restore
--    OS::get_singleton()->_allow_layered = GLOBAL_DEF("display/window/per_pixel_transparency/allowed", false);
--    video_mode.layered = GLOBAL_DEF("display/window/per_pixel_transparency/enabled", false);
-+	OS::get_singleton()->_allow_layered = GLOBAL_DEF("display/window/per_pixel_transparency/allowed", false);
-+	video_mode.layered = GLOBAL_DEF("display/window/per_pixel_transparency/enabled", false);
- */
- 	if (editor || project_manager) {
- 		// The editor and project manager always detect and use hiDPI if needed
-@@ -2494,6 +2494,13 @@ bool Main::iteration() {
- 
- 	bool exit = false;
+@@ -2614,6 +2614,13 @@ bool Main::iteration() {
+ 	// process all our active interfaces
+ 	XRServer::get_singleton()->_process();
  
 +#ifdef CUSTOM_ITERATOR
 +	exit = custom_iteration(process_step, physics_step, &advance, time_scale);
@@ -62,7 +51,7 @@ index 6764332f16..dc30322255 100644
  	for (int iters = 0; iters < advance.physics_steps; ++iters) {
  		if (Input::get_singleton()->is_using_input_buffering() && agile_input_event_flushing) {
  			Input::get_singleton()->flush_buffered_events();
-@@ -2536,6 +2543,8 @@ bool Main::iteration() {
+@@ -2656,6 +2663,8 @@ bool Main::iteration() {
  	if (Input::get_singleton()->is_using_input_buffering() && agile_input_event_flushing) {
  		Input::get_singleton()->flush_buffered_events();
  	}
@@ -71,7 +60,7 @@ index 6764332f16..dc30322255 100644
  
  	uint64_t process_begin = OS::get_singleton()->get_ticks_usec();
  
-@@ -2568,7 +2577,9 @@ bool Main::iteration() {
+@@ -2688,7 +2697,9 @@ bool Main::iteration() {
  		ScriptServer::get_language(i)->frame();
  	}
  
