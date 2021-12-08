@@ -50,7 +50,7 @@ public:
 	void *get_target();
 	const void *get_target() const;
 
-	virtual void get_system_info(SystemExeInfo *r_info) const;
+	virtual void get_system_info(SystemExeInfo *r_info) const override;
 
 	virtual void prepare_world(World *p_world) override;
 	virtual void initiate_process(World *p_world) override;
@@ -81,7 +81,7 @@ public:
 	void *get_target();
 	const void *get_target() const;
 
-	virtual void get_system_info(SystemExeInfo *r_info) const;
+	virtual void get_system_info(SystemExeInfo *r_info) const override;
 
 	virtual void prepare_world(World *p_world) override;
 	virtual void initiate_process(World *p_world) override;
@@ -112,7 +112,7 @@ public:
 	void *get_target();
 	const void *get_target() const;
 
-	virtual void get_system_info(SystemExeInfo *r_info) const;
+	virtual void get_system_info(SystemExeInfo *r_info) const override;
 
 	virtual void prepare_world(World *p_world) override;
 	virtual void initiate_process(World *p_world) override;
