@@ -52,7 +52,7 @@ PipelineElementInfoBox::PipelineElementInfoBox(EditorNode *p_editor, EditorWorld
 	extra_info_lbl = memnew(Label);
 	extra_info_lbl->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 	extra_info_lbl->set_v_size_flags(SizeFlags::SIZE_EXPAND);
-	extra_info_lbl->set_align(Label::ALIGN_RIGHT);
+	extra_info_lbl->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_RIGHT);
 	extra_info_lbl->set_visible(false);
 	extra_info_lbl->add_theme_color_override(SNAME("font_color"), Color(0.7, 0.7, 0.7));
 	box->add_child(extra_info_lbl);
@@ -453,8 +453,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 			wrapper->set_anchor(SIDE_TOP, 0.0);
 			wrapper->set_anchor(SIDE_RIGHT, 1.0);
 			wrapper->set_anchor(SIDE_BOTTOM, 1.0);
-			wrapper->set_enable_h_scroll(false);
-			wrapper->set_enable_v_scroll(true);
+			wrapper->set_horizontal_scroll_mode(ScrollContainer::SCROLL_MODE_DISABLED);
 			panel_w->add_child(wrapper);
 
 			PanelContainer *panel = memnew(PanelContainer);
@@ -512,8 +511,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 			wrapper->set_anchor(SIDE_TOP, 0.0);
 			wrapper->set_anchor(SIDE_RIGHT, 1.0);
 			wrapper->set_anchor(SIDE_BOTTOM, 1.0);
-			wrapper->set_enable_h_scroll(false);
-			wrapper->set_enable_v_scroll(true);
+			wrapper->set_horizontal_scroll_mode(ScrollContainer::SCROLL_MODE_DISABLED);
 			panel_w->add_child(wrapper);
 
 			MarginContainer *margin = memnew(MarginContainer);
@@ -554,8 +552,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		wrapper->set_anchor(SIDE_TOP, 0.0);
 		wrapper->set_anchor(SIDE_RIGHT, 1.0);
 		wrapper->set_anchor(SIDE_BOTTOM, 1.0);
-		wrapper->set_enable_h_scroll(false);
-		wrapper->set_enable_v_scroll(true);
+		wrapper->set_horizontal_scroll_mode(ScrollContainer::SCROLL_MODE_DISABLED);
 		errors_warnings_panel->add_child(wrapper);
 
 		PanelContainer *panel = memnew(PanelContainer);
