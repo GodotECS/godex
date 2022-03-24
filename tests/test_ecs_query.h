@@ -976,21 +976,21 @@ TEST_CASE("[Modules][ECS] Test query mutability.") {
 
 	Query<Not<TestAccessMutabilityComponent1>, TestAccessMutabilityComponent2> query_test_without_mut(&world);
 	query_test_without_mut.initiate_process(&world);
-	query_test_without_mut.begin().operator*(); //Fetch the data.
+	query_test_without_mut.begin().operator*(); // Fetch the data.
 
 	CHECK(storage1->count_get_mut == 1);
 	CHECK(storage2->count_get_mut == 1);
 
 	Query<Maybe<TestAccessMutabilityComponent1>, TransformComponent> query_test_maybe_mut(&world);
 	query_test_maybe_mut.initiate_process(&world);
-	query_test_maybe_mut.begin().operator*(); //Fetch the data.
+	query_test_maybe_mut.begin().operator*(); // Fetch the data.
 
 	CHECK(storage1->count_get_mut == 2);
 
 	Query<Changed<TestAccessMutabilityComponent1>, TransformComponent> query_test_changed_mut(&world);
 	storage1->notify_changed(entity_1);
 	query_test_changed_mut.initiate_process(&world);
-	query_test_changed_mut.begin().operator*(); //Fetch the data.
+	query_test_changed_mut.begin().operator*(); // Fetch the data.
 
 	CHECK(storage1->count_get_mut == 3);
 
@@ -1000,7 +1000,7 @@ TEST_CASE("[Modules][ECS] Test query mutability.") {
 
 	Query<const TestAccessMutabilityComponent1> query_test_immut(&world);
 	query_test_immut.initiate_process(&world);
-	query_test_immut.begin().operator*(); //Fetch the data.
+	query_test_immut.begin().operator*(); // Fetch the data.
 
 	CHECK(storage1->count_get_mut == 3);
 	CHECK(storage1->count_get_immut == 1);
@@ -1008,7 +1008,7 @@ TEST_CASE("[Modules][ECS] Test query mutability.") {
 
 	Query<Not<const TestAccessMutabilityComponent1>, const TestAccessMutabilityComponent2> query_test_without_immut(&world);
 	query_test_without_immut.initiate_process(&world);
-	query_test_without_immut.begin().operator*(); //Fetch the data.
+	query_test_without_immut.begin().operator*(); // Fetch the data.
 
 	CHECK(storage1->count_get_mut == 3);
 	CHECK(storage1->count_get_immut == 1);
@@ -1016,7 +1016,7 @@ TEST_CASE("[Modules][ECS] Test query mutability.") {
 
 	Query<Maybe<const TestAccessMutabilityComponent1>, const TransformComponent> query_test_maybe_immut(&world);
 	query_test_maybe_immut.initiate_process(&world);
-	query_test_maybe_immut.begin().operator*(); //Fetch the data.
+	query_test_maybe_immut.begin().operator*(); // Fetch the data.
 
 	CHECK(storage1->count_get_mut == 3);
 	CHECK(storage1->count_get_immut == 2);
@@ -1024,7 +1024,7 @@ TEST_CASE("[Modules][ECS] Test query mutability.") {
 	Query<Changed<const TestAccessMutabilityComponent1>, TransformComponent> query_test_changed_immut(&world);
 	storage1->notify_changed(entity_1);
 	query_test_changed_immut.initiate_process(&world);
-	query_test_changed_immut.begin().operator*(); //Fetch the data.
+	query_test_changed_immut.begin().operator*(); // Fetch the data.
 
 	CHECK(storage1->count_get_mut == 3);
 	CHECK(storage1->count_get_immut == 3);

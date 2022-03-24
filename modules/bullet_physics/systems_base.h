@@ -129,7 +129,7 @@ void bt_spaces_step(
 		Storage<BtCapsule> *,
 		Storage<BtCone> *,
 		Storage<BtCylinder> *,
-		//Storage<BtWorldMargin> *, // Not used.
+		// Storage<BtWorldMargin> *, // Not used.
 		Storage<BtConvex> *,
 		Storage<BtTrimesh> *);
 

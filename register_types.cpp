@@ -16,7 +16,7 @@ Ref<Components3DGizmoPlugin> component_gizmo;
 
 void preregister_godex_types() {
 	ClassDB::register_class<ECS>();
-	ClassDB::register_virtual_class<GodexWorldFetcher>();
+	GDREGISTER_ABSTRACT_CLASS(GodexWorldFetcher);
 	ClassDB::register_class<godex::DynamicQuery>();
 	ClassDB::register_class<ComponentDynamicExposer>();
 	ClassDB::register_class<DatabagDynamicFetcher>();

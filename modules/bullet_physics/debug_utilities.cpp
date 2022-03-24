@@ -28,7 +28,7 @@ Ref<ArrayMesh> generate_mesh_from_lines(const Vector<Vector3> &p_lines) {
 
 	// Create the mesh.
 	if (p_lines.is_empty() == false) {
-		//make mesh
+		// make mesh
 		Vector<Vector3> array;
 		array.resize(p_lines.size());
 		{

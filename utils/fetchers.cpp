@@ -52,8 +52,8 @@ bool ComponentDynamicExposer::_get(const StringName &p_name, Variant &r_ret) con
 	return ECS::unsafe_component_get_by_name(component_id, component_ptr, p_name, r_ret);
 }
 
-Variant ComponentDynamicExposer::call(const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) {
-	Variant ret = Object::call(p_method, p_args, p_argcount, r_error);
+Variant ComponentDynamicExposer::callp(const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) {
+	Variant ret = Object::callp(p_method, p_args, p_argcount, r_error);
 	if (r_error.error == Callable::CallError::CALL_OK) {
 		return ret;
 	}
@@ -135,8 +135,8 @@ bool DatabagDynamicFetcher::_get(const StringName &p_name, Variant &r_ret) const
 	return ECS::unsafe_databag_get_by_name(databag_id, databag_ptr, p_name, r_ret);
 }
 
-Variant DatabagDynamicFetcher::call(const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) {
-	Variant ret = GodexWorldFetcher::call(p_method, p_args, p_argcount, r_error);
+Variant DatabagDynamicFetcher::callp(const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) {
+	Variant ret = GodexWorldFetcher::callp(p_method, p_args, p_argcount, r_error);
 	if (r_error.error == Callable::CallError::CALL_OK) {
 		return ret;
 	}
@@ -210,8 +210,8 @@ bool StorageDynamicFetcher::_get(const StringName &p_name, Variant &r_ret) const
 	return storage_ptr->get(p_name, r_ret);
 }
 
-Variant StorageDynamicFetcher::call(const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) {
-	Variant ret = GodexWorldFetcher::call(p_method, p_args, p_argcount, r_error);
+Variant StorageDynamicFetcher::callp(const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) {
+	Variant ret = GodexWorldFetcher::callp(p_method, p_args, p_argcount, r_error);
 	if (r_error.error == Callable::CallError::CALL_OK) {
 		return ret;
 	}

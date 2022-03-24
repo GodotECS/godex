@@ -1,6 +1,7 @@
 #ifndef ENTITY_EDITOR_PLUGIN_H
 #define ENTITY_EDITOR_PLUGIN_H
 
+#include "core/templates/oa_hash_map.h"
 #include "editor/editor_node.h"
 #include "editor/editor_plugin.h"
 

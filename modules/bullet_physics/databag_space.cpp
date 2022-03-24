@@ -23,7 +23,7 @@ btScalar calculate_godot_combined_friction(const btCollisionObject *body0, const
 }
 
 void on_post_tick_callback(btDynamicsWorld *p_dynamics_world, btScalar p_delta) {
-	//BtWorld *space = static_cast<BtWorld *>(p_dynamics_world->getWorldUserInfo());
+	// BtWorld *space = static_cast<BtWorld *>(p_dynamics_world->getWorldUserInfo());
 }
 
 BtPhysicsSpaces::BtPhysicsSpaces() {

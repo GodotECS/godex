@@ -2,6 +2,7 @@
 
 #include "../godot/nodes/entity.h"
 #include "debug_utilities.h"
+#include "editor/editor_settings.h"
 #include "editor/plugins/node_3d_editor_plugin.h"
 #include "scene/3d/camera_3d.h"
 
@@ -22,7 +23,7 @@ void BtBoxGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 
 	if (entity->has_component(box_component_name)) {
 		const Ref<Material> material = get_material("shape_material", p_gizmo);
-		//const Ref<Material> material_disabled = get_material("shape_material_disabled", p_gizmo);
+		// const Ref<Material> material_disabled = get_material("shape_material_disabled", p_gizmo);
 		Ref<Material> handles_material = get_material("handles");
 
 		Vector3 half_extents = entity->get_component_value(box_component_name, half_extents_name);
@@ -147,7 +148,7 @@ void BtSphereGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 
 	if (entity->has_component(sphere_component_name)) {
 		const Ref<Material> material = get_material("shape_material", p_gizmo);
-		//const Ref<Material> material_disabled = get_material("shape_material_disabled", p_gizmo);
+		// const Ref<Material> material_disabled = get_material("shape_material_disabled", p_gizmo);
 		Ref<Material> handles_material = get_material("handles");
 
 		const real_t radius = entity->get_component_value(sphere_component_name, radius_name);
@@ -271,7 +272,7 @@ void BtCapsuleGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 
 	if (entity->has_component(capsule_component_name)) {
 		const Ref<Material> material = get_material("shape_material", p_gizmo);
-		//const Ref<Material> material_disabled = get_material("shape_material_disabled", p_gizmo);
+		// const Ref<Material> material_disabled = get_material("shape_material_disabled", p_gizmo);
 		Ref<Material> handles_material = get_material("handles");
 
 		const real_t radius = entity->get_component_value(capsule_component_name, radius_name);
@@ -441,7 +442,7 @@ void BtConeGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 
 	if (entity->has_component(cone_component_name)) {
 		const Ref<Material> material = get_material("shape_material", p_gizmo);
-		//const Ref<Material> material_disabled = get_material("shape_material_disabled", p_gizmo);
+		// const Ref<Material> material_disabled = get_material("shape_material_disabled", p_gizmo);
 		Ref<Material> handles_material = get_material("handles");
 
 		const real_t radius = entity->get_component_value(cone_component_name, radius_name);
@@ -587,7 +588,7 @@ void BtCylinderGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 
 	if (entity->has_component(cylinder_component_name)) {
 		const Ref<Material> material = get_material("shape_material", p_gizmo);
-		//const Ref<Material> material_disabled = get_material("shape_material_disabled", p_gizmo);
+		// const Ref<Material> material_disabled = get_material("shape_material_disabled", p_gizmo);
 		Ref<Material> handles_material = get_material("handles");
 
 		const real_t radius = entity->get_component_value(cylinder_component_name, radius_name);

@@ -1,6 +1,6 @@
 #include "systems_base.h"
 
-#include "modules/bullet/bullet_types_converter.h"
+#include "bullet_types_converter.h"
 #include "overlap_check.h"
 #include "utilities.h"
 #include <BulletCollision/BroadphaseCollision/btBroadphaseProxy.h>

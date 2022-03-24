@@ -2,9 +2,9 @@
 #include "components_rigid_body.h"
 
 #include "../../modules/godot/components/interpolated_transform_component.h"
+#include "bullet_types_converter.h"
+#include "collision_object_bullet.h"
 #include "databag_space.h"
-#include "modules/bullet/bullet_types_converter.h"
-#include "modules/bullet/collision_object_bullet.h"
 #include <btBulletCollisionCommon.h>
 
 void GodexBtMotionState::getWorldTransform(btTransform &r_world_trans) const {

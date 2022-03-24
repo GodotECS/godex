@@ -1183,7 +1183,7 @@ struct QueryStorage<I, Any<C...>, Cs...> : QueryStorage<AJUtility<I, 1, C...>::L
 	}
 
 	// TODO how? here we have multiple storages.
-	//auto get_inner_storage() const {
+	// auto get_inner_storage() const {
 	//	return query_storage.get_inner_storage();
 	//}
 
@@ -1273,7 +1273,7 @@ struct QueryStorage<I, Join<C...>, Cs...> : QueryStorage<I + 1, Cs...> {
 	}
 
 	// TODO how? here we have multiple storages.
-	//auto get_inner_storage() const {
+	// auto get_inner_storage() const {
 	//	return query_storage.get_inner_storage();
 	//}
 

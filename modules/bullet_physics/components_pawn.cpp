@@ -1,6 +1,6 @@
 #include "components_pawn.h"
 
-#include "modules/bullet/bullet_types_converter.h"
+#include "bullet_types_converter.h"
 
 PawnShape::PawnShape() {
 	update_shapes_dimention();
