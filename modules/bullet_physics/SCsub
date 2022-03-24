@@ -7,7 +7,7 @@ env_bullet = env_modules.Clone()
 
 thirdparty_obj = []
 
-env.Append(builtin_bullet = True)
+env.Append(builtin_bullet=True)
 
 # Add bullet header, no need to compile Bullet third party, because it's
 # already done by the godot bullet module.
