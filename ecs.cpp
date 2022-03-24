@@ -369,11 +369,11 @@ EventStorageBase *ECS::create_events_storage(godex::event_id p_event_id) {
 	// Crash cond because this function is not supposed to fail in any way.
 	CRASH_COND_MSG(ECS::verify_event_id(p_event_id) == false, "This event id " + itos(p_event_id) + " is not valid. Are you passing an Event ID?");
 #endif
-	//if (event_indo[p_event_id].dynamic_event_info) {
+	// if (event_indo[p_event_id].dynamic_event_info) {
 	//	// This is a script event
 	//	return events_info[p_event_id].dynamic_event_info->create_storage();
-	//} else {
-	// This is a native event.
+	// } else {
+	//  This is a native event.
 	return events_info[p_event_id].create_storage();
 	//}
 }
@@ -388,11 +388,11 @@ void ECS::destroy_events_storage(godex::event_id p_event_id, EventStorageBase *p
 		return;
 	}
 
-	//if (event_indo[p_event_id].dynamic_event_info) {
+	// if (event_indo[p_event_id].dynamic_event_info) {
 	//	// This is a script event
 	//	return events_info[p_event_id].dynamic_event_info->destroy_storage(p_storage);
-	//} else {
-	// This is a native event.
+	// } else {
+	//  This is a native event.
 	return events_info[p_event_id].destroy_storage(p_storage);
 	//}
 }

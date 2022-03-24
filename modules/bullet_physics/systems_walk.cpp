@@ -1,7 +1,7 @@
 #include "systems_walk.h"
 
+#include "bullet_types_converter.h"
 #include "collision_queries.h"
-#include "modules/bullet/bullet_types_converter.h"
 #include <BulletCollision/BroadphaseCollision/btBroadphaseProxy.h>
 #include <BulletCollision/CollisionDispatch/btCollisionObject.h>
 #include <BulletCollision/CollisionDispatch/btGhostObject.h>
@@ -170,7 +170,7 @@ StrafingResult move(
 
 			// The first strafing just uses the initial motion.
 			btVector3 cast_position = r_position;
-			//r_position = safe_initial_position; // TODO with this the Actor vibrates, but the actor is much more free to move.
+			// r_position = safe_initial_position; // TODO with this the Actor vibrates, but the actor is much more free to move.
 			r_position = initial_position;
 			btVector3 target_position = r_position + p_motion;
 			bool special_manouvre = false;

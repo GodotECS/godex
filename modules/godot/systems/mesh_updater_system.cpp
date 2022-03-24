@@ -3,6 +3,7 @@
 #include "../databags/visual_servers_databags.h"
 #include "scene/main/scene_tree.h"
 #include "scene/main/window.h"
+#include "scene/resources/world_3d.h"
 
 void scenario_manager_system(
 		RenderingScenarioDatabag *p_scenario,

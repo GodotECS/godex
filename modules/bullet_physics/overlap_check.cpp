@@ -871,13 +871,13 @@ bool overlap_check_any_convex_concave(
 				return;
 			}
 
-			//if (is_separated_oriented_axis_one_way(
+			// if (is_separated_oriented_axis_one_way(
 			//			convex,
 			//			shape_1_transform,
 			//			&triangle,
 			//			shape_2_transform)) {
 			//	return;
-			//}
+			// }
 
 			overlap = true;
 		}

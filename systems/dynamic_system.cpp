@@ -147,7 +147,7 @@ void godex::DynamicSystemExecutionData::executor(uint8_t *p_mem, World *p_world)
 				err);
 	} else {
 		// Other script execution.
-		p_info->target_script->call(
+		p_info->target_script->callp(
 				SNAME("_execute"),
 				const_cast<const Variant **>(p_info->access_ptr.ptr()),
 				p_info->access_ptr.size(),

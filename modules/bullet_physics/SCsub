@@ -7,12 +7,14 @@ env_bullet = env_modules.Clone()
 
 thirdparty_obj = []
 
+env.Append(builtin_bullet = True)
+
 # Add bullet header, no need to compile Bullet third party, because it's
 # already done by the godot bullet module.
 if env["builtin_bullet"]:
     # Build only version 2 for now (as of 2.89)
     # Sync file list with relevant upstream CMakeLists.txt for each folder.
-    thirdparty_dir = "#thirdparty/bullet/"
+    thirdparty_dir = "../../thirdparty/bullet/"
 
     bullet2_src = [
         # BulletCollision

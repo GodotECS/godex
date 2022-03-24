@@ -1,6 +1,6 @@
 #include "components_area.h"
 
-#include "modules/bullet/collision_object_bullet.h"
+#include "collision_object_bullet.h"
 
 void BtArea::_bind_methods() {
 	ECS_BIND_PROPERTY(BtArea, PropertyInfo(Variant::STRING, "enter_emitter_name", (PropertyHint)godex::PROPERTY_HINT_ECS_EVENT_EMITTER, "OverlapStart"), enter_emitter_name);

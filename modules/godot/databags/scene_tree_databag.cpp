@@ -1,6 +1,7 @@
 #include "scene_tree_databag.h"
 
 #include "../nodes/ecs_world.h"
+#include "scene/main/node.h"
 #include "scene/main/window.h"
 
 void SceneTreeDatabag::_bind_methods() {
@@ -54,14 +55,29 @@ Node *SceneTreeDatabag::get_node_or_null_script(const NodePath &p_path) {
 	return get_node_or_null(p_path);
 }
 
+// TOOD: Update these to utilise the type parameter
 Node *SceneTreeDatabag::find_node(const String &p_mask, bool p_recursive, bool p_owner) {
 	// Using root to search the node.
-	return world_ecs->get_tree()->get_root()->find_node(p_mask, p_recursive, p_owner);
+	Node *root = world_ecs->get_tree()->get_root();
+	TypedArray<Node> search = root->find_nodes(p_mask, "", p_recursive, p_owner);
+
+	if (search.size() > 0) {
+		return static_cast<Node *>(search[0].operator Object *());
+	}
+
+	return nullptr;
 }
 
 const Node *SceneTreeDatabag::find_node(const String &p_mask, bool p_recursive, bool p_owner) const {
 	// Using root to search the node.
-	return world_ecs->get_tree()->get_root()->find_node(p_mask, p_recursive, p_owner);
+	Node *root = world_ecs->get_tree()->get_root();
+	TypedArray<Node> search = root->find_nodes(p_mask, "", p_recursive, p_owner);
+
+	if (search.size() > 0) {
+		return static_cast<Node *>(search[0].operator Object *());
+	}
+
+	return nullptr;
 }
 
 Node *SceneTreeDatabag::find_node_script(const String &p_mask, bool p_recursive, bool p_owner) {

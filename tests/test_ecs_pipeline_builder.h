@@ -1236,10 +1236,10 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to compose sub pipe
 
 	const int stage_test_G_system_1 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_G_system_1")));
 	const int stage_test_G_sub1_system_2 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_G_sub1_system_2")));
-	//const int stage_test_G_sub2_system_3 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_G_sub2_system_3")));
+	// const int stage_test_G_sub2_system_3 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_G_sub2_system_3")));
 	const int stage_test_G_system_4 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_G_system_4")));
-	//const int stage_test_G_sub1_system_5 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_G_sub1_system_5")));
-	//const int stage_test_G_sub2_system_6 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_G_sub2_system_6")));
+	// const int stage_test_G_sub1_system_5 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_G_sub1_system_5")));
+	// const int stage_test_G_sub2_system_6 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_G_sub2_system_6")));
 	const int stage_test_G_system_7 = pipeline.get_system_stage(ECS::get_system_id(StringName("test_G_system_7")));
 
 	// Make sure test_G_system_dispatcher_1 and test_G_system_4 run in parallel

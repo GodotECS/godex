@@ -204,5 +204,5 @@ void InputDatabag::add_input_event(const Ref<InputEvent> &p_event) {
 		}
 	}
 
-	ERR_PRINT(String("This input event type is not recognized, please open an issue so we can support it: ") + Variant(p_event));
+	ERR_PRINT(String("This input event type is not recognized, please open an issue so we can support it: ") + String(Variant(p_event)));
 }

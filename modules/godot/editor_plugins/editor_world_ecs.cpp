@@ -5,6 +5,7 @@
 #include "../nodes/ecs_world.h"
 #include "../nodes/script_ecs.h"
 #include "core/io/resource_loader.h"
+#include "editor/editor_file_system.h"
 #include "editor/editor_node.h"
 #include "editor/editor_scale.h"
 #include "scene/gui/color_rect.h"
@@ -547,7 +548,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 
 		ScrollContainer *wrapper = memnew(ScrollContainer);
 		wrapper->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		//wrapper->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		// wrapper->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 		wrapper->set_anchor(SIDE_LEFT, 0.0);
 		wrapper->set_anchor(SIDE_TOP, 0.0);
 		wrapper->set_anchor(SIDE_RIGHT, 1.0);
@@ -557,7 +558,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 
 		PanelContainer *panel = memnew(PanelContainer);
 		panel->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		//panel->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		// panel->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 		panel->set_anchor(SIDE_LEFT, 0.0);
 		panel->set_anchor(SIDE_TOP, 0.0);
 		panel->set_anchor(SIDE_RIGHT, 1.0);
@@ -566,7 +567,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 
 		errors_warnings_container = memnew(VBoxContainer);
 		errors_warnings_container->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-		//errors_warnings_container->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
+		// errors_warnings_container->set_v_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 		panel->add_child(errors_warnings_container);
 	}
 
@@ -669,7 +670,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 			new_component_btn->set_text(TTR("New component"));
 			new_component_btn->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 			new_component_btn->set_v_size_flags(0);
-			//new_component_btn->connect(SNAME("pressed"), callable_mp(this, &EditorWorldECS::add_sys_show)); // TODO
+			// new_component_btn->connect(SNAME("pressed"), callable_mp(this, &EditorWorldECS::add_sys_show)); // TODO
 			vertical_container->add_child(new_component_btn);
 		}
 
@@ -746,7 +747,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 			add_var_btn->set_icon(editor->get_theme_base()->get_theme_icon(SNAME("Add"), SNAME("EditorIcons")));
 			add_var_btn->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 			add_var_btn->set_v_size_flags(0);
-			//add_var_btn->connect(SNAME("pressed"), callable_mp(this, &EditorWorldECS::add_sys_show)); // TODO
+			// add_var_btn->connect(SNAME("pressed"), callable_mp(this, &EditorWorldECS::add_sys_show)); // TODO
 			vertical_container->add_child(add_var_btn);
 		}
 	}

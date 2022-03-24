@@ -106,7 +106,7 @@ void System::prepare(godex::DynamicSystemExecutionData *p_info) {
 	info->set_system_id(id);
 
 	Callable::CallError err;
-	get_script_instance()->call("_prepare", nullptr, 0, err);
+	get_script_instance()->callp("_prepare", nullptr, 0, err);
 
 	info = nullptr;
 }
@@ -206,7 +206,7 @@ void SystemBundle::__prepare() {
 	ECS::register_system_bundle(name);
 
 	Callable::CallError err;
-	get_script_instance()->call("_prepare", nullptr, 0, err);
+	get_script_instance()->callp("_prepare", nullptr, 0, err);
 }
 
 const String &SystemBundle::get_script_path() const {
