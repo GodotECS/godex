@@ -202,7 +202,7 @@ btScalar BtKinematicContactQResult::addSingleResult(
 
 	// This contact seems useful, so try to insert it.
 
-	result_count = MIN(result_count + 1, static_cast<uint32>(KINEMATIC_CONTACT_MAX_RESULTS));
+	result_count = MIN(result_count + 1, static_cast<uint32_t>(KINEMATIC_CONTACT_MAX_RESULTS));
 
 	uint32_t least_penetrated = 0;
 	real_t dist = results[0].distance;
