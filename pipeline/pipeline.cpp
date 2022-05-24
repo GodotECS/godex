@@ -185,38 +185,38 @@ Token Pipeline::prepare_world(World *p_world) {
 
 void Pipeline::create_used_storage(const SystemExeInfo &p_info, World *p_world) {
 	// Create components.
-	for (const Set<uint32_t>::Element *e = p_info.immutable_components.front(); e; e = e->next()) {
+	for (const RBSet<uint32_t>::Element *e = p_info.immutable_components.front(); e; e = e->next()) {
 		p_world->create_storage(e->get());
 	}
 
-	for (const Set<uint32_t>::Element *e = p_info.mutable_components.front(); e; e = e->next()) {
+	for (const RBSet<uint32_t>::Element *e = p_info.mutable_components.front(); e; e = e->next()) {
 		p_world->create_storage(e->get());
 	}
 
-	for (const Set<uint32_t>::Element *e = p_info.mutable_components_storage.front(); e; e = e->next()) {
+	for (const RBSet<uint32_t>::Element *e = p_info.mutable_components_storage.front(); e; e = e->next()) {
 		p_world->create_storage(e->get());
 	}
 
 	// Create databags.
-	for (const Set<uint32_t>::Element *e = p_info.immutable_databags.front(); e; e = e->next()) {
+	for (const RBSet<uint32_t>::Element *e = p_info.immutable_databags.front(); e; e = e->next()) {
 		p_world->create_databag(e->get());
 	}
 
-	for (const Set<uint32_t>::Element *e = p_info.mutable_databags.front(); e; e = e->next()) {
+	for (const RBSet<uint32_t>::Element *e = p_info.mutable_databags.front(); e; e = e->next()) {
 		p_world->create_databag(e->get());
 	}
 
-	for (const Set<uint32_t>::Element *e = p_info.events_emitters.front(); e; e = e->next()) {
+	for (const RBSet<uint32_t>::Element *e = p_info.events_emitters.front(); e; e = e->next()) {
 		p_world->create_events_storage(e->get());
 	}
 
 	for (
-			OAHashMap<uint32_t, Set<String>>::Iterator it = p_info.events_receivers.iter();
+			OAHashMap<uint32_t, RBSet<String>>::Iterator it = p_info.events_receivers.iter();
 			it.valid;
 			it = p_info.events_receivers.next_iter(it)) {
 		p_world->create_events_storage(*it.key);
 		EventStorageBase *s = p_world->get_events_storage(*it.key);
-		for (const Set<String>::Element *e = it.value->front(); e; e = e->next()) {
+		for (const RBSet<String>::Element *e = it.value->front(); e; e = e->next()) {
 			s->add_event_emitter(e->get());
 		}
 	}

@@ -60,7 +60,7 @@ public:
 
 	void remove_system(const StringName &p_system_name);
 
-	void fetch_used_databags(Set<godex::component_id> &r_databags) const;
+	void fetch_used_databags(RBSet<godex::component_id> &r_databags) const;
 
 	Pipeline *get_pipeline();
 

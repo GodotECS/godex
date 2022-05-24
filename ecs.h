@@ -78,7 +78,7 @@ struct EventInfo {
 	EventStorageBase *(*create_storage)() = nullptr;
 	void (*destroy_storage)(EventStorageBase *p_storage) = nullptr;
 
-	Set<String> event_emitters;
+	RBSet<String> event_emitters;
 	bool event_emitters_need_reload = true;
 
 	DataAccessorFuncs accessor_funcs;
@@ -285,7 +285,7 @@ public:
 
 	static EventStorageBase *create_events_storage(godex::event_id p_event_id);
 	static void destroy_events_storage(godex::event_id p_event_id, EventStorageBase *p_storage);
-	static const Set<String> &get_event_emitters(godex::event_id p_event_id);
+	static const RBSet<String> &get_event_emitters(godex::event_id p_event_id);
 
 	static bool unsafe_event_set_by_name(godex::event_id p_event_id, void *p_event, const StringName &p_name, const Variant &p_data);
 	static bool unsafe_event_get_by_name(godex::event_id p_event_id, const void *p_event, const StringName &p_name, Variant &r_data);
@@ -710,7 +710,7 @@ void ECS::register_event() {
 	events_info.push_back(EventInfo{
 			E::create_storage_no_type,
 			E::destroy_storage_no_type,
-			Set<String>(),
+			RBSet<String>(),
 			true,
 			DataAccessorFuncs{
 					E::get_static_properties,

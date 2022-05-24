@@ -28,7 +28,7 @@ class ScriptEcs : public Object {
 	/// List of script components each spawner can spawn.
 	/// @Key: Spawner name
 	/// @Value: List of script components
-	OAHashMap<StringName, Set<StringName>> spawners;
+	OAHashMap<StringName, RBSet<StringName>> spawners;
 
 	LocalVector<StringName> component_names;
 	LocalVector<Ref<Component>> components;

@@ -332,12 +332,12 @@ void PipelineBuilder::build_pipeline(
 				if (ECS::is_system_dispatcher(stage->get().systems[i]->id) == false) {
 					// Mark as flush, the storages that need to be flushed at the
 					// end of the `System`.
-					for (const Set<uint32_t>::Element *e = stage->get().systems[i]->info.mutable_components.front(); e; e = e->next()) {
+					for (const RBSet<uint32_t>::Element *e = stage->get().systems[i]->info.mutable_components.front(); e; e = e->next()) {
 						if (ECS::storage_notify_release_write(e->get())) {
 							r_pipeline->dispatchers[dispatcher_index].exec_stages[stage_index].notify_list_release_write.push_back(e->get());
 						}
 					}
-					for (const Set<uint32_t>::Element *e = stage->get().systems[i]->info.mutable_components_storage.front(); e; e = e->next()) {
+					for (const RBSet<uint32_t>::Element *e = stage->get().systems[i]->info.mutable_components_storage.front(); e; e = e->next()) {
 						if (ECS::storage_notify_release_write(e->get())) {
 							if (r_pipeline->dispatchers[dispatcher_index].exec_stages[stage_index].notify_list_release_write.find(e->get()) == -1) {
 								r_pipeline->dispatchers[dispatcher_index].exec_stages[stage_index].notify_list_release_write.push_back(e->get());
@@ -774,7 +774,7 @@ struct GeneratedEventInfo {
 
 void internal_detect_warnings_lost_events(
 		Ref<ExecutionGraph::Dispatcher> dispatcher,
-		Set<GeneratedEventInfo> &changed_events) {
+		RBSet<GeneratedEventInfo> &changed_events) {
 	// In this moment there aren't warning to detect.
 	return;
 	/* Just the old code, it's here in case we need to detect some warnings.
@@ -799,14 +799,14 @@ void PipelineBuilder::detect_warnings_lost_events(ExecutionGraph *r_graph) {
 	// Afterwords, when a system modify it we mark it as `generated_by`:
 	// if this event is not marked read again, it reaches the end with the
 	// `generated_by` set, so we detected the leak.
-	Set<GeneratedEventInfo> changed_events;
+	RBSet<GeneratedEventInfo> changed_events;
 
 	Ref<ExecutionGraph::Dispatcher> dispatcher = *r_graph->dispatchers.lookup_ptr("main");
 	internal_detect_warnings_lost_events(
 			dispatcher,
 			changed_events);
 
-	for (Set<GeneratedEventInfo>::Element *changed = changed_events.front(); changed; changed = changed->next()) {
+	for (RBSet<GeneratedEventInfo>::Element *changed = changed_events.front(); changed; changed = changed->next()) {
 		if (changed->get().generated_by != godex::SYSTEM_NONE) {
 			// The last time this component was fetched, it was done to write it.
 			// In other words we are losing this changed event.

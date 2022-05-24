@@ -81,7 +81,7 @@ Ref<ArrayMesh> generate_mesh_from_faces(const Vector<Vector3> &p_faces) {
 	Vector<Vector3> lines;
 
 	// Extract the lines from the faces.
-	Set<DrawEdge> edges;
+	RBSet<DrawEdge> edges;
 
 	const Vector3 *r = p_faces.ptr();
 	for (int i = 0; i < p_faces.size(); i += 3) {
@@ -93,7 +93,7 @@ Ref<ArrayMesh> generate_mesh_from_faces(const Vector<Vector3> &p_faces) {
 
 	lines.resize(edges.size() * 2);
 	int idx = 0;
-	for (Set<DrawEdge>::Element *E = edges.front(); E; E = E->next()) {
+	for (RBSet<DrawEdge>::Element *E = edges.front(); E; E = E->next()) {
 		lines.write[idx + 0] = E->get().a;
 		lines.write[idx + 1] = E->get().b;
 		idx += 2;

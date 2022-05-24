@@ -36,9 +36,9 @@ Vector<StringName> ScriptEcs::spawner_get_components(const StringName &spawner_n
 
 	// If in editor, extracts the spawnable components.
 	if (Engine::get_singleton()->is_editor_hint()) {
-		Set<StringName> *spawnable_components = spawners.lookup_ptr(spawner_name);
+		RBSet<StringName> *spawnable_components = spawners.lookup_ptr(spawner_name);
 		if (spawnable_components != nullptr) {
-			for (Set<StringName>::Element *e = spawnable_components->front(); e; e = e->next()) {
+			for (RBSet<StringName>::Element *e = spawnable_components->front(); e; e = e->next()) {
 				ret.push_back(e->get());
 			}
 		}
@@ -273,16 +273,16 @@ bool ScriptEcs::__reload_script(Ref<Script> script, const String &p_path, const 
 			// Fetch the spawners.
 			Vector<StringName> comp_spawners = component->get_spawners();
 			for (int y = 0; y < comp_spawners.size(); y += 1) {
-				Set<StringName> *spawner_components = spawners.lookup_ptr(comp_spawners[y]);
+				RBSet<StringName> *spawner_components = spawners.lookup_ptr(comp_spawners[y]);
 				if (spawner_components == nullptr) {
-					spawners.insert(comp_spawners[y], Set<StringName>());
+					spawners.insert(comp_spawners[y], RBSet<StringName>());
 					spawner_components = spawners.lookup_ptr(comp_spawners[y]);
 				}
 				spawner_components->insert(p_name);
 			}
 		} else {
 			// Make sure this component is not part of any spawner.
-			for (OAHashMap<StringName, Set<StringName>>::Iterator it = spawners.iter(); it.valid; it = spawners.next_iter(it)) {
+			for (OAHashMap<StringName, RBSet<StringName>>::Iterator it = spawners.iter(); it.valid; it = spawners.next_iter(it)) {
 				it.value->erase(p_name);
 			}
 		}

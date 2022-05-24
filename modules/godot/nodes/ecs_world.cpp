@@ -119,7 +119,7 @@ void PipelineECS::remove_system(const StringName &p_system_name) {
 	notify_property_list_changed();
 }
 
-void PipelineECS::fetch_used_databags(Set<godex::component_id> &r_databags) const {
+void PipelineECS::fetch_used_databags(RBSet<godex::component_id> &r_databags) const {
 	for (int i = 0; i < systems_name.size(); i += 1) {
 		const StringName system_name = systems_name[i];
 		const godex::system_id id = ECS::get_system_id(system_name);
@@ -127,10 +127,10 @@ void PipelineECS::fetch_used_databags(Set<godex::component_id> &r_databags) cons
 		SystemExeInfo info;
 		ECS::get_system_exe_info(id, info);
 
-		for (Set<uint32_t>::Element *e = info.immutable_databags.front(); e; e = e->next()) {
+		for (RBSet<uint32_t>::Element *e = info.immutable_databags.front(); e; e = e->next()) {
 			r_databags.insert(e->get());
 		}
-		for (Set<uint32_t>::Element *e = info.mutable_databags.front(); e; e = e->next()) {
+		for (RBSet<uint32_t>::Element *e = info.mutable_databags.front(); e; e = e->next()) {
 			r_databags.insert(e->get());
 		}
 	}
@@ -410,7 +410,7 @@ void WorldECS::init_default() {
 #endif
 
 World *WorldECS::get_world() const {
-	//ERR_FAIL_COND_V_MSG(is_active, nullptr, "This World is active, so you can manipulate the world through `ECS::get_singleton()->get_commands()`.");
+	// ERR_FAIL_COND_V_MSG(is_active, nullptr, "This World is active, so you can manipulate the world through `ECS::get_singleton()->get_commands()`.");
 	return world;
 }
 

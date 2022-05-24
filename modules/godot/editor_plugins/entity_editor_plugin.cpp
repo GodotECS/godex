@@ -42,8 +42,8 @@ void EntityEditor::create_editors() {
 	add_child(add_component_menu);
 
 	// TODO right now this is not customizable.
-	//EditorInspectorCategory *category = memnew(EditorInspectorCategory);
-	//add_child(category);
+	// EditorInspectorCategory *category = memnew(EditorInspectorCategory);
+	// add_child(category);
 
 	components_section = memnew(EditorInspectorSection);
 	components_section->setup("components", "Components", entity, section_color, false);
@@ -187,7 +187,7 @@ void EntityEditor::create_component_inspector(StringName p_component_name, const
 						bool greater = true, lesser = true;
 
 						if (e.hint == PROPERTY_HINT_RANGE && e.hint_string.get_slice_count(",") >= 2) {
-							greater = false; //if using ranged, assume false by default
+							greater = false; // if using ranged, assume false by default
 							lesser = false;
 							min = e.hint_string.get_slice(",", 0).to_int();
 							max = e.hint_string.get_slice(",", 1).to_int();
@@ -238,7 +238,7 @@ void EntityEditor::create_component_inspector(StringName p_component_name, const
 						bool greater = true, lesser = true;
 
 						if (e.hint == PROPERTY_HINT_RANGE && e.hint_string.get_slice_count(",") >= 2) {
-							greater = false; //if using ranged, assume false by default
+							greater = false; // if using ranged, assume false by default
 							lesser = false;
 							min = e.hint_string.get_slice(",", 0).to_float();
 							max = e.hint_string.get_slice(",", 1).to_float();
@@ -278,7 +278,7 @@ void EntityEditor::create_component_inspector(StringName p_component_name, const
 						const StringName event_name = e.hint_string;
 						godex::event_id event_id = ECS::get_event_id(event_name);
 						ERR_CONTINUE_MSG(ECS::verify_event_id(event_id) == false, "The event " + event_name + " doesn't exist.");
-						const Set<String> &emitters = ECS::get_event_emitters(event_id);
+						const RBSet<String> &emitters = ECS::get_event_emitters(event_id);
 
 						Vector<String> enum_component_list;
 						{
@@ -286,7 +286,7 @@ void EntityEditor::create_component_inspector(StringName p_component_name, const
 							String *r = enum_component_list.ptrw();
 							r[0] = ""; // Disabled option.
 							uint32_t i = 0;
-							for (const Set<String>::Element *emitter_name = emitters.front(); emitter_name; emitter_name = emitter_name->next()) {
+							for (const RBSet<String>::Element *emitter_name = emitters.front(); emitter_name; emitter_name = emitter_name->next()) {
 								r[i + 1] = emitter_name->get();
 								i += 1;
 							}
@@ -534,7 +534,7 @@ void EntityEditor::create_component_inspector(StringName p_component_name, const
 					}
 					if (e.hint == PROPERTY_HINT_NODE_PATH_VALID_TYPES && e.hint_string != String()) {
 						Vector<String> types = e.hint_string.split(",", false);
-						Vector<StringName> sn = Variant(types); //convert via variant
+						Vector<StringName> sn = Variant(types); // convert via variant
 						editor->setup(NodePath(), sn, (usage & PROPERTY_USAGE_NODE_PATH_FROM_SCENE_ROOT));
 					}
 					prop = editor;

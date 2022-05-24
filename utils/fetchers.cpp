@@ -316,9 +316,9 @@ bool EventsReceiverDynamicFetcher::is_valid() const {
 }
 
 void EventsReceiverDynamicFetcher::get_system_info(SystemExeInfo *r_info) const {
-	Set<String> *emitters = r_info->events_receivers.lookup_ptr(event_id);
+	RBSet<String> *emitters = r_info->events_receivers.lookup_ptr(event_id);
 	if (emitters == nullptr) {
-		r_info->events_receivers.insert(event_id, Set<String>());
+		r_info->events_receivers.insert(event_id, RBSet<String>());
 		emitters = r_info->events_receivers.lookup_ptr(event_id);
 	}
 	emitters->insert(emitter_name);
