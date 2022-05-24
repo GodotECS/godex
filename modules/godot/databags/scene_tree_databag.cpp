@@ -59,25 +59,13 @@ Node *SceneTreeDatabag::get_node_or_null_script(const NodePath &p_path) {
 Node *SceneTreeDatabag::find_node(const String &p_mask, bool p_recursive, bool p_owner) {
 	// Using root to search the node.
 	Node *root = world_ecs->get_tree()->get_root();
-	TypedArray<Node> search = root->find_nodes(p_mask, "", p_recursive, p_owner);
-
-	if (search.size() > 0) {
-		return static_cast<Node *>(search[0].operator Object *());
-	}
-
-	return nullptr;
+	return root->find_child(p_mask, p_recursive, p_owner);
 }
 
 const Node *SceneTreeDatabag::find_node(const String &p_mask, bool p_recursive, bool p_owner) const {
 	// Using root to search the node.
 	Node *root = world_ecs->get_tree()->get_root();
-	TypedArray<Node> search = root->find_nodes(p_mask, "", p_recursive, p_owner);
-
-	if (search.size() > 0) {
-		return static_cast<Node *>(search[0].operator Object *());
-	}
-
-	return nullptr;
+	return root->find_child(p_mask, p_recursive, p_owner);
 }
 
 Node *SceneTreeDatabag::find_node_script(const String &p_mask, bool p_recursive, bool p_owner) {

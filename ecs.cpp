@@ -397,7 +397,7 @@ void ECS::destroy_events_storage(godex::event_id p_event_id, EventStorageBase *p
 	//}
 }
 
-const Set<String> &ECS::get_event_emitters(godex::event_id p_event_id) {
+const RBSet<String> &ECS::get_event_emitters(godex::event_id p_event_id) {
 #ifdef DEBUG_ENABLED
 	CRASH_COND_MSG(ECS::verify_event_id(p_event_id) == false, "This event id " + itos(p_event_id) + " is not valid. Are you passing an Event ID?");
 #endif
@@ -414,9 +414,9 @@ const Set<String> &ECS::get_event_emitters(godex::event_id p_event_id) {
 			info.clear();
 			ECS::get_system_exe_info(i, info);
 
-			const Set<String> *it = info.events_receivers.lookup_ptr(p_event_id);
+			const RBSet<String> *it = info.events_receivers.lookup_ptr(p_event_id);
 			if (it) {
-				for (const Set<String>::Element *emitter_name = it->front(); emitter_name; emitter_name = emitter_name->next()) {
+				for (const RBSet<String>::Element *emitter_name = it->front(); emitter_name; emitter_name = emitter_name->next()) {
 					events_info[p_event_id].event_emitters.insert(emitter_name->get());
 				}
 			}
@@ -672,8 +672,8 @@ bool has_single_thread_only_databags(const SystemExeInfo &p_info) {
 }
 
 /// Returns true if these two `Set`s have at least 1 ID in common.
-bool collides(const Set<uint32_t> &p_set_1, const Set<uint32_t> &p_set_2) {
-	for (Set<uint32_t>::Element *e = p_set_1.front(); e; e = e->next()) {
+bool collides(const RBSet<uint32_t> &p_set_1, const RBSet<uint32_t> &p_set_2) {
+	for (RBSet<uint32_t>::Element *e = p_set_1.front(); e; e = e->next()) {
 		if (p_set_2.has(e->get())) {
 			return true;
 		}
@@ -681,8 +681,8 @@ bool collides(const Set<uint32_t> &p_set_1, const Set<uint32_t> &p_set_2) {
 	return false;
 }
 
-bool collides(const Set<uint32_t> &p_set_1, const OAHashMap<uint32_t, Set<String>> &p_map_2) {
-	for (Set<uint32_t>::Element *e = p_set_1.front(); e; e = e->next()) {
+bool collides(const RBSet<uint32_t> &p_set_1, const OAHashMap<uint32_t, RBSet<String>> &p_map_2) {
+	for (RBSet<uint32_t>::Element *e = p_set_1.front(); e; e = e->next()) {
 		if (p_map_2.has(e->get())) {
 			return true;
 		}
@@ -875,7 +875,7 @@ void ECS::clear_emitters_for_system(godex::system_id p_id) {
 	// The emitters are defined by the systems that receive the event: for this
 	// reason here we are checking the `events_receivers`.
 	for (
-			OAHashMap<uint32_t, Set<String>>::Iterator it = info.events_receivers.iter();
+			OAHashMap<uint32_t, RBSet<String>>::Iterator it = info.events_receivers.iter();
 			it.valid;
 			it = info.events_receivers.next_iter(it)) {
 		if (ECS::verify_event_id(*it.key)) {

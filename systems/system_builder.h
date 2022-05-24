@@ -91,9 +91,9 @@ template <class E, typename EmitterName, class... Cs>
 struct InfoConstructor<EventsReceiver<E, EmitterName> &, Cs...> : InfoConstructor<Cs...> {
 	InfoConstructor(SystemExeInfo &r_info) :
 			InfoConstructor<Cs...>(r_info) {
-		Set<String> *emitters = r_info.events_receivers.lookup_ptr(E::get_event_id());
+		RBSet<String> *emitters = r_info.events_receivers.lookup_ptr(E::get_event_id());
 		if (emitters == nullptr) {
-			r_info.events_receivers.insert(E::get_event_id(), Set<String>());
+			r_info.events_receivers.insert(E::get_event_id(), RBSet<String>());
 			emitters = r_info.events_receivers.lookup_ptr(E::get_event_id());
 		}
 		emitters->insert(EmitterName::data());

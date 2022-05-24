@@ -1,4 +1,6 @@
 #pragma once
 
-void register_bullet_physics_types();
-void unregister_bullet_physics_types();
+#include "modules/register_module_types.h"
+
+void initialize_bullet_physics_module(ModuleInitializationLevel p_level);
+void uninitialize_bullet_physics_module(ModuleInitializationLevel p_level);

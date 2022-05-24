@@ -19,13 +19,13 @@ typedef uint32_t (*func_system_dispatcher_execute)(uint8_t *p_mem, World *p_worl
 
 struct SystemExeInfo {
 	bool valid = true;
-	Set<uint32_t> mutable_components;
-	Set<uint32_t> immutable_components;
-	Set<uint32_t> mutable_components_storage;
-	Set<uint32_t> mutable_databags;
-	Set<uint32_t> immutable_databags;
-	Set<uint32_t> events_emitters;
-	OAHashMap<uint32_t, Set<String>> events_receivers;
+	RBSet<uint32_t> mutable_components;
+	RBSet<uint32_t> immutable_components;
+	RBSet<uint32_t> mutable_components_storage;
+	RBSet<uint32_t> mutable_databags;
+	RBSet<uint32_t> immutable_databags;
+	RBSet<uint32_t> events_emitters;
+	OAHashMap<uint32_t, RBSet<String>> events_receivers;
 
 	// Used if the system is a normal system.
 	func_system_execute system_func = nullptr;

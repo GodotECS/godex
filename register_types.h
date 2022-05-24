@@ -1,6 +1,6 @@
 #pragma once
 
-#define MODULE_GODEX_HAS_PREREGISTER
-void preregister_godex_types();
-void register_godex_types();
-void unregister_godex_types();
+#include "modules/register_module_types.h"
+
+void initialize_godex_module(ModuleInitializationLevel p_level);
+void uninitialize_godex_module(ModuleInitializationLevel p_level);

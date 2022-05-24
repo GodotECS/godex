@@ -14,40 +14,42 @@
 
 Ref<Components3DGizmoPlugin> component_gizmo;
 
-void preregister_godex_types() {
-	ClassDB::register_class<ECS>();
-	GDREGISTER_ABSTRACT_CLASS(GodexWorldFetcher);
-	ClassDB::register_class<godex::DynamicQuery>();
-	ClassDB::register_class<ComponentDynamicExposer>();
-	ClassDB::register_class<DatabagDynamicFetcher>();
-	ClassDB::register_class<StorageDynamicFetcher>();
-	ClassDB::register_class<EventsEmitterDynamicFetcher>();
-	ClassDB::register_class<EventsReceiverDynamicFetcher>();
+void initialize_godex_module(ModuleInitializationLevel p_level) {
+	if (p_level == MODULE_INITIALIZATION_LEVEL_SERVERS) {
+		ClassDB::register_class<ECS>();
+		GDREGISTER_ABSTRACT_CLASS(GodexWorldFetcher);
+		ClassDB::register_class<godex::DynamicQuery>();
+		ClassDB::register_class<ComponentDynamicExposer>();
+		ClassDB::register_class<DatabagDynamicFetcher>();
+		ClassDB::register_class<StorageDynamicFetcher>();
+		ClassDB::register_class<EventsEmitterDynamicFetcher>();
+		ClassDB::register_class<EventsReceiverDynamicFetcher>();
 
-	// One day this will be inverted.
-	ClassDB::add_compatibility_class("Entity", "Entity3D");
+		// One day this will be inverted.
+		ClassDB::add_compatibility_class("Entity", "Entity3D");
 
-	// Create and register singleton
-	ECS *ecs = memnew(ECS);
-	ECS::__set_singleton(ecs);
-	Engine::get_singleton()->add_singleton(Engine::Singleton("ECS", ecs));
+		// Create and register singleton
+		ECS *ecs = memnew(ECS);
+		ECS::__set_singleton(ecs);
+		Engine::get_singleton()->add_singleton(Engine::Singleton("ECS", ecs));
 
-	ECS::register_databag<WorldCommands>();
-	ECS::register_databag<World>();
-	ECS::register_databag<PipelineCommands>();
-	ECS::register_databag<FrameTime>();
+		ECS::register_databag<WorldCommands>();
+		ECS::register_databag<World>();
+		ECS::register_databag<PipelineCommands>();
+		ECS::register_databag<FrameTime>();
+	} else if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
+		component_gizmo.instantiate();
+	}
 }
 
-void register_godex_types() {
-	component_gizmo.instantiate();
-}
+void uninitialize_godex_module(ModuleInitializationLevel p_level) {
+	if (p_level == MODULE_INITIALIZATION_LEVEL_SERVERS) {
+		// Clear ECS static memory.
+		ECS::__static_destructor();
+		ECS *ecs = ECS::get_singleton();
+		ECS::__set_singleton(nullptr);
+		memdelete(ecs);
 
-void unregister_godex_types() {
-	// Clear ECS static memory.
-	ECS::__static_destructor();
-	ECS *ecs = ECS::get_singleton();
-	ECS::__set_singleton(nullptr);
-	memdelete(ecs);
-
-	component_gizmo = Ref<Components3DGizmoPlugin>();
+		component_gizmo = Ref<Components3DGizmoPlugin>();
+	}
 }
