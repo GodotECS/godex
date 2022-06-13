@@ -98,10 +98,10 @@ void ScriptEcs::reload_scripts() {
 
 	// Scan the script classes.
 	if (EditorFileSystem::get_singleton()->get_filesystem()) {
-		const uint64_t modificatio_time =
+		const uint64_t modification_time =
 				load_scripts(EditorFileSystem::get_singleton()->get_filesystem());
 		recent_modification_detected_time =
-				MAX(recent_modification_detected_time, modificatio_time);
+				MAX(recent_modification_detected_time, modification_time);
 	}
 
 	for (int i = int(systems.size()) - 1; i >= 0; i -= 1) {
@@ -328,8 +328,8 @@ Ref<SystemBundle> ScriptEcs::__reload_system_bundle(Ref<Script> p_script, const 
 		// The SystemBundle exists, validate it.
 		const String res = SystemBundle::validate_script(p_script);
 		if (res != "") {
-			// This script is no more valid, unlaod it.
-			// Allignement between the vector is kept, since both use the same
+			// This script is no more valid, unload it.
+			// Alignment between the vector is kept, since both use the same
 			// removal logic.
 			system_bundle_names.remove_at_unordered(index);
 			system_bundles.remove_at_unordered(index);
@@ -364,8 +364,8 @@ Ref<System> ScriptEcs::__reload_system(Ref<Script> p_script, const String &p_pat
 		// The system exists, validate it.
 		const String res = System::validate_script(p_script);
 		if (res != "") {
-			// This script is no more valid, unlaod it.
-			// Allignement between the vector is kept, since both use the same
+			// This script is no more valid, unload it.
+			// Alignment between the vector is kept, since both use the same
 			// removal logic.
 			system_names.remove_at_unordered(index);
 			systems.remove_at_unordered(index);
@@ -398,8 +398,8 @@ Ref<Component> ScriptEcs::__reload_component(Ref<Script> p_script, const String 
 	} else {
 		const String res = Component::validate_script(p_script);
 		if (res != "") {
-			// This script is no more valid, unlaod it.
-			// Allignement between the vector is kept, since both use the same
+			// This script is no more valid, unload it.
+			// Alignment between the vector is kept, since both use the same
 			// removal logic.
 			component_names.remove_at_unordered(index);
 			components.remove_at_unordered(index);

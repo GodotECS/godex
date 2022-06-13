@@ -1,4 +1,4 @@
-
+#include <utility>
 #include "ecs_world.h"
 
 #include "../../../ecs.h"
@@ -762,6 +762,6 @@ void WorldECS::sync_2d_transforms() {
 	List<Node *> entities;
 	get_tree()->get_nodes_in_group("__sync_transform_2d", &entities);
 	if (entities.size() > 0) {
-		ERR_PRINT("Plese implement the function `WorldECS::sync_2d_transforms`.");
+		ERR_PRINT("Please implement the function `WorldECS::sync_2d_transforms`.");
 	}
 }
