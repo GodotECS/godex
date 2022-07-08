@@ -11,15 +11,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Download makerst.py
+      - name: Download make_rst.py
         uses: carlosperate/download-file-action@v1.0.3
         with:
-          file-url: https://raw.githubusercontent.com/godotengine/godot/master/doc/tools/makerst.py
+          file-url: https://raw.githubusercontent.com/godotengine/godot/master/doc/tools/make_rst.py
 
       - name: Export XML documentation to RST and fix up for Github
         run: |
           mkdir .wiki
-          python3 ./makerst.py --output .wiki/ doc_classes/ || /bin/true
+          python3 ./make_rst.py --output .wiki/ doc_classes/ || /bin/true
           cd .wiki
           for i in *
           do
