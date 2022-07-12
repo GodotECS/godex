@@ -38,7 +38,7 @@ PipelineElementInfoBox::PipelineElementInfoBox(EditorNode *p_editor, EditorWorld
 	inner_container->add_child(box);
 
 	remove_btn = memnew(Button);
-	remove_btn->set_icon(editor->get_theme_base()->get_theme_icon(SNAME("Remove"), SNAME("EditorIcons")));
+	remove_btn->set_icon(editor->get_gui_base()->get_theme_icon(SNAME("Remove"), SNAME("EditorIcons")));
 	remove_btn->set_h_size_flags(0);
 	remove_btn->set_v_size_flags(0);
 	remove_btn->set_flat(true);
@@ -94,7 +94,7 @@ void PipelineElementInfoBox::setup_system(const StringName &p_name, SystemMode p
 			break;
 	}
 
-	icon_btn->set_icon(editor->get_theme_base()->get_theme_icon(icon_name, SNAME("EditorIcons")));
+	icon_btn->set_icon(editor->get_gui_base()->get_theme_icon(icon_name, SNAME("EditorIcons")));
 
 	mode = p_mode;
 }
@@ -269,22 +269,22 @@ ComponentElement::ComponentElement(EditorNode *p_editor, const String &p_name, V
 
 	type = memnew(OptionButton);
 	type->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("bool"), SNAME("EditorIcons")), "Bool");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("int"), SNAME("EditorIcons")), "Int");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("float"), SNAME("EditorIcons")), "Float");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("Vector3"), SNAME("EditorIcons")), "Vector3");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("Vector3i"), SNAME("EditorIcons")), "Vector3i");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("Quat"), SNAME("EditorIcons")), "Quat");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("AABB"), SNAME("EditorIcons")), "Aabb");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("Basis"), SNAME("EditorIcons")), "Basis");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("Transform"), SNAME("EditorIcons")), "Transform3D");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("Vector2"), SNAME("EditorIcons")), "Vector2");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("Vector2i"), SNAME("EditorIcons")), "Vector2i");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("Transform2D"), SNAME("EditorIcons")), "Transform2D");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("Color"), SNAME("EditorIcons")), "Color");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("String"), SNAME("EditorIcons")), "String");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("StringName"), SNAME("EditorIcons")), "StringName");
-	type->add_icon_item(p_editor->get_theme_base()->get_theme_icon(SNAME("RID"), SNAME("EditorIcons")), "Rid");
+	type->add_icon_item(p_editor->get_gui_base()->get_theme_icon(SNAME("bool"), SNAME("EditorIcons")), "Bool");
+	type->add_icon_item(p_editor->get_gui_base()->get_theme_icon(SNAME("int"), SNAME("EditorIcons")), "Int");
+	type->add_icon_item(p_editor->get_gui_base()->get_theme_icon(SNAME("float"), SNAME("EditorIcons")), "Float");
+	type->add_icon_item(p_editor->get_gui_base()->get_theme_icon(SNAME("Vector3"), SNAME("EditorIcons")), "Vector3");
+	type->add_icon_item(p_editor->get_gui_base()->get_theme_icon(SNAME("Vector3i"), SNAME("EditorIcons")), "Vector3i");
+	type->add_icon_item(p_editor->get_gui_base()->get_theme_icon(SNAME("Quat"), SNAME("EditorIcons")), "Quat");
+	type->add_icon_item(p_editor->get_gui_base()->get_theme_icon(SNAME("AABB"), SNAME("EditorIcons")), "Aabb");
+	type->add_icon_item(p_editor->get_gui_base()->get_theme_icon(SNAME("Basis"), SNAME("EditorIcons")), "Basis");
+	type->add_icon_item(p_editor->get_gui_base()->get_theme_icon(SNAME("Transform"), SNAME("EditorIcons")), "Transform3D");
+	type->add_icon_item(p_editor->get_gui_base()->get_theme_icon(SNAME("Vector2"), SNAME("EditorIcons")), "Vector2");
+	type->add_icon_item(p_editor->get_gui_base()->get_theme_icon(SNAME("Vector2i"), SNAME("EditorIcons")), "Vector2i");
+	type->add_icon_item(p_editor->get_gui_base()->get_theme_icon(SNAME("Transform2D"), SNAME("EditorIcons")), "Transform2D");
+	type->add_icon_item(p_editor->get_gui_base()->get_theme_icon(SNAME("Color"), SNAME("EditorIcons")), "Color");
+	type->add_icon_item(p_editor->get_gui_base()->get_theme_icon(SNAME("String"), SNAME("EditorIcons")), "String");
+	type->add_icon_item(p_editor->get_gui_base()->get_theme_icon(SNAME("StringName"), SNAME("EditorIcons")), "StringName");
+	type->add_icon_item(p_editor->get_gui_base()->get_theme_icon(SNAME("RID"), SNAME("EditorIcons")), "Rid");
 	add_child(type);
 
 	name = memnew(LineEdit);
@@ -358,7 +358,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 
 		Button *create_comp_btn = memnew(Button);
 		create_comp_btn->set_text(TTR("Components"));
-		create_comp_btn->set_icon(editor->get_theme_base()->get_theme_icon(SNAME("Load"), SNAME("EditorIcons")));
+		create_comp_btn->set_icon(editor->get_gui_base()->get_theme_icon(SNAME("Load"), SNAME("EditorIcons")));
 		create_comp_btn->set_flat(true);
 		create_comp_btn->set_h_size_flags(0.0);
 		create_comp_btn->set_v_size_flags(0.0);
@@ -383,7 +383,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 
 			Button *new_pipeline_btn = memnew(Button);
 			new_pipeline_btn->set_h_size_flags(0);
-			new_pipeline_btn->set_icon(editor->get_theme_base()->get_theme_icon(SNAME("New"), SNAME("EditorIcons")));
+			new_pipeline_btn->set_icon(editor->get_gui_base()->get_theme_icon(SNAME("New"), SNAME("EditorIcons")));
 			new_pipeline_btn->set_flat(true);
 			new_pipeline_btn->set_text(TTR("Add pipeline"));
 			new_pipeline_btn->connect(SNAME("pressed"), callable_mp(this, &EditorWorldECS::pipeline_add));
@@ -392,14 +392,14 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 			Button *rename_pipeline_btn = memnew(Button);
 			rename_pipeline_btn->set_text(TTR("Rename"));
 			rename_pipeline_btn->set_h_size_flags(0);
-			rename_pipeline_btn->set_icon(editor->get_theme_base()->get_theme_icon(SNAME("Edit"), SNAME("EditorIcons")));
+			rename_pipeline_btn->set_icon(editor->get_gui_base()->get_theme_icon(SNAME("Edit"), SNAME("EditorIcons")));
 			rename_pipeline_btn->set_flat(true);
 			rename_pipeline_btn->connect(SNAME("pressed"), callable_mp(this, &EditorWorldECS::pipeline_rename_show_window));
 			world_ecs_sub_menu_wrap->add_child(rename_pipeline_btn);
 
 			Button *remove_pipeline_btn = memnew(Button);
 			remove_pipeline_btn->set_h_size_flags(0);
-			remove_pipeline_btn->set_icon(editor->get_theme_base()->get_theme_icon(SNAME("Remove"), SNAME("EditorIcons")));
+			remove_pipeline_btn->set_icon(editor->get_gui_base()->get_theme_icon(SNAME("Remove"), SNAME("EditorIcons")));
 			remove_pipeline_btn->set_flat(true);
 			remove_pipeline_btn->connect(SNAME("pressed"), callable_mp(this, &EditorWorldECS::pipeline_remove_show_confirmation));
 			world_ecs_sub_menu_wrap->add_child(remove_pipeline_btn);
@@ -418,7 +418,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 		Button *show_pipeline_btn = memnew(Button);
 		show_pipeline_btn->set_h_size_flags(0);
 		show_pipeline_btn->set_text(TTR("Pipeline view"));
-		show_pipeline_btn->set_icon(editor->get_theme_base()->get_theme_icon(SNAME("PackedDataContainer"), SNAME("EditorIcons")));
+		show_pipeline_btn->set_icon(editor->get_gui_base()->get_theme_icon(SNAME("PackedDataContainer"), SNAME("EditorIcons")));
 		show_pipeline_btn->set_flat(true);
 		show_pipeline_btn->connect(SNAME("pressed"), callable_mp(this, &EditorWorldECS::pipeline_toggle_pipeline_view));
 		menu_wrapper->add_child(show_pipeline_btn);
@@ -666,7 +666,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 			vertical_container->add_child(components_tree);
 
 			Button *new_component_btn = memnew(Button);
-			new_component_btn->set_icon(editor->get_theme_base()->get_theme_icon(SNAME("New"), SNAME("EditorIcons")));
+			new_component_btn->set_icon(editor->get_gui_base()->get_theme_icon(SNAME("New"), SNAME("EditorIcons")));
 			new_component_btn->set_text(TTR("New component"));
 			new_component_btn->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 			new_component_btn->set_v_size_flags(0);
@@ -744,7 +744,7 @@ EditorWorldECS::EditorWorldECS(EditorNode *p_editor) :
 
 			Button *add_var_btn = memnew(Button);
 			add_var_btn->set_text(TTR("Add variable"));
-			add_var_btn->set_icon(editor->get_theme_base()->get_theme_icon(SNAME("Add"), SNAME("EditorIcons")));
+			add_var_btn->set_icon(editor->get_gui_base()->get_theme_icon(SNAME("Add"), SNAME("EditorIcons")));
 			add_var_btn->set_h_size_flags(SizeFlags::SIZE_FILL | SizeFlags::SIZE_EXPAND);
 			add_var_btn->set_v_size_flags(0);
 			// add_var_btn->connect(SNAME("pressed"), callable_mp(this, &EditorWorldECS::add_sys_show)); // TODO
@@ -1155,7 +1155,7 @@ void EditorWorldECS::add_sys_update(const String &p_search) {
 		}
 
 		TreeItem *item = add_sys_tree->create_item(system_bundles_root);
-		item->set_icon(0, editor->get_theme_base()->get_theme_icon(SNAME("Load"), SNAME("EditorIcons")));
+		item->set_icon(0, editor->get_gui_base()->get_theme_icon(SNAME("Load"), SNAME("EditorIcons")));
 		item->set_text(0, key_name);
 		item->set_meta("system_bundle_name", key_name);
 		item->set_meta("desc", desc);
@@ -1184,13 +1184,13 @@ void EditorWorldECS::add_sys_update(const String &p_search) {
 
 		TreeItem *item = add_sys_tree->create_item(systems_root);
 		if (ECS::is_system_dispatcher(system_id)) {
-			item->set_icon(0, editor->get_theme_base()->get_theme_icon(SNAME("ShaderMaterial"), SNAME("EditorIcons")));
+			item->set_icon(0, editor->get_gui_base()->get_theme_icon(SNAME("ShaderMaterial"), SNAME("EditorIcons")));
 		} else if (ECS::is_temporary_system(system_id)) {
-			item->set_icon(0, editor->get_theme_base()->get_theme_icon(SNAME("Time"), SNAME("EditorIcons")));
+			item->set_icon(0, editor->get_gui_base()->get_theme_icon(SNAME("Time"), SNAME("EditorIcons")));
 		} else if (ECS::is_dynamic_system(system_id)) {
-			item->set_icon(0, editor->get_theme_base()->get_theme_icon(SNAME("Script"), SNAME("EditorIcons")));
+			item->set_icon(0, editor->get_gui_base()->get_theme_icon(SNAME("Script"), SNAME("EditorIcons")));
 		} else {
-			item->set_icon(0, editor->get_theme_base()->get_theme_icon(SNAME("ShaderGlobalsOverride"), SNAME("EditorIcons")));
+			item->set_icon(0, editor->get_gui_base()->get_theme_icon(SNAME("ShaderGlobalsOverride"), SNAME("EditorIcons")));
 		}
 		item->set_text(0, key_name);
 		item->set_meta("system_name", key_name);

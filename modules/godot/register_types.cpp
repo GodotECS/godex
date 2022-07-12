@@ -25,6 +25,17 @@
 
 #include "editor/plugins/node_3d_editor_plugin.h"
 
+static void _editor_init() {
+	EditorNode *p_editor = EditorNode::get_singleton();
+	ERR_FAIL_COND_MSG(p_editor == nullptr, "The editor is not defined.");
+
+	EntityEditorPlugin *entity_plugin = memnew(EntityEditorPlugin(p_editor));
+	EditorNode::get_singleton()->add_editor_plugin(entity_plugin);
+
+	WorldECSEditorPlugin *worldecs_plugin = memnew(WorldECSEditorPlugin(p_editor));
+	EditorNode::get_singleton()->add_editor_plugin(worldecs_plugin);
+}
+
 void initialize_godot_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
 		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Nodes
@@ -125,11 +136,8 @@ void initialize_godot_module(ModuleInitializationLevel p_level) {
 
 	} else if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
 		if (Engine::get_singleton()->is_editor_hint()) {
-			if (EditorNode::get_singleton() != nullptr) {
-				// Setup editor plugins
-				EditorNode::get_singleton()->add_editor_plugin(memnew(EntityEditorPlugin(EditorNode::get_singleton())));
-				EditorNode::get_singleton()->add_editor_plugin(memnew(WorldECSEditorPlugin(EditorNode::get_singleton())));
-			}
+			EditorNode::add_init_callback(_editor_init);
+
 			if (Node3DEditor::get_singleton() != nullptr) {
 				// Add component gizmos:
 				Node3DEditor::get_singleton()->add_gizmo_plugin(Ref<Components3DGizmoPlugin>(Components3DGizmoPlugin::get_singleton()));
