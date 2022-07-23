@@ -806,8 +806,8 @@ int ECS::get_dispatcher_index(godex::system_id p_id) {
 	return systems_info[p_id].dispatcher_index;
 }
 
-const LocalVector<Dependency> &ECS::get_system_dependencies(godex::system_id p_id) {
-	static const LocalVector<Dependency> dep;
+const LocalVector<SystemDependency> &ECS::get_system_dependencies(godex::system_id p_id) {
+	static const LocalVector<SystemDependency> dep;
 	ERR_FAIL_COND_V_MSG(verify_system_id(p_id) == false, dep, "The SystemID: " + itos(p_id) + " doesn't exists. Are you passing a System ID?");
 	return systems_info[p_id].dependencies;
 }

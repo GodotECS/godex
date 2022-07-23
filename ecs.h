@@ -30,11 +30,6 @@ enum Phase : int {
 	PHASE_MAX,
 };
 
-struct Dependency {
-	bool execute_before;
-	StringName system_name;
-};
-
 struct DataAccessorFuncs {
 	const LocalVector<PropertyInfo> *(*get_static_properties)() = nullptr;
 	void (*get_property_list)(void *p_self, List<PropertyInfo> *r_list) = nullptr;
@@ -91,6 +86,11 @@ enum Flags {
 	EXCLUDE_PIPELINE_COMPOSITION = 1 << 1,
 };
 
+struct SystemDependency {
+	bool execute_before;
+	StringName system_name;
+};
+
 class SystemInfo {
 	friend class ECS;
 	friend class SystemBundleInfo;
@@ -105,7 +105,7 @@ class SystemInfo {
 	godex::system_id id = godex::SYSTEM_NONE;
 	Phase phase = PHASE_PROCESS;
 	StringName dispatcher;
-	LocalVector<Dependency> dependencies;
+	LocalVector<SystemDependency> dependencies;
 	String description;
 	Type type = TYPE_NORMAL;
 	int dispatcher_index = -1;
@@ -136,7 +136,7 @@ class SystemBundleInfo {
 	String description;
 	LocalVector<StringName> systems;
 	/// Bundle dependencies.
-	LocalVector<Dependency> dependencies;
+	LocalVector<SystemDependency> dependencies;
 
 public:
 	SystemBundleInfo &set_description(const String &p_description);
@@ -454,7 +454,7 @@ public:
 	static Phase get_system_phase(godex::system_id p_id);
 	static StringName get_system_dispatcher(godex::system_id p_id);
 	static int get_dispatcher_index(godex::system_id p_id);
-	static const LocalVector<Dependency> &get_system_dependencies(godex::system_id p_id);
+	static const LocalVector<SystemDependency> &get_system_dependencies(godex::system_id p_id);
 	static int get_system_flags(godex::system_id p_id);
 
 	/// Returns `true` when the system dispatches a pipeline when executed.

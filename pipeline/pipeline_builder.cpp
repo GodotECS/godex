@@ -221,7 +221,7 @@ void PipelineBuilder::build_graph(
 
 	fetch_bundle_info(p_system_bundles, r_graph);
 	for (int i = 0; i < p_systems.size(); i += 1) {
-		fetch_system_info(p_systems[i], StringName(), -1, LocalVector<Dependency>(), r_graph);
+		fetch_system_info(p_systems[i], StringName(), -1, LocalVector<SystemDependency>(), r_graph);
 	}
 
 	String error;
@@ -404,7 +404,7 @@ void PipelineBuilder::fetch_system_info(
 		const StringName &p_system,
 		const StringName &p_bundle_name,
 		int p_explicit_priority,
-		const LocalVector<Dependency> &p_extra_dependencies,
+		const LocalVector<SystemDependency> &p_extra_dependencies,
 		ExecutionGraph *r_graph) {
 	godex::system_id id = ECS::get_system_id(p_system);
 	if (id == godex::SYSTEM_NONE) {
@@ -482,7 +482,7 @@ void PipelineBuilder::fetch_system_info(
 
 void PipelineBuilder::resolve_dependencies(
 		godex::system_id id,
-		const LocalVector<Dependency> &p_dependencies,
+		const LocalVector<SystemDependency> &p_dependencies,
 		ExecutionGraph *r_graph) {
 	for (uint32_t i = 0; i < p_dependencies.size(); i += 1) {
 		const godex::system_id dep_system_id = ECS::get_system_id(p_dependencies[i].system_name);
