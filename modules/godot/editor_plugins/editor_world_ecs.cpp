@@ -1262,7 +1262,7 @@ void EditorWorldECS::add_error(const String &p_msg) {
 	Label *lbl = memnew(Label);
 	lbl->set_text("- [Error] " + p_msg);
 	lbl->add_theme_color_override(SNAME("font_color"), Color(0.95, 0.05, 0));
-	lbl->set_autowrap_mode(Label::AutowrapMode::AUTOWRAP_WORD_SMART);
+	lbl->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
 	errors_warnings_container->add_child(lbl);
 }
 
@@ -1270,7 +1270,7 @@ void EditorWorldECS::add_warning(const String &p_msg) {
 	Label *lbl = memnew(Label);
 	lbl->set_text("- [Warning] " + p_msg);
 	lbl->add_theme_color_override(SNAME("font_color"), Color(0.96, 0.9, 0.45));
-	lbl->set_autowrap_mode(Label::AutowrapMode::AUTOWRAP_WORD_SMART);
+	lbl->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
 	errors_warnings_container->add_child(lbl);
 }
 
