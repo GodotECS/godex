@@ -138,12 +138,12 @@ private:
 			const StringName &p_system,
 			const StringName &p_bundle_name,
 			int p_explicit_priority,
-			const LocalVector<Dependency> &p_extra_dependencies,
+			const LocalVector<SystemDependency> &p_extra_dependencies,
 			ExecutionGraph *r_graph);
 
 	static void resolve_dependencies(
 			godex::system_id id,
-			const LocalVector<Dependency> &p_dependencies,
+			const LocalVector<SystemDependency> &p_dependencies,
 			ExecutionGraph *r_graph);
 
 	static bool sort_systems(ExecutionGraph *r_graph, String &r_error_msg);
