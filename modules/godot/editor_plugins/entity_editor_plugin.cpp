@@ -83,7 +83,7 @@ void EntityEditor::update_editors() {
 			del_btn->set_icon(editor->get_theme_base()->get_theme_icon(SNAME("Remove"), SNAME("EditorIcons")));
 			del_btn->set_flat(false);
 			del_btn->set_text_alignment(HORIZONTAL_ALIGNMENT_LEFT);
-			del_btn->connect(SNAME("pressed"), callable_mp(this, &EntityEditor::_remove_component_pressed), varray(*it.key));
+			del_btn->connect(SNAME("pressed"), callable_mp(this, &EntityEditor::_remove_component_pressed).bind(*it.key));
 			component_section->get_vbox()->add_child(del_btn);
 
 			create_component_inspector(*it.key, *it.value, component_section->get_vbox());

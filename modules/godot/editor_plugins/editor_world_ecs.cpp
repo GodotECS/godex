@@ -42,7 +42,7 @@ PipelineElementInfoBox::PipelineElementInfoBox(EditorNode *p_editor, EditorWorld
 	remove_btn->set_h_size_flags(0);
 	remove_btn->set_v_size_flags(0);
 	remove_btn->set_flat(true);
-	remove_btn->connect(SNAME("pressed"), callable_mp(this, &PipelineElementInfoBox::system_remove), Vector<Variant>(), CONNECT_DEFERRED);
+	remove_btn->connect(SNAME("pressed"), callable_mp(this, &PipelineElementInfoBox::system_remove), CONNECT_DEFERRED);
 	box->add_child(remove_btn);
 
 	system_name_lbl = memnew(Label);
