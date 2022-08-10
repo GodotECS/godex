@@ -2,7 +2,7 @@
 
 #include "../pipeline/pipeline.h"
 #include "../utils/fetchers.h"
-#include "modules/gdscript/gdscript.cpp"
+#include "modules/gdscript/gdscript.h"
 
 godex::DynamicSystemExecutionData::DynamicSystemExecutionData() {}
 
