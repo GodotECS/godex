@@ -10,6 +10,7 @@
 #include "editor/editor_scale.h"
 #include "scene/gui/color_rect.h"
 #include "scene/gui/reference_rect.h"
+#include "scene/gui/separator.h"
 
 PipelineElementInfoBox::PipelineElementInfoBox(EditorNode *p_editor, EditorWorldECS *p_editor_world_ecs) :
 		editor(p_editor),
