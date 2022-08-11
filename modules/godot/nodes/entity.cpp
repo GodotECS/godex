@@ -45,6 +45,9 @@ void Entity3D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_reference_by_nodepath", "active"), &Entity3D::set_reference_by_nodepath);
 	ClassDB::bind_method(D_METHOD("get_reference_by_nodepath"), &Entity3D::get_reference_by_nodepath);
 
+	BIND_ENUM_CONSTANT(LOCAL);
+	BIND_ENUM_CONSTANT(GLOBAL);
+
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "sync_transform"), "set_sync_transform", "get_sync_transform");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "reference_by_nodepath"), "set_reference_by_nodepath", "get_reference_by_nodepath");
 }
@@ -66,6 +69,9 @@ void Entity2D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_reference_by_nodepath", "active"), &Entity2D::set_reference_by_nodepath);
 	ClassDB::bind_method(D_METHOD("get_reference_by_nodepath"), &Entity2D::get_reference_by_nodepath);
+
+	BIND_ENUM_CONSTANT(LOCAL);
+	BIND_ENUM_CONSTANT(GLOBAL);
 
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "sync_transform"), "set_sync_transform", "get_sync_transform");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "reference_by_nodepath"), "set_reference_by_nodepath", "get_reference_by_nodepath");

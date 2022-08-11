@@ -27,6 +27,9 @@ void DynamicQuery::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_current_entity_id"), &DynamicQuery::script_get_current_entity_id);
 	ClassDB::bind_method(D_METHOD("count"), &DynamicQuery::count);
+
+	BIND_ENUM_CONSTANT(LOCAL);
+	BIND_ENUM_CONSTANT(GLOBAL);
 }
 
 DynamicQuery::DynamicQuery() {
