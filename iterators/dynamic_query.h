@@ -57,14 +57,14 @@ public:
 	void set_space(Space p_space);
 
 	/// Add component.
-	void with_component(uint32_t p_component_id, bool p_mutable = false);
-	void maybe_component(uint32_t p_component_id, bool p_mutable = false);
-	void changed_component(uint32_t p_component_id, bool p_mutable = false);
+	void with_component(uint32_t p_component_id, bool p_is_mutable = false);
+	void maybe_component(uint32_t p_component_id, bool p_is_mutable = false);
+	void changed_component(uint32_t p_component_id, bool p_is_mutable = false);
 
 	/// Excludes this component from the query.
 	void not_component(uint32_t p_component_id);
 
-	void _with_component(uint32_t p_component_id, bool p_mutable, FetchMode p_mode);
+	void _with_component(uint32_t p_component_id, bool p_is_mutable, FetchMode p_mode);
 
 	/// Returns true if this query is valid.
 	bool is_valid() const;
