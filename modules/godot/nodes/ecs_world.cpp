@@ -331,7 +331,7 @@ void WorldECS::_notification(int p_what) {
 			if (Engine::get_singleton()->is_editor_hint()) {
 				init_default();
 
-				ScriptEcs::get_singleton()->connect("ecs_script_reloaded", callable_mp(this, &WorldECS::on_ecs_script_reloaded), Vector<Variant>(), CONNECT_DEFERRED);
+				ScriptEcs::get_singleton()->connect("ecs_script_reloaded", callable_mp(this, &WorldECS::on_ecs_script_reloaded), CONNECT_DEFERRED);
 			}
 #endif
 
@@ -467,12 +467,9 @@ void WorldECS::add_pipeline(Ref<PipelineECS> p_pipeline) {
 	if (Engine::get_singleton()->is_editor_hint()) {
 		update_configuration_warnings();
 
-		Vector<Variant> vars;
-		vars.push_back(p_pipeline);
 		p_pipeline->connect(
 				CoreStringNames::get_singleton()->property_list_changed,
-				callable_mp(this, &WorldECS::on_pipeline_changed),
-				vars);
+				callable_mp(this, &WorldECS::on_pipeline_changed).bind(p_pipeline));
 	}
 #endif
 }
