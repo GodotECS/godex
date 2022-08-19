@@ -13,7 +13,7 @@ Godex is a Godot Engine ecs library.
 **Disclaimer:** this module is still in development, open an [issues](https://github.com/GodotECS/godex/issues) to report any problem or a new [discussion](https://github.com/GodotECS/godex/discussions) if you need any help. Any form of contribution is welcome.
 
 ### The tested Godot version
-Is `master` `3bd74cd67bfc5484b3f5d4b47da66c55457474c7`, please open an issue if the current master is not working or doesn't compile.
+Is `master` `35cfaafda8073f700c9d2fe42a43d3d81eaaea67`, please open an issue if the current master is not working or doesn't compile.
 
 ### What is ECS
 Shortened as ECS, the Entity Component System is an architectural design pattern that allow to organize the data in a way so that the workload can be split into small and easy programs.
