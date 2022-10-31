@@ -204,6 +204,7 @@ protected:
 
 	DispatcherPipelineView *pipeline_view_add_dispatcher();
 	void pipeline_view_clear();
+	static void remove_node_and_reparent_children(Node *p_node);
 };
 
 class WorldECSEditorPlugin : public EditorPlugin {

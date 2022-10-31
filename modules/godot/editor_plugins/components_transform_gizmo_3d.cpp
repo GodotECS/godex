@@ -16,7 +16,7 @@ void TransformComponentGizmo::init() {
 }
 
 void TransformComponentGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 
 	if (entity->has_component(transform_component_name) == false) {
 		// Nothing to do.

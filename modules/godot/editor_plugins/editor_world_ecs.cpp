@@ -1275,10 +1275,43 @@ void EditorWorldECS::add_warning(const String &p_msg) {
 	errors_warnings_container->add_child(lbl);
 }
 
+void EditorWorldECS::remove_node_and_reparent_children(Node *p_node) {
+	Node *new_owner = p_node->get_owner();
+
+	List<Node *> children;
+
+	while (true) {
+		bool clear = true;
+		for (int i = 0; i < p_node->get_child_count(false); i++) {
+			Node* c_node = p_node->get_child(i, false);
+			if (!c_node->get_owner()) {
+				continue;
+			}
+
+			p_node->remove_child(c_node);
+			children.push_back(c_node);
+			clear = false;
+			break;
+		}
+
+		if (clear) {
+			break;
+		}
+	}
+
+	while (!children.is_empty()) {
+		Node *c_node = children.front()->get();
+		p_node->get_parent()->add_child(c_node);
+		children.pop_front();
+	}
+
+	p_node->get_parent()->remove_child(p_node);
+}
+
 void EditorWorldECS::clear_errors_warnings() {
 	for (int i = errors_warnings_container->get_child_count() - 1; i >= 0; i -= 1) {
 		Node *n = errors_warnings_container->get_child(i);
-		errors_warnings_container->get_child(i)->remove_and_skip();
+		remove_node_and_reparent_children(n);
 		memdelete(n);
 	}
 }
@@ -1304,7 +1337,7 @@ PipelineElementInfoBox *EditorWorldECS::pipeline_panel_add_entry() {
 void EditorWorldECS::pipeline_panel_clear() {
 	for (int i = pipeline_panel->get_child_count() - 1; i >= 0; i -= 1) {
 		Node *n = pipeline_panel->get_child(i);
-		pipeline_panel->get_child(i)->remove_and_skip();
+		remove_node_and_reparent_children(n);
 		memdelete(n);
 	}
 }
@@ -1318,7 +1351,7 @@ DispatcherPipelineView *EditorWorldECS::pipeline_view_add_dispatcher() {
 void EditorWorldECS::pipeline_view_clear() {
 	for (int i = pipeline_view_panel->get_child_count() - 1; i >= 0; i -= 1) {
 		Node *n = pipeline_view_panel->get_child(i);
-		pipeline_view_panel->get_child(i)->remove_and_skip();
+		remove_node_and_reparent_children(n);
 		memdelete(n);
 	}
 }
@@ -1326,12 +1359,12 @@ void EditorWorldECS::pipeline_view_clear() {
 WorldECSEditorPlugin::WorldECSEditorPlugin(EditorNode *p_node) :
 		editor(p_node) {
 	ecs_editor = memnew(EditorWorldECS(p_node));
-	editor->get_main_control()->add_child(ecs_editor);
+	editor->get_main_screen_control()->add_child(ecs_editor);
 	ecs_editor->hide_editor();
 }
 
 WorldECSEditorPlugin::~WorldECSEditorPlugin() {
-	editor->get_main_control()->remove_child(ecs_editor);
+	editor->get_main_screen_control()->remove_child(ecs_editor);
 	memdelete(ecs_editor);
 	ecs_editor = nullptr;
 }

@@ -414,8 +414,8 @@ World *WorldECS::get_world() const {
 	return world;
 }
 
-TypedArray<String> WorldECS::get_configuration_warnings() const {
-	TypedArray<String> warnings = Node::get_configuration_warnings();
+PackedStringArray WorldECS::get_configuration_warnings() const {
+	Vector<String> warnings = Node::get_configuration_warnings();
 
 	if (!is_inside_tree()) {
 		return warnings;
