@@ -149,7 +149,7 @@ void initialize_godot_module(ModuleInitializationLevel p_level) {
 
 		} else {
 			// Load the Scripted Components/Databags/Systems
-			ScriptEcs::get_singleton()->register_runtime_scripts();
+//			ScriptEcs::get_singleton()->register_runtime_scripts();
 		}
 	}
 }
