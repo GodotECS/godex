@@ -4,6 +4,7 @@
 #include "core/io/marshalls.h"
 #include "editor/editor_properties.h"
 #include "editor/editor_properties_array_dict.h"
+#include "editor/editor_undo_redo_manager.h"
 
 void EntityEditor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("update_editors"), &EntityEditor::update_editors);
@@ -67,7 +68,7 @@ void EntityEditor::update_editors() {
 	if (components_section) {
 		// Remove old childs.
 		for (int i = components_section->get_vbox()->get_child_count() - 1; i >= 0; i -= 1) {
-			components_section->get_vbox()->get_child(i)->queue_delete(); // TODO is this enough to also destroy the internally created things?
+			components_section->get_vbox()->get_child(i)->queue_free(); // TODO is this enough to also destroy the internally created things?
 		}
 		components_properties.clear();
 
@@ -660,21 +661,21 @@ void EntityEditor::_add_component_pressed(uint32_t p_index) {
 		component_name = add_component_menu->get_popup()->get_item_text(p_index);
 	}
 
-	editor->get_undo_redo()->create_action(TTR("Add component"));
-	editor->get_undo_redo()->add_do_method(entity, SNAME("add_component"), component_name);
-	editor->get_undo_redo()->add_do_method(this, SNAME("update_editors"));
-	editor->get_undo_redo()->add_undo_method(entity, SNAME("remove_component"), component_name);
-	editor->get_undo_redo()->add_undo_method(this, SNAME("update_editors"));
-	editor->get_undo_redo()->commit_action();
+	EditorNode::get_undo_redo()->create_action(TTR("Add component"));
+	EditorNode::get_undo_redo()->add_do_method(entity, SNAME("add_component"), component_name);
+	EditorNode::get_undo_redo()->add_do_method(this, SNAME("update_editors"));
+	EditorNode::get_undo_redo()->add_undo_method(entity, SNAME("remove_component"), component_name);
+	EditorNode::get_undo_redo()->add_undo_method(this, SNAME("update_editors"));
+	EditorNode::get_undo_redo()->commit_action();
 }
 
 void EntityEditor::_remove_component_pressed(StringName p_component_name) {
-	editor->get_undo_redo()->create_action(TTR("Drop component"));
-	editor->get_undo_redo()->add_do_method(entity, SNAME("remove_component"), p_component_name);
-	editor->get_undo_redo()->add_do_method(this, SNAME("update_editors"));
-	editor->get_undo_redo()->add_undo_method(entity, SNAME("add_component"), p_component_name, entity_get_component_props_data(p_component_name));
-	editor->get_undo_redo()->add_undo_method(this, SNAME("update_editors"));
-	editor->get_undo_redo()->commit_action();
+	EditorNode::get_undo_redo()->create_action(TTR("Drop component"));
+	EditorNode::get_undo_redo()->add_do_method(entity, SNAME("remove_component"), p_component_name);
+	EditorNode::get_undo_redo()->add_do_method(this, SNAME("update_editors"));
+	EditorNode::get_undo_redo()->add_undo_method(entity, SNAME("add_component"), p_component_name, entity_get_component_props_data(p_component_name));
+	EditorNode::get_undo_redo()->add_undo_method(this, SNAME("update_editors"));
+	EditorNode::get_undo_redo()->commit_action();
 }
 
 void EntityEditor::_property_changed(const String &p_path, const Variant &p_value, const String &p_name, bool p_changing) {
@@ -683,11 +684,11 @@ void EntityEditor::_property_changed(const String &p_path, const Variant &p_valu
 		return;
 	}
 
-	editor->get_undo_redo()->create_action(TTR("Set component value"));
-	editor->get_undo_redo()->add_do_method(entity, SNAME("set"), p_path, p_value);
-	editor->get_undo_redo()->add_undo_method(entity, SNAME("set"), p_path, entity->get(p_path));
-	editor->get_undo_redo()->add_undo_method(this, SNAME("update_editors"));
-	editor->get_undo_redo()->commit_action();
+	EditorNode::get_undo_redo()->create_action(TTR("Set component value"));
+	EditorNode::get_undo_redo()->add_do_method(entity, SNAME("set"), p_path, p_value);
+	EditorNode::get_undo_redo()->add_undo_method(entity, SNAME("set"), p_path, entity->get(p_path));
+	EditorNode::get_undo_redo()->add_undo_method(this, SNAME("update_editors"));
+	EditorNode::get_undo_redo()->commit_action();
 
 	if (p_value.get_type() != Variant::STRING) {
 		// This is needed because string update is special: If string is updated
