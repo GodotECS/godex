@@ -143,6 +143,12 @@ String System::validate_script(Ref<Script> p_script) {
 
 	List<PropertyInfo> properties;
 	p_script->get_script_property_list(&properties);
+	for (List<PropertyInfo>::Element *e = properties.front(); e; e = e->next()) {
+		if (e->get().name == p_script->get_class_category().name) {
+			properties.erase(e) ;
+		}
+	}
+
 	if (properties.size()) {
 		return TTR("The System script can't have any property in it. It possible to only access `Component`s and `Databag`s.");
 	}
@@ -332,6 +338,9 @@ String Component::validate_script(Ref<Script> p_script) {
 	List<PropertyInfo> properties;
 	p_script->get_script_property_list(&properties);
 	for (List<PropertyInfo>::Element *e = properties.front(); e; e = e->next()) {
+		if (e->get().name == p_script->get_class_category().name) {
+			continue ;
+		}
 		switch (e->get().type) {
 			case Variant::NIL:
 				return "(" + e->get().name + ") " + TTR("Please make sure all variables are typed.");

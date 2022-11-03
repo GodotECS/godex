@@ -1070,6 +1070,9 @@ uint32_t ECS::register_or_update_script_component(
 
 	// Validate and initialize the parameters.
 	for (uint32_t i = 0; i < p_properties.size(); i += 1) {
+		if (p_properties[i].property.name == p_name) {
+			continue ;
+		}
 		// Is  type supported?
 		switch (p_properties[i].property.type) {
 			case Variant::NIL:
