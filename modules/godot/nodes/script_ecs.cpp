@@ -146,9 +146,8 @@ uint64_t ScriptEcs::load_scripts(EditorFileSystemDirectory *p_dir) {
 
 		if (p_dir->get_file_import_is_valid(i) &&
 				(file_type == "GDScript" ||
-						file_type == "VisualScript" ||
 						file_type == "NativeScript" ||
-						file_type == "C#" ||
+						file_type == "CSharpScript" ||
 						file_type == "Rust")) { // TODO add more?
 
 			const bool changed =

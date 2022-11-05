@@ -1070,7 +1070,11 @@ uint32_t ECS::register_or_update_script_component(
 
 	// Validate and initialize the parameters.
 	for (uint32_t i = 0; i < p_properties.size(); i += 1) {
-		if (p_properties[i].property.name == p_name) {
+		if (
+				// Filter GDScript file name
+				p_properties[i].property.name == p_name
+				// Filter C# file name. It uses only the class name
+				|| p_properties[i].property.name + ".cs" == p_name) {
 			continue ;
 		}
 		// Is  type supported?
@@ -1081,7 +1085,7 @@ uint32_t ECS::register_or_update_script_component(
 			case Variant::SIGNAL:
 			case Variant::CALLABLE:
 				// TODO what about dictionary and arrays?
-				ERR_PRINT("The script component " + p_name + " is using a pointer variable. This is unsafe, so not supported. Please use a databag.");
+				ERR_PRINT("The property " + p_properties[i].property.name + " of script component " + p_name + " is using a pointer variable. This is unsafe, so not supported. Please use a databag.");
 				return UINT32_MAX;
 			default:
 				// Valid!
