@@ -40,3 +40,12 @@ If you want to help with coding instead, those two links may turn useful:
 You can download [Linux](https://github.com/GodotECS/godex/actions/workflows/linux_builds.yml) and [Windows](https://github.com/GodotECS/godex/actions/workflows/windows_builds.yml) executable from [GitHub Actions](https://github.com/GodotECS/godex/actions):
 
 ![download-godex-binary](https://user-images.githubusercontent.com/8342599/109544641-19cf5c80-7ac8-11eb-8b28-f678f9408c85.gif)
+
+
+# Contributors
+
+<a href="https://github.com/GodotECS/godex/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=GodotECS/godex" />
+</a>
+
+Made with [contrib.rocks](https://contrib.rocks).
