@@ -4,6 +4,7 @@
 #include "core/io/marshalls.h"
 #include "editor/editor_properties.h"
 #include "editor/editor_properties_array_dict.h"
+#include "editor/editor_settings.h"
 #include "editor/editor_undo_redo_manager.h"
 
 void EntityEditor::_bind_methods() {
@@ -185,6 +186,7 @@ void EntityEditor::create_component_inspector(StringName p_component_name, const
 					} else {
 						EditorPropertyInteger *editor = memnew(EditorPropertyInteger);
 						int min = 0, max = 65535, step = 1;
+						bool hide_slider = false;
 						bool greater = true, lesser = true;
 
 						if (e.hint == PROPERTY_HINT_RANGE && e.hint_string.get_slice_count(",") >= 2) {
@@ -208,7 +210,7 @@ void EntityEditor::create_component_inspector(StringName p_component_name, const
 							}
 						}
 
-						editor->setup(min, max, step, greater, lesser);
+						editor->setup(min, max, step, hide_slider, greater, lesser);
 						prop = editor;
 					}
 				} break;
@@ -387,15 +389,13 @@ void EntityEditor::create_component_inspector(StringName p_component_name, const
 
 #define SETUP_MATH_RANGE(editor, prop_info, type)                                                   \
 	type min = -65535, max = 65535;                                                                 \
-	bool hide_slider = true;                                                                        \
                                                                                                     \
 	if (prop_info.hint == PROPERTY_HINT_RANGE && prop_info.hint_string.get_slice_count(",") >= 2) { \
 		min = e.hint_string.get_slice(",", 0).to_float();                                           \
 		max = e.hint_string.get_slice(",", 1).to_float();                                           \
-		hide_slider = false;                                                                        \
 	}                                                                                               \
                                                                                                     \
-	editor->setup(min, max, hide_slider);
+	editor->setup(min, max);
 
 #define SETUP_MATH_RANGE_WITH_STEP(editor, prop_info, type)                                         \
 	type min = -65535, max = 65535, step = default_float_step;                                      \

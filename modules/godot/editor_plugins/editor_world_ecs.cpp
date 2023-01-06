@@ -8,10 +8,11 @@
 #include "editor/editor_file_system.h"
 #include "editor/editor_node.h"
 #include "editor/editor_scale.h"
+#include "editor/editor_undo_redo_manager.h"
 #include "scene/gui/color_rect.h"
 #include "scene/gui/reference_rect.h"
 #include "scene/gui/separator.h"
-#include "editor/editor_undo_redo_manager.h"
+#include "scene/gui/tree.h"
 
 PipelineElementInfoBox::PipelineElementInfoBox(EditorNode *p_editor, EditorWorldECS *p_editor_world_ecs) :
 		editor(p_editor),

@@ -208,7 +208,7 @@ if env["builtin_bullet"]:
     if env["target"] == "debug" or env["target"] == "release_debug":
         env_bullet.Append(CPPDEFINES=["DEBUG"])
 
-    if env["float"] == "64":
+    if env["precision"] == "double":
         env_bullet.Append(CPPDEFINES=["BT_USE_DOUBLE_PRECISION"])
 
     env_bullet.Append(CPPDEFINES=["BT_USE_OLD_DAMPING_METHOD"])

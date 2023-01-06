@@ -2,6 +2,12 @@
 #define EDITORWORLDECS_H
 
 #include "editor/editor_plugin.h"
+#include "scene/gui/dialogs.h"
+#include "scene/gui/line_edit.h"
+#include "scene/gui/margin_container.h"
+#include "scene/gui/panel_container.h"
+#include "scene/gui/option_button.h"
+#include "scene/gui/text_edit.h"
 
 class EditorNode;
 class WorldECS;
