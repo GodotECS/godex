@@ -338,46 +338,6 @@ void EntityEditor::create_component_inspector(StringName p_component_name, const
 							editor->set_save_mode();
 						}
 						prop = editor;
-
-					} else if (e.hint == PROPERTY_HINT_METHOD_OF_VARIANT_TYPE ||
-							   e.hint == PROPERTY_HINT_METHOD_OF_BASE_TYPE ||
-							   e.hint == PROPERTY_HINT_METHOD_OF_INSTANCE ||
-							   e.hint == PROPERTY_HINT_METHOD_OF_SCRIPT ||
-							   e.hint == PROPERTY_HINT_PROPERTY_OF_VARIANT_TYPE ||
-							   e.hint == PROPERTY_HINT_PROPERTY_OF_BASE_TYPE ||
-							   e.hint == PROPERTY_HINT_PROPERTY_OF_INSTANCE ||
-							   e.hint == PROPERTY_HINT_PROPERTY_OF_SCRIPT) {
-						EditorPropertyMember *editor = memnew(EditorPropertyMember);
-
-						EditorPropertyMember::Type type = EditorPropertyMember::MEMBER_METHOD_OF_BASE_TYPE;
-						switch (e.hint) {
-							case PROPERTY_HINT_METHOD_OF_BASE_TYPE:
-								type = EditorPropertyMember::MEMBER_METHOD_OF_BASE_TYPE;
-								break;
-							case PROPERTY_HINT_METHOD_OF_INSTANCE:
-								type = EditorPropertyMember::MEMBER_METHOD_OF_INSTANCE;
-								break;
-							case PROPERTY_HINT_METHOD_OF_SCRIPT:
-								type = EditorPropertyMember::MEMBER_METHOD_OF_SCRIPT;
-								break;
-							case PROPERTY_HINT_PROPERTY_OF_VARIANT_TYPE:
-								type = EditorPropertyMember::MEMBER_PROPERTY_OF_VARIANT_TYPE;
-								break;
-							case PROPERTY_HINT_PROPERTY_OF_BASE_TYPE:
-								type = EditorPropertyMember::MEMBER_PROPERTY_OF_BASE_TYPE;
-								break;
-							case PROPERTY_HINT_PROPERTY_OF_INSTANCE:
-								type = EditorPropertyMember::MEMBER_PROPERTY_OF_INSTANCE;
-								break;
-							case PROPERTY_HINT_PROPERTY_OF_SCRIPT:
-								type = EditorPropertyMember::MEMBER_PROPERTY_OF_SCRIPT;
-								break;
-							default: {
-							}
-						}
-						editor->setup(type, e.hint_string);
-						prop = editor;
-
 					} else {
 						EditorPropertyText *editor = memnew(EditorPropertyText);
 						if (e.hint == PROPERTY_HINT_PLACEHOLDER_TEXT) {
@@ -661,21 +621,21 @@ void EntityEditor::_add_component_pressed(uint32_t p_index) {
 		component_name = add_component_menu->get_popup()->get_item_text(p_index);
 	}
 
-	EditorNode::get_undo_redo()->create_action(TTR("Add component"));
-	EditorNode::get_undo_redo()->add_do_method(entity, SNAME("add_component"), component_name);
-	EditorNode::get_undo_redo()->add_do_method(this, SNAME("update_editors"));
-	EditorNode::get_undo_redo()->add_undo_method(entity, SNAME("remove_component"), component_name);
-	EditorNode::get_undo_redo()->add_undo_method(this, SNAME("update_editors"));
-	EditorNode::get_undo_redo()->commit_action();
+	EditorUndoRedoManager::get_singleton()->create_action(TTR("Add component"));
+	EditorUndoRedoManager::get_singleton()->add_do_method(entity, SNAME("add_component"), component_name);
+	EditorUndoRedoManager::get_singleton()->add_do_method(this, SNAME("update_editors"));
+	EditorUndoRedoManager::get_singleton()->add_undo_method(entity, SNAME("remove_component"), component_name);
+	EditorUndoRedoManager::get_singleton()->add_undo_method(this, SNAME("update_editors"));
+	EditorUndoRedoManager::get_singleton()->commit_action();
 }
 
 void EntityEditor::_remove_component_pressed(StringName p_component_name) {
-	EditorNode::get_undo_redo()->create_action(TTR("Drop component"));
-	EditorNode::get_undo_redo()->add_do_method(entity, SNAME("remove_component"), p_component_name);
-	EditorNode::get_undo_redo()->add_do_method(this, SNAME("update_editors"));
-	EditorNode::get_undo_redo()->add_undo_method(entity, SNAME("add_component"), p_component_name, entity_get_component_props_data(p_component_name));
-	EditorNode::get_undo_redo()->add_undo_method(this, SNAME("update_editors"));
-	EditorNode::get_undo_redo()->commit_action();
+	EditorUndoRedoManager::get_singleton()->create_action(TTR("Drop component"));
+	EditorUndoRedoManager::get_singleton()->add_do_method(entity, SNAME("remove_component"), p_component_name);
+	EditorUndoRedoManager::get_singleton()->add_do_method(this, SNAME("update_editors"));
+	EditorUndoRedoManager::get_singleton()->add_undo_method(entity, SNAME("add_component"), p_component_name, entity_get_component_props_data(p_component_name));
+	EditorUndoRedoManager::get_singleton()->add_undo_method(this, SNAME("update_editors"));
+	EditorUndoRedoManager::get_singleton()->commit_action();
 }
 
 void EntityEditor::_property_changed(const String &p_path, const Variant &p_value, const String &p_name, bool p_changing) {
@@ -684,11 +644,11 @@ void EntityEditor::_property_changed(const String &p_path, const Variant &p_valu
 		return;
 	}
 
-	EditorNode::get_undo_redo()->create_action(TTR("Set component value"));
-	EditorNode::get_undo_redo()->add_do_method(entity, SNAME("set"), p_path, p_value);
-	EditorNode::get_undo_redo()->add_undo_method(entity, SNAME("set"), p_path, entity->get(p_path));
-	EditorNode::get_undo_redo()->add_undo_method(this, SNAME("update_editors"));
-	EditorNode::get_undo_redo()->commit_action();
+	EditorUndoRedoManager::get_singleton()->create_action(TTR("Set component value"));
+	EditorUndoRedoManager::get_singleton()->add_do_method(entity, SNAME("set"), p_path, p_value);
+	EditorUndoRedoManager::get_singleton()->add_undo_method(entity, SNAME("set"), p_path, entity->get(p_path));
+	EditorUndoRedoManager::get_singleton()->add_undo_method(this, SNAME("update_editors"));
+	EditorUndoRedoManager::get_singleton()->commit_action();
 
 	if (p_value.get_type() != Variant::STRING) {
 		// This is needed because string update is special: If string is updated

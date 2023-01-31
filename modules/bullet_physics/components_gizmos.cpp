@@ -127,7 +127,7 @@ void BtBoxGizmo::commit_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, cons
 	if (p_cancel) {
 		entity->set_component_value(box_component_name, half_extents_name, p_restore);
 	} else {
-		Ref<EditorUndoRedoManager> ur = EditorNode::get_undo_redo();
+		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
 		ur->create_action(TTR("Change Shape Box Half Extent"));
 		ur->add_do_method(entity, "set_component_value", box_component_name, half_extents_name, half_extents);
 		Vector3 restore = half_extents;
@@ -253,7 +253,7 @@ void BtSphereGizmo::commit_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, c
 	if (p_cancel) {
 		entity->set_component_value(sphere_component_name, radius_name, p_restore);
 	} else {
-		Ref<EditorUndoRedoManager> ur = EditorNode::get_undo_redo();
+		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
 		ur->create_action(TTR("Change Shape Sphere Radius"));
 		ur->add_do_method(entity, "set_component_value", sphere_component_name, radius_name, radius);
 		ur->add_undo_method(entity, "set_component_value", sphere_component_name, radius_name, p_restore);
@@ -423,7 +423,7 @@ void BtCapsuleGizmo::commit_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, 
 	if (p_cancel) {
 		entity->set_component_value(capsule_component_name, p_idx == 0 ? radius_name : height_name, p_restore);
 	} else {
-		Ref<EditorUndoRedoManager> ur = EditorNode::get_undo_redo();
+		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
 		ur->create_action(TTR("Change Shape Capsule Radius"));
 		ur->add_do_method(entity, "set_component_value", capsule_component_name, p_idx == 0 ? radius_name : height_name, v);
 		ur->add_undo_method(entity, "set_component_value", capsule_component_name, p_idx == 0 ? radius_name : height_name, p_restore);
@@ -569,7 +569,7 @@ void BtConeGizmo::commit_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, con
 	if (p_cancel) {
 		entity->set_component_value(cone_component_name, p_idx == 0 ? radius_name : height_name, p_restore);
 	} else {
-		Ref<EditorUndoRedoManager> ur = EditorNode::get_undo_redo();
+		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
 		ur->create_action(TTR("Change Shape Cone Radius"));
 		ur->add_do_method(entity, "set_component_value", cone_component_name, p_idx == 0 ? radius_name : height_name, v);
 		ur->add_undo_method(entity, "set_component_value", cone_component_name, p_idx == 0 ? radius_name : height_name, p_restore);
@@ -732,7 +732,7 @@ void BtCylinderGizmo::commit_handle(const EditorNode3DGizmo *p_gizmo, int p_idx,
 	if (p_cancel) {
 		entity->set_component_value(cylinder_component_name, p_idx == 0 ? radius_name : height_name, p_restore);
 	} else {
-		Ref<EditorUndoRedoManager> ur = EditorNode::get_undo_redo();
+		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
 		ur->create_action(TTR("Change Shape Capsule Radius"));
 		ur->add_do_method(entity, "set_component_value", cylinder_component_name, p_idx == 0 ? radius_name : height_name, v);
 		ur->add_undo_method(entity, "set_component_value", cylinder_component_name, p_idx == 0 ? radius_name : height_name, p_restore);
@@ -1079,7 +1079,7 @@ void BtPawnGizmo::commit_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, con
 	if (p_cancel) {
 		entity->set_component_value(pawn_component_name, prop_name, p_restore);
 	} else {
-		Ref<EditorUndoRedoManager> ur = EditorNode::get_undo_redo();
+		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
 		ur->create_action(TTR("Change Shape Capsule Radius"));
 		ur->add_do_method(entity, "set_component_value", pawn_component_name, prop_name, v);
 		ur->add_undo_method(entity, "set_component_value", pawn_component_name, prop_name, p_restore);
