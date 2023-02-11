@@ -166,7 +166,9 @@ const ExecutionGraph *PipelineECS::editor_get_execution_graph_or_null() const {
 }
 
 void PipelineECS::editor_reload_execution_graph() {
-	editor_clear_execution_graph();
+	if (Engine::get_singleton()->is_editor_hint()) {
+		editor_clear_execution_graph();
+	}
 	// Re-build the execution graph.
 	editor_get_execution_graph();
 }
@@ -326,6 +328,11 @@ void WorldECS::_get_property_list(List<PropertyInfo> *p_list) const {
 
 void WorldECS::_notification(int p_what) {
 	switch (p_what) {
+		case NOTIFICATION_POSTINITIALIZE:
+			// Make sure to register all scripted components/databags/systems
+			// at this point.
+			ScriptEcs::get_singleton()->register_runtime_scripts();
+			break;
 		case NOTIFICATION_READY:
 #ifdef TOOLS_ENABLED
 			if (Engine::get_singleton()->is_editor_hint()) {
@@ -334,10 +341,6 @@ void WorldECS::_notification(int p_what) {
 				ScriptEcs::get_singleton()->connect("ecs_script_reloaded", callable_mp(this, &WorldECS::on_ecs_script_reloaded), CONNECT_DEFERRED);
 			}
 #endif
-
-			// Make sure to register all scripted components/databags/systems
-			// at this point.
-			ScriptEcs::get_singleton()->register_runtime_scripts(); // TODO do I need this?
 
 			add_to_group("_world_ecs");
 			if (Engine::get_singleton()->is_editor_hint() == false) {

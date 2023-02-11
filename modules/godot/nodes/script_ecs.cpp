@@ -445,6 +445,8 @@ void ScriptEcs::flush_scripts_preparation() {
 }
 
 void ScriptEcs::save_script(const String &p_setting_list_name, const String &p_script_path) {
+	if (!Engine::get_singleton()->is_editor_hint())
+		return;
 	ERR_FAIL_COND_MSG(EditorNode::get_singleton() == nullptr, "The editor is not defined.");
 
 	Array scripts;
