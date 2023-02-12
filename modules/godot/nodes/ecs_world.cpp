@@ -342,6 +342,7 @@ void WorldECS::_notification(int p_what) {
 			}
 #endif
 
+			ScriptEcs::get_singleton()->register_runtime_scripts();
 			add_to_group("_world_ecs");
 			if (Engine::get_singleton()->is_editor_hint() == false) {
 				active_world();
