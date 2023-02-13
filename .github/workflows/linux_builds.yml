@@ -16,7 +16,7 @@ env:
 jobs:
   linux-editor:
     runs-on: "ubuntu-20.04"
-    name: Editor (target=release_debug, tools=yes, tests=yes)
+    name: Editor (target=editor, tools=yes, tests=yes)
 
     steps:
     - name: Make godot dir
@@ -84,7 +84,7 @@ jobs:
         SCONS_CACHE: ${{github.workspace}}/.scons_cache/
       run: |
        cd godot
-       scons tools=yes tests=yes target=release_debug custom_modules="../modules" -j2
+       scons tools=yes tests=yes target=editor custom_modules="../modules" -j2
        ls -l bin/
 
     # Execute unit tests for the editor

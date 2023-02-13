@@ -19,7 +19,7 @@ jobs:
   windows-editor:
     # Windows 10 with latest image
     runs-on: "windows-latest"
-    name: Editor (target=release_debug, tools=yes, tests=yes)
+    name: Editor (target=editor, tools=yes, tests=yes)
 
     steps:
     - name: Make dir
@@ -76,7 +76,7 @@ jobs:
         SCONS_CACHE: ${{github.workspace}}/.scons_cache/
       run: |
         cd godot
-        scons tools=yes tests=yes target=release_debug custom_modules="../modules"
+        scons tools=yes tests=yes target=editor custom_modules="../modules"
         ls -l bin/
 
     # Execute unit tests for the editor
