@@ -10,7 +10,7 @@ on:
 # Global Settings
 env:
   GODOT_BASE_BRANCH: master
-  SCONSFLAGS: platform=linuxbsd verbose=yes warnings=extra werror=yes debug_symbols=no --jobs=2 module_text_server_fb_enabled=yes
+  SCONSFLAGS: platform=linuxbsd verbose=yes warnings=extra werror=yes debug_symbols=no module_text_server_fb_enabled=yes
   SCONS_CACHE_LIMIT: 4096
 
 jobs:
@@ -36,7 +36,12 @@ jobs:
        repository: godotengine/godot
        ref: c4fb119f03477ad9a494ba6cdad211b35a8efcce
        path: godot
-
+    
+    - name: Apply patch
+      run: |
+        cd godot
+        git apply ../modules/godex/patches/add_custom_iterator.patch --reject --ignore-space-change --ignore-whitespace    
+    
     # Azure repositories are not reliable, we need to prevent azure giving us packages.
     - name: Make apt sources.list use the default Ubuntu repositories
       run: |
@@ -84,14 +89,14 @@ jobs:
         SCONS_CACHE: ${{github.workspace}}/.scons_cache/
       run: |
        cd godot
-       scons tools=yes tests=yes target=editor custom_modules="../modules" -j2
+       scons tools=yes tests=yes target=editor custom_modules="../modules"
        ls -l bin/
 
     # Execute unit tests for the editor
     - name: Unit Tests
       run: |
         cd ./godot
-        ./bin/godot.linuxbsd.opt.tools.64 --test
+        ./bin/godot.linuxbsd.editor.x86_64 --test
         cd ../
 
     - uses: actions/upload-artifact@v2
