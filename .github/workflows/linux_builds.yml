@@ -33,8 +33,8 @@ jobs:
     - name: Clone godot for godex
       uses: actions/checkout@v2
       with:
-       repository: GodotECS/godot
-       ref: refs/heads/godex_version
+       repository: godotengine/godot
+       ref: c4fb119f03477ad9a494ba6cdad211b35a8efcce
        path: godot
 
     # Azure repositories are not reliable, we need to prevent azure giving us packages.
