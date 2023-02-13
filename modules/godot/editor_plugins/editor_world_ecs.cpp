@@ -1278,8 +1278,6 @@ void EditorWorldECS::add_warning(const String &p_msg) {
 }
 
 void EditorWorldECS::remove_node_and_reparent_children(Node *p_node) {
-	Node *new_owner = p_node->get_owner();
-
 	List<Node *> children;
 
 	while (true) {
