@@ -36,12 +36,12 @@ jobs:
        repository: godotengine/godot
        ref: c4fb119f03477ad9a494ba6cdad211b35a8efcce
        path: godot
-    
+
     - name: Apply patch
       run: |
         cd godot
-        git apply ../modules/godex/patches/add_custom_iterator.patch --reject --ignore-space-change --ignore-whitespace    
-    
+        git apply ../modules/godex/patches/add_custom_iterator.patch --reject --ignore-space-change --ignore-whitespace
+
     # Azure repositories are not reliable, we need to prevent azure giving us packages.
     - name: Make apt sources.list use the default Ubuntu repositories
       run: |
