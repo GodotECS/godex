@@ -1285,7 +1285,7 @@ void EditorWorldECS::remove_node_and_reparent_children(Node *p_node) {
 	while (true) {
 		bool clear = true;
 		for (int i = 0; i < p_node->get_child_count(false); i++) {
-			Node* c_node = p_node->get_child(i, false);
+			Node *c_node = p_node->get_child(i, false);
 			if (!c_node->get_owner()) {
 				continue;
 			}

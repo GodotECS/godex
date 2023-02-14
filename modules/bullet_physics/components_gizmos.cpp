@@ -1,10 +1,10 @@
 #include "components_gizmos.h"
 
 #include "debug_utilities.h"
-#include "editor/editor_settings.h"
-#include "editor/plugins/node_3d_editor_plugin.h"
 #include "editor/editor_node.h"
+#include "editor/editor_settings.h"
 #include "editor/editor_undo_redo_manager.h"
+#include "editor/plugins/node_3d_editor_plugin.h"
 
 void BtBoxGizmo::init() {
 	const Color gizmo_color = EDITOR_DEF("editors/3d_gizmos/gizmo_colors/shape", Color(0.5, 0.7, 1));

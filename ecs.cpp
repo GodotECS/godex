@@ -1075,7 +1075,7 @@ uint32_t ECS::register_or_update_script_component(
 				p_properties[i].property.name == p_name
 				// Filter C# file name. It uses only the class name
 				|| p_properties[i].property.name + ".cs" == p_name) {
-			continue ;
+			continue;
 		}
 		// Is  type supported?
 		switch (p_properties[i].property.type) {
