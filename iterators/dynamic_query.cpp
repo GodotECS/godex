@@ -13,7 +13,7 @@ void DynamicQuery::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("not_component", "component_id"), &DynamicQuery::not_component);
 
 	ClassDB::bind_method(D_METHOD("is_valid"), &DynamicQuery::is_valid);
-	ClassDB::bind_method(D_METHOD("prepare_world"), &DynamicQuery::prepare_world_script);
+	ClassDB::bind_method(D_METHOD("prepare_world", "world"), &DynamicQuery::prepare_world_script);
 	ClassDB::bind_method(D_METHOD("reset"), &DynamicQuery::reset);
 	ClassDB::bind_method(D_METHOD("get_component", "index"), &DynamicQuery::get_access_by_index_gd);
 

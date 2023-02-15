@@ -187,7 +187,7 @@ void WorldECS::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_system_dispatchers_map", "map"), &WorldECS::set_system_dispatchers_map);
 	ClassDB::bind_method(D_METHOD("get_system_dispatchers_map"), &WorldECS::get_system_dispatchers_map);
-	ClassDB::bind_method(D_METHOD("set_system_dispatchers_pipeline"), &WorldECS::set_system_dispatchers_pipeline);
+	ClassDB::bind_method(D_METHOD("set_system_dispatchers_pipeline", "system_name", "name"), &WorldECS::set_system_dispatchers_pipeline);
 
 	ClassDB::bind_method(D_METHOD("set_active_pipeline", "name"), &WorldECS::set_active_pipeline);
 	ClassDB::bind_method(D_METHOD("get_active_pipeline"), &WorldECS::get_active_pipeline);
@@ -207,8 +207,8 @@ void WorldECS::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("create_entity_from_prefab", "entity_node"), &WorldECS::create_entity_from_prefab);
 
-	ClassDB::bind_method(D_METHOD("add_component_by_name", "component_name", "data"), &WorldECS::add_component_by_name);
-	ClassDB::bind_method(D_METHOD("add_component", "component_id", "data"), &WorldECS::add_component);
+	ClassDB::bind_method(D_METHOD("add_component_by_name", "entity_id", "component_name", "data"), &WorldECS::add_component_by_name);
+	ClassDB::bind_method(D_METHOD("add_component", "entity_id", "component_id", "data"), &WorldECS::add_component);
 
 	ClassDB::bind_method(D_METHOD("remove_component_by_name", "component_name", "data"), &WorldECS::remove_component_by_name);
 	ClassDB::bind_method(D_METHOD("remove_component", "component_id", "data"), &WorldECS::remove_component);
