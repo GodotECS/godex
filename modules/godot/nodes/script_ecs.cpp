@@ -26,6 +26,7 @@ ScriptEcs *ScriptEcs::get_singleton() {
 }
 
 ScriptEcs::~ScriptEcs() {
+	reset_editor_default_component_properties();
 	singleton = nullptr;
 
 	__empty_scripts();
@@ -186,6 +187,29 @@ void ScriptEcs::define_editor_default_component_properties() {
 			Variant def = components[i]->get_property_default_value(e->get().name);
 			ClassDB::set_property_default_value(entity_3d_name, StringName(String(component_names[i]) + "/" + e->get().name), def);
 			ClassDB::set_property_default_value(entity_2d_name, StringName(String(component_names[i]) + "/" + e->get().name), def);
+		}
+	}
+}
+
+void ScriptEcs::reset_editor_default_component_properties() {
+	const StringName entity_3d_name = Entity3D::get_class_static();
+	const StringName entity_2d_name = Entity2D::get_class_static();
+
+	for (godex::component_id id = 0; id < ECS::get_components_count(); id += 1) {
+		const LocalVector<PropertyInfo> *props = ECS::component_get_static_properties(id);
+		for (uint32_t p = 0; p < props->size(); p += 1) {
+			ClassDB::set_property_default_value(entity_3d_name, StringName(String(ECS::get_component_name(id)) + "/" + (*props)[p].name), Variant());
+			ClassDB::set_property_default_value(entity_2d_name, StringName(String(ECS::get_component_name(id)) + "/" + (*props)[p].name), Variant());
+		}
+	}
+
+	// Register the scripted component defaults.
+	for (uint32_t i = 0; i < components.size(); i += 1) {
+		List<PropertyInfo> props;
+		components[i]->get_property_list(&props);
+		for (List<PropertyInfo>::Element *e = props.front(); e; e = e->next()) {
+			ClassDB::set_property_default_value(entity_3d_name, StringName(String(component_names[i]) + "/" + e->get().name), Variant());
+			ClassDB::set_property_default_value(entity_2d_name, StringName(String(component_names[i]) + "/" + e->get().name), Variant());
 		}
 	}
 }

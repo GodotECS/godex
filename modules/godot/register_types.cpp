@@ -25,6 +25,8 @@
 
 #include "editor/plugins/node_3d_editor_plugin.h"
 
+extern Ref<Components3DGizmoPlugin> component_gizmo;
+
 static void _editor_init() {
 	EditorNode *p_editor = EditorNode::get_singleton();
 	ERR_FAIL_COND_MSG(p_editor == nullptr, "The editor is not defined.");
@@ -34,6 +36,9 @@ static void _editor_init() {
 
 	WorldECSEditorPlugin *worldecs_plugin = memnew(WorldECSEditorPlugin(p_editor));
 	EditorNode::get_singleton()->add_editor_plugin(worldecs_plugin);
+
+	Node3DEditor::get_singleton()->add_gizmo_plugin(Ref<Components3DGizmoPlugin>(Components3DGizmoPlugin::get_singleton()));
+	component_gizmo = Ref<Components3DGizmoPlugin>();
 }
 
 void initialize_godot_module(ModuleInitializationLevel p_level) {
@@ -137,11 +142,6 @@ void initialize_godot_module(ModuleInitializationLevel p_level) {
 	} else if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
 		if (Engine::get_singleton()->is_editor_hint()) {
 			EditorNode::add_init_callback(_editor_init);
-
-			if (Node3DEditor::get_singleton() != nullptr) {
-				// Add component gizmos:
-				Node3DEditor::get_singleton()->add_gizmo_plugin(Ref<Components3DGizmoPlugin>(Components3DGizmoPlugin::get_singleton()));
-			}
 
 			// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Gizmos
 			Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(TransformComponentGizmo));

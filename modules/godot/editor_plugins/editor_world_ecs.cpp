@@ -1372,6 +1372,9 @@ WorldECSEditorPlugin::~WorldECSEditorPlugin() {
 }
 
 void WorldECSEditorPlugin::edit(Object *p_object) {
+	if (p_object == nullptr) {
+		return;
+	}
 	world_ecs = Object::cast_to<WorldECS>(p_object);
 	ERR_FAIL_COND_MSG(world_ecs == nullptr, "The object should be of type WorldECS [BUG].");
 	ecs_editor->set_world_ecs(world_ecs);

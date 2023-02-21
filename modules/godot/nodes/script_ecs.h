@@ -87,6 +87,7 @@ public:
 	uint64_t load_scripts(EditorFileSystemDirectory *p_dir);
 
 	void define_editor_default_component_properties();
+	void reset_editor_default_component_properties();
 
 	void register_runtime_scripts();
 
