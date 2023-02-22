@@ -184,7 +184,6 @@ void ECS::preload_scripts() {
 	get_script_files("res://", scripts);
 
 	for (const auto &script : scripts) {
-		print_line(script);
 		auto code = FileAccess::get_file_as_string(script);
 		GDScriptParser parser;
 		if (parser.parse(code, script, false) == OK) {
