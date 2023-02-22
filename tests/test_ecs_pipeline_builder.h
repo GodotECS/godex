@@ -86,9 +86,10 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("test_Z_system_3.gd", code));
+		CHECK(register_ecs_script("test_Z_system_3.gd", code));
 	}
 
+	build_scripts();
 	flush_ecs_script_preparation();
 
 	Vector<StringName> system_bundles;
@@ -140,7 +141,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("test_A_system_8.gd", code));
+		CHECK(register_ecs_script("test_A_system_8.gd", code));
 	}
 
 	ECS::register_system(test_A_system_1, "test_A_system_1");
@@ -162,7 +163,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("test_A_system_0.gd", code));
+		CHECK(register_ecs_script("test_A_system_0.gd", code));
 	}
 
 	{
@@ -180,7 +181,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("test_A_system_2.gd", code));
+		CHECK(register_ecs_script("test_A_system_2.gd", code));
 	}
 
 	ECS::register_system(test_A_system_3, "test_A_system_3");
@@ -200,7 +201,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("test_A_system_4.gd", code));
+		CHECK(register_ecs_script("test_A_system_4.gd", code));
 	}
 
 	ECS::register_system(test_A_system_5, "test_A_system_5");
@@ -221,7 +222,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("test_A_system_6.gd", code));
+		CHECK(register_ecs_script("test_A_system_6.gd", code));
 	}
 
 	{
@@ -241,7 +242,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("test_A_system_7.gd", code));
+		CHECK(register_ecs_script("test_A_system_7.gd", code));
 	}
 
 	{
@@ -261,7 +262,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("test_A_system_9.gd", code));
+		CHECK(register_ecs_script("test_A_system_9.gd", code));
 	}
 
 	{
@@ -280,7 +281,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("test_A_system_10.gd", code));
+		CHECK(register_ecs_script("test_A_system_10.gd", code));
 	}
 	{
 		// Create the script.
@@ -298,7 +299,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("test_A_system_11.gd", code));
+		CHECK(register_ecs_script("test_A_system_11.gd", code));
 	}
 	{
 		// Create the script.
@@ -315,7 +316,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("test_A_system_12.gd", code));
+		CHECK(register_ecs_script("test_A_system_12.gd", code));
 	}
 	{
 		// Create the script.
@@ -333,8 +334,10 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder takes into account implicit
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("test_A_system_13.gd", code));
+		CHECK(register_ecs_script("test_A_system_13.gd", code));
 	}
+
+	build_scripts();
 
 	ECS::register_system(test_A_system_14, "test_A_system_14")
 			.before("test_A_system_9.gd");
@@ -505,7 +508,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder bundles.") {
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("test_B_system_5.gd", code));
+		CHECK(register_ecs_script("test_B_system_5.gd", code));
 	}
 	{
 		// Create the script.
@@ -521,7 +524,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder bundles.") {
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("test_B_system_6.gd", code));
+		CHECK(register_ecs_script("test_B_system_6.gd", code));
 	}
 	{
 		// Create the script.
@@ -533,7 +536,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder bundles.") {
 		code += "	add(ECS.test_B_system_6_gd)\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("GDSBundle.gd", code));
+		CHECK(register_ecs_script("GDSBundle.gd", code));
 	}
 
 	// -- GDS that uses C++ --
@@ -553,7 +556,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder bundles.") {
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("test_B_system_7.gd", code));
+		CHECK(register_ecs_script("test_B_system_7.gd", code));
 	}
 	{
 		// Create the script.
@@ -570,7 +573,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder bundles.") {
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("test_B_system_8.gd", code));
+		CHECK(register_ecs_script("test_B_system_8.gd", code));
 	}
 
 	ECS::register_system(test_B_system_9, "test_B_system_9");
@@ -590,7 +593,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder bundles.") {
 		code += "	add(ECS.test_B_system_10)\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("GDSUsesCppBundle.gd", code));
+		CHECK(register_ecs_script("GDSUsesCppBundle.gd", code));
 	}
 
 	{
@@ -607,9 +610,10 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder bundles.") {
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("test_B_system_11.gd", code));
+		CHECK(register_ecs_script("test_B_system_11.gd", code));
 	}
 
+	build_scripts();
 	flush_ecs_script_preparation();
 
 	Vector<StringName> system_bundles;
@@ -735,7 +739,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder put the systems that fetch 
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("test_C_system_8.gd", code));
+		CHECK(register_ecs_script("test_C_system_8.gd", code));
 	}
 	{
 		// Create the script.
@@ -752,7 +756,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder put the systems that fetch 
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("test_C_system_9.gd", code));
+		CHECK(register_ecs_script("test_C_system_9.gd", code));
 	}
 	{
 		// Create the script.
@@ -768,7 +772,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder put the systems that fetch 
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("test_C_system_10.gd", code));
+		CHECK(register_ecs_script("test_C_system_10.gd", code));
 	}
 	{
 		// Create the script.
@@ -784,7 +788,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder put the systems that fetch 
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("test_C_system_11.gd", code));
+		CHECK(register_ecs_script("test_C_system_11.gd", code));
 	}
 
 	{
@@ -800,7 +804,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder put the systems that fetch 
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("test_C_system_15.gd", code));
+		CHECK(register_ecs_script("test_C_system_15.gd", code));
 	}
 
 	{
@@ -816,9 +820,10 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder put the systems that fetch 
 		code += "	add(ECS.test_C_system_15_gd)\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("TestC_GDSBundle.gd", code));
+		CHECK(register_ecs_script("TestC_GDSBundle.gd", code));
 	}
 
+	build_scripts();
 	flush_ecs_script_preparation();
 
 	Vector<StringName> system_bundles;
@@ -988,7 +993,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to detect cyclic de
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("test_D_system_4.gd", code));
+		CHECK(register_ecs_script("test_D_system_4.gd", code));
 	}
 	{
 		// Create the script.
@@ -1005,7 +1010,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to detect cyclic de
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("test_D_system_5.gd", code));
+		CHECK(register_ecs_script("test_D_system_5.gd", code));
 	}
 	{
 		// Create the script.
@@ -1017,9 +1022,10 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to detect cyclic de
 		code += "	add(ECS.test_D_system_5_gd)\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("TestD_GDSBundle.gd", code));
+		CHECK(register_ecs_script("TestD_GDSBundle.gd", code));
 	}
 
+	build_scripts();
 	flush_ecs_script_preparation();
 
 	Vector<StringName> system_bundles;
@@ -1067,7 +1073,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to detect cyclic de
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("test_D_system_4.gd", code));
+		CHECK(register_ecs_script("test_D_system_4.gd", code));
 	}
 	{
 		// Create the script.
@@ -1084,7 +1090,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to detect cyclic de
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("test_D_system_5.gd", code));
+		CHECK(register_ecs_script("test_D_system_5.gd", code));
 	}
 	{
 		// Create the script.
@@ -1096,9 +1102,10 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to detect cyclic de
 		code += "	add(ECS.test_D_system_5_gd)\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("TestD_GDSBundle.gd", code));
+		CHECK(register_ecs_script("TestD_GDSBundle.gd", code));
 	}
 
+	build_scripts();
 	flush_ecs_script_preparation();
 
 	Vector<StringName> system_bundles;
@@ -1184,7 +1191,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to compose sub pipe
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("test_G_sub1_system_5.gd", code));
+		CHECK(register_ecs_script("test_G_sub1_system_5.gd", code));
 	}
 
 	{
@@ -1202,7 +1209,7 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to compose sub pipe
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("test_G_sub2_system_6.gd", code));
+		CHECK(register_ecs_script("test_G_sub2_system_6.gd", code));
 	}
 
 	{
@@ -1216,9 +1223,10 @@ TEST_CASE("[Modules][ECS] Verify the PipelineBuilder is able to compose sub pipe
 		code += "	add(ECS.test_G_sub2_system_6_gd)\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("TestG_GDSBundle.gd", code));
+		CHECK(register_ecs_script("TestG_GDSBundle.gd", code));
 	}
 
+	build_scripts();
 	flush_ecs_script_preparation();
 
 	Vector<StringName> system_bundles;
