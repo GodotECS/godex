@@ -27,7 +27,6 @@ ScriptEcs *ScriptEcs::get_singleton() {
 }
 
 ScriptEcs::~ScriptEcs() {
-	reset_editor_default_component_properties();
 	singleton = nullptr;
 
 	__empty_scripts();

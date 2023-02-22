@@ -164,6 +164,13 @@ void initialize_godot_module(ModuleInitializationLevel p_level) {
 
 void uninitialize_godot_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
+		if (!Engine::get_singleton()->is_editor_hint()) {
+			ScriptEcs::get_singleton()->reset_editor_default_component_properties();
+		}
 		memdelete(ScriptEcs::get_singleton());
+	} else if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
+		if (Engine::get_singleton()->is_editor_hint()) {
+			ScriptEcs::get_singleton()->reset_editor_default_component_properties();
+		}
 	}
 }
