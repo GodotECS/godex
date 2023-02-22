@@ -101,7 +101,7 @@ void World::assign_nodepath_to_entity(EntityID p_entity, const NodePath &p_path)
 void World::destroy_entity(EntityID p_entity) {
 	// Removes the components assigned to this entity.
 	for (uint32_t i = 0; i < storages.size(); i += 1) {
-		if (storages[i] != nullptr) {
+		if (storages[i] != nullptr && storages[i]->has(p_entity)) {
 			storages[i]->remove(p_entity);
 		}
 	}
