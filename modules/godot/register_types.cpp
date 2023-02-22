@@ -137,8 +137,14 @@ void initialize_godot_module(ModuleInitializationLevel p_level) {
 
 		ClassDB::register_class<SharedComponentResource>();
 
+#ifdef DEBUG_ENABLED
+		// TS is nullptr at this point when running tests in debug mode, and it causes a crash. I did not find a better way to check for that.
+		if (TS != nullptr) {
+			ECS::preload_scripts();
+		}
+#else
 		ECS::preload_scripts();
-
+#endif
 		memnew(ScriptEcs());
 
 	} else if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
