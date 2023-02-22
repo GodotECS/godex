@@ -9,7 +9,7 @@ on:
 
 # Global Settings
 env:
-  GODOT_REF: d2699dc7ab96fbd75faccc1f32f55baebf1d84dc
+  GODOT_REF: 7e79aead99a53ee7cdf383add9a6a2aea4f15beb
   SCONSFLAGS: platform=linuxbsd verbose=yes warnings=extra werror=yes debug_symbols=no module_text_server_fb_enabled=yes
   SCONS_CACHE_LIMIT: 4096
 
