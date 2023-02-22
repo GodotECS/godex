@@ -10,7 +10,7 @@ on:
 # Global Settings
 # SCONS_CACHE for windows must be set in the build environment
 env:
-  GODOT_BASE_BRANCH: master
+  GODOT_REF: d2699dc7ab96fbd75faccc1f32f55baebf1d84dc
   SCONSFLAGS: platform=windows verbose=yes warnings=all werror=yes debug_symbols=no module_text_server_fb_enabled=yes
   SCONS_CACHE_MSVC_CONFIG: true
   SCONS_CACHE_LIMIT: 3072
@@ -44,7 +44,7 @@ jobs:
       uses: actions/checkout@v2
       with:
        repository: godotengine/godot
-       ref: c4fb119f03477ad9a494ba6cdad211b35a8efcce
+       ref: ${{ env.GODOT_REF }}
        path: godot
 
     - name: Apply patch
@@ -61,9 +61,9 @@ jobs:
         path: ${{github.workspace}}/.scons_cache/
         key: ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
         restore-keys: |
-          ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
-          ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}
-          ${{github.job}}-${{env.GODOT_BASE_BRANCH}}
+          ${{github.job}}-${{env.GODOT_REF}}-${{github.ref}}-${{github.sha}}
+          ${{github.job}}-${{env.GODOT_REF}}-${{github.ref}}
+          ${{github.job}}-${{env.GODOT_REF}}
 
     # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
     - name: Set up Python 3.x
