@@ -103,7 +103,7 @@ jobs:
     - name: Unit Tests
       run: |
         cd ./godot
-        ./bin/godot.linuxbsd.editor.x86_64 --test
+        ./bin/godot.linuxbsd.editor.x86_64 --test --headless
         cd ../
 
     - uses: actions/upload-artifact@v2

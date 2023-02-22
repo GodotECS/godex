@@ -95,7 +95,7 @@ jobs:
     - name: Unit Tests
       run: |
         cd ./godot
-        ./bin/godot.windows.editor.x86_64.exe --test
+        ./bin/godot.windows.editor.x86_64.exe --test --headless
         cd ../
 
     - uses: actions/upload-artifact@v2
