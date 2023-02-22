@@ -137,6 +137,8 @@ void initialize_godot_module(ModuleInitializationLevel p_level) {
 
 		ClassDB::register_class<SharedComponentResource>();
 
+		ECS::preload_scripts();
+
 		memnew(ScriptEcs());
 
 	} else if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {

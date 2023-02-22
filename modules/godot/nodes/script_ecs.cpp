@@ -1,4 +1,5 @@
 #include "script_ecs.h"
+#include <modules/gdscript/gdscript_parser.h>
 
 #include "../../../ecs.h"
 #include "../../../systems/dynamic_system.h"
