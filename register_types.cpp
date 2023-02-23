@@ -38,7 +38,9 @@ void initialize_godex_module(ModuleInitializationLevel p_level) {
 		ECS::register_databag<PipelineCommands>();
 		ECS::register_databag<FrameTime>();
 	} else if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
+#ifdef TOOLS_ENABLED
 		component_gizmo.instantiate();
+#endif
 	}
 }
 

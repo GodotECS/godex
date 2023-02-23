@@ -5,12 +5,16 @@
 #include "../../../systems/dynamic_system.h"
 #include "core/config/engine.h"
 #include "core/config/project_settings.h"
+#include "core/io/dir_access.h"
 #include "core/io/resource_loader.h"
 #include "core/object/script_language.h"
-#include "editor/editor_file_system.h"
-#include "editor/editor_node.h"
 #include "entity.h"
 #include "shared_component_resource.h"
+
+#ifdef TOOLS_ENABLED
+#include "editor/editor_file_system.h"
+#include "editor/editor_node.h"
+#endif
 
 ScriptEcs *ScriptEcs::singleton = nullptr;
 
@@ -32,6 +36,7 @@ ScriptEcs::~ScriptEcs() {
 	__empty_scripts();
 }
 
+#ifdef TOOLS_ENABLED
 Vector<StringName> ScriptEcs::spawner_get_components(const StringName &spawner_name) {
 	Vector<StringName> ret;
 
@@ -44,7 +49,6 @@ Vector<StringName> ScriptEcs::spawner_get_components(const StringName &spawner_n
 			}
 		}
 	}
-
 	// Now extract the C++ spawnable components.
 	const godex::spawner_id spawner = ECS::get_spawner_id(spawner_name);
 	if (spawner != godex::SPAWNER_NONE) {
@@ -56,6 +60,7 @@ Vector<StringName> ScriptEcs::spawner_get_components(const StringName &spawner_n
 
 	return ret;
 }
+#endif
 
 const LocalVector<Ref<Component>> &ScriptEcs::get_components() {
 	return components;
@@ -98,13 +103,23 @@ void ScriptEcs::reload_scripts() {
 	}
 
 	// Scan the script classes.
+	// EditorFileSystem filters some editor directories and files that produce error messages when accessed,
+	// so we want to use that in the editor build
+#ifdef TOOLS_ENABLED
 	if (EditorFileSystem::get_singleton()->get_filesystem()) {
-		const uint64_t modificatio_time =
+		const uint64_t modification_time =
 				load_scripts(EditorFileSystem::get_singleton()->get_filesystem());
 		recent_modification_detected_time =
-				MAX(recent_modification_detected_time, modificatio_time);
+				MAX(recent_modification_detected_time, modification_time);
 	}
+#else
+	const uint64_t modification_time =
+			load_scripts("res://");
+	recent_modification_detected_time =
+			MAX(recent_modification_detected_time, modification_time);
+#endif
 
+#ifdef TOOLS_ENABLED
 	for (int i = int(systems.size()) - 1; i >= 0; i -= 1) {
 		if (systems[i]->verified == false) {
 			// Remove the path from the stored systems.
@@ -135,11 +150,13 @@ void ScriptEcs::reload_scripts() {
 			system_bundles.remove_at_unordered(i);
 		}
 	}
-
+#endif
 	flush_scripts_preparation();
+#ifdef TOOLS_ENABLED
 	define_editor_default_component_properties();
+#endif
 }
-
+#ifdef TOOLS_ENABLED
 uint64_t ScriptEcs::load_scripts(EditorFileSystemDirectory *p_dir) {
 	uint64_t recent_modification = 0;
 	for (int i = 0; i < p_dir->get_file_count(); i += 1) {
@@ -165,7 +182,36 @@ uint64_t ScriptEcs::load_scripts(EditorFileSystemDirectory *p_dir) {
 	}
 	return recent_modification;
 }
+#else
+uint64_t ScriptEcs::load_scripts(const String &p_path) {
+	uint64_t recent_modification = 0;
 
+	for (const auto &file : DirAccess::get_files_at(p_path)) {
+		auto file_path = p_path.path_join(file);
+		const String &file_type = ResourceLoader::get_resource_type(file_path);
+		if ((file_type == "GDScript" ||
+					file_type == "NativeScript" ||
+					file_type == "CSharpScript" ||
+					file_type == "Rust")) { // TODO add more?
+			const bool changed =
+					FileAccess::get_modified_time(file_path) > recent_modification_detected_time;
+			__reload_script(file_path, file_path.get_file(), changed);
+			;
+			recent_modification = MAX(recent_modification, FileAccess::get_modified_time(file_path));
+		}
+	}
+
+	// Load the script on the sub directories.
+	for (const auto &directory : DirAccess::get_directories_at(p_path)) {
+		const uint64_t dir_modification_time = load_scripts(directory);
+		recent_modification = MAX(recent_modification, dir_modification_time);
+	}
+
+	return recent_modification;
+}
+#endif
+
+#ifdef TOOLS_ENABLED
 void ScriptEcs::define_editor_default_component_properties() {
 	const StringName entity_3d_name = Entity3D::get_class_static();
 	const StringName entity_2d_name = Entity2D::get_class_static();
@@ -213,13 +259,15 @@ void ScriptEcs::reset_editor_default_component_properties() {
 		}
 	}
 }
+#endif
 
 void ScriptEcs::register_runtime_scripts() {
+#ifdef TOOLS_ENABLED
 	if (Engine::get_singleton()->is_editor_hint()) {
 		// Only when the editor is off the Scripted components are registered.
 		return;
 	}
-
+#endif
 	if (ecs_initialized) {
 		return;
 	}
@@ -320,6 +368,7 @@ bool ScriptEcs::__reload_script(Ref<Script> script, const String &p_path, const 
 		return false;
 	}
 
+#ifdef TOOLS_ENABLED
 	if (is_valid) {
 		// Make sure the path is stored.
 		save_script("ECS/Autoload/scripts", p_path);
@@ -327,7 +376,7 @@ bool ScriptEcs::__reload_script(Ref<Script> script, const String &p_path, const 
 		// Make sure the path removed.
 		remove_script("ECS/Autoload/scripts", p_path);
 	}
-
+#endif
 	emit_signal("ecs_script_reloaded", p_path, p_name);
 
 	return is_valid;
@@ -468,6 +517,7 @@ void ScriptEcs::flush_scripts_preparation() {
 	scripts_with_pending_prepare.clear();
 }
 
+#ifdef TOOLS_ENABLED
 void ScriptEcs::save_script(const String &p_setting_list_name, const String &p_script_path) {
 	if (!Engine::get_singleton()->is_editor_hint())
 		return;
@@ -502,3 +552,4 @@ void ScriptEcs::remove_script(const String &p_setting_list_name, const String &p
 		ProjectSettings::get_singleton()->save();
 	}
 }
+#endif

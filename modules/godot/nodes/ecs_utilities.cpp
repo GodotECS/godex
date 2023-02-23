@@ -7,9 +7,11 @@
 #include "core/config/project_settings.h"
 #include "core/io/resource_loader.h"
 #include "core/object/script_language.h"
-#include "editor/editor_node.h"
 #include "entity.h"
 #include "shared_component_resource.h"
+#ifdef TOOLS_ENABLED
+#include "editor/editor_node.h"
+#endif
 
 void System::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("execute_in", "phase", "dispatcher"), &System::execute_in, DEFVAL(godex::SYSTEM_NONE));
@@ -113,13 +115,13 @@ void System::prepare(godex::DynamicSystemExecutionData *p_info) {
 
 String System::validate_script(Ref<Script> p_script) {
 	if (p_script.is_null()) {
-		return TTR("Script is null.");
+		return RTR("Script is null.");
 	}
 	if (p_script->is_valid() == false) {
-		return TTR("Script has some errors.");
+		return RTR("Script has some errors.");
 	}
 	if ("System" != p_script->get_instance_base_type()) {
-		return TTR("This script is not extending `System`.");
+		return RTR("This script is not extending `System`.");
 	}
 	List<MethodInfo> methods;
 	p_script->get_script_method_list(&methods);
@@ -135,22 +137,25 @@ String System::validate_script(Ref<Script> p_script) {
 		}
 	}
 	if (has_prepare == false) {
-		return TTR("This script is not overriding the function `_prepare()`.");
+		return RTR("This script is not overriding the function `_prepare()`.");
 	}
 	if (has_execute == false) {
-		return TTR("This script is not overriding the function `_execute(...)`.");
+		return RTR("This script is not overriding the function `_execute(...)`.");
 	}
 
 	List<PropertyInfo> properties;
+
+#ifdef TOOLS_ENABLED
 	p_script->get_script_property_list(&properties);
 	for (List<PropertyInfo>::Element *e = properties.front(); e; e = e->next()) {
 		if (e->get().name == p_script->get_class_category().name) {
 			properties.erase(e);
 		}
 	}
+#endif
 
 	if (properties.size()) {
-		return TTR("The System script can't have any property in it. It possible to only access `Component`s and `Databag`s.");
+		return RTR("The System script can't have any property in it. It possible to only access `Component`s and `Databag`s.");
 	}
 
 	// This script is safe to use.
@@ -247,13 +252,13 @@ void SystemBundle::execute_after(uint32_t p_system_id) {
 
 String SystemBundle::validate_script(Ref<Script> p_script) {
 	if (p_script.is_null()) {
-		return TTR("Script is null.");
+		return RTR("Script is null.");
 	}
 	if (p_script->is_valid() == false) {
-		return TTR("Script has some errors.");
+		return RTR("Script has some errors.");
 	}
 	if ("SystemBundle" != p_script->get_instance_base_type()) {
-		return TTR("This script is not extending `SystemBundle`.");
+		return RTR("This script is not extending `SystemBundle`.");
 	}
 	List<MethodInfo> methods;
 	p_script->get_script_method_list(&methods);
@@ -265,7 +270,7 @@ String SystemBundle::validate_script(Ref<Script> p_script) {
 		}
 	}
 	if (has_prepare == false) {
-		return TTR("This script is not overriding the function `_prepare()`.");
+		return RTR("This script is not overriding the function `_prepare()`.");
 	}
 	// This script is safe to use.
 	return "";
@@ -314,13 +319,13 @@ Vector<StringName> Component::get_spawners() {
 
 String Component::validate_script(Ref<Script> p_script) {
 	if (p_script.is_null()) {
-		return TTR("Script is null.");
+		return RTR("Script is null.");
 	}
 	if (p_script->is_valid() == false) {
-		return TTR("Script has some errors.");
+		return RTR("Script has some errors.");
 	}
 	if ("Component" != p_script->get_instance_base_type()) {
-		return TTR("This script is not extending `Component`.");
+		return RTR("This script is not extending `Component`.");
 	}
 
 	// Make sure doesn't have any function in it.
@@ -331,13 +336,14 @@ String Component::validate_script(Ref<Script> p_script) {
 	for (int i = 0; i < methods.size(); i += 1) {
 		// Only this method is allowed.
 		if (methods[i].name != "@implicit_new" && methods[i].name != "get_spawners") {
-			return TTR("The only method the Component can have is the `get_spawners()`.");
+			return RTR("The only method the Component can have is the `get_spawners()`.");
 		}
 	}
 
 	List<PropertyInfo> properties;
 	p_script->get_script_property_list(&properties);
 	for (List<PropertyInfo>::Element *e = properties.front(); e; e = e->next()) {
+#ifdef TOOLS_ENABLED
 		if (
 				// Filter GDScript file name
 				e->get().name == p_script->get_class_category().name
@@ -345,15 +351,16 @@ String Component::validate_script(Ref<Script> p_script) {
 				|| p_script->get_path().ends_with(e->get().name + ".cs")) {
 			continue;
 		}
+#endif
 		switch (e->get().type) {
 			case Variant::NIL:
-				return "(" + e->get().name + ") " + TTR("Please make sure all variables are typed.");
+				return "(" + e->get().name + ") " + RTR("Please make sure all variables are typed.");
 			case Variant::RID:
 			case Variant::OBJECT:
-				return "(" + e->get().name + ") " + TTR("The Component can't hold unsafe references. The same reference could be holded by multiple things into the engine, this invalidates the thread safety of the ECS model. Please use a Databag or report your use case so a safe native type will be provided instead.");
+				return "(" + e->get().name + ") " + RTR("The Component can't hold unsafe references. The same reference could be holded by multiple things into the engine, this invalidates the thread safety of the ECS model. Please use a Databag or report your use case so a safe native type will be provided instead.");
 			case Variant::SIGNAL:
 			case Variant::CALLABLE:
-				return "(" + e->get().name + ") " + TTR("The Component can't hold signals or callables. Please report your use case.");
+				return "(" + e->get().name + ") " + RTR("The Component can't hold signals or callables. Please report your use case.");
 			default:
 				// Nothing to worry about.
 				break;

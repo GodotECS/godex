@@ -1,6 +1,6 @@
 #include "components_gizmos.h"
 
-#include "debug_utilities.h"
+#include "../debug_utilities.h"
 #include "editor/editor_node.h"
 #include "editor/editor_settings.h"
 #include "editor/editor_undo_redo_manager.h"
@@ -752,6 +752,7 @@ void BtConvexGizmo::init() {
 }
 
 void BtConvexGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
+#ifdef TOOLS_ENABLED
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND(entity == nullptr);
 
@@ -767,7 +768,6 @@ void BtConvexGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 				mesh = td->mesh;
 			}
 		}
-
 		if (mesh.is_null()) {
 			const Vector<Vector3> points = entity->get_component_value(convex_component_name, points_name);
 			mesh = generate_mesh_from_points(points);
@@ -778,6 +778,7 @@ void BtConvexGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 
 		p_gizmo->add_mesh(mesh, material);
 	}
+#endif
 }
 
 int BtConvexGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {
@@ -804,6 +805,7 @@ void BtTrimeshGizmo::init() {
 }
 
 void BtTrimeshGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
+#ifdef TOOLS_ENABLED
 	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND(entity == nullptr);
 
@@ -819,7 +821,6 @@ void BtTrimeshGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 				mesh = td->mesh;
 			}
 		}
-
 		if (mesh.is_null()) {
 			const Vector<Vector3> faces = entity->get_component_value(trimesh_component_name, faces_name);
 			mesh = generate_mesh_from_faces(faces);
@@ -830,6 +831,7 @@ void BtTrimeshGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 
 		p_gizmo->add_mesh(mesh, material);
 	}
+#endif
 }
 
 int BtTrimeshGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {

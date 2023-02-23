@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../godot/editor_plugins/components_gizmo_3d.h"
+#include "../../godot/editor_plugins/components_gizmo_3d.h"
 
 class BtBoxGizmo : public ComponentGizmo {
 	StringName box_component_name = "BtBox";

@@ -8,7 +8,9 @@ env_godot_module = env_modules.Clone()
 env_godot_module.add_source_files(env.modules_sources, "*.cpp")
 env_godot_module.add_source_files(env.modules_sources, "components/*.cpp")
 env_godot_module.add_source_files(env.modules_sources, "components/physics/*.cpp")
-env_godot_module.add_source_files(env.modules_sources, "editor_plugins/*.cpp")
 env_godot_module.add_source_files(env.modules_sources, "nodes/*.cpp")
 env_godot_module.add_source_files(env.modules_sources, "databags/*.cpp")
 env_godot_module.add_source_files(env.modules_sources, "systems/*.cpp")
+
+if env_godot_module.editor_build:
+    env_godot_module.add_source_files(env.modules_sources, "editor_plugins/*.cpp")

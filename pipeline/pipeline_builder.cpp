@@ -237,7 +237,7 @@ void PipelineBuilder::build_graph(
 		r_graph->systems.clear();
 		r_graph->valid = false;
 		r_graph->error_msg = error;
-		r_graph->error_msg += TTR(" Pipeline building is aborted.");
+		r_graph->error_msg += RTR(" Pipeline building is aborted.");
 
 		ERR_FAIL_MSG("[FATAL] " + r_graph->error_msg + " Check the pipeline above ---^");
 		return;
@@ -408,11 +408,11 @@ void PipelineBuilder::fetch_system_info(
 		ExecutionGraph *r_graph) {
 	godex::system_id id = ECS::get_system_id(p_system);
 	if (id == godex::SYSTEM_NONE) {
-		r_graph->warnings.push_back(TTR("The system ") + p_system + TTR(" is invalid and it's excluded from pipeline. Check the log to know how to fix the issue."));
+		r_graph->warnings.push_back(RTR("The system ") + p_system + RTR(" is invalid and it's excluded from pipeline. Check the log to know how to fix the issue."));
 		ERR_FAIL_COND_MSG(id == godex::SYSTEM_NONE, "The system " + p_system + " doesn't exists.");
 	}
 	if (r_graph->systems[id].is_used) {
-		r_graph->warnings.push_back(TTR("The system ") + p_system + TTR(" is being used twice, this is not supposed to happen. The second usage is being dropped."));
+		r_graph->warnings.push_back(RTR("The system ") + p_system + RTR(" is being used twice, this is not supposed to happen. The second usage is being dropped."));
 		ERR_FAIL_COND_MSG(r_graph->systems[id].is_used, "The system " + p_system + " is being used twice. Skip it.");
 	}
 
@@ -420,7 +420,7 @@ void PipelineBuilder::fetch_system_info(
 	ECS::get_system_exe_info(id, system_info);
 
 	if (!system_info.valid) {
-		r_graph->warnings.push_back(TTR("The system ") + p_system + TTR(" is invalid and it's excluded from pipeline. Check the log to know how to fix the issue."));
+		r_graph->warnings.push_back(RTR("The system ") + p_system + RTR(" is invalid and it's excluded from pipeline. Check the log to know how to fix the issue."));
 		ERR_FAIL_COND_MSG(system_info.valid == false, "The system " + p_system + " is invalid.");
 	}
 
@@ -715,7 +715,7 @@ bool PipelineBuilder::sort_systems(ExecutionGraph *r_graph, String &r_error_msg)
 								dispatcher->systems[s]->execute_after[i]->self_sorted_list,
 								true);
 						// Possible cyclick dependency, however explicit dependency not respected.
-						r_error_msg = TTR("System sorting failed, possible cyclick dependency because is impossible to resolve the following explicit dependency: The system ") + "`" + ECS::get_system_name(dispatcher->systems[s]->id) + TTR(" should be executed after: ") + "`" + ECS::get_system_name(dispatcher->systems[s]->execute_after[i]->id) + "` " + TTR("but for some reason is impossible to do so.");
+						r_error_msg = RTR("System sorting failed, possible cyclick dependency because is impossible to resolve the following explicit dependency: The system ") + "`" + ECS::get_system_name(dispatcher->systems[s]->id) + RTR(" should be executed after: ") + "`" + ECS::get_system_name(dispatcher->systems[s]->execute_after[i]->id) + "` " + RTR("but for some reason is impossible to do so.");
 						return false;
 					}
 				}
@@ -738,7 +738,7 @@ bool PipelineBuilder::has_cyclick_dependencies(const ExecutionGraph *r_graph, St
 			for (uint32_t i = 0; i < e->get()->execute_after.size(); i += 1) {
 				for (const List<ExecutionGraph::SystemNode *>::Element *sub = e->next(); sub; sub = sub->next()) {
 					if (e->get()->execute_after[i] == sub->get()) {
-						r_error = TTR("Detected cylic dependency between: `") + ECS::get_system_name(e->get()->id) + TTR("` and: `") + ECS::get_system_name(sub->get()->id) + "`.";
+						r_error = RTR("Detected cylic dependency between: `") + ECS::get_system_name(e->get()->id) + RTR("` and: `") + ECS::get_system_name(sub->get()->id) + "`.";
 						return true;
 					}
 				}
@@ -758,7 +758,7 @@ void PipelineBuilder::detect_warnings_sub_dispatchers_missing(ExecutionGraph *r_
 				for (uint32_t i = 0; i < (*e.value)->systems.size(); i += 1) {
 					system_names += String(ECS::get_system_name((*e.value)->systems[i]->id)) + ", ";
 				}
-				r_graph->warnings.push_back(TTR("The sub dispatcher `") + (*e.key) + TTR("` is not dispatcher by any systems in this pipeline so the following systems are not being executed: ") + "[" + system_names + "]");
+				r_graph->warnings.push_back(RTR("The sub dispatcher `") + (*e.key) + RTR("` is not dispatcher by any systems in this pipeline so the following systems are not being executed: ") + "[" + system_names + "]");
 			}
 		}
 	}

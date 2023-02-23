@@ -121,9 +121,9 @@ public:
 	/// possible to do it via the commands object that you can take using:
 	/// `ECS::get_singleton()->get_commands()`
 	World *get_world() const;
-
+#ifdef TOOLS_ENABLED
 	virtual PackedStringArray get_configuration_warnings() const override;
-
+#endif
 	void set_pipelines(Vector<Ref<PipelineECS>> p_pipelines);
 	const Vector<Ref<PipelineECS>> &get_pipelines() const;
 	Vector<Ref<PipelineECS>> &get_pipelines();

@@ -223,3 +223,6 @@ if env["builtin_bullet"]:
 
 # Bullet Physics ECS
 env_bullet.add_source_files(env.modules_sources, "*.cpp")
+
+if env_bullet.editor_build:
+    env_bullet.add_source_files(env.modules_sources, "editor/*.cpp")

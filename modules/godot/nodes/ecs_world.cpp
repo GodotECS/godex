@@ -418,6 +418,7 @@ World *WorldECS::get_world() const {
 	return world;
 }
 
+#ifdef TOOLS_ENABLED
 PackedStringArray WorldECS::get_configuration_warnings() const {
 	Vector<String> warnings = Node::get_configuration_warnings();
 
@@ -447,9 +448,9 @@ PackedStringArray WorldECS::get_configuration_warnings() const {
 			}
 		}
 	}
-
 	return warnings;
 }
+#endif
 
 void WorldECS::set_pipelines(Vector<Ref<PipelineECS>> p_pipelines) {
 	pipelines = p_pipelines;
