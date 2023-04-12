@@ -25,7 +25,7 @@ jobs:
     - name: Wait for static checks
       uses: lewagon/wait-on-check-action@v1.3.1
       with:
-       ref: ${{ github.ref }}
+       ref: ${{ github.event_name != 'pull_request' && github.sha || github.event.pull_request.head.sha }}
        check-name: 'Static Checks (clang-format, black format, file format, documentation checks)'
        repo-token: ${{ secrets.GITHUB_TOKEN }}
        wait-interval: 10
