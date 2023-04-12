@@ -29,7 +29,7 @@ bool register_ecs_script(const StringName &p_script_name, const String &p_code) 
 	ERR_FAIL_COND_V(err != OK, false);
 
 	for (auto extends : parser.get_tree()->extends) {
-		if (extends == "System") {
+		if (extends->name == "System") {
 			ECS::register_dynamic_system(p_script_name);
 		}
 	}

@@ -10,7 +10,7 @@ on:
 # Global Settings
 # SCONS_CACHE for windows must be set in the build environment
 env:
-  GODOT_REF: 7a0977ce2c558fe6219f0a14f8bd4d05aea8f019
+  GODOT_REF: ab7cb2a95d060a6533e6ff5111c11f71972ab43f
   SCONSFLAGS: platform=windows verbose=yes warnings=all werror=yes debug_symbols=no module_text_server_fb_enabled=yes
   SCONS_CACHE_MSVC_CONFIG: true
   SCONS_CACHE_LIMIT: 3072

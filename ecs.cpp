@@ -188,12 +188,16 @@ void ECS::preload_scripts() {
 		GDScriptParser parser;
 		if (parser.parse(code, script, false) == OK) {
 			auto tree = parser.get_tree();
-			if (tree->extends.has("System")) {
-				register_dynamic_system(script.get_file());
-			}
 
-			if (tree->extends.has("Component")) {
-				register_or_get_id_for_component_name(script.get_file());
+			for (auto extend : tree->extends) {
+				if (extend->name == "System") {
+					register_dynamic_system(script.get_file());
+					break;
+				}
+				if (extend->name == "Component") {
+					register_or_get_id_for_component_name(script.get_file());
+					break;
+				}
 			}
 		}
 	}
