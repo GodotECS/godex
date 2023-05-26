@@ -633,11 +633,11 @@ void ECS::register_component(StorageBase *(*create_storage)()) {
 		get_storage_config = C::_get_storage_config;
 	}
 
-	LocalVector<godex::spawner_id> spawners;
+	LocalVector<godex::spawner_id> tmp_spawners;
 	if constexpr (godex_has_get_spawners<C>::value) {
-		spawners = C::get_spawners();
-		for (uint32_t i = 0; i < spawners.size(); i += 1) {
-			spawners_info[spawners[i]].components.push_back(C::component_id);
+		tmp_spawners = C::get_spawners();
+		for (uint32_t i = 0; i < tmp_spawners.size(); i += 1) {
+			spawners_info[tmp_spawners[i]].components.push_back(C::component_id);
 		}
 	}
 
@@ -651,7 +651,7 @@ void ECS::register_component(StorageBase *(*create_storage)()) {
 					nullptr,
 					notify_release_write,
 					shared_component_storage,
-					spawners,
+					tmp_spawners,
 					DataAccessorFuncs{
 							C::get_static_properties,
 							C::get_property_list,

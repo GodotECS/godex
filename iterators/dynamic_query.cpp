@@ -110,15 +110,15 @@ void DynamicQuery::get_system_info(SystemExeInfo *p_info) const {
 }
 
 void DynamicQuery::prepare_world_script(Object *p_world) {
-	WorldECS *world = Object::cast_to<WorldECS>(p_world);
-	ERR_FAIL_COND_MSG(world == nullptr, "The given object is not a `WorldECS`.");
-	prepare_world(world->get_world());
+	WorldECS *tmp_world = Object::cast_to<WorldECS>(p_world);
+	ERR_FAIL_COND_MSG(tmp_world == nullptr, "The given object is not a `WorldECS`.");
+	prepare_world(tmp_world->get_world());
 }
 
 void DynamicQuery::begin_script(Object *p_world) {
-	WorldECS *world = Object::cast_to<WorldECS>(p_world);
-	ERR_FAIL_COND_MSG(world == nullptr, "The given object is not a `WorldECS`.");
-	initiate_process(world->get_world());
+	WorldECS *tmp_world = Object::cast_to<WorldECS>(p_world);
+	ERR_FAIL_COND_MSG(tmp_world == nullptr, "The given object is not a `WorldECS`.");
+	initiate_process(tmp_world->get_world());
 }
 
 void DynamicQuery::end_script() {

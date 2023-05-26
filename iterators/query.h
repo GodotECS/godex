@@ -825,8 +825,8 @@ struct QueryStorage<I, Changed<C>, Cs...> : public QueryStorage<I + 1, Cs...> {
 		if (unlikely(storage == nullptr)) {
 			return o_entities;
 		}
-		const EntitiesBuffer entities(changed.size(), changed.get_entities_ptr());
-		return entities.count < o_entities.count ? entities : o_entities;
+		const EntitiesBuffer tmp_entities(changed.size(), changed.get_entities_ptr());
+		return tmp_entities.count < o_entities.count ? tmp_entities : o_entities;
 	}
 
 	bool filter_satisfied(EntityID p_entity) const {
@@ -1321,8 +1321,8 @@ struct QueryStorage<I, C, Cs...> : QueryStorage<I + 1, Cs...> {
 		if (unlikely(storage == nullptr)) {
 			return o_entities;
 		}
-		const EntitiesBuffer entities = storage->get_stored_entities();
-		return entities.count < o_entities.count ? entities : o_entities;
+		const EntitiesBuffer tmp_entities = storage->get_stored_entities();
+		return tmp_entities.count < o_entities.count ? tmp_entities : o_entities;
 	}
 
 	bool filter_satisfied(EntityID p_entity) const {

@@ -252,8 +252,8 @@ void ScriptEcs::__empty_scripts() {
 
 bool ScriptEcs::__reload_script(const String &p_path, const String &p_name, const bool p_force_reload) {
 	if (p_force_reload) {
-		Ref<Script> script = ResourceLoader::load(p_path);
-		return __reload_script(script, p_path, p_name);
+		Ref<Script> tmp_script = ResourceLoader::load(p_path);
+		return __reload_script(tmp_script, p_path, p_name);
 	} else {
 		Ref<System> system = get_script_system(p_name);
 		if (system.is_valid()) {
@@ -276,19 +276,19 @@ bool ScriptEcs::__reload_script(const String &p_path, const String &p_name, cons
 	return false;
 }
 
-bool ScriptEcs::__reload_script(Ref<Script> script, const String &p_path, const String &p_name) {
+bool ScriptEcs::__reload_script(Ref<Script> p_script, const String &p_path, const String &p_name) {
 	bool is_valid = false;
-	ERR_FAIL_COND_V(script.is_null(), false);
+	ERR_FAIL_COND_V(p_script.is_null(), false);
 
-	const StringName base_type = script->get_instance_base_type();
+	const StringName base_type = p_script->get_instance_base_type();
 	if (base_type == "System") {
-		Ref<System> system = __reload_system(script, p_path, p_name);
+		Ref<System> system = __reload_system(p_script, p_path, p_name);
 		if (system.is_valid()) {
 			system->verified = true;
 			is_valid = true;
 		}
 	} else if (base_type == "Component") {
-		Ref<Component> component = __reload_component(script, p_path, p_name);
+		Ref<Component> component = __reload_component(p_script, p_path, p_name);
 		if (component.is_valid()) {
 			component->verified = true;
 			is_valid = true;
@@ -310,7 +310,7 @@ bool ScriptEcs::__reload_script(Ref<Script> script, const String &p_path, const 
 			}
 		}
 	} else if (base_type == "SystemBundle") {
-		Ref<SystemBundle> bundle = __reload_system_bundle(script, p_path, p_name);
+		Ref<SystemBundle> bundle = __reload_system_bundle(p_script, p_path, p_name);
 		if (bundle.is_valid()) {
 			bundle->verified = true;
 			is_valid = true;

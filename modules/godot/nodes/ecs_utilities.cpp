@@ -43,9 +43,9 @@ System::~System() {}
 void System::execute_in(Phase p_phase, uint32_t p_dispatcher_id) {
 	ERR_FAIL_COND_MSG(info == nullptr, "No info set. This function can be called only within the `_prepare`.");
 	if (p_dispatcher_id != godex::SYSTEM_NONE) {
-		const StringName name = ECS::get_system_name(p_dispatcher_id);
-		ERR_FAIL_COND(name == StringName());
-		info->execute_in(p_phase, name);
+		const StringName system_name = ECS::get_system_name(p_dispatcher_id);
+		ERR_FAIL_COND(system_name == StringName());
+		info->execute_in(p_phase, system_name);
 	} else {
 		info->execute_in(p_phase);
 	}
@@ -53,16 +53,16 @@ void System::execute_in(Phase p_phase, uint32_t p_dispatcher_id) {
 
 void System::execute_after(uint32_t p_system) {
 	ERR_FAIL_COND_MSG(info == nullptr, "No info set. This function can be called only within the `_prepare`.");
-	const StringName name = ECS::get_system_name(p_system);
-	ERR_FAIL_COND(name == StringName());
-	info->execute_after(name);
+	const StringName system_name = ECS::get_system_name(p_system);
+	ERR_FAIL_COND(system_name == StringName());
+	info->execute_after(system_name);
 }
 
 void System::execute_before(uint32_t p_system) {
 	ERR_FAIL_COND_MSG(info == nullptr, "No info set. This function can be called only within the `_prepare`.");
-	const StringName name = ECS::get_system_name(p_system);
-	ERR_FAIL_COND(name == StringName());
-	info->execute_before(name);
+	const StringName system_name = ECS::get_system_name(p_system);
+	ERR_FAIL_COND(system_name == StringName());
+	info->execute_before(system_name);
 }
 
 void System::with_query_gd(Object *p_query) {
@@ -290,12 +290,12 @@ StringName Component::get_name() const {
 }
 
 void Component::get_component_property_list(List<PropertyInfo> *r_info) {
-	Ref<Script> script = get_script();
-	if (script.is_null()) {
+	Ref<Script> tmp_script = get_script();
+	if (tmp_script.is_null()) {
 		return;
 	}
 
-	script->get_script_property_list(r_info);
+	tmp_script->get_script_property_list(r_info);
 }
 
 Variant Component::get_property_default_value(StringName p_property_name) {
