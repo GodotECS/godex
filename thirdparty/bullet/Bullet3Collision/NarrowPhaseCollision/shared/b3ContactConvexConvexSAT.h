@@ -349,10 +349,13 @@ inline int b3ClipHullHullSingle(
 
 		if (numContactsOut > 0)
 		{
-			B3_PROFILE("overlap");
+			b3Float4 normalOnSurfaceB;
+			{
+				B3_PROFILE("overlap");
 
-			b3Float4 normalOnSurfaceB = (b3Float4&)hostNormal;
-			//			b3Float4 centerOut;
+				normalOnSurfaceB = (b3Float4 &)hostNormal;
+				//			b3Float4 centerOut;
+			}
 
 			b3Int4 contactIdx;
 			contactIdx.x = 0;

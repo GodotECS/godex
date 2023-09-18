@@ -89,9 +89,10 @@ TEST_CASE("[Modules][ECS] Test spawner Script registration.") {
 		code += "var bb: int = 0\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script(component_name, code));
+		CHECK(register_ecs_script(component_name, code));
 	}
 
+	build_scripts();
 	flush_ecs_script_preparation();
 
 	// Compose the script component

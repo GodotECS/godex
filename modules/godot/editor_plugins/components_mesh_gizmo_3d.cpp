@@ -28,7 +28,7 @@ void MeshComponentGizmo::init() {}
 
 void MeshComponentGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 #ifdef TOOLS_ENABLED
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 
 	RID scenario = entity->get_world_3d()->get_scenario();
 	Ref<ComponentDepot> component_data = entity->get_component_depot(SNAME("MeshComponent"));

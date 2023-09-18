@@ -13,7 +13,7 @@ void DynamicQuery::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("not_component", "component_id"), &DynamicQuery::not_component);
 
 	ClassDB::bind_method(D_METHOD("is_valid"), &DynamicQuery::is_valid);
-	ClassDB::bind_method(D_METHOD("prepare_world"), &DynamicQuery::prepare_world_script);
+	ClassDB::bind_method(D_METHOD("prepare_world", "world"), &DynamicQuery::prepare_world_script);
 	ClassDB::bind_method(D_METHOD("reset"), &DynamicQuery::reset);
 	ClassDB::bind_method(D_METHOD("get_component", "index"), &DynamicQuery::get_access_by_index_gd);
 
@@ -110,15 +110,15 @@ void DynamicQuery::get_system_info(SystemExeInfo *p_info) const {
 }
 
 void DynamicQuery::prepare_world_script(Object *p_world) {
-	WorldECS *world = Object::cast_to<WorldECS>(p_world);
-	ERR_FAIL_COND_MSG(world == nullptr, "The given object is not a `WorldECS`.");
-	prepare_world(world->get_world());
+	WorldECS *tmp_world = Object::cast_to<WorldECS>(p_world);
+	ERR_FAIL_COND_MSG(tmp_world == nullptr, "The given object is not a `WorldECS`.");
+	prepare_world(tmp_world->get_world());
 }
 
 void DynamicQuery::begin_script(Object *p_world) {
-	WorldECS *world = Object::cast_to<WorldECS>(p_world);
-	ERR_FAIL_COND_MSG(world == nullptr, "The given object is not a `WorldECS`.");
-	initiate_process(world->get_world());
+	WorldECS *tmp_world = Object::cast_to<WorldECS>(p_world);
+	ERR_FAIL_COND_MSG(tmp_world == nullptr, "The given object is not a `WorldECS`.");
+	initiate_process(tmp_world->get_world());
 }
 
 void DynamicQuery::end_script() {

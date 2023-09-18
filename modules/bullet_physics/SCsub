@@ -2,12 +2,15 @@
 
 Import("env")
 Import("env_modules")
+import methods
 
 env_bullet = env_modules.Clone()
 
 thirdparty_obj = []
 
 env.Append(builtin_bullet=True)
+if methods.using_clang(env_bullet) or methods.using_emcc(env_bullet):
+    env_bullet.Append(CXXFLAGS=["-frelaxed-template-template-args"])
 
 # Add bullet header, no need to compile Bullet third party, because it's
 # already done by the godot bullet module.
@@ -208,7 +211,7 @@ if env["builtin_bullet"]:
     if env["target"] == "debug" or env["target"] == "release_debug":
         env_bullet.Append(CPPDEFINES=["DEBUG"])
 
-    if env["float"] == "64":
+    if env["precision"] == "double":
         env_bullet.Append(CPPDEFINES=["BT_USE_DOUBLE_PRECISION"])
 
     env_bullet.Append(CPPDEFINES=["BT_USE_OLD_DAMPING_METHOD"])

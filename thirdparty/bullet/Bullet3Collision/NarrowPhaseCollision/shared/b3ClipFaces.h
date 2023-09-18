@@ -74,19 +74,19 @@ __kernel void clipFacesAndFindContactsKernel(__global const b3Float4* separating
 											 int vertexFaceCapacity,
 											 int pairIndex)
 {
-	//    int i = get_global_id(0);
-	//int pairIndex = i;
-	int i = pairIndex;
+	//    int index = get_global_id(0);
+	//int pairIndex = index;
+	int index = pairIndex;
 
 	float minDist = -1e30f;
 	float maxDist = 0.02f;
 
-	//	if (i<numPairs)
+	//	if (index<numPairs)
 	{
-		if (hasSeparatingAxis[i])
+		if (hasSeparatingAxis[index])
 		{
-			//			int bodyIndexA = pairs[i].x;
-			//		int bodyIndexB = pairs[i].y;
+			//			int bodyIndexA = pairs[index].x;
+			//		int bodyIndexB = pairs[index].y;
 
 			int numLocalContactsOut = 0;
 
@@ -164,8 +164,8 @@ __kernel void clipFacesAndFindContactsKernel(__global const b3Float4* separating
 			for (int i = 0; i < numLocalContactsOut; i++)
 				pVtxIn[i] = pVtxOut[i];
 
-		}  //		if (hasSeparatingAxis[i])
-	}      //	if (i<numPairs)
+		}  //		if (hasSeparatingAxis[index])
+	}      //	if (index<numPairs)
 }
 
 #endif  //B3_CLIP_FACES_H

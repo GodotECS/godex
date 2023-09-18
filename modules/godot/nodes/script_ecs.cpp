@@ -1,4 +1,5 @@
 #include "script_ecs.h"
+#include <modules/gdscript/gdscript_parser.h>
 
 #include "../../../ecs.h"
 #include "../../../systems/dynamic_system.h"
@@ -146,9 +147,8 @@ uint64_t ScriptEcs::load_scripts(EditorFileSystemDirectory *p_dir) {
 
 		if (p_dir->get_file_import_is_valid(i) &&
 				(file_type == "GDScript" ||
-						file_type == "VisualScript" ||
 						file_type == "NativeScript" ||
-						file_type == "C#" ||
+						file_type == "CSharpScript" ||
 						file_type == "Rust")) { // TODO add more?
 
 			const bool changed =
@@ -191,6 +191,29 @@ void ScriptEcs::define_editor_default_component_properties() {
 	}
 }
 
+void ScriptEcs::reset_editor_default_component_properties() {
+	const StringName entity_3d_name = Entity3D::get_class_static();
+	const StringName entity_2d_name = Entity2D::get_class_static();
+
+	for (godex::component_id id = 0; id < ECS::get_components_count(); id += 1) {
+		const LocalVector<PropertyInfo> *props = ECS::component_get_static_properties(id);
+		for (uint32_t p = 0; p < props->size(); p += 1) {
+			ClassDB::set_property_default_value(entity_3d_name, StringName(String(ECS::get_component_name(id)) + "/" + (*props)[p].name), Variant());
+			ClassDB::set_property_default_value(entity_2d_name, StringName(String(ECS::get_component_name(id)) + "/" + (*props)[p].name), Variant());
+		}
+	}
+
+	// Register the scripted component defaults.
+	for (uint32_t i = 0; i < components.size(); i += 1) {
+		List<PropertyInfo> props;
+		components[i]->get_property_list(&props);
+		for (List<PropertyInfo>::Element *e = props.front(); e; e = e->next()) {
+			ClassDB::set_property_default_value(entity_3d_name, StringName(String(component_names[i]) + "/" + e->get().name), Variant());
+			ClassDB::set_property_default_value(entity_2d_name, StringName(String(component_names[i]) + "/" + e->get().name), Variant());
+		}
+	}
+}
+
 void ScriptEcs::register_runtime_scripts() {
 	if (Engine::get_singleton()->is_editor_hint()) {
 		// Only when the editor is off the Scripted components are registered.
@@ -229,8 +252,8 @@ void ScriptEcs::__empty_scripts() {
 
 bool ScriptEcs::__reload_script(const String &p_path, const String &p_name, const bool p_force_reload) {
 	if (p_force_reload) {
-		Ref<Script> script = ResourceLoader::load(p_path);
-		return __reload_script(script, p_path, p_name);
+		Ref<Script> tmp_script = ResourceLoader::load(p_path);
+		return __reload_script(tmp_script, p_path, p_name);
 	} else {
 		Ref<System> system = get_script_system(p_name);
 		if (system.is_valid()) {
@@ -253,19 +276,19 @@ bool ScriptEcs::__reload_script(const String &p_path, const String &p_name, cons
 	return false;
 }
 
-bool ScriptEcs::__reload_script(Ref<Script> script, const String &p_path, const String &p_name) {
+bool ScriptEcs::__reload_script(Ref<Script> p_script, const String &p_path, const String &p_name) {
 	bool is_valid = false;
-	ERR_FAIL_COND_V(script.is_null(), false);
+	ERR_FAIL_COND_V(p_script.is_null(), false);
 
-	const StringName base_type = script->get_instance_base_type();
+	const StringName base_type = p_script->get_instance_base_type();
 	if (base_type == "System") {
-		Ref<System> system = __reload_system(script, p_path, p_name);
+		Ref<System> system = __reload_system(p_script, p_path, p_name);
 		if (system.is_valid()) {
 			system->verified = true;
 			is_valid = true;
 		}
 	} else if (base_type == "Component") {
-		Ref<Component> component = __reload_component(script, p_path, p_name);
+		Ref<Component> component = __reload_component(p_script, p_path, p_name);
 		if (component.is_valid()) {
 			component->verified = true;
 			is_valid = true;
@@ -287,7 +310,7 @@ bool ScriptEcs::__reload_script(Ref<Script> script, const String &p_path, const 
 			}
 		}
 	} else if (base_type == "SystemBundle") {
-		Ref<SystemBundle> bundle = __reload_system_bundle(script, p_path, p_name);
+		Ref<SystemBundle> bundle = __reload_system_bundle(p_script, p_path, p_name);
 		if (bundle.is_valid()) {
 			bundle->verified = true;
 			is_valid = true;
@@ -446,6 +469,8 @@ void ScriptEcs::flush_scripts_preparation() {
 }
 
 void ScriptEcs::save_script(const String &p_setting_list_name, const String &p_script_path) {
+	if (!Engine::get_singleton()->is_editor_hint())
+		return;
 	ERR_FAIL_COND_MSG(EditorNode::get_singleton() == nullptr, "The editor is not defined.");
 
 	Array scripts;

@@ -166,7 +166,9 @@ const ExecutionGraph *PipelineECS::editor_get_execution_graph_or_null() const {
 }
 
 void PipelineECS::editor_reload_execution_graph() {
-	editor_clear_execution_graph();
+	if (Engine::get_singleton()->is_editor_hint()) {
+		editor_clear_execution_graph();
+	}
 	// Re-build the execution graph.
 	editor_get_execution_graph();
 }
@@ -185,7 +187,7 @@ void WorldECS::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_system_dispatchers_map", "map"), &WorldECS::set_system_dispatchers_map);
 	ClassDB::bind_method(D_METHOD("get_system_dispatchers_map"), &WorldECS::get_system_dispatchers_map);
-	ClassDB::bind_method(D_METHOD("set_system_dispatchers_pipeline"), &WorldECS::set_system_dispatchers_pipeline);
+	ClassDB::bind_method(D_METHOD("set_system_dispatchers_pipeline", "system_name", "name"), &WorldECS::set_system_dispatchers_pipeline);
 
 	ClassDB::bind_method(D_METHOD("set_active_pipeline", "name"), &WorldECS::set_active_pipeline);
 	ClassDB::bind_method(D_METHOD("get_active_pipeline"), &WorldECS::get_active_pipeline);
@@ -205,8 +207,8 @@ void WorldECS::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("create_entity_from_prefab", "entity_node"), &WorldECS::create_entity_from_prefab);
 
-	ClassDB::bind_method(D_METHOD("add_component_by_name", "component_name", "data"), &WorldECS::add_component_by_name);
-	ClassDB::bind_method(D_METHOD("add_component", "component_id", "data"), &WorldECS::add_component);
+	ClassDB::bind_method(D_METHOD("add_component_by_name", "entity_id", "component_name", "data"), &WorldECS::add_component_by_name);
+	ClassDB::bind_method(D_METHOD("add_component", "entity_id", "component_id", "data"), &WorldECS::add_component);
 
 	ClassDB::bind_method(D_METHOD("remove_component_by_name", "component_name", "data"), &WorldECS::remove_component_by_name);
 	ClassDB::bind_method(D_METHOD("remove_component", "component_id", "data"), &WorldECS::remove_component);
@@ -326,6 +328,11 @@ void WorldECS::_get_property_list(List<PropertyInfo> *p_list) const {
 
 void WorldECS::_notification(int p_what) {
 	switch (p_what) {
+		case NOTIFICATION_POSTINITIALIZE:
+			// Make sure to register all scripted components/databags/systems
+			// at this point.
+			ScriptEcs::get_singleton()->register_runtime_scripts();
+			break;
 		case NOTIFICATION_READY:
 #ifdef TOOLS_ENABLED
 			if (Engine::get_singleton()->is_editor_hint()) {
@@ -335,10 +342,7 @@ void WorldECS::_notification(int p_what) {
 			}
 #endif
 
-			// Make sure to register all scripted components/databags/systems
-			// at this point.
-			ScriptEcs::get_singleton()->register_runtime_scripts(); // TODO do I need this?
-
+			ScriptEcs::get_singleton()->register_runtime_scripts();
 			add_to_group("_world_ecs");
 			if (Engine::get_singleton()->is_editor_hint() == false) {
 				active_world();
@@ -414,8 +418,8 @@ World *WorldECS::get_world() const {
 	return world;
 }
 
-TypedArray<String> WorldECS::get_configuration_warnings() const {
-	TypedArray<String> warnings = Node::get_configuration_warnings();
+PackedStringArray WorldECS::get_configuration_warnings() const {
+	Vector<String> warnings = Node::get_configuration_warnings();
 
 	if (!is_inside_tree()) {
 		return warnings;

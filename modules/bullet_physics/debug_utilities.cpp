@@ -65,9 +65,9 @@ Ref<ArrayMesh> generate_mesh_from_points(const Vector<Vector3> &p_points) {
 		Error err = QuickHull::build(varr, md);
 		if (err == OK) {
 			lines.resize(md.edges.size() * 2);
-			for (int i = 0; i < md.edges.size(); i++) {
-				lines.write[i * 2 + 0] = md.vertices[md.edges[i].a];
-				lines.write[i * 2 + 1] = md.vertices[md.edges[i].b];
+			for (uint32_t i = 0; i < md.edges.size(); i++) {
+				lines.write[i * 2 + 0] = md.vertices[md.edges[i].vertex_a];
+				lines.write[i * 2 + 1] = md.vertices[md.edges[i].vertex_b];
 			}
 		}
 	}

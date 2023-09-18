@@ -4,6 +4,8 @@
 #include "core/io/marshalls.h"
 #include "editor/editor_properties.h"
 #include "editor/editor_properties_array_dict.h"
+#include "editor/editor_settings.h"
+#include "editor/editor_undo_redo_manager.h"
 
 void EntityEditor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("update_editors"), &EntityEditor::update_editors);
@@ -67,7 +69,7 @@ void EntityEditor::update_editors() {
 	if (components_section) {
 		// Remove old childs.
 		for (int i = components_section->get_vbox()->get_child_count() - 1; i >= 0; i -= 1) {
-			components_section->get_vbox()->get_child(i)->queue_delete(); // TODO is this enough to also destroy the internally created things?
+			components_section->get_vbox()->get_child(i)->queue_free(); // TODO is this enough to also destroy the internally created things?
 		}
 		components_properties.clear();
 
@@ -143,16 +145,16 @@ void EntityEditor::create_component_inspector(StringName p_component_name, const
 				} break;
 				case Variant::INT: {
 					if (e.hint == PROPERTY_HINT_ENUM) {
-						EditorPropertyEnum *editor = memnew(EditorPropertyEnum);
+						EditorPropertyEnum *property_enum = memnew(EditorPropertyEnum);
 						Vector<String> options = e.hint_string.split(",");
-						editor->setup(options);
-						prop = editor;
+						property_enum->setup(options);
+						prop = property_enum;
 
 					} else if (e.hint == PROPERTY_HINT_FLAGS) {
-						EditorPropertyFlags *editor = memnew(EditorPropertyFlags);
+						EditorPropertyFlags *property_flags = memnew(EditorPropertyFlags);
 						Vector<String> options = e.hint_string.split(",");
-						editor->setup(options);
-						prop = editor;
+						property_flags->setup(options);
+						prop = property_flags;
 
 					} else if (e.hint == PROPERTY_HINT_LAYERS_2D_PHYSICS || e.hint == PROPERTY_HINT_LAYERS_2D_RENDER || e.hint == PROPERTY_HINT_LAYERS_3D_PHYSICS || e.hint == PROPERTY_HINT_LAYERS_3D_RENDER) {
 						EditorPropertyLayers::LayerType lt = EditorPropertyLayers::LAYER_RENDER_2D;
@@ -172,18 +174,19 @@ void EntityEditor::create_component_inspector(StringName p_component_name, const
 							default: {
 							}
 						}
-						EditorPropertyLayers *editor = memnew(EditorPropertyLayers);
-						editor->setup(lt);
-						prop = editor;
+						EditorPropertyLayers *property_layers = memnew(EditorPropertyLayers);
+						property_layers->setup(lt);
+						prop = property_layers;
 
 					} else if (e.hint == PROPERTY_HINT_OBJECT_ID) {
-						EditorPropertyObjectID *editor = memnew(EditorPropertyObjectID);
-						editor->setup("Object");
-						prop = editor;
+						EditorPropertyObjectID *property_object_id = memnew(EditorPropertyObjectID);
+						property_object_id->setup("Object");
+						prop = property_object_id;
 
 					} else {
-						EditorPropertyInteger *editor = memnew(EditorPropertyInteger);
+						EditorPropertyInteger *property_integer = memnew(EditorPropertyInteger);
 						int min = 0, max = 65535, step = 1;
+						bool hide_slider = false;
 						bool greater = true, lesser = true;
 
 						if (e.hint == PROPERTY_HINT_RANGE && e.hint_string.get_slice_count(",") >= 2) {
@@ -207,13 +210,13 @@ void EntityEditor::create_component_inspector(StringName p_component_name, const
 							}
 						}
 
-						editor->setup(min, max, step, greater, lesser);
-						prop = editor;
+						property_integer->setup(min, max, step, hide_slider, greater, lesser);
+						prop = property_integer;
 					}
 				} break;
 				case Variant::FLOAT: {
 					if (e.hint == PROPERTY_HINT_EXP_EASING) {
-						EditorPropertyEasing *editor = memnew(EditorPropertyEasing);
+						EditorPropertyEasing *property_easing = memnew(EditorPropertyEasing);
 						bool full = true;
 						bool flip = false;
 						Vector<String> hints = e.hint_string.split(",");
@@ -227,11 +230,11 @@ void EntityEditor::create_component_inspector(StringName p_component_name, const
 							}
 						}
 
-						editor->setup(full, flip);
-						prop = editor;
+						property_easing->setup(full, flip);
+						prop = property_easing;
 
 					} else {
-						EditorPropertyFloat *editor = memnew(EditorPropertyFloat);
+						EditorPropertyFloat *property_float = memnew(EditorPropertyFloat);
 						double min = -65535, max = 65535, step = default_float_step;
 						bool hide_slider = true;
 						bool exp_range = false;
@@ -261,17 +264,17 @@ void EntityEditor::create_component_inspector(StringName p_component_name, const
 							}
 						}
 
-						editor->setup(min, max, step, hide_slider, exp_range, greater, lesser);
-						prop = editor;
+						property_float->setup(min, max, step, hide_slider, exp_range, greater, lesser);
+						prop = property_float;
 					}
 
 				} break;
 				case Variant::STRING: {
 					if (e.hint == PROPERTY_HINT_ENUM) {
-						EditorPropertyTextEnum *editor = memnew(EditorPropertyTextEnum);
+						EditorPropertyTextEnum *property_text_enum = memnew(EditorPropertyTextEnum);
 						Vector<String> options = e.hint_string.split(",");
-						editor->setup(options);
-						prop = editor;
+						property_text_enum->setup(options);
+						prop = property_text_enum;
 
 					} else if (e.hint == godex::PROPERTY_HINT_ECS_EVENT_EMITTER) {
 						// Show a full list of available event emitters for this event.
@@ -292,9 +295,9 @@ void EntityEditor::create_component_inspector(StringName p_component_name, const
 							}
 						}
 
-						EditorPropertyTextEnum *editor = memnew(EditorPropertyTextEnum);
-						editor->setup(enum_component_list, false);
-						prop = editor;
+						EditorPropertyTextEnum *property_text_enum = memnew(EditorPropertyTextEnum);
+						property_text_enum->setup(enum_component_list, false);
+						prop = property_text_enum;
 
 					} else if (e.hint == godex::PROPERTY_HINT_ECS_SPAWNER) {
 						// Show the full list of available spawners for this component.
@@ -311,90 +314,48 @@ void EntityEditor::create_component_inspector(StringName p_component_name, const
 							}
 						}
 
-						EditorPropertyTextEnum *editor = memnew(EditorPropertyTextEnum);
-						editor->setup(enum_component_list, false);
-						prop = editor;
+						EditorPropertyTextEnum *property_text_enum = memnew(EditorPropertyTextEnum);
+						property_text_enum->setup(enum_component_list, false);
+						prop = property_text_enum;
 
 					} else if (e.hint == PROPERTY_HINT_MULTILINE_TEXT) {
-						EditorPropertyMultilineText *editor = memnew(EditorPropertyMultilineText);
-						prop = editor;
+						EditorPropertyMultilineText *property_multiline_text = memnew(EditorPropertyMultilineText);
+						prop = property_multiline_text;
 
 					} else if (e.hint == PROPERTY_HINT_TYPE_STRING) {
-						EditorPropertyClassName *editor = memnew(EditorPropertyClassName);
-						editor->setup("Object", e.hint_string);
-						prop = editor;
+						EditorPropertyClassName *property_class_name = memnew(EditorPropertyClassName);
+						property_class_name->setup("Object", e.hint_string);
+						prop = property_class_name;
 
 					} else if (e.hint == PROPERTY_HINT_DIR || e.hint == PROPERTY_HINT_FILE || e.hint == PROPERTY_HINT_SAVE_FILE || e.hint == PROPERTY_HINT_GLOBAL_DIR || e.hint == PROPERTY_HINT_GLOBAL_FILE) {
 						Vector<String> extensions = e.hint_string.split(",");
 						bool global = e.hint == PROPERTY_HINT_GLOBAL_DIR || e.hint == PROPERTY_HINT_GLOBAL_FILE;
 						bool folder = e.hint == PROPERTY_HINT_DIR || e.hint == PROPERTY_HINT_GLOBAL_DIR;
 						bool save = e.hint == PROPERTY_HINT_SAVE_FILE;
-						EditorPropertyPath *editor = memnew(EditorPropertyPath);
-						editor->setup(extensions, folder, global);
+						EditorPropertyPath *property_path = memnew(EditorPropertyPath);
+						property_path->setup(extensions, folder, global);
 						if (save) {
-							editor->set_save_mode();
+							property_path->set_save_mode();
 						}
-						prop = editor;
-
-					} else if (e.hint == PROPERTY_HINT_METHOD_OF_VARIANT_TYPE ||
-							   e.hint == PROPERTY_HINT_METHOD_OF_BASE_TYPE ||
-							   e.hint == PROPERTY_HINT_METHOD_OF_INSTANCE ||
-							   e.hint == PROPERTY_HINT_METHOD_OF_SCRIPT ||
-							   e.hint == PROPERTY_HINT_PROPERTY_OF_VARIANT_TYPE ||
-							   e.hint == PROPERTY_HINT_PROPERTY_OF_BASE_TYPE ||
-							   e.hint == PROPERTY_HINT_PROPERTY_OF_INSTANCE ||
-							   e.hint == PROPERTY_HINT_PROPERTY_OF_SCRIPT) {
-						EditorPropertyMember *editor = memnew(EditorPropertyMember);
-
-						EditorPropertyMember::Type type = EditorPropertyMember::MEMBER_METHOD_OF_BASE_TYPE;
-						switch (e.hint) {
-							case PROPERTY_HINT_METHOD_OF_BASE_TYPE:
-								type = EditorPropertyMember::MEMBER_METHOD_OF_BASE_TYPE;
-								break;
-							case PROPERTY_HINT_METHOD_OF_INSTANCE:
-								type = EditorPropertyMember::MEMBER_METHOD_OF_INSTANCE;
-								break;
-							case PROPERTY_HINT_METHOD_OF_SCRIPT:
-								type = EditorPropertyMember::MEMBER_METHOD_OF_SCRIPT;
-								break;
-							case PROPERTY_HINT_PROPERTY_OF_VARIANT_TYPE:
-								type = EditorPropertyMember::MEMBER_PROPERTY_OF_VARIANT_TYPE;
-								break;
-							case PROPERTY_HINT_PROPERTY_OF_BASE_TYPE:
-								type = EditorPropertyMember::MEMBER_PROPERTY_OF_BASE_TYPE;
-								break;
-							case PROPERTY_HINT_PROPERTY_OF_INSTANCE:
-								type = EditorPropertyMember::MEMBER_PROPERTY_OF_INSTANCE;
-								break;
-							case PROPERTY_HINT_PROPERTY_OF_SCRIPT:
-								type = EditorPropertyMember::MEMBER_PROPERTY_OF_SCRIPT;
-								break;
-							default: {
-							}
-						}
-						editor->setup(type, e.hint_string);
-						prop = editor;
-
+						prop = property_path;
 					} else {
-						EditorPropertyText *editor = memnew(EditorPropertyText);
+						EditorPropertyText *property_text = memnew(EditorPropertyText);
 						if (e.hint == PROPERTY_HINT_PLACEHOLDER_TEXT) {
-							editor->set_placeholder(e.hint_string);
+							property_text->set_placeholder(e.hint_string);
 						}
-						prop = editor;
+						prop = property_text;
 					}
 				} break;
 
 #define SETUP_MATH_RANGE(editor, prop_info, type)                                                   \
 	type min = -65535, max = 65535;                                                                 \
-	bool hide_slider = true;                                                                        \
                                                                                                     \
 	if (prop_info.hint == PROPERTY_HINT_RANGE && prop_info.hint_string.get_slice_count(",") >= 2) { \
 		min = e.hint_string.get_slice(",", 0).to_float();                                           \
 		max = e.hint_string.get_slice(",", 1).to_float();                                           \
-		hide_slider = false;                                                                        \
 	}                                                                                               \
                                                                                                     \
-	editor->setup(min, max, hide_slider);
+	editor->setup(min, max);
 
 #define SETUP_MATH_RANGE_WITH_STEP(editor, prop_info, type)                                         \
 	type min = -65535, max = 65535, step = default_float_step;                                      \
@@ -412,91 +373,91 @@ void EntityEditor::create_component_inspector(StringName p_component_name, const
 	editor->setup(min, max, step, hide_slider);
 				// math types
 				case Variant::VECTOR2: {
-					EditorPropertyVector2 *editor = memnew(EditorPropertyVector2);
-					SETUP_MATH_RANGE_WITH_STEP(editor, e, double);
-					prop = editor;
+					EditorPropertyVector2 *property_vector2 = memnew(EditorPropertyVector2);
+					SETUP_MATH_RANGE_WITH_STEP(property_vector2, e, double);
+					prop = property_vector2;
 
 				} break;
 				case Variant::VECTOR2I: {
-					EditorPropertyVector2i *editor = memnew(EditorPropertyVector2i);
-					SETUP_MATH_RANGE(editor, e, int);
-					prop = editor;
+					EditorPropertyVector2i *property_vector2i = memnew(EditorPropertyVector2i);
+					SETUP_MATH_RANGE(property_vector2i, e, int);
+					prop = property_vector2i;
 
 				} break;
 				case Variant::RECT2: {
-					EditorPropertyRect2 *editor = memnew(EditorPropertyRect2);
-					SETUP_MATH_RANGE_WITH_STEP(editor, e, double);
-					prop = editor;
+					EditorPropertyRect2 *property_rect2 = memnew(EditorPropertyRect2);
+					SETUP_MATH_RANGE_WITH_STEP(property_rect2, e, double);
+					prop = property_rect2;
 
 				} break;
 				case Variant::RECT2I: {
-					EditorPropertyRect2i *editor = memnew(EditorPropertyRect2i);
-					SETUP_MATH_RANGE(editor, e, int);
-					prop = editor;
+					EditorPropertyRect2i *property_rect2i = memnew(EditorPropertyRect2i);
+					SETUP_MATH_RANGE(property_rect2i, e, int);
+					prop = property_rect2i;
 
 				} break;
 				case Variant::VECTOR3: {
-					EditorPropertyVector3 *editor = memnew(EditorPropertyVector3);
-					SETUP_MATH_RANGE_WITH_STEP(editor, e, double);
-					prop = editor;
+					EditorPropertyVector3 *property_vector3 = memnew(EditorPropertyVector3);
+					SETUP_MATH_RANGE_WITH_STEP(property_vector3, e, double);
+					prop = property_vector3;
 
 				} break;
 				case Variant::VECTOR3I: {
-					EditorPropertyVector3i *editor = memnew(EditorPropertyVector3i);
-					SETUP_MATH_RANGE(editor, e, int);
-					prop = editor;
+					EditorPropertyVector3i *property_vector3i = memnew(EditorPropertyVector3i);
+					SETUP_MATH_RANGE(property_vector3i, e, int);
+					prop = property_vector3i;
 
 				} break;
 				case Variant::TRANSFORM2D: {
-					EditorPropertyTransform2D *editor = memnew(EditorPropertyTransform2D);
-					SETUP_MATH_RANGE_WITH_STEP(editor, e, double);
-					prop = editor;
+					EditorPropertyTransform2D *transform_2d = memnew(EditorPropertyTransform2D);
+					SETUP_MATH_RANGE_WITH_STEP(transform_2d, e, double);
+					prop = transform_2d;
 
 				} break;
 				case Variant::PLANE: {
-					EditorPropertyPlane *editor = memnew(EditorPropertyPlane);
-					SETUP_MATH_RANGE_WITH_STEP(editor, e, double);
-					prop = editor;
+					EditorPropertyPlane *property_plane = memnew(EditorPropertyPlane);
+					SETUP_MATH_RANGE_WITH_STEP(property_plane, e, double);
+					prop = property_plane;
 
 				} break;
 				case Variant::QUATERNION: {
-					EditorPropertyQuaternion *editor = memnew(EditorPropertyQuaternion);
-					SETUP_MATH_RANGE_WITH_STEP(editor, e, double);
-					prop = editor;
+					EditorPropertyQuaternion *property_quaternion = memnew(EditorPropertyQuaternion);
+					SETUP_MATH_RANGE_WITH_STEP(property_quaternion, e, double);
+					prop = property_quaternion;
 
 				} break;
 				case Variant::AABB: {
-					EditorPropertyAABB *editor = memnew(EditorPropertyAABB);
-					SETUP_MATH_RANGE_WITH_STEP(editor, e, double);
-					prop = editor;
+					EditorPropertyAABB *property_aabb = memnew(EditorPropertyAABB);
+					SETUP_MATH_RANGE_WITH_STEP(property_aabb, e, double);
+					prop = property_aabb;
 
 				} break;
 				case Variant::BASIS: {
-					EditorPropertyBasis *editor = memnew(EditorPropertyBasis);
-					SETUP_MATH_RANGE_WITH_STEP(editor, e, double);
-					prop = editor;
+					EditorPropertyBasis *property_basis = memnew(EditorPropertyBasis);
+					SETUP_MATH_RANGE_WITH_STEP(property_basis, e, double);
+					prop = property_basis;
 
 				} break;
 				case Variant::TRANSFORM3D: {
-					EditorPropertyTransform3D *editor = memnew(EditorPropertyTransform3D);
-					SETUP_MATH_RANGE_WITH_STEP(editor, e, double);
-					prop = editor;
+					EditorPropertyTransform3D *transform_3d = memnew(EditorPropertyTransform3D);
+					SETUP_MATH_RANGE_WITH_STEP(transform_3d, e, double);
+					prop = transform_3d;
 
 				} break;
 
 				// misc types
 				case Variant::COLOR: {
-					EditorPropertyColor *editor = memnew(EditorPropertyColor);
-					editor->setup(e.hint != PROPERTY_HINT_COLOR_NO_ALPHA);
-					prop = editor;
+					EditorPropertyColor *property_color = memnew(EditorPropertyColor);
+					property_color->setup(e.hint != PROPERTY_HINT_COLOR_NO_ALPHA);
+					prop = property_color;
 
 				} break;
 				case Variant::STRING_NAME: {
 					if (e.hint == PROPERTY_HINT_ENUM) {
-						EditorPropertyTextEnum *editor = memnew(EditorPropertyTextEnum);
+						EditorPropertyTextEnum *property_text_enum = memnew(EditorPropertyTextEnum);
 						Vector<String> options = e.hint_string.split(",");
-						editor->setup(options, true);
-						prop = editor;
+						property_text_enum->setup(options, true);
+						prop = property_text_enum;
 
 					} else if (e.hint == godex::PROPERTY_HINT_ECS_SPAWNER) {
 						const StringName spawner_name = e.hint_string;
@@ -512,32 +473,32 @@ void EntityEditor::create_component_inspector(StringName p_component_name, const
 							}
 						}
 
-						EditorPropertyTextEnum *editor = memnew(EditorPropertyTextEnum);
-						editor->setup(enum_component_list, true);
-						prop = editor;
+						EditorPropertyTextEnum *property_text_enum = memnew(EditorPropertyTextEnum);
+						property_text_enum->setup(enum_component_list, true);
+						prop = property_text_enum;
 
 					} else {
-						EditorPropertyText *editor = memnew(EditorPropertyText);
+						EditorPropertyText *property_text = memnew(EditorPropertyText);
 						if (e.hint == PROPERTY_HINT_PLACEHOLDER_TEXT) {
-							editor->set_placeholder(e.hint_string);
+							property_text->set_placeholder(e.hint_string);
 						}
-						editor->set_string_name(true);
-						prop = editor;
+						property_text->set_string_name(true);
+						prop = property_text;
 					}
 
 				} break;
 				case Variant::NODE_PATH: {
-					EditorPropertyNodePath *editor = memnew(EditorPropertyNodePath);
-					const int usage = 0; // TODO how to integrate this? check /modules/godot/editor/editor_properties.cpp::parse_property
+					EditorPropertyNodePath *property_node_path = memnew(EditorPropertyNodePath);
+					const int usage = 0; // TODO how to integrate this? check /modules/godot/property_node_path/editor_properties.cpp::parse_property
 					if (e.hint == PROPERTY_HINT_NODE_PATH_TO_EDITED_NODE && e.hint_string != String()) {
-						editor->setup(e.hint_string, Vector<StringName>(), (usage & PROPERTY_USAGE_NODE_PATH_FROM_SCENE_ROOT));
+						property_node_path->setup(e.hint_string, Vector<StringName>(), (usage & PROPERTY_USAGE_NODE_PATH_FROM_SCENE_ROOT));
 					}
 					if (e.hint == PROPERTY_HINT_NODE_PATH_VALID_TYPES && e.hint_string != String()) {
 						Vector<String> types = e.hint_string.split(",", false);
 						Vector<StringName> sn = Variant(types); // convert via variant
-						editor->setup(NodePath(), sn, (usage & PROPERTY_USAGE_NODE_PATH_FROM_SCENE_ROOT));
+						property_node_path->setup(NodePath(), sn, (usage & PROPERTY_USAGE_NODE_PATH_FROM_SCENE_ROOT));
 					}
-					prop = editor;
+					prop = property_node_path;
 
 				} break;
 				case Variant::RID: {
@@ -545,23 +506,23 @@ void EntityEditor::create_component_inspector(StringName p_component_name, const
 
 				} break;
 				case Variant::OBJECT: {
-					EditorPropertyResource *editor = memnew(EditorPropertyResource);
+					EditorPropertyResource *property_resource = memnew(EditorPropertyResource);
 					if (e.hint == PROPERTY_HINT_RESOURCE_TYPE) {
-						editor->setup(entity, entity ? entity->get_path() : NodePath(), e.hint_string);
+						property_resource->setup(entity, entity ? entity->get_path() : NodePath(), e.hint_string);
 						const String open_in_new = EDITOR_GET("interface/inspector/resources_to_open_in_new_inspector");
 						for (int i = 0; i < open_in_new.get_slice_count(","); i++) {
 							const String type = open_in_new.get_slicec(',', i).strip_edges();
 							for (int j = 0; j < e.hint_string.get_slice_count(","); j++) {
 								String inherits = e.hint_string.get_slicec(',', j);
 								if (ClassDB::is_parent_class(inherits, type)) {
-									editor->set_use_sub_inspector(false);
+									property_resource->set_use_sub_inspector(false);
 								}
 							}
 						}
 					} else {
-						editor->setup(entity, entity ? entity->get_path() : NodePath(), "Resource");
+						property_resource->setup(entity, entity ? entity->get_path() : NodePath(), "Resource");
 					}
-					prop = editor;
+					prop = property_resource;
 
 				} break;
 				case Variant::DICTIONARY: {
@@ -569,56 +530,56 @@ void EntityEditor::create_component_inspector(StringName p_component_name, const
 
 				} break;
 				case Variant::ARRAY: {
-					EditorPropertyArray *editor = memnew(EditorPropertyArray);
-					editor->setup(Variant::ARRAY, e.hint_string);
-					prop = editor;
+					EditorPropertyArray *property_array = memnew(EditorPropertyArray);
+					property_array->setup(Variant::ARRAY, e.hint_string);
+					prop = property_array;
 				} break;
 
 				// arrays
 				case Variant::PACKED_BYTE_ARRAY: {
-					EditorPropertyArray *editor = memnew(EditorPropertyArray);
-					editor->setup(Variant::PACKED_BYTE_ARRAY, e.hint_string);
-					prop = editor;
+					EditorPropertyArray *property_array = memnew(EditorPropertyArray);
+					property_array->setup(Variant::PACKED_BYTE_ARRAY, e.hint_string);
+					prop = property_array;
 				} break;
 				case Variant::PACKED_INT32_ARRAY: {
-					EditorPropertyArray *editor = memnew(EditorPropertyArray);
-					editor->setup(Variant::PACKED_INT32_ARRAY, e.hint_string);
-					prop = editor;
+					EditorPropertyArray *property_array = memnew(EditorPropertyArray);
+					property_array->setup(Variant::PACKED_INT32_ARRAY, e.hint_string);
+					prop = property_array;
 				} break;
 				case Variant::PACKED_FLOAT32_ARRAY: {
-					EditorPropertyArray *editor = memnew(EditorPropertyArray);
-					editor->setup(Variant::PACKED_FLOAT32_ARRAY, e.hint_string);
-					prop = editor;
+					EditorPropertyArray *property_array = memnew(EditorPropertyArray);
+					property_array->setup(Variant::PACKED_FLOAT32_ARRAY, e.hint_string);
+					prop = property_array;
 				} break;
 				case Variant::PACKED_INT64_ARRAY: {
-					EditorPropertyArray *editor = memnew(EditorPropertyArray);
-					editor->setup(Variant::PACKED_INT64_ARRAY, e.hint_string);
-					prop = editor;
+					EditorPropertyArray *property_array = memnew(EditorPropertyArray);
+					property_array->setup(Variant::PACKED_INT64_ARRAY, e.hint_string);
+					prop = property_array;
 				} break;
 				case Variant::PACKED_FLOAT64_ARRAY: {
-					EditorPropertyArray *editor = memnew(EditorPropertyArray);
-					editor->setup(Variant::PACKED_FLOAT64_ARRAY, e.hint_string);
-					prop = editor;
+					EditorPropertyArray *property_array = memnew(EditorPropertyArray);
+					property_array->setup(Variant::PACKED_FLOAT64_ARRAY, e.hint_string);
+					prop = property_array;
 				} break;
 				case Variant::PACKED_STRING_ARRAY: {
-					EditorPropertyArray *editor = memnew(EditorPropertyArray);
-					editor->setup(Variant::PACKED_STRING_ARRAY, e.hint_string);
-					prop = editor;
+					EditorPropertyArray *property_array = memnew(EditorPropertyArray);
+					property_array->setup(Variant::PACKED_STRING_ARRAY, e.hint_string);
+					prop = property_array;
 				} break;
 				case Variant::PACKED_VECTOR2_ARRAY: {
-					EditorPropertyArray *editor = memnew(EditorPropertyArray);
-					editor->setup(Variant::PACKED_VECTOR2_ARRAY, e.hint_string);
-					prop = editor;
+					EditorPropertyArray *property_array = memnew(EditorPropertyArray);
+					property_array->setup(Variant::PACKED_VECTOR2_ARRAY, e.hint_string);
+					prop = property_array;
 				} break;
 				case Variant::PACKED_VECTOR3_ARRAY: {
-					EditorPropertyArray *editor = memnew(EditorPropertyArray);
-					editor->setup(Variant::PACKED_VECTOR3_ARRAY, e.hint_string);
-					prop = editor;
+					EditorPropertyArray *property_array = memnew(EditorPropertyArray);
+					property_array->setup(Variant::PACKED_VECTOR3_ARRAY, e.hint_string);
+					prop = property_array;
 				} break;
 				case Variant::PACKED_COLOR_ARRAY: {
-					EditorPropertyArray *editor = memnew(EditorPropertyArray);
-					editor->setup(Variant::PACKED_COLOR_ARRAY, e.hint_string);
-					prop = editor;
+					EditorPropertyArray *property_array = memnew(EditorPropertyArray);
+					property_array->setup(Variant::PACKED_COLOR_ARRAY, e.hint_string);
+					prop = property_array;
 				} break;
 				default: {
 				}
@@ -660,21 +621,21 @@ void EntityEditor::_add_component_pressed(uint32_t p_index) {
 		component_name = add_component_menu->get_popup()->get_item_text(p_index);
 	}
 
-	editor->get_undo_redo()->create_action(TTR("Add component"));
-	editor->get_undo_redo()->add_do_method(entity, SNAME("add_component"), component_name);
-	editor->get_undo_redo()->add_do_method(this, SNAME("update_editors"));
-	editor->get_undo_redo()->add_undo_method(entity, SNAME("remove_component"), component_name);
-	editor->get_undo_redo()->add_undo_method(this, SNAME("update_editors"));
-	editor->get_undo_redo()->commit_action();
+	EditorUndoRedoManager::get_singleton()->create_action(TTR("Add component"));
+	EditorUndoRedoManager::get_singleton()->add_do_method(entity, SNAME("add_component"), component_name);
+	EditorUndoRedoManager::get_singleton()->add_do_method(this, SNAME("update_editors"));
+	EditorUndoRedoManager::get_singleton()->add_undo_method(entity, SNAME("remove_component"), component_name);
+	EditorUndoRedoManager::get_singleton()->add_undo_method(this, SNAME("update_editors"));
+	EditorUndoRedoManager::get_singleton()->commit_action();
 }
 
 void EntityEditor::_remove_component_pressed(StringName p_component_name) {
-	editor->get_undo_redo()->create_action(TTR("Drop component"));
-	editor->get_undo_redo()->add_do_method(entity, SNAME("remove_component"), p_component_name);
-	editor->get_undo_redo()->add_do_method(this, SNAME("update_editors"));
-	editor->get_undo_redo()->add_undo_method(entity, SNAME("add_component"), p_component_name, entity_get_component_props_data(p_component_name));
-	editor->get_undo_redo()->add_undo_method(this, SNAME("update_editors"));
-	editor->get_undo_redo()->commit_action();
+	EditorUndoRedoManager::get_singleton()->create_action(TTR("Drop component"));
+	EditorUndoRedoManager::get_singleton()->add_do_method(entity, SNAME("remove_component"), p_component_name);
+	EditorUndoRedoManager::get_singleton()->add_do_method(this, SNAME("update_editors"));
+	EditorUndoRedoManager::get_singleton()->add_undo_method(entity, SNAME("add_component"), p_component_name, entity_get_component_props_data(p_component_name));
+	EditorUndoRedoManager::get_singleton()->add_undo_method(this, SNAME("update_editors"));
+	EditorUndoRedoManager::get_singleton()->commit_action();
 }
 
 void EntityEditor::_property_changed(const String &p_path, const Variant &p_value, const String &p_name, bool p_changing) {
@@ -683,11 +644,11 @@ void EntityEditor::_property_changed(const String &p_path, const Variant &p_valu
 		return;
 	}
 
-	editor->get_undo_redo()->create_action(TTR("Set component value"));
-	editor->get_undo_redo()->add_do_method(entity, SNAME("set"), p_path, p_value);
-	editor->get_undo_redo()->add_undo_method(entity, SNAME("set"), p_path, entity->get(p_path));
-	editor->get_undo_redo()->add_undo_method(this, SNAME("update_editors"));
-	editor->get_undo_redo()->commit_action();
+	EditorUndoRedoManager::get_singleton()->create_action(TTR("Set component value"));
+	EditorUndoRedoManager::get_singleton()->add_do_method(entity, SNAME("set"), p_path, p_value);
+	EditorUndoRedoManager::get_singleton()->add_undo_method(entity, SNAME("set"), p_path, entity->get(p_path));
+	EditorUndoRedoManager::get_singleton()->add_undo_method(this, SNAME("update_editors"));
+	EditorUndoRedoManager::get_singleton()->commit_action();
 
 	if (p_value.get_type() != Variant::STRING) {
 		// This is needed because string update is special: If string is updated

@@ -122,7 +122,7 @@ public:
 	/// `ECS::get_singleton()->get_commands()`
 	World *get_world() const;
 
-	virtual TypedArray<String> get_configuration_warnings() const override;
+	virtual PackedStringArray get_configuration_warnings() const override;
 
 	void set_pipelines(Vector<Ref<PipelineECS>> p_pipelines);
 	const Vector<Ref<PipelineECS>> &get_pipelines() const;

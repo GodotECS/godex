@@ -224,6 +224,7 @@ public:
 	template <class C>
 	static void register_component(StorageBase *(*create_storage)());
 
+	static uint32_t register_or_get_id_for_component_name(const StringName &p_name);
 	static uint32_t register_or_update_script_component(const StringName &p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type, Vector<StringName> p_spawners);
 
 	static uint32_t get_components_count();
@@ -488,6 +489,8 @@ public:
 	/// time, making the pipeline switch immediate.
 	static void system_set_active_system(godex::system_id p_id, uint8_t *p_mem, bool p_active);
 
+	static void preload_scripts();
+
 private:
 	static void clear_emitters_for_system(godex::system_id p_id);
 
@@ -630,11 +633,11 @@ void ECS::register_component(StorageBase *(*create_storage)()) {
 		get_storage_config = C::_get_storage_config;
 	}
 
-	LocalVector<godex::spawner_id> spawners;
+	LocalVector<godex::spawner_id> tmp_spawners;
 	if constexpr (godex_has_get_spawners<C>::value) {
-		spawners = C::get_spawners();
-		for (uint32_t i = 0; i < spawners.size(); i += 1) {
-			spawners_info[spawners[i]].components.push_back(C::component_id);
+		tmp_spawners = C::get_spawners();
+		for (uint32_t i = 0; i < tmp_spawners.size(); i += 1) {
+			spawners_info[tmp_spawners[i]].components.push_back(C::component_id);
 		}
 	}
 
@@ -648,7 +651,7 @@ void ECS::register_component(StorageBase *(*create_storage)()) {
 					nullptr,
 					notify_release_write,
 					shared_component_storage,
-					spawners,
+					tmp_spawners,
 					DataAccessorFuncs{
 							C::get_static_properties,
 							C::get_property_list,

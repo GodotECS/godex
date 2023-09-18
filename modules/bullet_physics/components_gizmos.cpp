@@ -1,10 +1,10 @@
 #include "components_gizmos.h"
 
-#include "../godot/nodes/entity.h"
 #include "debug_utilities.h"
+#include "editor/editor_node.h"
 #include "editor/editor_settings.h"
+#include "editor/editor_undo_redo_manager.h"
 #include "editor/plugins/node_3d_editor_plugin.h"
-#include "scene/3d/camera_3d.h"
 
 void BtBoxGizmo::init() {
 	const Color gizmo_color = EDITOR_DEF("editors/3d_gizmos/gizmo_colors/shape", Color(0.5, 0.7, 1));
@@ -18,7 +18,7 @@ void BtBoxGizmo::init() {
 }
 
 void BtBoxGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND(entity == nullptr);
 
 	if (entity->has_component(box_component_name)) {
@@ -55,7 +55,7 @@ void BtBoxGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 }
 
 int BtBoxGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND_V(entity == nullptr, 0);
 
 	if (entity->has_component(box_component_name)) {
@@ -76,7 +76,7 @@ String BtBoxGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_idx) 
 }
 
 Variant BtBoxGizmo::get_handle_value(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND_V(entity == nullptr, Variant());
 	ERR_FAIL_COND_V(entity->has_component(box_component_name) == false, Variant());
 
@@ -86,7 +86,7 @@ Variant BtBoxGizmo::get_handle_value(const EditorNode3DGizmo *p_gizmo, int p_idx
 }
 
 void BtBoxGizmo::set_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND(entity == nullptr);
 	ERR_FAIL_COND(entity->has_component(box_component_name) == false);
 
@@ -118,7 +118,7 @@ void BtBoxGizmo::set_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, Camera3
 }
 
 void BtBoxGizmo::commit_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND(entity == nullptr);
 	ERR_FAIL_COND(entity->has_component(box_component_name) == false);
 
@@ -127,7 +127,7 @@ void BtBoxGizmo::commit_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, cons
 	if (p_cancel) {
 		entity->set_component_value(box_component_name, half_extents_name, p_restore);
 	} else {
-		UndoRedo *ur = Node3DEditor::get_singleton()->get_undo_redo();
+		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
 		ur->create_action(TTR("Change Shape Box Half Extent"));
 		ur->add_do_method(entity, "set_component_value", box_component_name, half_extents_name, half_extents);
 		Vector3 restore = half_extents;
@@ -143,7 +143,7 @@ void BtSphereGizmo::init() {
 }
 
 void BtSphereGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND(entity == nullptr);
 
 	if (entity->has_component(sphere_component_name)) {
@@ -156,8 +156,8 @@ void BtSphereGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 		Vector<Vector3> points;
 
 		for (int i = 0; i <= 360; i++) {
-			float ra = Math::deg2rad((float)i);
-			float rb = Math::deg2rad((float)i + 1);
+			float ra = Math::deg_to_rad((float)i);
+			float rb = Math::deg_to_rad((float)i + 1);
 			Point2 a = Vector2(Math::sin(ra), Math::cos(ra)) * radius;
 			Point2 b = Vector2(Math::sin(rb), Math::cos(rb)) * radius;
 
@@ -194,7 +194,7 @@ void BtSphereGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 }
 
 int BtSphereGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND_V(entity == nullptr, 0);
 
 	if (entity->has_component(sphere_component_name)) {
@@ -209,7 +209,7 @@ String BtSphereGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_id
 }
 
 Variant BtSphereGizmo::get_handle_value(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND_V(entity == nullptr, Variant());
 	ERR_FAIL_COND_V(entity->has_component(sphere_component_name) == false, Variant());
 
@@ -217,7 +217,7 @@ Variant BtSphereGizmo::get_handle_value(const EditorNode3DGizmo *p_gizmo, int p_
 }
 
 void BtSphereGizmo::set_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND(entity == nullptr);
 	ERR_FAIL_COND(entity->has_component(sphere_component_name) == false);
 
@@ -244,7 +244,7 @@ void BtSphereGizmo::set_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, Came
 }
 
 void BtSphereGizmo::commit_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND(entity == nullptr);
 	ERR_FAIL_COND(entity->has_component(sphere_component_name) == false);
 
@@ -253,7 +253,7 @@ void BtSphereGizmo::commit_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, c
 	if (p_cancel) {
 		entity->set_component_value(sphere_component_name, radius_name, p_restore);
 	} else {
-		UndoRedo *ur = Node3DEditor::get_singleton()->get_undo_redo();
+		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
 		ur->create_action(TTR("Change Shape Sphere Radius"));
 		ur->add_do_method(entity, "set_component_value", sphere_component_name, radius_name, radius);
 		ur->add_undo_method(entity, "set_component_value", sphere_component_name, radius_name, p_restore);
@@ -267,7 +267,7 @@ void BtCapsuleGizmo::init() {
 }
 
 void BtCapsuleGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND(entity == nullptr);
 
 	if (entity->has_component(capsule_component_name)) {
@@ -282,8 +282,8 @@ void BtCapsuleGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 
 		Vector3 d(0, height * 0.5, 0);
 		for (int i = 0; i < 360; i++) {
-			float ra = Math::deg2rad((float)i);
-			float rb = Math::deg2rad((float)i + 1);
+			float ra = Math::deg_to_rad((float)i);
+			float rb = Math::deg_to_rad((float)i + 1);
 			Point2 a = Vector2(Math::sin(ra), Math::cos(ra)) * radius;
 			Point2 b = Vector2(Math::sin(rb), Math::cos(rb)) * radius;
 
@@ -345,7 +345,7 @@ void BtCapsuleGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 }
 
 int BtCapsuleGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND_V(entity == nullptr, 0);
 
 	if (entity->has_component(capsule_component_name)) {
@@ -364,7 +364,7 @@ String BtCapsuleGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_i
 }
 
 Variant BtCapsuleGizmo::get_handle_value(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND_V(entity == nullptr, Variant());
 	ERR_FAIL_COND_V(entity->has_component(capsule_component_name) == false, Variant());
 
@@ -376,7 +376,7 @@ Variant BtCapsuleGizmo::get_handle_value(const EditorNode3DGizmo *p_gizmo, int p
 }
 
 void BtCapsuleGizmo::set_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND(entity == nullptr);
 	ERR_FAIL_COND(entity->has_component(capsule_component_name) == false);
 
@@ -414,7 +414,7 @@ void BtCapsuleGizmo::set_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, Cam
 }
 
 void BtCapsuleGizmo::commit_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND(entity == nullptr);
 	ERR_FAIL_COND(entity->has_component(capsule_component_name) == false);
 
@@ -423,7 +423,7 @@ void BtCapsuleGizmo::commit_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, 
 	if (p_cancel) {
 		entity->set_component_value(capsule_component_name, p_idx == 0 ? radius_name : height_name, p_restore);
 	} else {
-		UndoRedo *ur = Node3DEditor::get_singleton()->get_undo_redo();
+		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
 		ur->create_action(TTR("Change Shape Capsule Radius"));
 		ur->add_do_method(entity, "set_component_value", capsule_component_name, p_idx == 0 ? radius_name : height_name, v);
 		ur->add_undo_method(entity, "set_component_value", capsule_component_name, p_idx == 0 ? radius_name : height_name, p_restore);
@@ -437,7 +437,7 @@ void BtConeGizmo::init() {
 }
 
 void BtConeGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND(entity == nullptr);
 
 	if (entity->has_component(cone_component_name)) {
@@ -452,8 +452,8 @@ void BtConeGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 
 		Vector3 d(0, height * 0.5, 0);
 		for (int i = 0; i < 360; i++) {
-			float ra = Math::deg2rad((float)i);
-			float rb = Math::deg2rad((float)i + 1);
+			float ra = Math::deg_to_rad((float)i);
+			float rb = Math::deg_to_rad((float)i + 1);
 			Point2 a = Vector2(Math::sin(ra), Math::cos(ra)) * radius;
 			Point2 b = Vector2(Math::sin(rb), Math::cos(rb)) * radius;
 
@@ -495,7 +495,7 @@ void BtConeGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 }
 
 int BtConeGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND_V(entity == nullptr, 0);
 
 	if (entity->has_component(cone_component_name)) {
@@ -514,7 +514,7 @@ String BtConeGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_idx)
 }
 
 Variant BtConeGizmo::get_handle_value(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND_V(entity == nullptr, Variant());
 	ERR_FAIL_COND_V(entity->has_component(cone_component_name) == false, Variant());
 
@@ -526,7 +526,7 @@ Variant BtConeGizmo::get_handle_value(const EditorNode3DGizmo *p_gizmo, int p_id
 }
 
 void BtConeGizmo::set_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND(entity == nullptr);
 	ERR_FAIL_COND(entity->has_component(cone_component_name) == false);
 
@@ -560,7 +560,7 @@ void BtConeGizmo::set_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, Camera
 }
 
 void BtConeGizmo::commit_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND(entity == nullptr);
 	ERR_FAIL_COND(entity->has_component(cone_component_name) == false);
 
@@ -569,7 +569,7 @@ void BtConeGizmo::commit_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, con
 	if (p_cancel) {
 		entity->set_component_value(cone_component_name, p_idx == 0 ? radius_name : height_name, p_restore);
 	} else {
-		UndoRedo *ur = Node3DEditor::get_singleton()->get_undo_redo();
+		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
 		ur->create_action(TTR("Change Shape Cone Radius"));
 		ur->add_do_method(entity, "set_component_value", cone_component_name, p_idx == 0 ? radius_name : height_name, v);
 		ur->add_undo_method(entity, "set_component_value", cone_component_name, p_idx == 0 ? radius_name : height_name, p_restore);
@@ -583,7 +583,7 @@ void BtCylinderGizmo::init() {
 }
 
 void BtCylinderGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND(entity == nullptr);
 
 	if (entity->has_component(cylinder_component_name)) {
@@ -598,8 +598,8 @@ void BtCylinderGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 
 		Vector3 d(0, height * 0.5, 0);
 		for (int i = 0; i < 360; i++) {
-			float ra = Math::deg2rad((float)i);
-			float rb = Math::deg2rad((float)i + 1);
+			float ra = Math::deg_to_rad((float)i);
+			float rb = Math::deg_to_rad((float)i + 1);
 			Point2 a = Vector2(Math::sin(ra), Math::cos(ra)) * radius;
 			Point2 b = Vector2(Math::sin(rb), Math::cos(rb)) * radius;
 
@@ -659,7 +659,7 @@ void BtCylinderGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
 }
 
 int BtCylinderGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND_V(entity == nullptr, 0);
 
 	if (entity->has_component(cylinder_component_name)) {
@@ -678,7 +678,7 @@ String BtCylinderGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_
 }
 
 Variant BtCylinderGizmo::get_handle_value(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND_V(entity == nullptr, Variant());
 	ERR_FAIL_COND_V(entity->has_component(cylinder_component_name) == false, Variant());
 
@@ -690,7 +690,7 @@ Variant BtCylinderGizmo::get_handle_value(const EditorNode3DGizmo *p_gizmo, int 
 }
 
 void BtCylinderGizmo::set_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND(entity == nullptr);
 	ERR_FAIL_COND(entity->has_component(cylinder_component_name) == false);
 
@@ -723,7 +723,7 @@ void BtCylinderGizmo::set_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, Ca
 }
 
 void BtCylinderGizmo::commit_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND(entity == nullptr);
 	ERR_FAIL_COND(entity->has_component(cylinder_component_name) == false);
 
@@ -732,7 +732,7 @@ void BtCylinderGizmo::commit_handle(const EditorNode3DGizmo *p_gizmo, int p_idx,
 	if (p_cancel) {
 		entity->set_component_value(cylinder_component_name, p_idx == 0 ? radius_name : height_name, p_restore);
 	} else {
-		UndoRedo *ur = Node3DEditor::get_singleton()->get_undo_redo();
+		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
 		ur->create_action(TTR("Change Shape Capsule Radius"));
 		ur->add_do_method(entity, "set_component_value", cylinder_component_name, p_idx == 0 ? radius_name : height_name, v);
 		ur->add_undo_method(entity, "set_component_value", cylinder_component_name, p_idx == 0 ? radius_name : height_name, p_restore);
@@ -752,7 +752,7 @@ void BtConvexGizmo::init() {
 }
 
 void BtConvexGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND(entity == nullptr);
 
 	if (entity->has_component(convex_component_name)) {
@@ -804,7 +804,7 @@ void BtTrimeshGizmo::init() {
 }
 
 void BtTrimeshGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND(entity == nullptr);
 
 	if (entity->has_component(trimesh_component_name)) {
@@ -859,7 +859,7 @@ void BtPawnGizmo::init() {
 }
 
 void BtPawnGizmo::redraw(EditorNode3DGizmo *p_gizmo) {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND(entity == nullptr);
 
 	if (entity->has_component(pawn_component_name)) {
@@ -904,8 +904,8 @@ void BtPawnGizmo::redraw_capsule(EditorNode3DGizmo *p_gizmo, const Ref<Material>
 
 	Vector3 d(0, p_height * 0.5, 0);
 	for (int i = 0; i < 360; i++) {
-		float ra = Math::deg2rad((float)i);
-		float rb = Math::deg2rad((float)i + 1);
+		float ra = Math::deg_to_rad((float)i);
+		float rb = Math::deg_to_rad((float)i + 1);
 		Point2 a = Vector2(Math::sin(ra), Math::cos(ra)) * p_radius;
 		Point2 b = Vector2(Math::sin(rb), Math::cos(rb)) * p_radius;
 
@@ -967,7 +967,7 @@ void BtPawnGizmo::redraw_capsule(EditorNode3DGizmo *p_gizmo, const Ref<Material>
 }
 
 int BtPawnGizmo::get_handle_count(const EditorNode3DGizmo *p_gizmo) const {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND_V(entity == nullptr, 0);
 
 	if (entity->has_component(pawn_component_name)) {
@@ -990,7 +990,7 @@ String BtPawnGizmo::get_handle_name(const EditorNode3DGizmo *p_gizmo, int p_idx)
 }
 
 Variant BtPawnGizmo::get_handle_value(const EditorNode3DGizmo *p_gizmo, int p_idx) const {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND_V(entity == nullptr, Variant());
 	ERR_FAIL_COND_V(entity->has_component(pawn_component_name) == false, Variant());
 
@@ -1006,7 +1006,7 @@ Variant BtPawnGizmo::get_handle_value(const EditorNode3DGizmo *p_gizmo, int p_id
 }
 
 void BtPawnGizmo::set_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, Camera3D *p_camera, const Point2 &p_point) {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND(entity == nullptr);
 	ERR_FAIL_COND(entity->has_component(pawn_component_name) == false);
 
@@ -1059,7 +1059,7 @@ void BtPawnGizmo::set_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, Camera
 }
 
 void BtPawnGizmo::commit_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, const Variant &p_restore, bool p_cancel) {
-	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_spatial_node());
+	Entity3D *entity = static_cast<Entity3D *>(p_gizmo->get_node_3d());
 	ERR_FAIL_COND(entity == nullptr);
 	ERR_FAIL_COND(entity->has_component(pawn_component_name) == false);
 
@@ -1079,7 +1079,7 @@ void BtPawnGizmo::commit_handle(const EditorNode3DGizmo *p_gizmo, int p_idx, con
 	if (p_cancel) {
 		entity->set_component_value(pawn_component_name, prop_name, p_restore);
 	} else {
-		UndoRedo *ur = Node3DEditor::get_singleton()->get_undo_redo();
+		EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
 		ur->create_action(TTR("Change Shape Capsule Radius"));
 		ur->add_do_method(entity, "set_component_value", pawn_component_name, prop_name, v);
 		ur->add_undo_method(entity, "set_component_value", pawn_component_name, prop_name, p_restore);

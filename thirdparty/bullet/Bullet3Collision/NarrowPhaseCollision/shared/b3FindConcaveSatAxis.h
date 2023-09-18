@@ -523,15 +523,15 @@ __kernel void b3FindConcaveSeparatingAxisKernel(__global b3Int4* concavePairs,
 												int numConcavePairs,
 												int pairIdx)
 {
-	int i = pairIdx;
-	/*	int i = get_global_id(0);
-	if (i>=numConcavePairs)
+	int idx = pairIdx;
+	/*	int idx = get_global_id(0);
+	if (idx>=numConcavePairs)
 		return;
-	int pairIdx = i;
+	int pairIdx = idx;
 	*/
 
-	int bodyIndexA = concavePairs[i].x;
-	int bodyIndexB = concavePairs[i].y;
+	int bodyIndexA = concavePairs[idx].x;
+	int bodyIndexB = concavePairs[idx].y;
 
 	int collidableIndexA = rigidBodies[bodyIndexA].m_collidableIdx;
 	int collidableIndexB = rigidBodies[bodyIndexB].m_collidableIdx;
@@ -546,12 +546,12 @@ __kernel void b3FindConcaveSeparatingAxisKernel(__global b3Int4* concavePairs,
 		return;
 	}
 
-	hasSeparatingNormals[i] = 0;
+	hasSeparatingNormals[idx] = 0;
 
 	//	int numFacesA = convexShapes[shapeIndexA].m_numFaces;
 	int numActualConcaveConvexTests = 0;
 
-	int f = concavePairs[i].z;
+	int f = concavePairs[idx].z;
 
 	bool overlap = false;
 
@@ -753,7 +753,7 @@ __kernel void b3FindConcaveSeparatingAxisKernel(__global b3Int4* concavePairs,
 
 		if (hasSeparatingAxis)
 		{
-			hasSeparatingNormals[i] = 1;
+			hasSeparatingNormals[idx] = 1;
 			sepAxis.w = dmin;
 			concaveSeparatingNormalsOut[pairIdx] = sepAxis;
 

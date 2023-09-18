@@ -25,6 +25,8 @@
 
 #include "editor/plugins/node_3d_editor_plugin.h"
 
+extern Ref<Components3DGizmoPlugin> component_gizmo;
+
 static void _editor_init() {
 	EditorNode *p_editor = EditorNode::get_singleton();
 	ERR_FAIL_COND_MSG(p_editor == nullptr, "The editor is not defined.");
@@ -34,6 +36,9 @@ static void _editor_init() {
 
 	WorldECSEditorPlugin *worldecs_plugin = memnew(WorldECSEditorPlugin(p_editor));
 	EditorNode::get_singleton()->add_editor_plugin(worldecs_plugin);
+
+	Node3DEditor::get_singleton()->add_gizmo_plugin(Ref<Components3DGizmoPlugin>(Components3DGizmoPlugin::get_singleton()));
+	component_gizmo = Ref<Components3DGizmoPlugin>();
 }
 
 void initialize_godot_module(ModuleInitializationLevel p_level) {
@@ -132,16 +137,19 @@ void initialize_godot_module(ModuleInitializationLevel p_level) {
 
 		ClassDB::register_class<SharedComponentResource>();
 
+#ifdef DEBUG_ENABLED
+		// TS is nullptr at this point when running tests in debug mode, and it causes a crash. I did not find a better way to check for that.
+		if (TS != nullptr) {
+			ECS::preload_scripts();
+		}
+#else
+		ECS::preload_scripts();
+#endif
 		memnew(ScriptEcs());
 
 	} else if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
 		if (Engine::get_singleton()->is_editor_hint()) {
 			EditorNode::add_init_callback(_editor_init);
-
-			if (Node3DEditor::get_singleton() != nullptr) {
-				// Add component gizmos:
-				Node3DEditor::get_singleton()->add_gizmo_plugin(Ref<Components3DGizmoPlugin>(Components3DGizmoPlugin::get_singleton()));
-			}
 
 			// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Gizmos
 			Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(TransformComponentGizmo));
@@ -149,13 +157,20 @@ void initialize_godot_module(ModuleInitializationLevel p_level) {
 
 		} else {
 			// Load the Scripted Components/Databags/Systems
-			ScriptEcs::get_singleton()->register_runtime_scripts();
+			// ScriptEcs::get_singleton()->register_runtime_scripts();
 		}
 	}
 }
 
 void uninitialize_godot_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
+		if (!Engine::get_singleton()->is_editor_hint()) {
+			ScriptEcs::get_singleton()->reset_editor_default_component_properties();
+		}
 		memdelete(ScriptEcs::get_singleton());
+	} else if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
+		if (Engine::get_singleton()->is_editor_hint()) {
+			ScriptEcs::get_singleton()->reset_editor_default_component_properties();
+		}
 	}
 }

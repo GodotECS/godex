@@ -45,7 +45,7 @@ void BtRigidBody::_get_storage_config(Dictionary &r_config) {
 BtRigidBody::BtRigidBody() {
 	body.setUserPointer(this);
 	// Used by `GodotCollisionDispatcher`
-	body.setUserIndex(BtBodyType::TYPE_RIGID_BODY);
+	body.setUserIndex(BtBodyType::BODY_TYPE_RIGID_BODY);
 }
 
 btRigidBody *BtRigidBody::get_body() {

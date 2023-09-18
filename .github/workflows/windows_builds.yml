@@ -10,8 +10,8 @@ on:
 # Global Settings
 # SCONS_CACHE for windows must be set in the build environment
 env:
-  GODOT_BASE_BRANCH: master
-  SCONSFLAGS: platform=windows verbose=yes warnings=all werror=yes debug_symbols=no --jobs=2 module_text_server_fb_enabled=yes
+  GODOT_REF: ab7cb2a95d060a6533e6ff5111c11f71972ab43f
+  SCONSFLAGS: platform=windows verbose=yes warnings=all werror=yes debug_symbols=no module_text_server_fb_enabled=yes
   SCONS_CACHE_MSVC_CONFIG: true
   SCONS_CACHE_LIMIT: 3072
 
@@ -19,9 +19,16 @@ jobs:
   windows-editor:
     # Windows 10 with latest image
     runs-on: "windows-latest"
-    name: Editor (target=release_debug, tools=yes, tests=yes)
+    name: Editor (target=editor, tools=yes, tests=yes)
 
     steps:
+    - name: Wait for static checks
+      uses: lewagon/wait-on-check-action@v1.3.1
+      with:
+       ref: ${{ github.event_name != 'pull_request' && github.sha || github.event.pull_request.head.sha }}
+       check-name: 'Static Checks (clang-format, black format, file format, documentation checks)'
+       repo-token: ${{ secrets.GITHUB_TOKEN }}
+       wait-interval: 10
     - name: Make dir
       run: |
        mkdir godot
@@ -36,9 +43,14 @@ jobs:
     - name: Clone godot for godex
       uses: actions/checkout@v2
       with:
-       repository: GodotECS/godot
-       ref: refs/heads/godex_version
+       repository: godotengine/godot
+       ref: ${{ env.GODOT_REF }}
        path: godot
+
+    - name: Apply patch
+      run: |
+        cd godot
+        git apply ../modules/godex/patches/add_custom_iterator.patch --reject --ignore-space-change --ignore-whitespace
 
     # Upload cache on completion and check it out now
     # Editing this is pretty dangerous for Windows since it can break and needs to be properly tested with a fresh cache.
@@ -49,9 +61,9 @@ jobs:
         path: ${{github.workspace}}/.scons_cache/
         key: ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
         restore-keys: |
-          ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
-          ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}
-          ${{github.job}}-${{env.GODOT_BASE_BRANCH}}
+          ${{github.job}}-${{env.GODOT_REF}}-${{github.ref}}-${{github.sha}}
+          ${{github.job}}-${{env.GODOT_REF}}-${{github.ref}}
+          ${{github.job}}-${{env.GODOT_REF}}
 
     # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
     - name: Set up Python 3.x
@@ -76,14 +88,14 @@ jobs:
         SCONS_CACHE: ${{github.workspace}}/.scons_cache/
       run: |
         cd godot
-        scons tools=yes tests=yes target=release_debug custom_modules="../modules"
+        scons tools=yes tests=yes target=editor custom_modules="../modules"
         ls -l bin/
 
     # Execute unit tests for the editor
     - name: Unit Tests
       run: |
         cd ./godot
-        ./bin/godot.windows.opt.tools.64.exe --test
+        ./bin/godot.windows.editor.x86_64.exe --test
         cd ../
 
     - uses: actions/upload-artifact@v2
