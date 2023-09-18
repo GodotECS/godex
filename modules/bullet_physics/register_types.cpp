@@ -4,7 +4,9 @@
 #include "../godot/editor_plugins/components_gizmo_3d.h"
 #include "components_area.h"
 #include "components_generic.h"
-#include "components_gizmos.h"
+#ifdef TOOLS_ENABLED
+#include "editor/components_gizmos.h"
+#endif
 #include "components_pawn.h"
 #include "components_rigid_body.h"
 #include "databag_space.h"
@@ -153,6 +155,7 @@ void initialize_bullet_physics_module(ModuleInitializationLevel p_level) {
 				.add("BtOverlapCheck");
 
 	} else if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
+#ifdef TOOLS_ENABLED
 		// Register gizmos
 		Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtBoxGizmo));
 		Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtSphereGizmo));
@@ -162,6 +165,7 @@ void initialize_bullet_physics_module(ModuleInitializationLevel p_level) {
 		Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtConvexGizmo));
 		Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtTrimeshGizmo));
 		Components3DGizmoPlugin::get_singleton()->add_component_gizmo(memnew(BtPawnGizmo));
+#endif
 	}
 }
 

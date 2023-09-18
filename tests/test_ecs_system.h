@@ -196,7 +196,7 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 		code += "var variable_2: bool = false\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("TestDynamicSystemComponent1.gd", code));
+		CHECK(register_ecs_script("TestDynamicSystemComponent1.gd", code));
 	}
 
 	{
@@ -221,9 +221,10 @@ TEST_CASE("[Modules][ECS] Test dynamic system using a script.") {
 		code += "			q[1].set(\"variable_2\", Transform3D())\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("TestDynamicSystem1.gd", code));
+		CHECK(register_ecs_script("TestDynamicSystem1.gd", code));
 	}
 
+	build_scripts();
 	flush_ecs_script_preparation();
 
 	World world;
@@ -325,7 +326,7 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 		code += "	test_databag.iterations += 1\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("TestSubPip_System.gd", code));
+		CHECK(register_ecs_script("TestSubPip_System.gd", code));
 	}
 	{
 		// Create the script.
@@ -340,9 +341,10 @@ TEST_CASE("[Modules][ECS] Test dynamic system with sub pipeline C++.") {
 		code += "	test_databag.sub_iterations += 1\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("TestSubPip_SubSystem.gd", code));
+		CHECK(register_ecs_script("TestSubPip_SubSystem.gd", code));
 	}
 
+	build_scripts();
 	flush_ecs_script_preparation();
 
 	// ~~ Main pipeline ~~
@@ -482,9 +484,10 @@ TEST_CASE("[Modules][ECS] Test system databag fetch with dynamic query.") {
 		code += "	test_databag.exe_count = 10\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("TestDatabagDynamicSystem.gd", code));
+		CHECK(register_ecs_script("TestDatabagDynamicSystem.gd", code));
 	}
 
+	build_scripts();
 	flush_ecs_script_preparation();
 
 	World world;
@@ -845,9 +848,10 @@ TEST_CASE("[Modules][ECS] Test system and hierarchy.") {
 			code += "			query[\"TransformComponent\"].origin.x = 10.0\n";
 			code += "\n";
 
-			CHECK(build_and_register_ecs_script("TestMoveHierarchySystem.gd", code));
+			CHECK(register_ecs_script("TestMoveHierarchySystem.gd", code));
 		}
 
+		build_scripts();
 		flush_ecs_script_preparation();
 
 		PipelineBuilder pipeline_builder;
@@ -915,7 +919,7 @@ TEST_CASE("[Modules][ECS] Test Add/remove from dynamic system.") {
 		code += "	comp_storage.insert(entity_3)\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("TestSpawnDynamicSystem.gd", code));
+		CHECK(register_ecs_script("TestSpawnDynamicSystem.gd", code));
 	}
 	{
 		// Create the script.
@@ -931,9 +935,10 @@ TEST_CASE("[Modules][ECS] Test Add/remove from dynamic system.") {
 		code += "	comp_storage.remove(1)\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("TestRemoveDynamicSystem.gd", code));
+		CHECK(register_ecs_script("TestRemoveDynamicSystem.gd", code));
 	}
 
+	build_scripts();
 	flush_ecs_script_preparation();
 
 	World world;
@@ -1014,9 +1019,10 @@ TEST_CASE("[Modules][ECS] Test fetch changed from dynamic system.") {
 		code += "		query[0].transform.origin.x = 100.0\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("TestChangedDynamicSystem.gd", code));
+		CHECK(register_ecs_script("TestChangedDynamicSystem.gd", code));
 	}
 
+	build_scripts();
 	flush_ecs_script_preparation();
 
 	World world;
@@ -1142,9 +1148,10 @@ TEST_CASE("[Modules][ECS] Test fetch entity from nodepath, using a dynamic syste
 		code += "		query[0].a = 1000\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("TestFetchEntityFromNodePath.gd", code));
+		CHECK(register_ecs_script("TestFetchEntityFromNodePath.gd", code));
 	}
 
+	build_scripts();
 	flush_ecs_script_preparation();
 
 	World world;
@@ -1280,7 +1287,7 @@ TEST_CASE("[Modules][ECS] Make sure the events storages are automatically create
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("TestAEventEmitterSystem.gd", code));
+		CHECK(register_ecs_script("TestAEventEmitterSystem.gd", code));
 	}
 	{
 		// Create the script.
@@ -1294,8 +1301,10 @@ TEST_CASE("[Modules][ECS] Make sure the events storages are automatically create
 		code += "	pass\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("TestAEventReceiverSystem.gd", code));
+		CHECK(register_ecs_script("TestAEventReceiverSystem.gd", code));
 	}
+
+	build_scripts();
 	flush_ecs_script_preparation();
 
 	{
@@ -1382,7 +1391,7 @@ TEST_CASE("[Modules][ECS] Test EventEmitter and EventReceiver") {
 		code += "	event_emitter.emit(\"Test1\", {'a': 10})\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("TestBEventEmitterSystem.gd", code));
+		CHECK(register_ecs_script("TestBEventEmitterSystem.gd", code));
 	}
 	{
 		// Create the script.
@@ -1401,8 +1410,10 @@ TEST_CASE("[Modules][ECS] Test EventEmitter and EventReceiver") {
 		code += "	assert(count == 1)\n";
 		code += "\n";
 
-		CHECK(build_and_register_ecs_script("TestBEventReceiverSystem.gd", code));
+		CHECK(register_ecs_script("TestBEventReceiverSystem.gd", code));
 	}
+
+	build_scripts();
 	flush_ecs_script_preparation();
 
 	{

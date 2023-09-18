@@ -6,8 +6,9 @@
 #include "core/templates/oa_hash_map.h"
 #include "ecs_utilities.h"
 
+#ifdef TOOLS_ENABLED
 class EditorFileSystemDirectory;
-
+#endif
 /// This is an utility that is intended for in editor usage that allow:
 /// - Save script components.
 /// - Load script components.
@@ -57,9 +58,11 @@ public:
 
 	static ScriptEcs *get_singleton();
 
+#ifdef TOOLS_ENABLED
 	// ------------------------------------------------------------------ Spawner
 	/// Returns the components name this spawner can spawn.
 	Vector<StringName> spawner_get_components(const StringName &spawner_name);
+#endif
 
 	// ---------------------------------------------------------------- Component
 	/// Load or Reloads a component. Retuns the component id.
@@ -84,10 +87,15 @@ public:
 	// ------------------------------------------------------------------ Runtime
 
 	void reload_scripts();
+#ifdef TOOLS_ENABLED
 	uint64_t load_scripts(EditorFileSystemDirectory *p_dir);
-
+#else
+	uint64_t load_scripts(const String &p_path);
+#endif
+#ifdef TOOLS_ENABLED
 	void define_editor_default_component_properties();
-
+	void reset_editor_default_component_properties();
+#endif
 	void register_runtime_scripts();
 
 	void __empty_scripts();
@@ -100,6 +108,8 @@ public:
 	void flush_scripts_preparation();
 
 private:
+#ifdef TOOLS_ENABLED
 	void save_script(const String &p_setting_list_name, const String &p_script_path);
 	void remove_script(const String &p_setting_list_name, const String &p_script_path);
+#endif
 };

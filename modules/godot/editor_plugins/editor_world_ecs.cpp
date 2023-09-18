@@ -8,9 +8,11 @@
 #include "editor/editor_file_system.h"
 #include "editor/editor_node.h"
 #include "editor/editor_scale.h"
+#include "editor/editor_undo_redo_manager.h"
 #include "scene/gui/color_rect.h"
 #include "scene/gui/reference_rect.h"
 #include "scene/gui/separator.h"
+#include "scene/gui/tree.h"
 
 PipelineElementInfoBox::PipelineElementInfoBox(EditorNode *p_editor, EditorWorldECS *p_editor_world_ecs) :
 		editor(p_editor),
@@ -841,10 +843,10 @@ void EditorWorldECS::pipeline_change_name(const String &p_name) {
 		return;
 	}
 
-	editor->get_undo_redo()->create_action(TTR("Change pipeline name"));
-	editor->get_undo_redo()->add_do_method(pipeline.ptr(), SNAME("set_pipeline_name"), p_name);
-	editor->get_undo_redo()->add_undo_method(pipeline.ptr(), SNAME("set_pipeline_name"), pipeline->get_pipeline_name());
-	editor->get_undo_redo()->commit_action();
+	EditorUndoRedoManager::get_singleton()->create_action(TTR("Change pipeline name"));
+	EditorUndoRedoManager::get_singleton()->add_do_method(pipeline.ptr(), SNAME("set_pipeline_name"), p_name);
+	EditorUndoRedoManager::get_singleton()->add_undo_method(pipeline.ptr(), SNAME("set_pipeline_name"), pipeline->get_pipeline_name());
+	EditorUndoRedoManager::get_singleton()->commit_action();
 }
 
 void EditorWorldECS::pipeline_list_update() {
@@ -914,10 +916,10 @@ void EditorWorldECS::pipeline_add() {
 	pip->set_pipeline_name(name);
 	set_pipeline(pip);
 
-	editor->get_undo_redo()->create_action(TTR("Add pipeline"));
-	editor->get_undo_redo()->add_do_method(world_ecs, SNAME("add_pipeline"), pip);
-	editor->get_undo_redo()->add_undo_method(world_ecs, SNAME("remove_pipeline"), pip);
-	editor->get_undo_redo()->commit_action();
+	EditorUndoRedoManager::get_singleton()->create_action(TTR("Add pipeline"));
+	EditorUndoRedoManager::get_singleton()->add_do_method(world_ecs, SNAME("add_pipeline"), pip);
+	EditorUndoRedoManager::get_singleton()->add_undo_method(world_ecs, SNAME("remove_pipeline"), pip);
+	EditorUndoRedoManager::get_singleton()->commit_action();
 }
 
 void EditorWorldECS::pipeline_rename_show_window() {
@@ -937,10 +939,10 @@ void EditorWorldECS::pipeline_remove() {
 		return;
 	}
 
-	editor->get_undo_redo()->create_action(TTR("Pipeline remove"));
-	editor->get_undo_redo()->add_do_method(world_ecs, SNAME("remove_pipeline"), pipeline);
-	editor->get_undo_redo()->add_undo_method(world_ecs, SNAME("add_pipeline"), pipeline);
-	editor->get_undo_redo()->commit_action();
+	EditorUndoRedoManager::get_singleton()->create_action(TTR("Pipeline remove"));
+	EditorUndoRedoManager::get_singleton()->add_do_method(world_ecs, SNAME("remove_pipeline"), pipeline);
+	EditorUndoRedoManager::get_singleton()->add_undo_method(world_ecs, SNAME("add_pipeline"), pipeline);
+	EditorUndoRedoManager::get_singleton()->commit_action();
 }
 
 void EditorWorldECS::pipeline_toggle_pipeline_view() {
@@ -1092,10 +1094,10 @@ void EditorWorldECS::pipeline_system_bundle_remove(const StringName &p_name) {
 		return;
 	}
 
-	editor->get_undo_redo()->create_action(TTR("Remove system"));
-	editor->get_undo_redo()->add_do_method(pipeline.ptr(), SNAME("remove_system_bundle"), p_name);
-	editor->get_undo_redo()->add_undo_method(pipeline.ptr(), SNAME("add_system_bundle"), p_name);
-	editor->get_undo_redo()->commit_action();
+	EditorUndoRedoManager::get_singleton()->create_action(TTR("Remove system"));
+	EditorUndoRedoManager::get_singleton()->add_do_method(pipeline.ptr(), SNAME("remove_system_bundle"), p_name);
+	EditorUndoRedoManager::get_singleton()->add_undo_method(pipeline.ptr(), SNAME("add_system_bundle"), p_name);
+	EditorUndoRedoManager::get_singleton()->commit_action();
 }
 
 void EditorWorldECS::pipeline_system_remove(const StringName &p_name) {
@@ -1103,10 +1105,10 @@ void EditorWorldECS::pipeline_system_remove(const StringName &p_name) {
 		return;
 	}
 
-	editor->get_undo_redo()->create_action(TTR("Remove system"));
-	editor->get_undo_redo()->add_do_method(pipeline.ptr(), SNAME("remove_system"), p_name);
-	editor->get_undo_redo()->add_undo_method(pipeline.ptr(), SNAME("insert_system"), p_name);
-	editor->get_undo_redo()->commit_action();
+	EditorUndoRedoManager::get_singleton()->create_action(TTR("Remove system"));
+	EditorUndoRedoManager::get_singleton()->add_do_method(pipeline.ptr(), SNAME("remove_system"), p_name);
+	EditorUndoRedoManager::get_singleton()->add_undo_method(pipeline.ptr(), SNAME("insert_system"), p_name);
+	EditorUndoRedoManager::get_singleton()->commit_action();
 }
 
 void EditorWorldECS::add_sys_show() {
@@ -1238,15 +1240,15 @@ void EditorWorldECS::add_sys_add() {
 	}
 
 	if (selected->has_meta("system_name")) {
-		editor->get_undo_redo()->create_action(TTR("Add system"));
-		editor->get_undo_redo()->add_do_method(pipeline.ptr(), SNAME("insert_system"), selected->get_meta("system_name"));
-		editor->get_undo_redo()->add_undo_method(pipeline.ptr(), SNAME("remove_system"), selected->get_meta("system_name"));
+		EditorUndoRedoManager::get_singleton()->create_action(TTR("Add system"));
+		EditorUndoRedoManager::get_singleton()->add_do_method(pipeline.ptr(), SNAME("insert_system"), selected->get_meta("system_name"));
+		EditorUndoRedoManager::get_singleton()->add_undo_method(pipeline.ptr(), SNAME("remove_system"), selected->get_meta("system_name"));
 	} else {
-		editor->get_undo_redo()->create_action(TTR("Add system bundle"));
-		editor->get_undo_redo()->add_do_method(pipeline.ptr(), SNAME("add_system_bundle"), selected->get_meta("system_bundle_name"));
-		editor->get_undo_redo()->add_undo_method(pipeline.ptr(), SNAME("remove_system_bundle"), selected->get_meta("system_bundle_name"));
+		EditorUndoRedoManager::get_singleton()->create_action(TTR("Add system bundle"));
+		EditorUndoRedoManager::get_singleton()->add_do_method(pipeline.ptr(), SNAME("add_system_bundle"), selected->get_meta("system_bundle_name"));
+		EditorUndoRedoManager::get_singleton()->add_undo_method(pipeline.ptr(), SNAME("remove_system_bundle"), selected->get_meta("system_bundle_name"));
 	}
-	editor->get_undo_redo()->commit_action();
+	EditorUndoRedoManager::get_singleton()->commit_action();
 }
 
 void EditorWorldECS::components_manage_show() {
@@ -1275,10 +1277,41 @@ void EditorWorldECS::add_warning(const String &p_msg) {
 	errors_warnings_container->add_child(lbl);
 }
 
+void EditorWorldECS::remove_node_and_reparent_children(Node *p_node) {
+	List<Node *> children;
+
+	while (true) {
+		bool clear = true;
+		for (int i = 0; i < p_node->get_child_count(false); i++) {
+			Node *c_node = p_node->get_child(i, false);
+			if (!c_node->get_owner()) {
+				continue;
+			}
+
+			p_node->remove_child(c_node);
+			children.push_back(c_node);
+			clear = false;
+			break;
+		}
+
+		if (clear) {
+			break;
+		}
+	}
+
+	while (!children.is_empty()) {
+		Node *c_node = children.front()->get();
+		p_node->get_parent()->add_child(c_node);
+		children.pop_front();
+	}
+
+	p_node->get_parent()->remove_child(p_node);
+}
+
 void EditorWorldECS::clear_errors_warnings() {
 	for (int i = errors_warnings_container->get_child_count() - 1; i >= 0; i -= 1) {
 		Node *n = errors_warnings_container->get_child(i);
-		errors_warnings_container->get_child(i)->remove_and_skip();
+		remove_node_and_reparent_children(n);
 		memdelete(n);
 	}
 }
@@ -1304,7 +1337,7 @@ PipelineElementInfoBox *EditorWorldECS::pipeline_panel_add_entry() {
 void EditorWorldECS::pipeline_panel_clear() {
 	for (int i = pipeline_panel->get_child_count() - 1; i >= 0; i -= 1) {
 		Node *n = pipeline_panel->get_child(i);
-		pipeline_panel->get_child(i)->remove_and_skip();
+		remove_node_and_reparent_children(n);
 		memdelete(n);
 	}
 }
@@ -1318,7 +1351,7 @@ DispatcherPipelineView *EditorWorldECS::pipeline_view_add_dispatcher() {
 void EditorWorldECS::pipeline_view_clear() {
 	for (int i = pipeline_view_panel->get_child_count() - 1; i >= 0; i -= 1) {
 		Node *n = pipeline_view_panel->get_child(i);
-		pipeline_view_panel->get_child(i)->remove_and_skip();
+		remove_node_and_reparent_children(n);
 		memdelete(n);
 	}
 }
@@ -1326,17 +1359,20 @@ void EditorWorldECS::pipeline_view_clear() {
 WorldECSEditorPlugin::WorldECSEditorPlugin(EditorNode *p_node) :
 		editor(p_node) {
 	ecs_editor = memnew(EditorWorldECS(p_node));
-	editor->get_main_control()->add_child(ecs_editor);
+	editor->get_main_screen_control()->add_child(ecs_editor);
 	ecs_editor->hide_editor();
 }
 
 WorldECSEditorPlugin::~WorldECSEditorPlugin() {
-	editor->get_main_control()->remove_child(ecs_editor);
+	editor->get_main_screen_control()->remove_child(ecs_editor);
 	memdelete(ecs_editor);
 	ecs_editor = nullptr;
 }
 
 void WorldECSEditorPlugin::edit(Object *p_object) {
+	if (p_object == nullptr) {
+		return;
+	}
 	world_ecs = Object::cast_to<WorldECS>(p_object);
 	ERR_FAIL_COND_MSG(world_ecs == nullptr, "The object should be of type WorldECS [BUG].");
 	ecs_editor->set_world_ecs(world_ecs);

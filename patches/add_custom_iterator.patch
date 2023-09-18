@@ -1,8 +1,71 @@
+Subject: [PATCH] Add custom iterator
+---
+Index: main/main.cpp
+diff --git a/main/main.cpp b/main/main.cpp
+--- a/main/main.cpp	(revision c4fb119f03477ad9a494ba6cdad211b35a8efcce)
++++ b/main/main.cpp	(date 1676280765409)
+@@ -3058,7 +3058,6 @@
+ 
+ 	uint64_t physics_process_ticks = 0;
+ 	uint64_t process_ticks = 0;
+-	uint64_t navigation_process_ticks = 0;
+ 
+ 	frame += ticks_elapsed;
+ 
+@@ -3075,6 +3074,15 @@
+ 	// process all our active interfaces
+ 	XRServer::get_singleton()->_process();
+ 
++#ifdef CUSTOM_ITERATOR
++	exit = custom_iteration(process_step, physics_step, &advance, time_scale);
++#endif
++
++#ifndef CUSTOM_PHYSICS_ITERATOR
++	uint64_t navigation_process_ticks = 0;
++
++	Engine::get_singleton()->_in_physics = true;
++
+ 	for (int iters = 0; iters < advance.physics_steps; ++iters) {
+ 		if (Input::get_singleton()->is_using_input_buffering() && agile_input_event_flushing) {
+ 			Input::get_singleton()->flush_buffered_events();
+@@ -3125,6 +3133,8 @@
+ 	if (Input::get_singleton()->is_using_input_buffering() && agile_input_event_flushing) {
+ 		Input::get_singleton()->flush_buffered_events();
+ 	}
++	Engine::get_singleton()->_in_physics = false;
++#endif
+ 
+ 	uint64_t process_begin = OS::get_singleton()->get_ticks_usec();
+ 
+@@ -3157,7 +3167,9 @@
+ 		ScriptServer::get_language(i)->frame();
+ 	}
+ 
++#ifndef CUSTOM_AUDIO_ITERATOR
+ 	AudioServer::get_singleton()->update();
++#endif
+ 
+ 	if (EngineDebugger::is_active()) {
+ 		EngineDebugger::get_singleton()->iteration(frame_time, process_ticks, physics_process_ticks, physics_step);
+Index: main/main.h
+diff --git a/main/main.h b/main/main.h
+--- a/main/main.h	(revision c4fb119f03477ad9a494ba6cdad211b35a8efcce)
++++ b/main/main.h	(date 1676280742081)
+@@ -68,6 +68,9 @@
+ #endif
+ 	static bool start();
+ 
++#ifdef CUSTOM_ITERATOR
++	static bool custom_iteration(float p_process_delta, float p_physics_delta, struct MainFrameTime *p_frame_time, float p_time_scale);
++#endif
+ 	static bool iteration();
+ 	static void force_redraw();
+ 
+Index: SConstruct
 diff --git a/SConstruct b/SConstruct
-index 9dcc6c554f..6e98983e18 100644
---- a/SConstruct
-+++ b/SConstruct
-@@ -646,6 +646,15 @@ if selected_platform in platform_list:
+--- a/SConstruct	(revision c4fb119f03477ad9a494ba6cdad211b35a8efcce)
++++ b/SConstruct	(date 1676280742080)
+@@ -813,6 +813,15 @@
                  env.module_icons_paths.append(path + "/" + "icons")
              modules_enabled[name] = path
  
@@ -18,11 +81,12 @@ index 9dcc6c554f..6e98983e18 100644
          sys.path.remove(path)
          sys.modules.pop("config")
  
+Index: core/config/engine.h
+===================================================================
 diff --git a/core/config/engine.h b/core/config/engine.h
-index ae33acede2..045a5215b6 100644
---- a/core/config/engine.h
-+++ b/core/config/engine.h
-@@ -92,8 +92,10 @@ public:
+--- a/core/config/engine.h	(revision c4fb119f03477ad9a494ba6cdad211b35a8efcce)
++++ b/core/config/engine.h	(date 1676280742081)
+@@ -107,8 +107,10 @@
  
  	uint64_t get_frames_drawn();
  
@@ -33,54 +97,3 @@ index ae33acede2..045a5215b6 100644
  	bool is_in_physics_frame() const { return _in_physics; }
  	uint64_t get_frame_ticks() const { return _frame_ticks; }
  	double get_process_step() const { return _process_step; }
-diff --git a/main/main.cpp b/main/main.cpp
-index 9b7f960660..449fb531f4 100644
---- a/main/main.cpp
-+++ b/main/main.cpp
-@@ -2639,6 +2639,13 @@ bool Main::iteration() {
- 	// process all our active interfaces
- 	XRServer::get_singleton()->_process();
- 
-+#ifdef CUSTOM_ITERATOR
-+	exit = custom_iteration(process_step, physics_step, &advance, time_scale);
-+#endif
-+
-+#ifndef CUSTOM_PHYSICS_ITERATOR
-+	Engine::get_singleton()->_in_physics = true;
-+
- 	for (int iters = 0; iters < advance.physics_steps; ++iters) {
- 		if (Input::get_singleton()->is_using_input_buffering() && agile_input_event_flushing) {
- 			Input::get_singleton()->flush_buffered_events();
-@@ -2681,6 +2688,8 @@ bool Main::iteration() {
- 	if (Input::get_singleton()->is_using_input_buffering() && agile_input_event_flushing) {
- 		Input::get_singleton()->flush_buffered_events();
- 	}
-+	Engine::get_singleton()->_in_physics = false;
-+#endif
- 
- 	uint64_t process_begin = OS::get_singleton()->get_ticks_usec();
- 
-@@ -2713,7 +2722,9 @@ bool Main::iteration() {
- 		ScriptServer::get_language(i)->frame();
- 	}
- 
-+#ifndef CUSTOM_AUDIO_ITERATOR
- 	AudioServer::get_singleton()->update();
-+#endif
- 
- 	if (EngineDebugger::is_active()) {
- 		EngineDebugger::get_singleton()->iteration(frame_time, process_ticks, physics_process_ticks, physics_step);
-diff --git a/main/main.h b/main/main.h
-index 4911ff42b4..9441d7fc85 100644
---- a/main/main.h
-+++ b/main/main.h
-@@ -56,6 +56,9 @@ public:
- #endif
- 	static bool start();
- 
-+#ifdef CUSTOM_ITERATOR
-+	static bool custom_iteration(float p_process_delta, float p_physics_delta, struct MainFrameTime *p_frame_time, float p_time_scale);
-+#endif
- 	static bool iteration();
- 	static void force_redraw();
- 

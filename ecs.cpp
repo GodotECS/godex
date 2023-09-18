@@ -1,5 +1,8 @@
 
 #include "ecs.h"
+#include <core/config/project_settings.h>
+#include <core/io/dir_access.h>
+#include <modules/gdscript/gdscript_parser.h>
 
 #include "components/dynamic_component.h"
 #include "core/object/message_queue.h"
@@ -156,6 +159,43 @@ ECS::ECS() :
 	if (MessageQueue::get_singleton() != nullptr) {
 		// TODO Do I need this? https://github.com/godotengine/godot-proposals/issues/1593
 		MessageQueue::get_singleton()->push_callable(callable_mp(this, &ECS::ecs_init));
+	}
+}
+
+void get_script_files(const String &p_path, Vector<String> &scripts) {
+	for (const auto &directory : DirAccess::get_directories_at(p_path)) {
+		get_script_files(p_path.path_join(directory), scripts);
+	}
+	for (const auto &file : DirAccess::get_files_at(p_path)) {
+		auto file_path = p_path.path_join(file);
+		if (ResourceLoader::get_resource_type(file_path) == "GDScript") {
+			scripts.push_back(file_path);
+		}
+	}
+}
+
+void ECS::preload_scripts() {
+	if (Engine::get_singleton()->is_project_manager_hint()) {
+		return;
+	}
+
+	Vector<String> scripts;
+	print_line("Preloading component and system scripts");
+	get_script_files("res://", scripts);
+
+	for (const auto &script : scripts) {
+		auto code = FileAccess::get_file_as_string(script);
+		GDScriptParser parser;
+		if (parser.parse(code, script, false) == OK) {
+			auto tree = parser.get_tree();
+			if (tree->extends.has("System")) {
+				register_dynamic_system(script.get_file());
+			}
+
+			if (tree->extends.has("Component")) {
+				register_or_get_id_for_component_name(script.get_file());
+			}
+		}
 	}
 }
 
@@ -1041,11 +1081,7 @@ const LocalVector<godex::component_id> &ECS::get_spawnable_components(godex::spa
 	return spawners_info[p_spawner].components;
 }
 
-uint32_t ECS::register_or_update_script_component(
-		const StringName &p_name,
-		const LocalVector<ScriptProperty> &p_properties,
-		StorageType p_storage_type,
-		Vector<StringName> p_spawners) {
+uint32_t ECS::register_or_get_id_for_component_name(const StringName &p_name) {
 	godex::component_id id = get_component_id(p_name);
 	DynamicComponentInfo *info;
 
@@ -1058,11 +1094,24 @@ uint32_t ECS::register_or_update_script_component(
 		components.push_back(p_name);
 		components_info.push_back(ComponentInfo());
 		components_info[id].dynamic_component_info = info;
-	} else {
-		// This is an old component, verify is a script component.
-		ERR_FAIL_COND_V_MSG(components_info[id].dynamic_component_info == nullptr, godex::COMPONENT_NONE, "This component " + p_name + " is not a script component and can't be updated. Your component must be an unique name.");
-		info = components_info[id].dynamic_component_info;
+
+		// Add a new scripting constant, for fast and easy `component` access.
+		ClassDB::bind_integer_constant(get_class_static(), StringName(), String(p_name).replace(".", "_"), id);
+		print_line("ComponentScript: " + p_name + " registered with ID: " + itos(id));
 	}
+
+	return id;
+}
+
+uint32_t ECS::register_or_update_script_component(
+		const StringName &p_name,
+		const LocalVector<ScriptProperty> &p_properties,
+		StorageType p_storage_type,
+		Vector<StringName> p_spawners) {
+	godex::component_id id = register_or_get_id_for_component_name(p_name);
+	DynamicComponentInfo *info;
+	ERR_FAIL_COND_V_MSG(components_info[id].dynamic_component_info == nullptr, godex::COMPONENT_NONE, "This component " + p_name + " is not a script component and can't be updated. Your component must be an unique name.");
+	info = components_info[id].dynamic_component_info;
 
 	info->property_map.resize(p_properties.size());
 	info->properties.resize(p_properties.size());
@@ -1070,6 +1119,13 @@ uint32_t ECS::register_or_update_script_component(
 
 	// Validate and initialize the parameters.
 	for (uint32_t i = 0; i < p_properties.size(); i += 1) {
+		if (
+				// Filter GDScript file name
+				p_properties[i].property.name == p_name
+				// Filter C# file name. It uses only the class name
+				|| p_properties[i].property.name + ".cs" == p_name) {
+			continue;
+		}
 		// Is  type supported?
 		switch (p_properties[i].property.type) {
 			case Variant::NIL:
@@ -1078,7 +1134,7 @@ uint32_t ECS::register_or_update_script_component(
 			case Variant::SIGNAL:
 			case Variant::CALLABLE:
 				// TODO what about dictionary and arrays?
-				ERR_PRINT("The script component " + p_name + " is using a pointer variable. This is unsafe, so not supported. Please use a databag.");
+				ERR_PRINT("The property " + p_properties[i].property.name + " of script component " + p_name + " is using a pointer variable. This is unsafe, so not supported. Please use a databag.");
 				return UINT32_MAX;
 			default:
 				// Valid!
@@ -1107,10 +1163,6 @@ uint32_t ECS::register_or_update_script_component(
 		components_info[id].spawners.push_back(spawner);
 		spawners_info[spawner].components.push_back(info->component_id);
 	}
-
-	// Add a new scripting constant, for fast and easy `component` access.
-	ClassDB::bind_integer_constant(get_class_static(), StringName(), String(p_name).replace(".", "_"), id);
-	print_line("ComponentScript: " + p_name + " registered with ID: " + itos(id));
 
 	return id;
 }

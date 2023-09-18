@@ -38,17 +38,17 @@ const Vector3 TransformComponent::get_rotation() const {
 
 void TransformComponent::set_rotation_deg(const Vector3 &p_euler) {
 	set_rotation(Vector3(
-			Math::deg2rad(p_euler[0]),
-			Math::deg2rad(p_euler[1]),
-			Math::deg2rad(p_euler[2])));
+			Math::deg_to_rad(p_euler[0]),
+			Math::deg_to_rad(p_euler[1]),
+			Math::deg_to_rad(p_euler[2])));
 }
 
 const Vector3 TransformComponent::get_rotation_deg() const {
 	const Vector3 r = get_rotation();
 	return Vector3(
-			Math::rad2deg(r[0]),
-			Math::rad2deg(r[1]),
-			Math::rad2deg(r[2]));
+			Math::rad_to_deg(r[0]),
+			Math::rad_to_deg(r[1]),
+			Math::rad_to_deg(r[2]));
 }
 
 void TransformComponent::set_scale(const Vector3 &p_scale) {

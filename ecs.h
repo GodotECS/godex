@@ -224,6 +224,7 @@ public:
 	template <class C>
 	static void register_component(StorageBase *(*create_storage)());
 
+	static uint32_t register_or_get_id_for_component_name(const StringName &p_name);
 	static uint32_t register_or_update_script_component(const StringName &p_name, const LocalVector<ScriptProperty> &p_properties, StorageType p_storage_type, Vector<StringName> p_spawners);
 
 	static uint32_t get_components_count();
@@ -487,6 +488,8 @@ public:
 	/// possible to prepare a `World` to dispatch several pipelines, during load
 	/// time, making the pipeline switch immediate.
 	static void system_set_active_system(godex::system_id p_id, uint8_t *p_mem, bool p_active);
+
+	static void preload_scripts();
 
 private:
 	static void clear_emitters_for_system(godex::system_id p_id);
