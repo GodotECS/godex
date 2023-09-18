@@ -27,6 +27,14 @@ void System::_bind_methods() {
 	BIND_ENUM_CONSTANT(IMMUTABLE);
 	BIND_ENUM_CONSTANT(MUTABLE);
 
+	BIND_ENUM_CONSTANT(PHASE_CONFIG);
+	BIND_ENUM_CONSTANT(PHASE_INPUT);
+	BIND_ENUM_CONSTANT(PHASE_PRE_PROCESS);
+	BIND_ENUM_CONSTANT(PHASE_PROCESS);
+	BIND_ENUM_CONSTANT(PHASE_POST_PROCESS);
+	BIND_ENUM_CONSTANT(PHASE_FINALIZE_PROCESS);
+	BIND_ENUM_CONSTANT(PHASE_PRE_RENDER);
+
 	ClassDB::add_virtual_method(get_class_static(), MethodInfo("_prepare"));
 	// TODO how to define `_execute`? It has  dynamic argument, depending on the `_prepare` function.
 }

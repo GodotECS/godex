@@ -7,9 +7,9 @@ using godex::DynamicQuery;
 
 void DynamicQuery::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_space", "space"), &DynamicQuery::set_space);
-	ClassDB::bind_method(D_METHOD("with_component", "component_id", "mutable"), &DynamicQuery::with_component);
-	ClassDB::bind_method(D_METHOD("maybe_component", "component_id", "mutable"), &DynamicQuery::maybe_component);
-	ClassDB::bind_method(D_METHOD("changed_component", "component_id", "mutable"), &DynamicQuery::changed_component);
+	ClassDB::bind_method(D_METHOD("with_component", "component_id", "is_mutable"), &DynamicQuery::with_component, DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("maybe_component", "component_id", "is_mutable"), &DynamicQuery::maybe_component, DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("changed_component", "component_id", "is_mutable"), &DynamicQuery::changed_component, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("not_component", "component_id"), &DynamicQuery::not_component);
 
 	ClassDB::bind_method(D_METHOD("is_valid"), &DynamicQuery::is_valid);
@@ -27,6 +27,9 @@ void DynamicQuery::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_current_entity_id"), &DynamicQuery::script_get_current_entity_id);
 	ClassDB::bind_method(D_METHOD("count"), &DynamicQuery::count);
+
+	BIND_ENUM_CONSTANT(LOCAL);
+	BIND_ENUM_CONSTANT(GLOBAL);
 }
 
 DynamicQuery::DynamicQuery() {
@@ -36,23 +39,23 @@ void DynamicQuery::set_space(Space p_space) {
 	space = p_space;
 }
 
-void DynamicQuery::with_component(uint32_t p_component_id, bool p_mutable) {
-	_with_component(p_component_id, p_mutable, WITH_MODE);
+void DynamicQuery::with_component(uint32_t p_component_id, bool p_is_mutable) {
+	_with_component(p_component_id, p_is_mutable, WITH_MODE);
 }
 
 void DynamicQuery::maybe_component(uint32_t p_component_id, bool p_mutable) {
 	_with_component(p_component_id, p_mutable, MAYBE_MODE);
 }
 
-void DynamicQuery::changed_component(uint32_t p_component_id, bool p_mutable) {
-	_with_component(p_component_id, p_mutable, CHANGED_MODE);
+void DynamicQuery::changed_component(uint32_t p_component_id, bool p_is_mutable) {
+	_with_component(p_component_id, p_is_mutable, CHANGED_MODE);
 }
 
 void DynamicQuery::not_component(uint32_t p_component_id) {
 	_with_component(p_component_id, false, WITHOUT_MODE);
 }
 
-void DynamicQuery::_with_component(uint32_t p_component_id, bool p_mutable, FetchMode p_mode) {
+void DynamicQuery::_with_component(uint32_t p_component_id, bool p_is_mutable, FetchMode p_mode) {
 	ERR_FAIL_COND_MSG(is_valid() == false, "This query is not valid.");
 	ERR_FAIL_COND_MSG(can_change == false, "This query can't change at this point, you have to `clear` it.");
 	if (unlikely(ECS::verify_component_id(p_component_id) == false)) {
@@ -66,7 +69,7 @@ void DynamicQuery::_with_component(uint32_t p_component_id, bool p_mutable, Fetc
 	DynamicQueryElement data;
 	data.id = p_component_id;
 	data.name = ECS::get_component_name(p_component_id);
-	data.mutability = p_mutable;
+	data.mutability = p_is_mutable;
 	data.mode = p_mode;
 	data.entity_list_index = UINT32_MAX;
 	elements.push_back(data);
